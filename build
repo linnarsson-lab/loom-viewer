@@ -1,0 +1,34 @@
+#! /bin/bash
+rm -r ./release
+set -o nounset
+set -o errexit
+
+# Set up a cache-busting integer
+v=$RANDOM
+
+# Set up the release directories
+mkdir release
+mkdir release/static
+mkdir release/static/img
+mkdir release/static/css
+mkdir release/static/js
+cp img/* release/static/img/
+
+# Build all the static assets
+/usr/local/bin/uglifycss css/* > release/static/css/bundle-v$v.min.css
+/usr/local/bin/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
+/usr/local/bin/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/static/js/bundle-v$v.min.js
+rm temp.js
+
+sed -e "s/{VERSION}/$v/g" index.html > release/static/index.html
+cp loom.py release
+
+cd release
+python loom.py ../cortex_2.h5
+
+# rsync -az -e ssh --delete ./api/go/bin root@paperfeed.io:/srv/api/
+# rsync -az -e ssh --delete ./app/release root@paperfeed.io:/srv/app/
+
+# ssh root@paperfeed.io 'supervisorctl restart paperfeed'
+
+
