@@ -8,11 +8,14 @@ v=$RANDOM
 
 # Set up the release directories
 mkdir release
+mkdir release/python
 mkdir release/static
 mkdir release/static/img
 mkdir release/static/css
 mkdir release/static/js
 cp img/* release/static/img/
+cp -r python release/python
+cp loom release/loom
 
 # Build all the static assets
 /usr/local/bin/uglifycss css/* > release/static/css/bundle-v$v.min.css
@@ -21,6 +24,3 @@ cp img/* release/static/img/
 rm temp.js
 
 sed -e "s/{VERSION}/$v/g" index.html > release/static/index.html
-cp loom.py release
-
-
