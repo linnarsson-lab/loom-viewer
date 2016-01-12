@@ -23,12 +23,4 @@ rm temp.js
 sed -e "s/{VERSION}/$v/g" index.html > release/static/index.html
 cp loom.py release
 
-cd release
-python loom.py ../cortex_2.h5
-
-# rsync -az -e ssh --delete ./api/go/bin root@paperfeed.io:/srv/api/
-# rsync -az -e ssh --delete ./app/release root@paperfeed.io:/srv/app/
-
-# ssh root@paperfeed.io 'supervisorctl restart paperfeed'
-
 
