@@ -644,7 +644,7 @@ class OmeConnection(object):
 
 	def loom_prepare(self):
 		print "Creating heatmap."
-		self.dz_get_zoom_image(0,0,8, usecache = False)
+		self.dz_get_zoom_image(0,0,8)
 		print "Creating landscape view:"
 		self.project_to_2d()
 		print "Done."
@@ -660,9 +660,10 @@ class OmeConnection(object):
 	def project_to_2d(self):
 		# First perform PCA out of band
 		# Process max 100 MB at a time (assuming about 25000 genes)
-		print "  Computing 100 PCA components."
 		batch_size = 1000
-		ipca = IncrementalPCA(n_components=100)
+		n_components = 50
+		print "  Computing %s PCA components." % n_components
+		ipca = IncrementalPCA(n_components=n_components)
 		col = 0
 		while col < self.shape[1]:
 			batch = self.file['matrix'][:,col:col+batch_size].T
@@ -685,7 +686,7 @@ class OmeConnection(object):
 		self.set_attr("_PC2", Xtransformed[:,1], axis = 1)
 
 		# Then, perform tSNE based on the 100 first components
-		print "  Computing tSNE based on 100 PCA components."
+		print "  Computing tSNE based on %s PCA components." % n_components
 		tsne = bh_tsne(Xtransformed)
 		print tsne.shape
 		

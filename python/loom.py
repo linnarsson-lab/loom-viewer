@@ -9,7 +9,8 @@ from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
 
-
+os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+print "Serving from: " + os.getcwd()
 
 if len(sys.argv) != 2:
 	print "ERROR: a single argument is required (name of h5 file to browse)"
@@ -22,8 +23,8 @@ except:
 	sys.exit(1)
 
 # Precompute zoom pyramid and tSNE
-if not ds.loom_is_prepared():
-	ds.loom_prepare()
+#if not ds.loom_is_prepared():
+ds.loom_prepare()
 
 # Create fileinfo (javascript format)
 dims = ds.dz_dimensions()
@@ -107,4 +108,13 @@ def send_tile(z,x,y):
 	return serve_pil_image(img)
 
 if __name__ == '__main__':
-	app.run(debug=True)
+	app.run(debug=False)
+
+
+
+
+
+
+
+
+

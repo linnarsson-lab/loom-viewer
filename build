@@ -9,18 +9,18 @@ v=$RANDOM
 # Set up the release directories
 mkdir release
 mkdir release/python
-mkdir release/static
-mkdir release/static/img
-mkdir release/static/css
-mkdir release/static/js
-cp img/* release/static/img/
-cp -r python release/python
+mkdir release/python/static
+mkdir release/python/static/img
+mkdir release/python/static/css
+mkdir release/python/static/js
+cp img/* release/python/static/img/
+cp -r python release/
 cp loom release/loom
 
 # Build all the static assets
-/usr/local/bin/uglifycss css/* > release/static/css/bundle-v$v.min.css
+/usr/local/bin/uglifycss css/* > release/python/static/css/bundle-v$v.min.css
 /usr/local/bin/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
-/usr/local/bin/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/static/js/bundle-v$v.min.js
+/usr/local/bin/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/python/static/js/bundle-v$v.min.js
 rm temp.js
 
-sed -e "s/{VERSION}/$v/g" index.html > release/static/index.html
+sed -e "s/{VERSION}/$v/g" index.html > release/python/static/index.html
