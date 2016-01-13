@@ -69,5 +69,6 @@ This file should contain descriptions for each class abbrev, and the attribute c
 	  "creator" : "gioele",
 	  "classes" : { "int1" : "my favorite interneuron type",
 	                 ..... },
-	  "cellids" : ["1772-099-103_H02", .....]
+	  "cellids" : {"1772-099-103_H02": "int1",
+	  		...... }
 	}
