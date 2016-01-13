@@ -30,7 +30,33 @@ File structure:
 					row_attrs/
 					h5 and images...
 
+Or maybe like this (Sten):
 
+	loom_repo/
+		new_attributes/  # User exported new cell attributes - see below
+		public/   # Nightly updates when new data or cell attributes are available
+			proj_ALL/
+			proj_midbrain/
+			proj_cortex/
+			
+		gioele/  # A project is only updated when requested by Gioele
+			public/
+				proj_midbrain/
+			private/
+			
+	Inside a project dir:
+				proj_def.xml  		# Current definition, only needed in common public directory
+				20160113.loom 		# File in HDF5 format with the following content:
+					/matrix		# The main data matrix with genes in rows and cells in columns
+					/proj_def.xml  	# Definition used for this build
+					/col_attrs/	# Column attributes as either float32 or string
+						CellID	# One attribute has to be cell-id ("1772-099-183_A01")
+					/row_attrs/
+					/tiles/
+						Precomputed images...
+				20160111.loom 		# Previous file version
+				20160102.loom 		# Even older file version
+					
 A user can create a new attribute in the loom browser and decide to export it to the database.
 Attributes are never replaced. If exporting with an existing name, a new version number may be attached.
 
