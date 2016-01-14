@@ -1,6 +1,6 @@
 import flask
 import os
-import ome
+import loom
 import sys
 import StringIO
 import json
@@ -17,7 +17,7 @@ if len(sys.argv) != 2:
 	sys.exit(1)
 
 try:
-	ds = ome.connect(sys.argv[1])
+	ds = loom.connect(sys.argv[1])
 except:
 	print "ERROR: file not found, or not a valid Ome file."
 	sys.exit(1)
