@@ -136,3 +136,32 @@ transposed before dropping extra attributes.
 The result is a DataFrame with a single column index, and with extra columns on the left corresponding to the row 
 attributes. This format is sometimes called Pandas [long format](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.melt.html),
 and is suitable for plotting e.g. with [Seaborn](http://stanford.edu/~mwaskom/software/seaborn/).
+
+#### Add attributes and data
+
+##### Set the values of an attribute
+
+    set_attr(name, values, axis = 0)
+
+You must specify the axis (0 for rows, 1 for columns). A new attribute will be created if it doesn't exist.
+
+##### Set an attribute by projecting the values of an existing attribute
+
+    set_attr_bydict(name, fromattr, dict, axis = 0, default = None)
+       name        - name of the new attribute (can be same as fromattr)
+       fromattr    - the attribute to project from
+       dict        - the mapping of values in fromattr to new values
+       axis        - the axis (0 for rows, 1 for columns)
+       default     - default to use for values not in dict (if default == None, keep original value)
+
+This can be used for example to fix typos in attribute values (e.g. by mapping 'mircoglia' to 'microglia').
+
+##### Extend the dataset with new columns
+
+    add_columns(submatrix, col_attrs)
+
+You need to supply a submatrix of N rows and M columns, where N is equal to the existing row count. You must also supply 
+column attributes (as a dictionary) corresponding to all the existing column attributes, and with exactly M values each
+of the same type as the corresponding existing attribute. The new data will be appended and saved to disk.
+
+
