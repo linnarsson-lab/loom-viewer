@@ -76,8 +76,10 @@ and always keep the original raw data in a proper database.
         ds = loom.connect('cortex.loom')
 
 This opens a connection to the given file, similar to how you would connect to a database. Row and column attributes
-are loaded into memory for quick access, but the main data matrix remains on disk until you request it. You can read the `shape` 
-property to see the row and column counts:
+are loaded into memory for quick access, but the main data matrix remains on disk until you request it. The function
+returns an object of type `<LoomConnection>`.
+
+You can read the `shape` property to see the row and column counts:
 
         ds.shape
         >>> (21135, 3005)
@@ -112,21 +114,21 @@ Get all the values for a given attribute:
 
 To load data from a `.loom` file, use the `select` method:
 
-        ds.select(row_query, col_query)
+        <LoomConnection>.select(row_query, col_query)
 
 `row_query` and `col_query` are query strings in [Numexpr](https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide) format.
 You can use all the row (columm) attributes in your query, as well as logical operators such as `& | ~`. See the [Numexpr User Guide](https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide#supported-operators) for the detailed syntax.
 
 Here's an example that selects mitochondrial genes in microglia:
 
-    ds.select("GeneType=='Mitochondrial'","Class=='microglia'")
+    <LoomConnection>.select("GeneType=='Mitochondrial'","Class=='microglia'")
 
 The returned object is a Pandas DataFrame, with multi-indexes along both rows and columns. Note that this is an abuse of the 
 semantics of the Pandas DataFrame, because Pandas assumes multi-indexes are hierarchical, whereas there is no guarantee that
 `.loom` attributes form a hierarchy. Sometimes this can make the result awkward to work with in Pandas and other pydata 
 modules. For this reason, we also support the `select_longform` method: 
 
-    ds.select_longform(row_expr, col_expr, row_index, col_index, transpose = False)
+    <LoomConnection>.select_longform(row_expr, col_expr, row_index, col_index, transpose = False)
 
 This method selects rows and columns as before, but retains only a single row and column attribute (which you chose by
 providing `row_index` and `col_index`) as the Pandas DataFrame indexes. All other column attributes are dropped, and all 
@@ -141,13 +143,13 @@ and is suitable for plotting e.g. with [Seaborn](http://stanford.edu/~mwaskom/so
 
 ##### Set the values of an attribute
 
-    set_attr(name, values, axis = 0)
+    <LoomConnection>.set_attr(name, values, axis = 0)
 
 You must specify the axis (0 for rows, 1 for columns). A new attribute will be created if it doesn't exist.
 
 ##### Set an attribute by projecting the values of an existing attribute
 
-    set_attr_bydict(name, fromattr, dict, axis = 0, default = None)
+    <LoomConnection>.set_attr_bydict(name, fromattr, dict, axis = 0, default = None)
        name        - name of the new attribute (can be same as fromattr)
        fromattr    - the attribute to project from
        dict        - the mapping of values in fromattr to new values
@@ -158,7 +160,7 @@ This can be used for example to fix typos in attribute values (e.g. by mapping '
 
 ##### Extend the dataset with new columns
 
-    add_columns(submatrix, col_attrs)
+    <LoomConnection>.add_columns(submatrix, col_attrs)
 
 You need to supply a submatrix of N rows and M columns, where N is equal to the existing row count. You must also supply 
 column attributes (as a dictionary) corresponding to all the existing column attributes, and with exactly M values each
