@@ -19,7 +19,7 @@ conda install click
 ### Building Loom
 
 1. Install `node` ([Node.js](https://nodejs.org/en/))
-2. Use Terminal and go to the main Loom folder(`cd Loom`)
+2. Use Terminal and go to the main Loom folder (`cd Loom`)
 3. Install required node modules using `npm`
 
 ```
