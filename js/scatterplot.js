@@ -2,7 +2,7 @@ import React, {PropTypes} from 'react';
 import { render, findDOMNode } from 'react-dom';
 import autoscale from 'autoscale-canvas';
 import * as colors from './colors';
-import * as _ from 'underscore';
+import * as _ from 'lodash';
 import { nMostFrequent } from './util';
 
 

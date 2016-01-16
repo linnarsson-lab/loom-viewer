@@ -47,6 +47,7 @@ Work with gene sets
 Summary view
 Tool runner
 Back-end based on files instead of .h5 (for concurrent read-only access)
+Make URL namespace include hash of matrix, to allow concurrent access to multiple files
 Tool (page) to download the backing data (for data portal)
 Maybe use Celery to run tools in background
 
@@ -59,7 +60,7 @@ x Preparing hdf5 file for viewing multiple times makes the file grow indefinitel
 	- Instead of deleting and regenerating, overwrite
 
 Dropdowns in landscape view don't update on first render()
-
+Cache policy is broken
 
 Development stack
 =================
@@ -83,8 +84,6 @@ Anaconda Python distribution, using at least the following packages
 	Flask web server
 	h5py, HDF5 file I/O
 	click					conda install click
-	
-	ome.py, module for manipulating Ome files in HDF5 format
 
 
 Client (JavaScript)
@@ -114,7 +113,7 @@ Leaflet has the same issue, and is solved in the same way (see heatmap.js)
 	Helper libraries
 	----------------
 	whatwg-fetch									npm install whatwg-fetch
-	underscore										npm install underscore
+	lodash											npm install lodash
 
 
 	User interface
@@ -124,7 +123,6 @@ Leaflet has the same issue, and is solved in the same way (see heatmap.js)
 													npm install react-redux
 													npm install redux-thunk
 	Bootstrap										npm install bootstrap 				[Also get the CSS separately]
-	react-bootstrap									npm install react-bootstrap
 	Leaflet											npm install leaflet 				[Also get the CSS separately]
 	Autoscale-canvas (for high-DPI screens)			npm install autoscale-canvas
 

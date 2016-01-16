@@ -107,21 +107,8 @@ def send_tile(z,x,y):
 	img = ds.dz_get_zoom_image(x,y,z)
 	return serve_pil_image(img)
 
-
-
-class LoomRepo(object):
-	def __init__(self):
-		
-
-
 if __name__ == '__main__':
 	app.run(debug=False)
-
-
-
-
-
-
 
 
 
