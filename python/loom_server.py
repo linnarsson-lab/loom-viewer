@@ -4,7 +4,7 @@ import loom
 import sys
 import StringIO
 import json
-import click
+#import click
 from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
@@ -19,7 +19,7 @@ if len(sys.argv) != 2:
 try:
 	ds = loom.connect(sys.argv[1])
 except:
-	print "ERROR: file not found, or not a valid Ome file."
+	print "ERROR: file not found, or not a valid .loom file."
 	sys.exit(1)
 
 # Precompute zoom pyramid and tSNE
@@ -106,6 +106,13 @@ def serve_pil_image(img):
 def send_tile(z,x,y):
 	img = ds.dz_get_zoom_image(x,y,z)
 	return serve_pil_image(img)
+
+
+
+class LoomRepo(object):
+	def __init__(self):
+		
+
 
 if __name__ == '__main__':
 	app.run(debug=False)
