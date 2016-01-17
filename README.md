@@ -2,6 +2,11 @@
 
 Loom is a browser for working with large-scale single-cell RNA-seq datasets stored in `.loom` format. You can visualize the data using heatmaps, tSNE plots, PCA and sparklines. In the future, you may be able to run clustering and similar tools from inside Loom.
 
+### The `.loom` file format
+
+Loom works with files in `.loom` format, a fast, scaleable format for omics data. To learn how to create and work
+with `.loom` files, read the [`.loom` User Guide](/docs/loom_format.md).
+
 ### Using Loom
 
 1. Install [Anaconda](https://www.continuum.io/downloads) for **Python 2.7** (not 3.xx).
