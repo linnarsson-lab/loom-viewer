@@ -4,8 +4,7 @@ Loom is a browser for working with large-scale single-cell RNA-seq datasets stor
 
 ### The `.loom` file format
 
-Loom works with files in `.loom` format, a fast, scaleable format for omics data. To learn how to create and work
-with `.loom` files, read the [`.loom` User Guide](/docs/loom_format.md).
+Loom works with files in `.loom` format, a fast, scaleable format for omics data. To learn more, read the [`.loom` User Guide](/docs/loom_format.md).
 
 ### Using Loom
 
