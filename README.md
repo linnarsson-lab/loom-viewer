@@ -5,10 +5,22 @@ Loom is a browser for working with large-scale single-cell RNA-seq datasets stor
 ### Using Loom
 
 1. Install [Anaconda](https://www.continuum.io/downloads) for **Python 2.7** (not 3.xx).
-2. Download the latest Loom release and unzip it to a folder.
-3. Get a dataset in .loom format (e.g. "cortex.loom").
+2. Download the latest release (Loom v0.2-alpha).
+3. Get a dataset in .loom format (e.g. `data/cortex_5000.loom` in this Git repo).
 4. Run `loom cortex.loom` in your Terminal.
 5. Go to `localhost:5000` in your browser.
+6. Enjoy.
+
+##### Troubleshooting
+
+The Loom server starts and says something like:
+```
+Serving from: /Users/gioele/Loom
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+127.0.0.1 - - [16/Jan/2016 17:52:11] "GET / HTTP/1.1" 404 -
+```
+...but you get "404 Not Found" in the browser. Make sure you are running "loom" from this release folder, and not from the root of the repository.
+
  
 ### Building Loom
 
