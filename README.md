@@ -53,7 +53,7 @@ npm install leaflet
 npm install autoscale-canvas
 ```
 
-6.  Run `build` 
+Run `build` 
 
 This will create a new folder `release`. Run `release/loom filename.loom` to start the loom server.
 
