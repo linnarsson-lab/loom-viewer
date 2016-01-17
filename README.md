@@ -33,8 +33,8 @@ If you want to contribute to Loom, you need to set up your development environme
 1. Install `node` ([Node.js](https://nodejs.org/en/))
 2. Start Terminal and `cd` to where you want to work: `cd my-dev-dir`
 3. Clone this repository: `git clone https://github.com/linnarsson-lab/Loom.git`
-2. Go to the main Loom folder (`cd Loom`)
-3. Install required node modules using `npm`
+4. Go to the main Loom folder (`cd Loom`)
+5. Install required node modules using `npm`
 
 ```
 sudo npm install -g browserify
@@ -53,7 +53,7 @@ npm install leaflet
 npm install autoscale-canvas
 ```
 
-4.  Run `build` 
+6.  Run `build` 
 
 This will create a new folder `release`. Run `release/loom filename.loom` to start the loom server.
 
