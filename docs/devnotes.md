@@ -1,37 +1,14 @@
 
 Next steps
 ==========
-
-x Implement state management in Redux
-x Implement React components for the sidebar and menu
-x Implement canvas visualization of attributes
-x Smooth scrolling of heatmap and synced attributes
-x Plot attributes as
-	x Text
-	x Categories
-	x Quantities
-x Add indicators showing name of category, or scale for quantities
-x Prepare PCA and tSNE coordinates
-
+```
 Show popups overlaid on top of the heatmap (for Find genes)
 
-
-loom as command-line 
-	loom prepare
-		Check if the file needs to be prepared for browsing
-	loom prepare --refresh
-		x Create the image pyramid
-		x Run IncrementalPCA, then bh-tsne to create the landscape view
-		Options: --perplexity
-	loom browse
-		If the file is prepared, browse it. If not, complain.
-		
 Sparkline view
 	Sort by col attr
 	Color by col attr
 	Show col attribute on top
 	Enter list of genes to show
-
 Landscape view
 	Automatically scale marker diameters based on total number of markers
 	x Select X and Y coordinates
@@ -50,21 +27,13 @@ Back-end based on files instead of .h5 (for concurrent read-only access)
 Make URL namespace include hash of matrix, to allow concurrent access to multiple files
 Tool (page) to download the backing data (for data portal)
 Maybe use Celery to run tools in background
+```
 
-
-
-Bugs
-====
-
-x Preparing hdf5 file for viewing multiple times makes the file grow indefinitely
-	- Instead of deleting and regenerating, overwrite
-
-Dropdowns in landscape view don't update on first render()
-Cache policy is broken
 
 Development stack
 =================
 
+```
 As of Dec 2015, this is the technology stack used for developing Loom
 
 
@@ -126,4 +95,4 @@ Leaflet has the same issue, and is solved in the same way (see heatmap.js)
 	Leaflet											npm install leaflet 				[Also get the CSS separately]
 	Autoscale-canvas (for high-DPI screens)			npm install autoscale-canvas
 
-
+```
