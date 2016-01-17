@@ -5,7 +5,7 @@ Loom is a browser for working with large-scale single-cell RNA-seq datasets stor
 ### Using Loom
 
 1. Install [Anaconda](https://www.continuum.io/downloads) for **Python 2.7** (not 3.xx).
-2. Download the latest release (Loom v0.2-alpha).
+2. Download the [latest release](https://github.com/linnarsson-lab/Loom/releases).
 3. Get a dataset in .loom format (e.g. `data/cortex_5000.loom` in this Git repo).
 4. Run `loom cortex.loom` in your Terminal.
 5. Go to `localhost:5000` in your browser.
