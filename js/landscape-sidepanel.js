@@ -3,21 +3,21 @@ import React, { Component, PropTypes } from 'react';
 
 
 export class LandscapeSidepanel extends Component {
-	makeOptions() {
-		var options = Object.keys(this.props.colAttrs).sort().map((name)=> {
-			return <option key={name}>{name}</option>;
-		});
-		options.push(<option key="(gene)">(gene)</option>);
-		return options;
-	}
 	render() {
-//		console.log(this.props);
-		var xOptions = this.makeOptions();
-		var yOptions = this.makeOptions();
-		var colorOptions = this.makeOptions();
-		var showOptionsForColor = ["Quantitative", "Categorical"].map((name)=> {
-			return <option key={name}>{name}</option>;
+		var xOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
+			return <li key={name}><a onClick={(event)=>{this.props.onXCoordinateChange(name);}}>{name}</a></li>;
 		});
+		//xOptions.push(<li key="(gene)"><a>(gene)</a></li>);		
+		
+		var yOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
+			return <li key={name}><a onClick={(event)=>{this.props.onYCoordinateChange(name);}}>{name}</a></li>;
+		});
+		//yOptions.push(<li key="(gene)"><a>(gene)</a></li>);
+
+		var colorOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
+			return <li key={name}><a onClick={(event)=>{this.props.onColorAttrChange(name);}}>{name}</a></li>;
+		});
+		colorOptions.push(<li key="(gene)"><a onClick={(event)=>{this.props.onColorAttrChange("(gene)");}}>(gene)</a></li>);
 
 		var isTSNE = (this.props.xCoordinate == '_tSNE1') && (this.props.yCoordinate == '_tSNE2');
 		var isPCA = (this.props.xCoordinate == '_PC1') && (this.props.yCoordinate == '_PC2');
@@ -45,34 +45,51 @@ export class LandscapeSidepanel extends Component {
 						  </div>
 						</div>
 					</div>
+
 					<div className="form-group">
 						<label>X Coordinate</label>
-						<select className="form-control" value={this.props.xCoordinate} onChange={(event)=>{this.props.onXCoordinateChange(event.target.value)}}>
-							{xOptions}
-						</select>
-						{this.props.xCoordinate == "(gene)" ? 
-							<input className="form-control" placeholder="Gene" value={this.props.xGene} onChange={(event)=>{this.props.onXGeneChange(event.target.value)}}/> : 
-							<span></span>
-						}
+						<div className="btn-group btn-block">
+							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								{this.props.xCoordinate + "  "}<span className="caret"></span>
+							</button>
+							<ul className="dropdown-menu btn-block scrollable-menu">
+								{xOptions}
+							</ul>
+						</div>				
 					</div>
+
+
 					<div className="form-group">
 						<label>Y Coordinate</label>
-						<select className="form-control" value={this.props.yCoordinate} onChange={(event)=>{this.props.onYCoordinateChange(event.target.value)}}>
-							{yOptions}
-						</select>
-						{this.props.yCoordinate == "(gene)" ? 
-							<input className="form-control" placeholder="Gene" value={this.props.yGene} onChange={(event)=>{this.props.onYGeneChange(event.target.value)}}/> : 
-							<span></span>
-						}
+						<div className="btn-group btn-block">
+							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								{this.props.yCoordinate + "  "}<span className="caret"></span>
+							</button>
+							<ul className="dropdown-menu btn-block scrollable-menu">
+								{yOptions}
+							</ul>
+						</div>				
 					</div>
+
 					<div className="form-group">
 						<label>Color</label>
-						<select className="form-control" value={this.props.colorAttr} onChange={(event)=>{this.props.onColorAttrChange(event.target.value)}}>
-							{colorOptions}
-						</select>
-						<select className="form-control" value={this.props.colorMode} onChange={(event)=>{this.props.onColorModeChange(event.target.value)}}>
-							{showOptionsForColor}
-						</select>
+						<div className="btn-group btn-block">
+							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								{this.props.colorAttr + "  "}<span className="caret"></span>
+							</button>
+							<ul className="dropdown-menu btn-block scrollable-menu">
+								{colorOptions}
+							</ul>
+						</div>
+						<div className="btn-group btn-block">
+							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								{this.props.colorMode + "  "}<span className="caret"></span>
+							</button>
+							<ul className="dropdown-menu">
+								<li key="Categorical"><a onClick={(event)=>{this.props.onColorModeChange("Categorical");}}>Categorical</a></li>
+								<li key="Quantitative"><a onClick={(event)=>{this.props.onColorModeChange("Quantitative");}}>Quantitative</a></li>
+							</ul>
+						</div>
 						{this.props.colorAttr == "(gene)" ? 
 							<input className="form-control" placeholder="Gene" value={this.props.colorGene} onChange={(event)=>{this.props.onColorGeneChange(event.target.value)}}/> : 
 							<span></span>

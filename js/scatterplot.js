@@ -50,7 +50,7 @@ export class Scatterplot extends React.Component {
 
 		// Calculate the color scale
 		if(color.length == 0) {
-			color = Array.from({length: x.length}, () => "black");
+			color = Array.from({length: x.length}, () => "grey");
 		} else {
 			// Do we need to categorize the color scale?
 			if(this.props.colorMode == "Categorical" || !_.every(color, x => isFinite(x))) {
