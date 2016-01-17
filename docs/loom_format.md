@@ -1,4 +1,4 @@
-### `.loom` file format
+### `.loom` User Guide
 
 We had previously created the CEF format as a standard for interchange of large-scale gene expression data.
 However, as datasets grow beyond thousands of samples and approach millions, CEF is no longer up to the task. 
