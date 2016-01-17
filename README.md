@@ -25,7 +25,9 @@ Serving from: /Users/gioele/Loom
 ### Building Loom
 
 1. Install `node` ([Node.js](https://nodejs.org/en/))
-2. Use Terminal and go to the main Loom folder (`cd Loom`)
+2. Start Terminal and `cd` to where you want to work: `cd my-dev-dir`
+3. Clone this repository: `git clone https://github.com/linnarsson-lab/Loom.git`
+2. Go to the main Loom folder (`cd Loom`)
 3. Install required node modules using `npm`
 
 ```
