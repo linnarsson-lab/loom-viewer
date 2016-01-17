@@ -47,6 +47,16 @@ print "Serving from: " + os.getcwd()
 app = LoomServer(__name__)
 
 #
+# URL namespace
+#
+# /repo 										- List of all projects and datasets (JSON)
+# /repo/public/{project}/{dataset}/rev15.json	- Metadata (JSON)
+# /repo/public/{project}/{dataset}/tiles 	 	- Heatmap images
+# /repo/public/{project}/{dataset}/row/ 	 	- Row data
+# /repo/public/{project}/{dataset}/col/ 	 	- Column data
+
+
+#
 # Static assets
 #
 
