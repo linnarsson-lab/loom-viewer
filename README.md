@@ -19,7 +19,7 @@ Serving from: /Users/gioele/Loom
  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 127.0.0.1 - - [16/Jan/2016 17:52:11] "GET / HTTP/1.1" 404 -
 ```
-...but you get "404 Not Found" in the browser. Make sure you are running "loom" from this release folder, and not from the root of the repository.
+...but you get "404 Not Found" in the browser. Make sure you are running "loom" from the release folder, and not from the root of the repository.
 
  
 ### Building Loom
