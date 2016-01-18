@@ -5,7 +5,7 @@ However, as datasets grow beyond thousands of samples and approach millions, CEF
 CEF files must always be loaded into memory, which is slow and may sometimes be impossible. Therefore, we 
 are experimenting with a new format that supports compression and efficient (chunked) random access.
 
-Like CEF, `.loom` files store a matrix of numers along with row and column attributes. Typically, rows
+Like CEF, `.loom` files store a matrix of numbers along with row and column attributes. Typically, rows
 represent genes and have attributes such as `GeneName`, `Chromosome`, `Strand`, etc. Columns usually represent
 cells (or, more generally, samples) and may have attributes such as `CellID`, `Strain`, `Sex`, `Age`, etc. 
 `.loom` files are standard [HDF5](https://www.hdfgroup.org) files with the following special restrictions:
