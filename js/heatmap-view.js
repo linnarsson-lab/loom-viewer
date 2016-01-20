@@ -14,21 +14,25 @@ export class HeatmapView extends Component {
 						rowAttrs={this.props.fileInfo.rowAttrs} 
 						selectedRowAttr={this.props.heatmapState.selectedRowAttr}
 						selectedColAttr={this.props.heatmapState.selectedColAttr}
+						selectedRowGenes={"Actb Gad1"}
 						selectedRowMode={this.props.heatmapState.selectedRowMode}
 						selectedColMode={this.props.heatmapState.selectedColMode}
+						selectedColGene={"Actb"}
 						colAttrs={this.props.fileInfo.colAttrs}
 						onFindGenes={this.props.onFindGenesChanged}
 						onRowAttrChange={this.props.onSelectedRowAttrChange}
-						onColAttrChange={this.props.onSelectedColAttrChange}
 						onRowModeChange={this.props.onSelectedRowModeChange}
+						onRowGenesChange={this.props.onSelectedRowModeChange}
+						onColAttrChange={this.props.onSelectedColAttrChange}
 						onColModeChange={this.props.onSelectedColModeChange}
+						onColGeneChange={this.props.onSelectedRowModeChange}
 					/>
 				</div>
 				<div className="col-xs-12 col-sm-9 no-line-space">
 					<Sparkline 
 						orientation="horizontal"
 						width={600}
-						height={80}
+						height={20}
 						data={this.props.fileInfo.colAttrs[this.props.heatmapState.selectedColAttr]}
 						dataRange={[this.props.heatmapState.dataBounds[0],this.props.heatmapState.dataBounds[2]]}
 						screenRange={[this.props.heatmapState.screenBounds[0],this.props.heatmapState.screenBounds[2]]}
@@ -45,7 +49,7 @@ export class HeatmapView extends Component {
 					/>
 					<Sparkline 
 						orientation="vertical"
-						width={80}
+						width={120}
 						height={600}
 						data={this.props.fileInfo.rowAttrs[this.props.heatmapState.selectedRowAttr]}
 						dataRange={[this.props.heatmapState.dataBounds[1],this.props.heatmapState.dataBounds[3]]}

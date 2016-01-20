@@ -67,7 +67,7 @@ import scipy
 import scipy.misc
 import scipy.ndimage
 from sklearn.decomposition import IncrementalPCA
-from bh_tsne import bh_tsne
+from sklearn.manifold import TSNE
 import __builtin__
 
 pd.set_option('display.multi_sparse', False)
@@ -396,6 +396,7 @@ class LoomConnection(object):
 		col = 0
 		while col < self.shape[1]:
 			batch = self.file['matrix'][:,col:col+batch_size].T
+			batch = np.log2(batch + 1)
 			ipca.partial_fit(batch)
 			col = col + batch_size
 		# Project to PCA space
@@ -404,6 +405,7 @@ class LoomConnection(object):
 		col = 0
 		while col < self.shape[1]:
 			batch = self.file['matrix'][:,col:col+batch_size].T
+			batch = np.log2(batch + 1)
 			Xbatch = ipca.transform(batch)
 			Xtransformed.append(Xbatch)
 			col = col + batch_size
@@ -416,13 +418,14 @@ class LoomConnection(object):
 
 		# Then, perform tSNE based on the 100 first components
 		print "  Computing tSNE based on %s PCA components." % n_components
-		tsne = bh_tsne(Xtransformed)
-		print tsne.shape
+		model = TSNE(metric='correlation')
+		tsne = model.fit_transform(Xtransformed) 
 		
 		# Save first two dimensions as column attributes
 		print "  Saving tSNE dimensions as column attributes _tSNE1 and _tSNE2."
 		self.set_attr("_tSNE1", tsne[:,0], axis = 1)
 		self.set_attr("_tSNE2", tsne[:,1], axis = 1)
+
 
 	#############
 	# DEEP ZOOM #

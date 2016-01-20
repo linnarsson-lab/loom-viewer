@@ -28,10 +28,17 @@ export class SparklineView extends Component {
 					/>
 				</div>
 				<div className="col-xs-12 col-sm-9 no-line-space">
+					{/* We're borrowing the Leaflet zoom buttons */}
+				  	<div className="leaflet-top leaflet-left">
+						<div className="leaflet-control-zoom leaflet-bar leaflet-control">
+							<a className="leaflet-control-zoom-in" title="Zoom in">+</a>
+							<a className="leaflet-control-zoom-out leaflet-disabled" title="Zoom out">-</a>
+						</div>
+					</div>				
 					<Sparkline 
 						orientation="horizontal"
 						width={600}
-						height={80}
+						height={20}
 						data={colData}
 						dataRange={[0, colData.length]}
 						screenRange={[0,600]}

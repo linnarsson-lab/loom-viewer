@@ -90,10 +90,12 @@ export class LandscapeSidepanel extends Component {
 								<li key="Quantitative"><a onClick={(event)=>{this.props.onColorModeChange("Quantitative");}}>Quantitative</a></li>
 							</ul>
 						</div>
+						<div className="btn-group btn-block">
 						{this.props.colorAttr == "(gene)" ? 
 							<input className="form-control" placeholder="Gene" value={this.props.colorGene} onChange={(event)=>{this.props.onColorGeneChange(event.target.value)}}/> : 
 							<span></span>
 						}
+						</div>
 					</div>
 				</form>            
 			</div>

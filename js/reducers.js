@@ -83,7 +83,7 @@ const initialHeatmapState = {
 	genesToFind: "Actb",
 	selectedRowAttr: Object.keys(window.fileinfo.rowAttrs)[0],
 	selectedRowMode: 'Text',
-	selectedColAttr: 'Well', //Object.keys(window.fileinfo.colAttrs)[0],
+	selectedColAttr: Object.keys(window.fileinfo.colAttrs)[0],
 	selectedColMode: 'Text'
 }
 

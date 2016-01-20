@@ -15,6 +15,7 @@ class CategoriesPainter {
 		var xoffset = 0;
 		var fontArgs = context.font.split(' ');
 		context.font = (cwidth - 1) + 'px ' + fontArgs[fontArgs.length - 1];
+		context.fillStyle = "grey";
 		this.categories.forEach((category) => {
 			var y = 0;
 			groupedData.forEach((group) => {
@@ -33,12 +34,12 @@ class CategoriesPainter {
 	}
 }
 
-class QuantitiesPainter {
+class BarPainter {
 	paint(context, width, height, pixelsPer, yoffset, groupedData) {
 		var max = Number.MIN_VALUE;
 		var min = Number.MAX_VALUE;
 		var fontArgs = context.font.split(' ');
-		context.font = '10px ' + fontArgs[fontArgs.length - 1];
+		context.font = '9px ' + fontArgs[fontArgs.length - 1];
 		var means = groupedData.map((group) => {
 			var mean = 0;
 			for (var i = 0; i < group.length; i++) {
@@ -56,6 +57,7 @@ class QuantitiesPainter {
 		if (min >= 0 && min < 0.5*max) {
 			min = 0;
 		}
+		context.fillStyle = "grey";
 		means.forEach((m)=>{
 			context.fillRect(0, yoffset, (m-min)/(max-min)*width, pixelsPer);
 			yoffset += pixelsPer;
@@ -136,11 +138,11 @@ export class Sparkline extends React.Component {
 
 		// Which painter should we use?
 		var painter = new TextPainter();
-		if(this.props.mode == 'Categories') {
+		if(this.props.mode == 'Categorical') {
 			painter = new CategoriesPainter(this.props.data, width/10);
 		}
-		if(this.props.mode == 'Quantities') {
-			painter = new QuantitiesPainter(this.props.data, width/10);
+		if(this.props.mode == 'Bars') {
+			painter = new BarPainter(this.props.data, width/10);
 		}
 		painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
 		context.restore();
