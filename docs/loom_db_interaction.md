@@ -72,48 +72,48 @@ This file should contain descriptions for each class abbrev, and the attribute c
 
 #### Example dataset definition
 
-{
-	"dataset": {
-		"metadata": {
-			"creator": "Peter",
-			"created": "2016-01-21",
-			"description": "Test dataset"
-		},
-		"data": {
-			"cell": [{
-				"step": "add",
-				"attribute": "chip",
-				"labels": ["1772099-293", "1772099-294"]
-			}, {
-				"step": "restrict",
-				"attribute": "celltype_level2",
-				"labels": ["neuro2"]
-			}, {
-				"step": "exclude",
-				"attribute": "green",
-				"value": "0"
-			}, {
-				"step": "exclude",
-				"attribute": "area",
-				"value": "..10.0"
-			}, {
-				"step": "add",
-				"attribute": "cellid",
-				"labels": ["1772099-113_A01", "1772099-114_B02"]
-			}],
-			"transcript": [{
-				"step": "exclude",
-				"attribute": "chromsome",
-				"labels": ["CTRL"]
-			}]
-		},
-		"attributes": {
-			"cell": {
-				"include": ["diameter", "area", "chip", "sex"]
+	{
+		"dataset": {
+			"metadata": {
+				"creator": "Peter",
+				"created": "2016-01-21",
+				"description": "Test dataset"
 			},
-			"transcript": {
-				"exclude": ["length", "chromosome"]
+			"data": {
+				"cell": [{
+					"step": "add",
+					"attribute": "chip",
+					"labels": ["1772099-293", "1772099-294"]
+				}, {
+					"step": "restrict",
+					"attribute": "celltype_level2",
+					"labels": ["neuro2"]
+				}, {
+					"step": "exclude",
+					"attribute": "green",
+					"value": "0"
+				}, {
+					"step": "exclude",
+					"attribute": "area",
+					"value": "..10.0"
+				}, {
+					"step": "add",
+					"attribute": "cellid",
+					"labels": ["1772099-113_A01", "1772099-114_B02"]
+				}],
+				"transcript": [{
+					"step": "exclude",
+					"attribute": "chromsome",
+					"labels": ["CTRL"]
+				}]
+			},
+			"attributes": {
+				"cell": {
+					"include": ["diameter", "area", "chip", "sex"]
+				},
+				"transcript": {
+					"exclude": ["length", "chromosome"]
+				}
 			}
 		}
 	}
-}
