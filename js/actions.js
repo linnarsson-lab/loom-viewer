@@ -39,14 +39,16 @@ function rowForGene(rowAttrs, gene) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchGene(rowAttrs, gene) {
+export function fetchGene(rowAttrs, gene, cache) {
 	return dispatch => {
 		console.log("fetchGene");
-		var row = rowForGene(rowAttrs, gene);
+		var row = rowForGene(rowAttrs, gene, cache);
 		if(row == -1) {
 			return;
 		}
-
+		if(cache.hasOwnProperty(gene)) {
+			return;
+		}
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)

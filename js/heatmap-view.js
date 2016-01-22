@@ -11,7 +11,7 @@ export class HeatmapView extends Component {
 	var hs = this.props.heatmapState;
 	var rowData = fi.rowAttrs[hs.rowAttr]
 	if(hs.rowAttr == "(gene positions)") {
-		var genes = hs.rowGenes.split(' ');
+		var genes = hs.rowGenes.trim().split(/[ ,\r\n]+/);
 		rowData = _.map(fi.rowAttrs["Gene"],(x)=>(_.indexOf(genes, x) != -1 ? x : ""));
 	}
 	return (

@@ -3,38 +3,28 @@ import { render, findDOMNode } from 'react-dom';
 import autoscale from 'autoscale-canvas';
 import { nMostFrequent } from './util';
 import * as _ from 'lodash';
+import * as colors from './colors';
 
 
 class CategoriesPainter {
-	constructor(data, n) {
-		this.categories = nMostFrequent(data, n);
-		this.n = n;
+	constructor(data) {
+		this.categories = nMostFrequent(data, 20);
 	}
 
 	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-		var cwidth = width/this.n;
-		var xoffset = 0;
+		var cwidth = Math.min(width, 20);
 		var fontArgs = context.font.split(' ');
 		context.font = (cwidth - 1) + 'px ' + fontArgs[fontArgs.length - 1];
-		context.fillStyle = "grey";
-		this.categories.forEach((category) => {
-			var y = 0;
-			groupedData.forEach((group) => {
-				if (group.indexOf(category) >= 0) {
-					context.fillRect(xoffset, yoffset + y, cwidth, pixelsPer);
-				}
-				y += pixelsPer;
-			});
-			context.save();
-			context.rotate(90*Math.PI/180);
-			context.fillStyle = "blue";
-			context.fillText(category, 0, -xoffset-2);			
-			context.restore();
-			xoffset += cwidth;
+		var y = 0;
+		groupedData.forEach((group) => {
+			var commonest = nMostFrequent(group, 1)[0];
+			var color = this.categories.indexOf(commonest) + 1;
+			context.fillStyle = colors.category20[color];
+			context.fillRect(0, yoffset + y, cwidth, pixelsPer);
+			y += pixelsPer;
 		});
 	}
 }
-
 class BarPainter {
 	paint(context, width, height, pixelsPer, yoffset, groupedData) {
 		var max = Number.MIN_VALUE;
@@ -69,6 +59,37 @@ class BarPainter {
 		context.fillText(Number(min.toPrecision(3)), 0, -2);			
 		context.fillText(Number(max.toPrecision(3)), 0, -width+2+10);			
 		context.restore();
+	}
+}
+
+class QuantitativePainter {
+	paint(context, width, height, pixelsPer, yoffset, groupedData) {
+
+		var max = Number.MIN_VALUE;
+		var min = Number.MAX_VALUE;
+		var means = groupedData.map((group) => {
+			var mean = 0;
+			for (var i = 0; i < group.length; i++) {
+				mean += group[i];
+			}
+			mean /= group.length;
+			if(mean > max) {
+				max = mean;
+			}
+			if(mean < min) {
+				min = mean;
+			}
+			return mean;
+		});
+		if (min >= 0 && min < 0.5*max) {
+			min = 0;
+		}
+		var color = means.map(x => colors.solar9[Math.round((x - min)/(max - min)*colors.solar9.length)]);
+		for(var ix = 0; ix < means.length; ix++) {
+			context.fillStyle = color[ix];
+			context.fillRect(0, yoffset, width, pixelsPer);
+			yoffset += pixelsPer;			
+		}
 	}
 }
 
@@ -162,6 +183,9 @@ export class Sparkline extends React.Component {
 		}
 		if(this.props.mode == 'Bars') {
 			painter = new BarPainter(this.props.data, width/10);
+		}
+		if(this.props.mode == 'Quantitative') {
+			painter = new QuantitativePainter();
 		}
 		painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
 		context.restore();

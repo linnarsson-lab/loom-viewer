@@ -16,28 +16,19 @@ function viewState(state=initialViewState, action) {
 
 
 const initialSparklineState = {
+	type: "SET_SPARKLINE_PROPS",	// This will be set to the last action type
+
 	colAttr: "Tissue",
 	colMode: "Categorical",
 	orderByAttr: "(unordered)",	// meaning, original order
-	colorByAttr: "Tissue",
-	colorByMode: "Categorical",
-	genesToFind: ""
+	geneMode: "Quantitative",
+	genes: ""
 }
 
 function sparklineState(state=initialSparklineState, action) {
 	switch (action.type) {
-		case 'SPARKLINE_SET_GENES_TO_FIND':
-			return Object.assign({}, state,	{genesToFind: action.genes});
-		case 'SPARKLINE_SET_COL_ATTR':
-			return Object.assign({}, state,	{colAttr: action.attr});
-		case 'SPARKLINE_SET_COL_MODE':
-			return Object.assign({}, state,	{colMode: action.mode});
-		case 'SPARKLINE_SET_COLOR_ATTR':
-			return Object.assign({}, state,	{colorByAttr: action.attr});
-		case 'SPARKLINE_SET_COLOR_MODE':
-			return Object.assign({}, state,	{colorByMode: action.mode});
-		case 'SPARKLINE_SET_ORDER_ATTR':
-			return Object.assign({}, state,	{orderByAttr: action.attr});
+		case 'SET_SPARKLINE_PROPS':
+			return Object.assign({}, state,	action);		
 		default:
 			return state
 	}

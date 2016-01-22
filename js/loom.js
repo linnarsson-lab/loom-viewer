@@ -30,19 +30,6 @@ class App extends Component {
 					heatmapState={this.props.heatmapState}
 					fileInfo={this.props.fileInfo}
 					dispatch={dispatch}
-					
-					onFindGenesChanged={(genes)=>dispatch({type: 'SET_GENES_TO_FIND', genes: genes })}
-					onHeatmapBoundsChanged={(bounds)=>dispatch({ 
-						type: 'SET_HEATMAP_BOUNDS', 
-						screenBounds: bounds.screenBounds,
-						dataBounds: bounds.dataBounds,
-						center: bounds.center,
-						zoom: bounds.zoom
-					})}
-					onSelectedRowAttrChange={(attr)=>dispatch({type:'SET_SELECTED_ROW_ATTR', attr: attr})}
-					onSelectedColAttrChange={(attr)=>dispatch({type: 'SET_SELECTED_COL_ATTR', attr: attr})}
-					onSelectedRowModeChange={(mode)=>dispatch({type: 'SET_SELECTED_ROW_MODE', mode: mode})}
-					onSelectedColModeChange={(mode)=>dispatch({type: 'SET_SELECTED_COL_MODE', mode: mode})}
 				/>
 			break;
 		case "Sparkline":
@@ -51,13 +38,7 @@ class App extends Component {
 					dataState={this.props.dataState}
 					sparklineState={this.props.sparklineState}
 					fileInfo={this.props.fileInfo}
-
-					onFindGenesChange={(genes)=>dispatch({type: 'SPARKLINE_SET_GENES_TO_FIND', genes: genes })}
-					onColAttrChange={(attr)=>dispatch({type: 'SPARKLINE_SET_COL_ATTR', attr: attr})}
-					onColModeChange={(mode)=>dispatch({type: 'SPARKLINE_SET_COL_MODE', mode: mode})}
-					onColorByAttrChange={(attr)=>dispatch({type: 'SPARKLINE_SET_COLOR_ATTR', attr: attr})}
-					onColorByModeChange={(mode)=>dispatch({type: 'SPARKLINE_SET_COLOR_MODE', mode: mode})}
-					onOrderByAttrChange={(attr)=>dispatch({type: 'SPARKLINE_SET_ORDER_ATTR', attr: attr})}
+					dispatch={dispatch}
 				/>
 			break;
 		case "Landscape":
@@ -79,7 +60,7 @@ class App extends Component {
 					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene));
 				}}
 				onYGeneChange={(gene)=>{
-					dispatch({type: 'SET_LANDSCAPE_Y_GENE', gene: gene})
+					dispatch({type: 'SET_LANDSCAPE_Y_GENE', gene: gene});
 					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene));
 				}}
 			/>
