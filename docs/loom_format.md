@@ -1,19 +1,23 @@
-### `.loom` file format
+### `.loom` User Guide
 
 We had previously created the CEF format as a standard for interchange of large-scale gene expression data.
 However, as datasets grow beyond thousands of samples and approach millions, CEF is no longer up to the task. 
 CEF files must always be loaded into memory, which is slow and may sometimes be impossible. Therefore, we 
 are experimenting with a new format that supports compression and efficient (chunked) random access.
 
+Like CEF, `.loom` files store a matrix of numbers along with row and column attributes. Typically, rows
+represent genes and have attributes such as `GeneName`, `Chromosome`, `Strand`, etc. Columns usually represent
+cells (or, more generally, samples) and may have attributes such as `CellID`, `Strain`, `Sex`, `Age`, etc. 
 `.loom` files are standard [HDF5](https://www.hdfgroup.org) files with the following special restrictions:
 
 * The main matrix is stored as `/matrix` and is a two-dimensional float32 HDF5 Dataset.
-* Row attributes are stored under `/row_attrs/`and `/col_attrs/`, respectively.
+* Row and column attributes are stored under `/row_attrs/`and `/col_attrs/`, respectively.
 * Row and column attributes are one-dimensional HDF5 Datasets
-  * The datatype must be either `float32` or `string`
+  * Attribute values must be either all `float32` or all `string`
   * The number of elements must exactly match the row/column dimensions of the `matrix`
-
-
+* Two attributes are mandatory:
+  * Column attribute `CellID` of type `string`. Values must be distinct.
+  * Row attribute `Gene` of type `string`. Values must be distinct, and typically should be official gene symbols.
 
 ### Python module (`loom.py`)
 

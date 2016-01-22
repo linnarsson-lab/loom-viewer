@@ -1,12 +1,12 @@
 
 #### Meeting notes Peter & Sten 20160113
 
-Nightly updates (when there are diffs) of all projects + the whole data set in central repo.
+Nightly updates (when there are diffs) of all datasets under loom_repo/public/.
 This involves updating data matrix, attributes, clusterings...
-Older versions of project folders are kept, identified by a date.
+Older versions of dataset .loom files are kept, identified by a date.
 
-A project is defined in database GUI by include-criteria for cells and exclude-criteria for cell-attributes.
-The project definition can be edited by its owner and then implicitly rerun at save.
+A dataset is defined in database GUI by include/exclude-criteria for cell properties and cell attributes.
+The dataset .json definition can only be edited by its owner and then implicitly rerun at save.
 
 ##### Directory structure
 
@@ -26,7 +26,7 @@ to the user only) folders, each of which contain projects, which contain dataset
 				dataset_midbrain_human_embryo/
 			proj_cortex/
 			
-		gioele/  # A project is only updated when requested by Gioele
+		gioele/  # A dataset in here is only updated when requested by Gioele
 			public/
 				proj_midbrain/
 					dataset_midbrain_annot_level2/
@@ -57,7 +57,7 @@ folder.
 A user can create a new attribute in the loom browser and decide to export it to the database.
 Attributes are never replaced. If exporting with an existing name, a new version number may be attached.
 
-On export, an attribute definition file (JSON?) is deposited into the 'new_attributes' directory.
+On export, an attribute definition file (.json) is deposited into the 'new_attributes' directory.
 This directory is regularly scanned and data imported by the database machinery.
 This file should contain descriptions for each class abbrev, and the attribute creator should be included, something like:
 
@@ -70,3 +70,50 @@ This file should contain descriptions for each class abbrev, and the attribute c
 	  		...... }
 	}
 
+#### Example dataset definition
+
+	{
+		"dataset": {
+			"metadata": {
+				"creator": "Peter",
+				"created": "2016-01-21",
+				"description": "Test dataset"
+			},
+			"data": {
+				"cell": [{
+					"step": "add",
+					"attribute": "chip",
+					"labels": ["1772099-293", "1772099-294"]
+				}, {
+					"step": "restrict",
+					"attribute": "celltype_level2",
+					"labels": ["neuro2"]
+				}, {
+					"step": "exclude",
+					"attribute": "green",
+					"value": "0"
+				}, {
+					"step": "exclude",
+					"attribute": "area",
+					"value": "..10.0"
+				}, {
+					"step": "add",
+					"attribute": "cellid",
+					"labels": ["1772099-113_A01", "1772099-114_B02"]
+				}],
+				"transcript": [{
+					"step": "exclude",
+					"attribute": "chromsome",
+					"labels": ["CTRL"]
+				}]
+			},
+			"attributes": {
+				"cell": {
+					"include": ["diameter", "area", "chip", "sex"]
+				},
+				"transcript": {
+					"exclude": ["length", "chromosome"]
+				}
+			}
+		}
+	}
