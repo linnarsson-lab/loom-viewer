@@ -10,8 +10,8 @@ export class SparklineSidepanel extends Component {
 		var orderByOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>{this.props.onOrderByChange(name);}}>{name}</a></li>;
 		});
-		var showOptionsForCols = ["as Text", "as Quantities", "as Categories"].map((name)=> {
-			return <li key={name}><a onClick={(event)=>{this.props.onColModeChange(name.substr(3));}}>{name}</a></li>;
+		var showOptionsForCols = ["Text", "Bars", "Quantitative", "Categorical"].map((name)=> {
+			return <li key={name}><a onClick={(event)=>{this.props.onColModeChange(name);}}>{name}</a></li>;
 		});
 		var colorByOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
 			return <li key={name}><a onClick={(event)=>{this.props.onColorByAttrChange(name);}}>{name}</a></li>;

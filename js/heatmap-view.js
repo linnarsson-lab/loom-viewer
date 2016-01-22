@@ -2,30 +2,27 @@ import React, { Component, PropTypes } from 'react';
 import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
 import { Sparkline } from './sparkline'
+import * as _ from 'lodash';
 
 export class HeatmapView extends Component {
   render() {
+	var dispatch = this.props.dispatch;
+	var fi = this.props.fileInfo;
+	var hs = this.props.heatmapState;
+	var rowData = fi.rowAttrs[hs.rowAttr]
+	if(hs.rowAttr == "(gene positions)") {
+		var genes = hs.rowGenes.split(' ');
+		rowData = _.map(fi.rowAttrs["Gene"],(x)=>(_.indexOf(genes, x) != -1 ? x : ""));
+	}
 	return (
+
 		<div className="container-fluid">
 			<div className="row">
 				<div className="col-xs-6 col-sm-3">
 					<HeatmapSidepanel 
-						genesToFind={this.props.heatmapState.genesToFind}
-						rowAttrs={this.props.fileInfo.rowAttrs} 
-						selectedRowAttr={this.props.heatmapState.selectedRowAttr}
-						selectedColAttr={this.props.heatmapState.selectedColAttr}
-						selectedRowGenes={"Actb Gad1"}
-						selectedRowMode={this.props.heatmapState.selectedRowMode}
-						selectedColMode={this.props.heatmapState.selectedColMode}
-						selectedColGene={"Actb"}
-						colAttrs={this.props.fileInfo.colAttrs}
-						onFindGenes={this.props.onFindGenesChanged}
-						onRowAttrChange={this.props.onSelectedRowAttrChange}
-						onRowModeChange={this.props.onSelectedRowModeChange}
-						onRowGenesChange={this.props.onSelectedRowModeChange}
-						onColAttrChange={this.props.onSelectedColAttrChange}
-						onColModeChange={this.props.onSelectedColModeChange}
-						onColGeneChange={this.props.onSelectedRowModeChange}
+						fileInfo={fi}
+						heatmapState={hs}
+						dispatch={dispatch}
 					/>
 				</div>
 				<div className="col-xs-12 col-sm-9 no-line-space">
@@ -33,28 +30,34 @@ export class HeatmapView extends Component {
 						orientation="horizontal"
 						width={600}
 						height={20}
-						data={this.props.fileInfo.colAttrs[this.props.heatmapState.selectedColAttr]}
-						dataRange={[this.props.heatmapState.dataBounds[0],this.props.heatmapState.dataBounds[2]]}
-						screenRange={[this.props.heatmapState.screenBounds[0],this.props.heatmapState.screenBounds[2]]}
-						mode={this.props.heatmapState.selectedColMode}
+						data={fi.colAttrs[hs.colAttr]}
+						dataRange={[hs.dataBounds[0],hs.dataBounds[2]]}
+						screenRange={[hs.screenBounds[0],hs.screenBounds[2]]}
+						mode={hs.colMode}
 					/>					
 					<Heatmap
-						zoom={this.props.heatmapState.zoom}
-						center={this.props.heatmapState.center}
-						shape={this.props.fileInfo.shape}
-						zoomRange={this.props.fileInfo.zoomRange}
-						fullZoomWidth={this.props.fileInfo.fullZoomWidth}
-						fullZoomHeight={this.props.fileInfo.fullZoomHeight}
-						onViewChanged={this.props.onHeatmapBoundsChanged}
+						zoom={hs.zoom}
+						center={hs.center}
+						shape={fi.shape}
+						zoomRange={fi.zoomRange}
+						fullZoomWidth={fi.fullZoomWidth}
+						fullZoomHeight={fi.fullZoomHeight}
+						onViewChanged={(bounds)=>dispatch({ 
+							type: 'SET_HEATMAP_PROPS', 
+							screenBounds: bounds.screenBounds,
+							dataBounds: bounds.dataBounds,
+							center: bounds.center,
+							zoom: bounds.zoom
+						})}
 					/>
 					<Sparkline 
 						orientation="vertical"
 						width={120}
 						height={600}
-						data={this.props.fileInfo.rowAttrs[this.props.heatmapState.selectedRowAttr]}
-						dataRange={[this.props.heatmapState.dataBounds[1],this.props.heatmapState.dataBounds[3]]}
-						screenRange={[this.props.heatmapState.screenBounds[1],this.props.heatmapState.screenBounds[3]]}
-						mode={this.props.heatmapState.selectedRowMode}
+						data={rowData}
+						dataRange={[hs.dataBounds[1],hs.dataBounds[3]]}
+						screenRange={[hs.screenBounds[1],hs.screenBounds[3]]}
+						mode={hs.rowAttr == "(gene positions)" ? "TextAlways" : hs.rowMode}
 					/>
 				</div>
 			</div>
@@ -66,10 +69,5 @@ HeatmapView.propTypes = {
 	dataState: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,
-	onHeatmapBoundsChanged: PropTypes.func.isRequired,
-	onFindGenesChanged: PropTypes.func.isRequired,
-	onSelectedRowAttrChange: 	PropTypes.func,
-	onSelectedColAttrChange: 	PropTypes.func,
-	onSelectedRowModeChange: 	PropTypes.func,
-	onSelectedColModeChange: 	PropTypes.func
+	dispatch: PropTypes.func.isRequired
 }

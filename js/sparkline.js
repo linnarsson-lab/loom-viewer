@@ -2,6 +2,7 @@ import React, {PropTypes} from 'react';
 import { render, findDOMNode } from 'react-dom';
 import autoscale from 'autoscale-canvas';
 import { nMostFrequent } from './util';
+import * as _ from 'lodash';
 
 
 class CategoriesPainter {
@@ -39,7 +40,7 @@ class BarPainter {
 		var max = Number.MIN_VALUE;
 		var min = Number.MAX_VALUE;
 		var fontArgs = context.font.split(' ');
-		context.font = '9px ' + fontArgs[fontArgs.length - 1];
+		context.font = '8px ' + fontArgs[fontArgs.length - 1];
 		var means = groupedData.map((group) => {
 			var mean = 0;
 			for (var i = 0; i < group.length; i++) {
@@ -86,6 +87,20 @@ class TextPainter {
 		});
 	}
 }
+class TextAlwaysPainter {
+	paint(context, width, height, pixelsPer, yoffset, groupedData) {
+		groupedData.forEach((group) => {
+			var text = _.find(group, (s) => s != '');
+			if(text != undefined) {
+				var fontArgs = context.font.split(' ');
+				var fontSize = 10;
+				context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
+				context.fillText(text, 1, yoffset + pixelsPer/2 + fontSize/2 - 1);				
+			}
+			yoffset += pixelsPer;
+		});
+	}
+}
 
 export class Sparkline extends React.Component {
 	constructor(props) {
@@ -109,6 +124,7 @@ export class Sparkline extends React.Component {
 	}
 
 	paint(context) {
+
 		if(this.props.data == undefined) {
 			return;
 		}
@@ -138,6 +154,9 @@ export class Sparkline extends React.Component {
 
 		// Which painter should we use?
 		var painter = new TextPainter();
+		if(this.props.mode == 'TextAlways') {
+			painter = new TextAlwaysPainter();
+		}
 		if(this.props.mode == 'Categorical') {
 			painter = new CategoriesPainter(this.props.data, width/10);
 		}

@@ -17,10 +17,11 @@ export class Navbar extends Component {
 			</div>
 			<div id="navbar" className="collapse navbar-collapse">
 			  <ul className="nav navbar-nav">
+				<li><a href="#contact">Data</a></li>
 				<li className={this.props.viewState == "Heatmap" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Heatmap')}>Heatmap</a></li>
 				<li className={this.props.viewState == "Landscape" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Landscape')}>Landscape</a></li>
 				<li className={this.props.viewState == "Sparkline" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Sparkline')}>Sparkline</a></li>
-				<li><a href="#contact">Noise</a></li>
+				<li><a href="#contact">Genes</a></li>
 				<li className="dropdown">
 				  <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span className="caret"></span></a>
 				  <ul className="dropdown-menu">

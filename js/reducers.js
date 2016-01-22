@@ -76,31 +76,24 @@ function landscapeState(state=initialLandscapeState, action) {
 }
 
 const initialHeatmapState = {
+	type: 'SET_HEATMAP_PROPS',	// This prop gets set by the reducer below, but we should ignore it
+
 	screenBounds: (0,0,0,0),	// Screen pixel coordinates of the dataset in the current view
 	dataBounds: (0,0,0,0),		// Data coordinates of the current view
 	center: L.latLng(0,0),
 	zoom: 8,
-	genesToFind: "Actb",
-	selectedRowAttr: Object.keys(window.fileinfo.rowAttrs)[0],
-	selectedRowMode: 'Text',
-	selectedColAttr: Object.keys(window.fileinfo.colAttrs)[0],
-	selectedColMode: 'Text'
+	rowAttr: Object.keys(window.fileinfo.rowAttrs)[0],
+	rowMode: 'Text',
+	rowGenes: '',
+	colAttr: Object.keys(window.fileinfo.colAttrs)[0],
+	colMode: 'Text',
+	colGene: ''
 }
 
 function heatmapState(state=initialHeatmapState, action) {
 	switch (action.type) {
-		case 'SET_HEATMAP_BOUNDS':
-			return Object.assign({}, state,	{dataBounds: action.dataBounds, screenBounds: action.screenBounds, center: action.center, zoom: action.zoom});	// NOTE: must start with an empty object {} to ensure we don't mutate state
-		case 'SET_GENES_TO_FIND':
-			return Object.assign({}, state,	{genesToFind: action.genes});
-		case 'SET_SELECTED_ROW_ATTR':
-			return Object.assign({}, state,	{selectedRowAttr: action.attr});
-		case 'SET_SELECTED_COL_ATTR':
-			return Object.assign({}, state,	{selectedColAttr: action.attr});
-		case 'SET_SELECTED_ROW_MODE':
-			return Object.assign({}, state,	{selectedRowMode: action.mode});
-		case 'SET_SELECTED_COL_MODE':
-			return Object.assign({}, state,	{selectedColMode: action.mode});
+		case 'SET_HEATMAP_PROPS':
+			return Object.assign({}, state,	action);
 		default:
 			return state
 	}

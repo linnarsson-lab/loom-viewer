@@ -29,7 +29,8 @@ class App extends Component {
 					dataState={this.props.dataState}
 					heatmapState={this.props.heatmapState}
 					fileInfo={this.props.fileInfo}
-
+					dispatch={dispatch}
+					
 					onFindGenesChanged={(genes)=>dispatch({type: 'SET_GENES_TO_FIND', genes: genes })}
 					onHeatmapBoundsChanged={(bounds)=>dispatch({ 
 						type: 'SET_HEATMAP_BOUNDS', 
