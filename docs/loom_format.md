@@ -15,7 +15,7 @@ cells (or, more generally, samples) and may have attributes such as `CellID`, `S
 * Row and column attributes are one-dimensional HDF5 Datasets
   * Attribute values must be either all `float32` or all `string`
   * The number of elements must exactly match the row/column dimensions of the `matrix`
-* Two attributes are required:
+* Two attributes are mandatory:
   * Column attribute `CellID` of type `string`. Values must be distinct.
   * Row attribute `Gene` of type `string`. Values must be distinct, and typically should be official gene symbols.
 
