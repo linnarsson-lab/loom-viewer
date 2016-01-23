@@ -184,7 +184,7 @@ export class Sparkline extends React.Component {
 		if(this.props.mode == 'Bars') {
 			painter = new BarPainter(this.props.data, width/10);
 		}
-		if(this.props.mode == 'Quantitative') {
+		if(this.props.mode == 'Heatmap') {
 			painter = new QuantitativePainter();
 		}
 		painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);

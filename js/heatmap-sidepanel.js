@@ -22,13 +22,13 @@ export class HeatmapSidepanel extends Component {
 							rowAttr: name
 						})}>{name}</a></li>;
 		});
-		var showOptionsForRows = ["Text", "Bars", "Quantitative", "Categorical"].map((name)=> {
+		var showOptionsForRows = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
 							type: 'SET_HEATMAP_PROPS', 
 							rowMode: name
 						})}>{name}</a></li>;
 		});
-		var showOptionsForCols = ["Text", "Bars", "Quantitative", "Categorical"].map((name)=> {
+		var showOptionsForCols = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
 							type: 'SET_HEATMAP_PROPS', 
 							colMode: name

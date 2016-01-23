@@ -47,7 +47,10 @@ code {
 a {
   cursor: pointer;
 }
-
+.sparkline-label {
+  vertical-align: super;
+  margin-left: 5px;
+}
 .scrollable-menu {
     height: auto;
     max-height: 200px;

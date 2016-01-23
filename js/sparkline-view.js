@@ -46,7 +46,7 @@ export class SparklineView extends Component {
 							screenRange={[0,600]}
 							mode={ss.geneMode}
 						/>
-						{gene}
+						<span className="sparkline-label">{gene}</span>
 					</div>
 				);	  			
 	  		} else {
@@ -85,7 +85,7 @@ export class SparklineView extends Component {
 						screenRange={[0,600]}
 						mode={ss.colMode}
 					/>
-					{ss.colAttr}
+					<span className="sparkline-label">{ss.colAttr}</span>
 					<div>
 						{geneSparklines}
 					</div>

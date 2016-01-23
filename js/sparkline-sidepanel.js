@@ -36,7 +36,7 @@ export class SparklineSidepanel extends Component {
 				</li>
 			);
 		});
-		var optionsForCols = ["Text", "Bars", "Quantitative", "Categorical"].map((name)=> {
+		var optionsForCols = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
 			return (
 				<li key={name}>
 					<a onClick={(event)=>dispatch({ 
@@ -48,7 +48,7 @@ export class SparklineSidepanel extends Component {
 				</li>
 			);
 		});
-		var optionsForGenes = ["Bars", "Quantitative"].map((name)=> {
+		var optionsForGenes = ["Bars", "Heatmap"].map((name)=> {
 			return (
 				<li key={name}>
 					<a onClick={(event)=>dispatch({ 

@@ -19,7 +19,8 @@ class App extends Component {
   render() {
 	// Injected by connect() call:
 	const dispatch = this.props.dispatch;
-
+	const ds = this.props.dataState;
+	
 	var view = <div></div>;
 
 	switch(this.props.viewState.view) {
@@ -53,15 +54,15 @@ class App extends Component {
 				onColorModeChange={(mode)=>dispatch({type: 'SET_LANDSCAPE_COLOR_MODE', mode: mode})}
 				onColorGeneChange={(gene)=>{
 					dispatch({type: 'SET_LANDSCAPE_COLOR_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene));
+					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
 				}}
 				onXGeneChange={(gene)=>{
 					dispatch({type: 'SET_LANDSCAPE_X_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene));
+					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
 				}}
 				onYGeneChange={(gene)=>{
 					dispatch({type: 'SET_LANDSCAPE_Y_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene));
+					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
 				}}
 			/>
 			break;

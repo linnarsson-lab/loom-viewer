@@ -18,10 +18,10 @@ function viewState(state=initialViewState, action) {
 const initialSparklineState = {
 	type: "SET_SPARKLINE_PROPS",	// This will be set to the last action type
 
-	colAttr: "Tissue",
-	colMode: "Categorical",
+	colAttr: "CellID",
+	colMode: "Text",
 	orderByAttr: "(unordered)",	// meaning, original order
-	geneMode: "Quantitative",
+	geneMode: "Heatmap",
 	genes: ""
 }
 
@@ -40,8 +40,8 @@ const initialLandscapeState = {
 	xGene: "",
 	yCoordinate: "_tSNE2",
 	yGene: "",
-	colorAttr: "Tissue",
-	colorMode: "Categorical",
+	colorAttr: "CellID",
+	colorMode: "Heatmap",
 	colorGene: ""
 }
 

@@ -87,7 +87,7 @@ export class LandscapeSidepanel extends Component {
 							</button>
 							<ul className="dropdown-menu">
 								<li key="Categorical"><a onClick={(event)=>{this.props.onColorModeChange("Categorical");}}>Categorical</a></li>
-								<li key="Quantitative"><a onClick={(event)=>{this.props.onColorModeChange("Quantitative");}}>Quantitative</a></li>
+								<li key="Heatmap"><a onClick={(event)=>{this.props.onColorModeChange("Heatmap");}}>Quantitative</a></li>
 							</ul>
 						</div>
 						<div className="btn-group btn-block">
