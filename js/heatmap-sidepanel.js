@@ -1,10 +1,12 @@
 import React, { Component, PropTypes } from 'react';
+import { fetchGene } from './actions.js';
 
 export class HeatmapSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
 		var fi = this.props.fileInfo;
 		var hs = this.props.heatmapState;
+		var ds = this.props.dataState;
 
 		var temp = Object.keys(fi.colAttrs).sort();
 		temp.push("(gene)");
@@ -65,10 +67,15 @@ export class HeatmapSidepanel extends Component {
 					</div>				
 					<div className="btn-group btn-block">
 						{hs.colAttr == "(gene)" ? 
-							<inpiut className="form-control" placeholder="Gene" value={this.props.selectedColGene} onChange={(event)=>dispatch({ 
-								type: 'SET_HEATMAP_PROPS', 
-								colGene: event.target.value
-							})}/> : 
+							<input className="form-control" placeholder="Gene" value={hs.colGene} onChange={
+								(event)=>{
+									dispatch({ 
+										type: 'SET_HEATMAP_PROPS', 
+										colGene: event.target.value
+									});
+									dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+								}
+							}/> : 
 							<span></span>
 						}
 					</div>
@@ -110,6 +117,7 @@ export class HeatmapSidepanel extends Component {
 
 HeatmapSidepanel.propTypes = {
 	heatmapState: PropTypes.object.isRequired,
+	dataState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

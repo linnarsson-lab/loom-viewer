@@ -8,7 +8,18 @@ export class HeatmapView extends Component {
   render() {
 	var dispatch = this.props.dispatch;
 	var fi = this.props.fileInfo;
+	var ds = this.props.dataState;
 	var hs = this.props.heatmapState;
+
+	var colData = [];
+	if(hs.colAttr == "(gene)") {
+		if(ds.genes.hasOwnProperty(hs.colGene)) {
+			colData = ds.genes[hs.colGene];	
+		} 
+	} else {
+		colData = fi.colAttrs[hs.colAttr];
+	}
+
 	var rowData = fi.rowAttrs[hs.rowAttr]
 	if(hs.rowAttr == "(gene positions)") {
 		var genes = hs.rowGenes.trim().split(/[ ,\r\n]+/);
@@ -22,6 +33,7 @@ export class HeatmapView extends Component {
 					<HeatmapSidepanel 
 						fileInfo={fi}
 						heatmapState={hs}
+						dataState={ds}
 						dispatch={dispatch}
 					/>
 				</div>
@@ -30,7 +42,7 @@ export class HeatmapView extends Component {
 						orientation="horizontal"
 						width={600}
 						height={20}
-						data={fi.colAttrs[hs.colAttr]}
+						data={colData}
 						dataRange={[hs.dataBounds[0],hs.dataBounds[2]]}
 						screenRange={[hs.screenBounds[0],hs.screenBounds[2]]}
 						mode={hs.colMode}
