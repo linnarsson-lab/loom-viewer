@@ -57,3 +57,9 @@ Run `build`
 
 This will create a new folder `release`. Run `release/loom filename.loom` to start the loom server.
 
+**Note:** By default, React runs in development mode, which has some performance issues (noticeable in Landscape view). To run in 
+production mode, issue the following command before building Loom:
+
+```
+export NODE_ENV=production
+```
