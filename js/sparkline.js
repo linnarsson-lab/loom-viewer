@@ -179,15 +179,16 @@ export class Sparkline extends React.Component {
 			painter = new TextAlwaysPainter();
 		}
 		if(this.props.mode == 'Categorical') {
-			painter = new CategoriesPainter(this.props.data, width/10);
+			painter = new CategoriesPainter(this.props.data);
 		}
 		if(this.props.mode == 'Bars') {
-			painter = new BarPainter(this.props.data, width/10);
+			painter = new BarPainter(this.props.data);
 		}
 		if(this.props.mode == 'Heatmap') {
 			painter = new QuantitativePainter();
 		}
 		painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
+
 		context.restore();
 	}
 
@@ -210,5 +211,5 @@ Sparkline.propTypes = {
 	height: 		PropTypes.number.isRequired,
 	data: 			PropTypes.array,
 	dataRange: 		PropTypes.arrayOf(PropTypes.number).isRequired,
-	screenRange: 	PropTypes.arrayOf(PropTypes.number).isRequired,
+	screenRange: 	PropTypes.arrayOf(PropTypes.number).isRequired
   };

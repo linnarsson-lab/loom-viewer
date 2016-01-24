@@ -1,26 +1,54 @@
 import React, { Component, PropTypes } from 'react';
+import { fetchGene } from './actions.js';
 
 
 
 export class LandscapeSidepanel extends Component {
 	render() {
-		var xOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
-			return <li key={name}><a onClick={(event)=>{this.props.onXCoordinateChange(name);}}>{name}</a></li>;
+		var start = performance.now();
+		var temp = this.render0();
+		console.log("Sidepanel: " + (performance.now() - start).toString());
+		return temp;
+	}
+	render0() {
+		var dispatch = this.props.dispatch;
+		var fi = this.props.fileInfo;
+		var ls = this.props.landscapeState;
+		var ds = this.props.dataState;
+
+		var temp = Object.keys(fi.colAttrs).sort();
+		temp.push("(gene)");
+		var xOptions = temp.map((name)=> {
+			return <li key={name}>
+				<a onClick={(event)=>dispatch({ 
+						type: 'SET_LANDSCAPE_PROPS', 
+						xCoordinate: name
+					})}>
+					{name}
+				</a>
+			</li>;
 		});
-		//xOptions.push(<li key="(gene)"><a>(gene)</a></li>);		
 		
-		var yOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
-			return <li key={name}><a onClick={(event)=>{this.props.onYCoordinateChange(name);}}>{name}</a></li>;
+		var temp = Object.keys(fi.colAttrs).sort();
+		temp.push("(gene)");
+		var yOptions = temp.map((name)=> {
+			return <li key={name}><a onClick={(event)=>dispatch({ 
+						type: 'SET_LANDSCAPE_PROPS', 
+						yCoordinate: name
+					})}>{name}</a></li>;
 		});
-		//yOptions.push(<li key="(gene)"><a>(gene)</a></li>);
 
-		var colorOptions = Object.keys(this.props.colAttrs).sort().map((name)=> {
-			return <li key={name}><a onClick={(event)=>{this.props.onColorAttrChange(name);}}>{name}</a></li>;
+		var temp = Object.keys(fi.colAttrs).sort();
+		temp.push("(gene)");
+		var colorOptions = temp.map((name)=> {
+			return <li key={name}><a onClick={(event)=>dispatch({ 
+						type: 'SET_LANDSCAPE_PROPS', 
+						colorAttr: name
+					})}>{name}</a></li>;
 		});
-		colorOptions.push(<li key="(gene)"><a onClick={(event)=>{this.props.onColorAttrChange("(gene)");}}>(gene)</a></li>);
 
-		var isTSNE = (this.props.xCoordinate == '_tSNE1') && (this.props.yCoordinate == '_tSNE2');
-		var isPCA = (this.props.xCoordinate == '_PC1') && (this.props.yCoordinate == '_PC2');
+		var isTSNE = (ls.xCoordinate == '_tSNE1') && (ls.yCoordinate == '_tSNE2');
+		var isPCA = (ls.xCoordinate == '_PC1') && (ls.yCoordinate == '_PC2');
 
 		return(
 		  <div className="panel panel-default">
@@ -33,14 +61,22 @@ export class LandscapeSidepanel extends Component {
 						    <button 
 						    	type="button" 
 						    	className={"btn" + (isTSNE ? " btn-success" : " btn-default")}
-						    	onClick={(event=>{this.props.onXCoordinateChange('_tSNE1'); this.props.onYCoordinateChange('_tSNE2');})}
+						    	onClick={(event)=>dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									xCoordinate: '_tSNE1',
+									yCoordinate: '_tSNE2'
+								})}
 						    >tSNE</button>
 						  </div>
 						  <div className="btn-group" role="group">
 						    <button 
 						    	type="button" 
 						    	className={"btn" + (isPCA ? " btn-success" : " btn-default")}
-						    	onClick={(event=>{this.props.onXCoordinateChange('_PC1'); this.props.onYCoordinateChange('_PC2');})}						    	
+						    	onClick={(event)=>dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									xCoordinate: '_PC1',
+									yCoordinate: '_PC2'
+								})}						    	
 						    >PCA</button>
 						  </div>
 						</div>
@@ -50,12 +86,24 @@ export class LandscapeSidepanel extends Component {
 						<label>X Coordinate</label>
 						<div className="btn-group btn-block">
 							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-								{this.props.xCoordinate + "  "}<span className="caret"></span>
+								{ls.xCoordinate + "  "}<span className="caret"></span>
 							</button>
 							<ul className="dropdown-menu btn-block scrollable-menu">
 								{xOptions}
 							</ul>
 						</div>				
+						<div className="btn-group btn-block">
+						{ls.xCoordinate == "(gene)" ? 
+							<input className="form-control" placeholder="Gene" value={ls.xGene} onChange={(event)=>{
+								dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									xGene: event.target.value
+								});
+								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+							}}/> : 
+							<span></span>
+						}
+						</div>
 					</div>
 
 
@@ -63,19 +111,31 @@ export class LandscapeSidepanel extends Component {
 						<label>Y Coordinate</label>
 						<div className="btn-group btn-block">
 							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-								{this.props.yCoordinate + "  "}<span className="caret"></span>
+								{ls.yCoordinate + "  "}<span className="caret"></span>
 							</button>
 							<ul className="dropdown-menu btn-block scrollable-menu">
 								{yOptions}
 							</ul>
 						</div>				
+						<div className="btn-group btn-block">
+						{ls.yCoordinate == "(gene)" ? 
+							<input className="form-control" placeholder="Gene" value={ls.yGene} onChange={(event)=>{
+								dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									yGene: event.target.value
+								});
+								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+							}}/> : 
+							<span></span>
+						}
+						</div>
 					</div>
 
 					<div className="form-group">
 						<label>Color</label>
 						<div className="btn-group btn-block">
 							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-								{this.props.colorAttr + "  "}<span className="caret"></span>
+								{ls.colorAttr + "  "}<span className="caret"></span>
 							</button>
 							<ul className="dropdown-menu btn-block scrollable-menu">
 								{colorOptions}
@@ -83,16 +143,28 @@ export class LandscapeSidepanel extends Component {
 						</div>
 						<div className="btn-group btn-block">
 							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-								{this.props.colorMode + "  "}<span className="caret"></span>
+								{ls.colorMode + "  "}<span className="caret"></span>
 							</button>
 							<ul className="dropdown-menu">
-								<li key="Categorical"><a onClick={(event)=>{this.props.onColorModeChange("Categorical");}}>Categorical</a></li>
-								<li key="Heatmap"><a onClick={(event)=>{this.props.onColorModeChange("Heatmap");}}>Quantitative</a></li>
+								<li key="Categorical"><a onClick={(event)=>dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									colorMode: 'Categorical'
+								})}>Categorical</a></li>
+								<li key="Heatmap"><a onClick={(event)=>dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									colorMode: 'Heatmap'
+								})}>Quantitative</a></li>
 							</ul>
 						</div>
 						<div className="btn-group btn-block">
-						{this.props.colorAttr == "(gene)" ? 
-							<input className="form-control" placeholder="Gene" value={this.props.colorGene} onChange={(event)=>{this.props.onColorGeneChange(event.target.value)}}/> : 
+						{ls.colorAttr == "(gene)" ? 
+							<input className="form-control" placeholder="Gene" value={ls.colorGene} onChange={(event)=>{
+								dispatch({ 
+									type: 'SET_LANDSCAPE_PROPS', 
+									colorGene: event.target.value
+								});
+								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+							}}/> : 
 							<span></span>
 						}
 						</div>
@@ -106,19 +178,7 @@ export class LandscapeSidepanel extends Component {
 }
 
 LandscapeSidepanel.propTypes = {
-	colAttrs: 				PropTypes.object.isRequired,
-	xCoordinate: 			PropTypes.string.isRequired,
-	xGene: 					PropTypes.string.isRequired,
-	yCoordinate: 			PropTypes.string.isRequired,
-	yGene: 					PropTypes.string.isRequired,
-	colorAttr: 				PropTypes.string.isRequired,
-	colorMode: 				PropTypes.string.isRequired,
-	colorGene: 				PropTypes.string.isRequired,
-	onXCoordinateChange: 	PropTypes.func.isRequired,
-	onYCoordinateChange: 	PropTypes.func.isRequired,
-	onColorAttrChange: 		PropTypes.func.isRequired,
-	onColorModeChange: 		PropTypes.func.isRequired,
-	onColorGeneChange: 		PropTypes.func.isRequired,
-	onXGeneChange: 			PropTypes.func.isRequired,
-	onYGeneChange: 			PropTypes.func.isRequired
+	landscapeState: 	PropTypes.object.isRequired,
+	fileInfo: 			PropTypes.object.isRequired,
+	dataState: 			PropTypes.object.isRequired
 }

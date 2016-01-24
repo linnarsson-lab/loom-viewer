@@ -24,25 +24,13 @@ function receiveGene(gene, list) {
 	}
 }
 
-function rowForGene(rowAttrs, gene) {
-	var index = -1;
-	Object.keys(rowAttrs).forEach((key)=>{
-		var temp = rowAttrs[key].indexOf(gene);
-		if(temp >= 0) {
-			index = temp;
-		}
-	});
-	return index;
-}
-
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(rowAttrs, gene, cache) {
 	return dispatch => {
-		console.log("fetchGene");
-		var row = rowForGene(rowAttrs, gene, cache);
+		var row = rowAttrs["Gene"].indexOf(gene);
 		if(row == -1) {
 			return;
 		}
@@ -52,18 +40,15 @@ export function fetchGene(rowAttrs, gene, cache) {
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
-		console.log("Requesting data.");
 		return fetch(`/row/${row}`)
 			.then(response => response.json())
 			.then(json => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				dispatch(receiveGene(gene, json))
-				console.log("Received data.");
 			})
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch(err => {
 				dispatch(requestGeneFailed(gene));
-				console.log("Failed to receive data.");
 			});
 	}
 }

@@ -34,7 +34,7 @@ export class HeatmapView extends Component {
 						dataRange={[hs.dataBounds[0],hs.dataBounds[2]]}
 						screenRange={[hs.screenBounds[0],hs.screenBounds[2]]}
 						mode={hs.colMode}
-					/>					
+						/>					
 					<Heatmap
 						zoom={hs.zoom}
 						center={hs.center}

@@ -17,10 +17,18 @@ export class SparklineView extends Component {
   	// Figure out the ordering
 	var indices = new Array(colData.length);
 	for (var i = 0; i < colData.length; ++i) indices[i] = i;
-	if(ss.orderByAttr != "(unordered)") {
-	  	var orderBy = fi.colAttrs[ss.orderByAttr];
-
-		indices.sort(function (a, b) { return orderBy[a] < orderBy[b] ? -1 : orderBy[a] > orderBy[b] ? 1 : 0; });
+	if(ss.orderByAttr != "(none)") {
+	  	var orderBy = null;
+	  	if(ss.orderByAttr == "(gene)") {
+	  		if(ds.genes.hasOwnProperty(ss.orderByGene)) {
+	  			orderBy = ds.genes[ss.orderByGene];
+	  		}
+	  	} else {
+	  		orderBy = fi.colAttrs[ss.orderByAttr];
+	  	}
+	  	if(orderBy != null) {
+			indices.sort(function (a, b) { return orderBy[a] < orderBy[b] ? -1 : orderBy[a] > orderBy[b] ? 1 : 0; });
+	  	}
 	}
 
 	// Order the column attribute values

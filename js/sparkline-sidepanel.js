@@ -23,7 +23,8 @@ export class SparklineSidepanel extends Component {
 		});
 
 		var temp = Object.keys(fi.colAttrs).sort();
-		temp.push("(unordered)");
+		temp.push("(original order)");
+		temp.push("(gene)");
 		var orderByOptions = temp.map((name)=> {
 			return (
 				<li key={name}>
@@ -76,7 +77,19 @@ export class SparklineSidepanel extends Component {
 						<ul className="dropdown-menu btn-block scrollable-menu">
 							{orderByOptions}
 						</ul>
-					</div>				
+					</div>
+					<div className="btn-group btn-block">
+					{ss.orderByAttr == "(gene)" ? 
+						<input className="form-control" placeholder="Gene" value={ss.orderByGene} onChange={(event)=>{
+							dispatch({ 
+								type: 'SET_SPARKLINE_PROPS', 
+								orderByGene: event.target.value
+							});
+							dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+						}}/> : 
+						<span></span>
+					}
+					</div>
 				</div>
 
 				<div className="form-group">

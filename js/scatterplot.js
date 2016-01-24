@@ -30,6 +30,10 @@ export class Scatterplot extends React.Component {
 		if(this.props.x == undefined) {
 			return;
 		}
+		if(this.props.y == undefined) {
+			return;
+		}
+
 		// Erase previous paint
 		context.save();
 		context.fillStyle="white";
@@ -39,7 +43,15 @@ export class Scatterplot extends React.Component {
 		var width = this.props.width - 200;	// Make room for color legend on right
 		var height = this.props.height;
 		var x = this.props.x;
+		// Log transform if requested
+		if(this.props.logScaleX) {
+			x = x.map(x => Math.log2(x + 1 + 0.5*Math.random()));
+		}
 		var y = this.props.y;
+		// Log transform if requested
+		if(this.props.logScaleY) {
+			y = y.map(x => Math.log2(x + 1 + 0.5*Math.random()));
+		}
 		var radius = 0.007*width;	// Suitable redius of the markers
 		var xmin = Math.min(...x);	// Scale of data
 		var xmax = Math.max(...x);
@@ -78,7 +90,7 @@ export class Scatterplot extends React.Component {
 				var original_cmin = Math.min(...color);
 				var original_cmax = Math.max(...color);
 				// Log transform if requested
-				if(this.props.logScale) {
+				if(this.props.logScaleColor) {
 					color = color.map(x => Math.log2(x + 1));
 				}
 				// Map to the range of colors
@@ -140,5 +152,7 @@ Scatterplot.propTypes = {
 	y: 		PropTypes.arrayOf(PropTypes.number).isRequired,
 	color:	PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number,PropTypes.string])).isRequired,
 	colorMode: PropTypes.string.isRequired,
-	logScale: PropTypes.bool.isRequired
+	logScaleColor: PropTypes.bool.isRequired,
+	logScaleX: PropTypes.bool.isRequired,
+	logScaleY: PropTypes.bool.isRequired
   };

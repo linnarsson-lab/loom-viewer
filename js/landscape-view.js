@@ -15,30 +15,29 @@ export class LandscapeView extends Component {
 		return data;
 	}
 	render() {
-		var color = this.makeData(this.props.landscapeState.colorAttr, this.props.landscapeState.colorGene);
-		var x = this.makeData(this.props.landscapeState.xCoordinate, this.props.landscapeState.xGene);
-		var y = this.makeData(this.props.landscapeState.yCoordinate, this.props.landscapeState.yGene);
+		var start = performance.now();
+		var temp = this.render0();
+		console.log("View: " + (performance.now() - start).toString());
+		return temp;
+	}
+	render0() {
+		var dispatch = this.props.dispatch;
+		var fi = this.props.fileInfo;
+		var ls = this.props.landscapeState;
+		var ds = this.props.dataState;
+
+		var color = this.makeData(ls.colorAttr, ls.colorGene);
+		var x = this.makeData(ls.xCoordinate, ls.xGene);
+		var y = this.makeData(ls.yCoordinate, ls.yGene);
 		return (
 			<div className="container-fluid">
 				<div className="row">
 					<div className="col-xs-6 col-sm-3">
 						<LandscapeSidepanel 
-							colAttrs={this.props.fileInfo.colAttrs}
-							xCoordinate={this.props.landscapeState.xCoordinate}
-							xGene={this.props.landscapeState.xGene}
-							yCoordinate={this.props.landscapeState.yCoordinate}
-							yGene={this.props.landscapeState.yGene}
-							colorAttr={this.props.landscapeState.colorAttr}
-							colorMode={this.props.landscapeState.colorMode}
-							colorGene={this.props.landscapeState.colorGene}
-
-							onXCoordinateChange={this.props.onXCoordinateChange}
-							onYCoordinateChange={this.props.onYCoordinateChange}
-							onColorModeChange={this.props.onColorModeChange}
-							onColorAttrChange={this.props.onColorAttrChange}
-							onXGeneChange={this.props.onXGeneChange}
-							onYGeneChange={this.props.onYGeneChange}
-							onColorGeneChange={this.props.onColorGeneChange}
+							fileInfo={fi}
+							landscapeState={ls}
+							dataState={ds}
+							dispatch={dispatch}
 						/>
 					</div>
 					<div className="col-xs-12 col-sm-9 no-line-space">
@@ -46,10 +45,12 @@ export class LandscapeView extends Component {
 							x={x}
 							y={y}
 							color={color}
-							colorMode={this.props.landscapeState.colorMode}
+							colorMode={ls.colorMode}
 							width={800}
 							height={600}
-							logScale={this.props.landscapeState.colorAttr == "(gene)"}
+							logScaleColor={ls.colorAttr == "(gene)"}
+							logScaleX={ls.xCoordinate == "(gene)"}
+							logScaleY={ls.yCoordinate == "(gene)"}
 						/>
 					</div>
 				</div>
@@ -62,11 +63,5 @@ LandscapeView.propTypes = {
 	dataState: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,
-	onXCoordinateChange: PropTypes.func.isRequired,
-	onYCoordinateChange: PropTypes.func.isRequired,
-	onColorModeChange: PropTypes.func.isRequired,
-	onColorAttrChange: PropTypes.func.isRequired,
-	onColorGeneChange: 		PropTypes.func.isRequired,
-	onXGeneChange: 			PropTypes.func.isRequired,
-	onYGeneChange: 			PropTypes.func.isRequired
+	dispatch: PropTypes.func.isRequired
 }

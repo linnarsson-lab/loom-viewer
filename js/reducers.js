@@ -20,7 +20,8 @@ const initialSparklineState = {
 
 	colAttr: "CellID",
 	colMode: "Text",
-	orderByAttr: "(unordered)",	// meaning, original order
+	orderByAttr: "(none)",	// meaning, original order
+	orderByGene: "",
 	geneMode: "Heatmap",
 	genes: ""
 }
@@ -36,6 +37,8 @@ function sparklineState(state=initialSparklineState, action) {
 
 
 const initialLandscapeState = {
+	type: "SET_LANDSCAPE_PROPS",	// This will be set to the last action type
+
 	xCoordinate: "_tSNE1",
 	xGene: "",
 	yCoordinate: "_tSNE2",
@@ -47,20 +50,8 @@ const initialLandscapeState = {
 
 function landscapeState(state=initialLandscapeState, action) {
 	switch (action.type) {
-		case 'SET_LANDSCAPE_X':
-			return Object.assign({}, state,	{xCoordinate: action.xCoordinate});
-		case 'SET_LANDSCAPE_Y':
-			return Object.assign({}, state,	{yCoordinate: action.yCoordinate});
-		case 'SET_LANDSCAPE_COLOR_ATTR':
-			return Object.assign({}, state,	{colorAttr: action.color});
-		case 'SET_LANDSCAPE_COLOR_MODE':
-			return Object.assign({}, state,	{colorMode: action.mode});
-		case 'SET_LANDSCAPE_X_GENE':
-			return Object.assign({}, state,	{xGene: action.gene});
-		case 'SET_LANDSCAPE_Y_GENE':
-			return Object.assign({}, state,	{yGene: action.gene});
-		case 'SET_LANDSCAPE_COLOR_GENE':
-			return Object.assign({}, state,	{colorGene: action.gene});
+		case 'SET_LANDSCAPE_PROPS':
+			return Object.assign({}, state,	action);
 		default:
 			return state
 	}

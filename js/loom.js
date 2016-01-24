@@ -16,72 +16,61 @@ let store = applyMiddleware(thunk)(createStore)(loomAppReducer);
 
 
 class App extends Component {
-  render() {
-	// Injected by connect() call:
-	const dispatch = this.props.dispatch;
-	const ds = this.props.dataState;
-	
-	var view = <div></div>;
+  	render() {
+		// Injected by connect() call:
+		const dispatch = this.props.dispatch;
+		const ds = this.props.dataState;
+		const fi = this.props.fileInfo;
+		const hs = this.props.heatmapState;
+		const ss = this.props.sparklineState;
+		const ls = this.props.landscapeState;
+		const vs = this.props.viewState;
 
-	switch(this.props.viewState.view) {
-		case "Heatmap":
-			view =
-				<HeatmapView 
-					dataState={this.props.dataState}
-					heatmapState={this.props.heatmapState}
-					fileInfo={this.props.fileInfo}
+		var view = <div></div>;
+
+		switch(this.props.viewState.view) {
+			case "Heatmap":
+				view =
+					<HeatmapView 
+						dataState={ds}
+						heatmapState={hs}
+						fileInfo={fi}
+						dispatch={dispatch}
+					/>
+				break;
+			case "Sparkline":
+				view =
+					<SparklineView 
+						dataState={ds}
+						sparklineState={ss}
+						fileInfo={fi}
+						dispatch={dispatch}
+					/>
+				break;
+			case "Landscape":
+				view = <LandscapeView
+					dataState={ds}
+					landscapeState={ls}
+					fileInfo={fi}
 					dispatch={dispatch}
 				/>
-			break;
-		case "Sparkline":
-			view =
-				<SparklineView 
-					dataState={this.props.dataState}
-					sparklineState={this.props.sparklineState}
-					fileInfo={this.props.fileInfo}
-					dispatch={dispatch}
-				/>
-			break;
-		case "Landscape":
-			view = <LandscapeView
-				dataState={this.props.dataState}
-				landscapeState={this.props.landscapeState}
-				fileInfo={this.props.fileInfo}
+				break;
+			default:
+				view = <div>{"Unknown view: " + this.props.viewState.view}</div>;		
+				break;
+		}
+		return (
+			<div>
+				<Navbar 
+					fileName={fi.fileName}
+					viewState={vs.view}
 
-				onXCoordinateChange={(x)=>dispatch({type: 'SET_LANDSCAPE_X', xCoordinate: x})}
-				onYCoordinateChange={(y)=>dispatch({type: 'SET_LANDSCAPE_Y', yCoordinate: y})}
-				onColorAttrChange={(c)=>dispatch({type: 'SET_LANDSCAPE_COLOR_ATTR', color: c})}
-				onColorModeChange={(mode)=>dispatch({type: 'SET_LANDSCAPE_COLOR_MODE', mode: mode})}
-				onColorGeneChange={(gene)=>{
-					dispatch({type: 'SET_LANDSCAPE_COLOR_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
-				}}
-				onXGeneChange={(gene)=>{
-					dispatch({type: 'SET_LANDSCAPE_X_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
-				}}
-				onYGeneChange={(gene)=>{
-					dispatch({type: 'SET_LANDSCAPE_Y_GENE', gene: gene});
-					dispatch(fetchGene(this.props.fileInfo.rowAttrs, gene, ds.genes));
-				}}
-			/>
-			break;
-		default:
-			view = <div>{"Unknown view: " + this.props.viewState.view}</div>;		
-			break;
+					onSetViewState={(state)=>dispatch({type: 'SET_VIEW_STATE', state: state})}
+				/>
+				{view}
+			</div>
+		);
 	}
-	return (
-		<div>
-			<Navbar 
-				fileName={this.props.fileInfo.fileName}
-				viewState={this.props.viewState.view}
-
-				onSetViewState={(state)=>dispatch({type: 'SET_VIEW_STATE', state: state})}
-			/>
-			{view}
-		</div>
-	)
-  }
 }
 App.propTypes = {
 	dataState: PropTypes.object,
