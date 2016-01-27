@@ -19,6 +19,15 @@ except:
 	print "ERROR: file not found, or not a valid .loom file."
 	sys.exit(1)
 
+if not ds.row_attrs.__contains__("GeneName"):
+	if not ds.row_attrs.__contains__("Gene"):
+		print "ERROR: Row attribute 'GeneName' is missing."
+
+
+if not ds.col_attrs.__contains__("CellID"):
+	print "ERROR: Column attribute 'CellID' is missing."
+	sys.exit(1)
+
 # Precompute zoom pyramid and tSNE
 if not ds.loom_is_prepared():
 	ds.loom_prepare()

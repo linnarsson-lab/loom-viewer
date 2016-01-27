@@ -30,7 +30,13 @@ function receiveGene(gene, list) {
 
 export function fetchGene(rowAttrs, gene, cache) {
 	return dispatch => {
-		var row = rowAttrs["Gene"].indexOf(gene);
+		var row = -1;
+		if(rowAttrs.hasOwnProperty("GeneName")) {
+			row = rowAttrs["GeneName"].indexOf(gene);
+		}
+		else if(rowAttrs.hasOwnProperty("Gene")) {
+			row = rowAttrs["Gene"].indexOf(gene);
+		}
 		if(row == -1) {
 			return;
 		}

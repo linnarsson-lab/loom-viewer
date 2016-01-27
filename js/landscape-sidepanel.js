@@ -5,12 +5,6 @@ import { fetchGene } from './actions.js';
 
 export class LandscapeSidepanel extends Component {
 	render() {
-		var start = performance.now();
-		var temp = this.render0();
-		console.log("Sidepanel: " + (performance.now() - start).toString());
-		return temp;
-	}
-	render0() {
 		var dispatch = this.props.dispatch;
 		var fi = this.props.fileInfo;
 		var ls = this.props.landscapeState;
@@ -153,7 +147,7 @@ export class LandscapeSidepanel extends Component {
 								<li key="Heatmap"><a onClick={(event)=>dispatch({ 
 									type: 'SET_LANDSCAPE_PROPS', 
 									colorMode: 'Heatmap'
-								})}>Quantitative</a></li>
+								})}>Heatmap</a></li>
 							</ul>
 						</div>
 						<div className="btn-group btn-block">
@@ -180,5 +174,6 @@ export class LandscapeSidepanel extends Component {
 LandscapeSidepanel.propTypes = {
 	landscapeState: 	PropTypes.object.isRequired,
 	fileInfo: 			PropTypes.object.isRequired,
-	dataState: 			PropTypes.object.isRequired
+	dataState: 			PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired
 }

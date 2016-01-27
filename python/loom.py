@@ -58,6 +58,7 @@
 
 
 
+from __future__ import division
 import numpy as np
 import h5py
 import numexpr as ne
@@ -66,6 +67,7 @@ import pandas as pd
 import scipy
 import scipy.misc
 import scipy.ndimage
+from scipy.optimize import minimize
 from sklearn.decomposition import IncrementalPCA
 from sklearn.manifold import TSNE
 import __builtin__
@@ -92,7 +94,7 @@ def create(filename, matrix, row_attrs, col_attrs):
 	f = h5py.File(filename, 'w')
 
 	# Save the main matrix
-	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='lzf', maxshape=(matrix.shape[0], None))
+	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='lzf', maxshape=(matrix.shape[0], None), chunks=(10,10))
 
 	# Create the row and columns attributes and associate them with the main matrix 
 	f.create_group('/row_attrs')
@@ -102,7 +104,7 @@ def create(filename, matrix, row_attrs, col_attrs):
 			raise ValueError, ("Row attribute %s has the wrong number of values (%s given, %s expected)" % (key, len(vals), matrix.shape[0]))
 		try:
 			vals = vals.astype('float32')
-		except ValueError:
+		except (ValueError, TypeError):
 			vals = vals.astype('S')
 		path = '/row_attrs/' + key
 		f[path] = vals
@@ -114,10 +116,11 @@ def create(filename, matrix, row_attrs, col_attrs):
 			raise ValueError, ("Column attribute %s has the wrong number of values (%s given, %s expected)" % (key, len(vals), matrix.shape[1]))
 		try:
 			vals = vals.astype('float32')
-		except ValueError:
+		except (ValueError, TypeError):
 			vals = vals.astype('S')
 		path = '/col_attrs/' + key
-		f[path] = vals
+		f.create_dataset(path, data=vals, compression='lzf', maxshape = (None,), chunks = (10,))
+		#f[path] = vals
 
 	f.flush()
 	f.close()
@@ -132,7 +135,7 @@ def create_from_pandas(df, loom_file):
 	f = h5py.File(loom_file, "w")
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
-	f.create_dataset('matrix', data=df.values.astype('float32'), compression='lzf', maxshape=(n_rows, None))
+	f.create_dataset('matrix', data=df.values.astype('float32'), compression='lzf', maxshape=(n_rows, None), chunks=(100,100))
 	for attr in df.index.names:		
 		try:
 			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float32')
@@ -178,7 +181,7 @@ class LoomConnection(object):
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key,vals in col_attrs.iteritems():
 			vals = np.array(vals)
-			self.file['/col_attrs/' + key].resize(n_cols)
+			self.file['/col_attrs/' + key].resize(n_cols, axis = 0)
 			self.file['/col_attrs/' + key][self.shape[1]:] = vals
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
 		self.file['/matrix'][:,self.shape[1]:] = submatrix
@@ -367,6 +370,73 @@ class LoomConnection(object):
 				ix = ix + cols_per_chunk
 			return result
 
+	#####################
+	# FEATURE SELECTION #
+	#####################
+
+
+	def feature_selection(self, n_genes, new_file_name = None):
+		'''Fits a noise model (CV vs mean)
+		Parameters
+		----------
+			n_genes: integer, number of genes to include
+			new_file_name: string, name of new file (or None to simply add attributes to this file)
+
+		Returns
+		-------
+		Nothing, but creates new column attributes _LogMean, _LogCV, _Noise, _Excluded
+		If new_file_name is given, a new file is created with the new attributes and with _Excluded genes at the end
+		'''
+
+		mu = self.apply_chunked(np.mean)
+		cv = self.apply_chunked(np.std)/mu
+		log2_m = np.log2(mu)
+		log2_cv = np.log2(cv)
+		
+		#Define the objective function to fit (least squares)
+		fun = lambda x, log2_m, log2_cv: sum(abs( np.log2( (2.**log2_m)**(-x[0])+x[1]) - log2_cv ))
+		#Fit using Nelder-Mead algorythm
+		x0=[0.5,0.5]
+		optimization =  minimize(fun, x0, args=(log2_m,log2_cv), method='Nelder-Mead')
+		params = optimization.x
+		#The fitted function
+		fitted_fun = lambda log_mu: np.log2( (2.**log_mu)**(-params[0]) + params[1])
+		# Score is the relative position with respect of the fitted curve
+		score = np.log2(cv) - fitted_fun(np.log2(mu))
+		threshold = np.percentile(score, 100 - n_genes/self.shape[0]*100)
+		excluded = (score < threshold).astype('int')
+
+		if new_file_name == None:
+			# Save the result as attributes
+			self.set_attr("_LogMean", log2_m, axis = 0)
+			self.set_attr("_LogCV", log2_cv, axis = 0)
+			self.set_attr("_Noise", score, axis = 0)
+			self.set_attr("_Excluded", excluded, axis = 0)		
+		else:
+			ordering = np.argsort(excluded)
+			ra = {}
+			for key in self.row_attrs.keys():
+				ra[key] = self.row_attrs[key][ordering]
+			ra["_LogMean"] = log2_m[ordering]
+			ra["_LogCV"] = log2_cv[ordering]
+			ra["_Noise"] = score[ordering]
+			ra["_Excluded"] = excluded[ordering]
+			chunksize = 5000	# We load this many columns at a time
+			column = 0
+			new_file = None
+			while column < self.shape[1]:
+				submatrix = self.file['matrix'][:, column:column + chunksize][ordering,:]
+				ca_chunk = {}
+				for c in self.col_attrs.keys():
+					ca_chunk[c] = self.col_attrs[c][column:column + chunksize]
+				if new_file == None:
+					create(new_file_name, submatrix, ra, ca_chunk)
+					new_file = connect(new_file_name)
+				else:
+					new_file.add_columns(submatrix, ca_chunk)
+				column = column + chunksize
+
+
 	########
 	# LOOM #
 	########
@@ -458,8 +528,7 @@ class LoomConnection(object):
 
 	# Returns a PIL image 256x256 pixels
 	def dz_get_zoom_image(self, x, y, z):
-		# Get the raw tile (normalized to 0-1 interval)
-		tile = self.get_zoom_tile(x, y, z)
+		tile = self.dz_get_zoom_tile(x, y, z)
 		tile[tile == 255] = 254
 
 		# Crop outside matrix dimensions
@@ -476,7 +545,7 @@ class LoomConnection(object):
 		return scipy.misc.toimage(tile, cmin=0, cmax=255, pal = _bluewhitered)
 
 	# Returns a submatrix scaled to 0-255 range
-	def get_zoom_tile(self, x, y, z):
+	def dz_get_zoom_tile(self, x, y, z):
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if z < zmin:
 			raise ValueError, ("z cannot be less than %s" % zmin)
@@ -502,14 +571,14 @@ class LoomConnection(object):
 			if maxes.shape[0] < 256:
 				maxes = np.pad(maxes, (0, 256 - maxes.shape[0]), 'constant', constant_values = 0)
 				mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values = 0)
-			tile = np.log2(tile-mins+1)/np.log2(maxes-mins+1)*256
+			tile = (np.log2(tile.transpose()-mins+1)/np.log2(maxes-mins+1)*255).transpose()
 			#tile = (tile+1)/(maxes+1)*256
 			return tile
 
 		if z > zmid:
 			scale = pow(2,z - zmid)
 			# Get the z = zmid tile that contains this tile
-			x1_tile = self.get_zoom_tile(x/scale,y/scale,zmid)
+			x1_tile = self.dz_get_zoom_tile(x/scale,y/scale,zmid)
 			# Take the right submatrix
 			x = x - x/scale*scale # This works because of rounding down at the first division
 			y = y - y/scale*scale
@@ -531,10 +600,10 @@ class LoomConnection(object):
 			except KeyError:
 			# Get the four less zoomed-out tiles required to make this tile
 				temp = np.empty((512,512), dtype = 'float32')
-				temp[0:256,0:256] = self.get_zoom_tile(x*2,y*2,z+1)
-				temp[0:256,256:512] = self.get_zoom_tile(x*2 + 1,y*2,z+1)
-				temp[256:512,0:256] = self.get_zoom_tile(x*2,y*2 + 1,z+1)
-				temp[256:512,256:512] = self.get_zoom_tile(x*2+1,y*2+1,z+1)
+				temp[0:256,0:256] = self.dz_get_zoom_tile(x*2,y*2,z+1)
+				temp[0:256,256:512] = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
+				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
+				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
 				tile = temp[0::2,0::2]
 				self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
 				self.file.flush()
@@ -877,4 +946,3 @@ _bluewhitered = np.array([[ 19,  74, 133],
 	   [110,   2,  33],
 	   [107,   1,  32],
 	   [221, 221, 221]])
-

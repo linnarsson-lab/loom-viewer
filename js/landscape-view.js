@@ -15,12 +15,6 @@ export class LandscapeView extends Component {
 		return data;
 	}
 	render() {
-		var start = performance.now();
-		var temp = this.render0();
-		console.log("View: " + (performance.now() - start).toString());
-		return temp;
-	}
-	render0() {
 		var dispatch = this.props.dispatch;
 		var fi = this.props.fileInfo;
 		var ls = this.props.landscapeState;

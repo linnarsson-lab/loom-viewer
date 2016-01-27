@@ -57,6 +57,24 @@ function landscapeState(state=initialLandscapeState, action) {
 	}
 }
 
+const initialGenescapeState = {
+	type: "SET_GENESCAPE_PROPS",	// This will be set to the last action type
+
+	xCoordinate: "",
+	yCoordinate: "",
+	colorAttr: "",
+	colorMode: "Heatmap"
+}
+
+function genescapeState(state=initialGenescapeState, action) {
+	switch (action.type) {
+		case 'SET_GENESCAPE_PROPS':
+			return Object.assign({}, state,	action);
+		default:
+			return state
+	}
+}
+
 const initialHeatmapState = {
 	type: 'SET_HEATMAP_PROPS',	// This prop gets set by the reducer below, but we should ignore it
 
@@ -124,6 +142,7 @@ const loomAppReducer = combineReducers({
 	viewState,
 	heatmapState,
 	landscapeState,
+	genescapeState,
 	sparklineState,
 	fileInfo,
 	dataState

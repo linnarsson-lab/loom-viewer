@@ -9,6 +9,7 @@ import { Navbar } from './navbar';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
+import { GenescapeView } from './genescape-view';
 import { fetchGene } from './actions.js';
 
 // create a store that has redux-thunk middleware enabled
@@ -24,6 +25,7 @@ class App extends Component {
 		const hs = this.props.heatmapState;
 		const ss = this.props.sparklineState;
 		const ls = this.props.landscapeState;
+		const gs = this.props.genescapeState;
 		const vs = this.props.viewState;
 
 		var view = <div></div>;
@@ -55,6 +57,14 @@ class App extends Component {
 					dispatch={dispatch}
 				/>
 				break;
+			case "Genescape":
+				view = <GenescapeView
+					dataState={ds}
+					genescapeState={gs}
+					fileInfo={fi}
+					dispatch={dispatch}
+				/>
+				break;
 			default:
 				view = <div>{"Unknown view: " + this.props.viewState.view}</div>;		
 				break;
@@ -76,6 +86,7 @@ App.propTypes = {
 	dataState: PropTypes.object,
 	heatmapState: PropTypes.object,
 	landscapeState: PropTypes.object,
+	genescapeState: PropTypes.object,
 	fileInfo: PropTypes.object,
 	viewState: PropTypes.object
 }
