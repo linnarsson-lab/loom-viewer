@@ -30,7 +30,7 @@ The `loom.py` module is used to create and read `.loom` files, as well as to con
 
         conda install numpy
         conda install scipy
-        conda install sklearn
+        conda install scikit-learn
         conda install numexpr
         conda install pandas
   
