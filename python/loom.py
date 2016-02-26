@@ -165,6 +165,9 @@ class LoomConnection(object):
 		for x in self.file['col_attrs'].keys():
 			self.col_attrs[x] = self.file['col_attrs'][x][:]
 	
+	def __getitem__(self, slice):
+		return self.file['matrix'].__getitem__(slice)
+		
 	def add_columns(self, submatrix, col_attrs):
 		if submatrix.shape[0] != self.shape[0]:
 			raise ValueError, "New submatrix must have same number of rows as existing matrix"
