@@ -10,6 +10,7 @@ export class HeatmapView extends Component {
 	var fi = this.props.fileInfo;
 	var ds = this.props.dataState;
 	var hs = this.props.heatmapState;
+	var vs = this.props.viewState;
 
 	var colData = [];
 	if(hs.colAttr == "(gene)") {
@@ -25,59 +26,77 @@ export class HeatmapView extends Component {
 		var genes = hs.rowGenes.trim().split(/[ ,\r\n]+/);
 		rowData = _.map(fi.rowAttrs["Gene"],(x)=>(_.indexOf(genes, x) != -1 ? x : ""));
 	}
-	return (
 
-		<div className="container-fluid">
-			<div className="row">
-				<div className="col-xs-6 col-sm-3">
-					<HeatmapSidepanel 
-						fileInfo={fi}
-						heatmapState={hs}
-						dataState={ds}
-						dispatch={dispatch}
-					/>
-				</div>
-				<div className="col-xs-12 col-sm-9 no-line-space">
-					<Sparkline 
-						orientation="horizontal"
-						width={600}
-						height={20}
-						data={colData}
-						dataRange={[hs.dataBounds[0],hs.dataBounds[2]]}
-						screenRange={[hs.screenBounds[0],hs.screenBounds[2]]}
-						mode={hs.colMode}
-						/>					
-					<Heatmap
-						zoom={hs.zoom}
-						center={hs.center}
-						shape={fi.shape}
-						zoomRange={fi.zoomRange}
-						fullZoomWidth={fi.fullZoomWidth}
-						fullZoomHeight={fi.fullZoomHeight}
-						onViewChanged={(bounds)=>dispatch({ 
-							type: 'SET_HEATMAP_PROPS', 
-							screenBounds: bounds.screenBounds,
-							dataBounds: bounds.dataBounds,
-							center: bounds.center,
-							zoom: bounds.zoom
-						})}
-					/>
-					<Sparkline 
-						orientation="vertical"
-						width={120}
-						height={600}
-						data={rowData}
-						dataRange={[hs.dataBounds[1],hs.dataBounds[3]]}
-						screenRange={[hs.screenBounds[1],hs.screenBounds[3]]}
-						mode={hs.rowAttr == "(gene positions)" ? "TextAlways" : hs.rowMode}
-					/>
-				</div>
+	// Calculate the layout of everything
+	var heatmapWidth = vs.width - 350;
+	var heatmapHeight = vs.height - 40;
+	var verticalSparklineWidth = 20;
+	if(hs.rowMode == "Text" || hs.rowMode == "TexAlways") {
+		heatmapWidth = vs.width - 450;
+		verticalSparklineWidth = 120;
+	}
+	var horizontalSparklineHeight = 20;
+	if(hs.colMode == "Text") {
+		horizontalSparklineHeight = 120;
+		heatmapHeight = vs.height - 140;
+	}
+	console.log("heatmapWidth: " + heatmapWidth);
+	console.log("heatmapHeight: " + heatmapHeight);
+	console.log("verticalSparklineWidth: " + verticalSparklineWidth);
+	console.log("horizontalSparklineHeight: " + horizontalSparklineHeight);
+	return (
+		<div className="view">
+			<div className="view-sidepanel">
+				<HeatmapSidepanel 
+					fileInfo={fi}
+					heatmapState={hs}
+					dataState={ds}
+					dispatch={dispatch}
+				/>
+			</div>
+			<div className="view-main">
+				<Sparkline 
+					orientation="horizontal"
+					width={heatmapWidth}
+					height={horizontalSparklineHeight}
+					data={colData}
+					dataRange={[hs.dataBounds[0],hs.dataBounds[2]]}
+					screenRange={[hs.screenBounds[0],hs.screenBounds[2]]}
+					mode={hs.colMode}
+					/>					
+				<Heatmap
+					width={heatmapWidth}
+					height={heatmapHeight}
+					zoom={hs.zoom}
+					center={hs.center}
+					shape={fi.shape}
+					zoomRange={fi.zoomRange}
+					fullZoomWidth={fi.fullZoomWidth}
+					fullZoomHeight={fi.fullZoomHeight}
+					onViewChanged={(bounds)=>dispatch({ 
+						type: 'SET_HEATMAP_PROPS', 
+						screenBounds: bounds.screenBounds,
+						dataBounds: bounds.dataBounds,
+						center: bounds.center,
+						zoom: bounds.zoom
+					})}
+				/>
+				<Sparkline 
+					orientation="vertical"
+					width={verticalSparklineWidth}
+					height={heatmapHeight}
+					data={rowData}
+					dataRange={[hs.dataBounds[1],hs.dataBounds[3]]}
+					screenRange={[hs.screenBounds[1],hs.screenBounds[3]]}
+					mode={hs.rowAttr == "(gene positions)" ? "TextAlways" : hs.rowMode}
+				/>
 			</div>
 		</div>
 	)
   }
 }
 HeatmapView.propTypes = {
+	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,

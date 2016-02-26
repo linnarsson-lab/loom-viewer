@@ -3,6 +3,7 @@ import { setViewState } from './actions';
 
 export class Navbar extends Component {
   render() {
+  	var vs = this.props.viewState;
 	return(
 		<nav className="navbar navbar-default navbar-fixed-top">
 		  <div className="container">
@@ -18,10 +19,10 @@ export class Navbar extends Component {
 			<div id="navbar" className="collapse navbar-collapse">
 			  <ul className="nav navbar-nav">
 				<li><a href="#contact">Data</a></li>
-				<li className={this.props.viewState == "Heatmap" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Heatmap')}>Heatmap</a></li>
-				<li className={this.props.viewState == "Landscape" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Landscape')}>Landscape</a></li>
-				<li className={this.props.viewState == "Sparkline" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Sparkline')}>Sparkline</a></li>
-				<li className={this.props.viewState == "Genescape" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Genescape')}>Genescape</a></li>
+				<li className={vs.view == "Heatmap" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Heatmap')}>Heatmap</a></li>
+				<li className={vs.view == "Landscape" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Landscape')}>Landscape</a></li>
+				<li className={vs.view == "Sparkline" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Sparkline')}>Sparkline</a></li>
+				<li className={vs.view == "Genescape" ? "active" : ""}><a href="#" onClick={(event)=>this.props.onSetViewState('Genescape')}>Genescape</a></li>
 				<li className="dropdown">
 				  <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span className="caret"></span></a>
 				  <ul className="dropdown-menu">
@@ -44,6 +45,6 @@ export class Navbar extends Component {
 
 Navbar.propTypes = {
 	fileName: PropTypes.string.isRequired,
-	viewState: PropTypes.string.isRequired,
+	viewState: PropTypes.object.isRequired,
 	onSetViewState: PropTypes.func.isRequired
 }

@@ -70,6 +70,7 @@ import scipy.ndimage
 from scipy.optimize import minimize
 from sklearn.decomposition import IncrementalPCA
 from sklearn.manifold import TSNE
+from sklearn.metrics.pairwise import pairwise_distances
 import __builtin__
 
 pd.set_option('display.multi_sparse', False)
@@ -180,12 +181,14 @@ class LoomConnection(object):
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key,vals in col_attrs.iteritems():
-			vals = np.array(vals)
+			vals = np.array(vals).astype("string" if self.col_attrs[key].dtype.name[0:6] == "string" else "float32")
 			self.file['/col_attrs/' + key].resize(n_cols, axis = 0)
 			self.file['/col_attrs/' + key][self.shape[1]:] = vals
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
-		self.file['/matrix'][:,self.shape[1]:] = submatrix
+		self.file['/matrix'].resize(n_cols, axis = 1)
+		self.file['/matrix'][:,self.shape[1]:n_cols] = submatrix
 		self.shape = (self.shape[0], n_cols)
+		self.file.flush()
 
 	def set_attr(self, name, values, axis = 0):
 		# Add annotation along the indicated axis
@@ -193,17 +196,15 @@ class LoomConnection(object):
 			if len(values) != self.shape[0]:
 				raise ValueError("Row attribute must have %d values" % self.shape[0])
 			if self.file['/row_attrs'].__contains__(name):
-				self.file['/row_attrs/' + name][:] = values
-			else:
-				self.file['/row_attrs/' + name] = values
+				del self.file['/row_attrs/' + name]
+			self.file['/row_attrs/' + name] = values
 			self.row_attrs[name] = self.file['/row_attrs/' + name][:]
 		else:
 			if len(values) != self.shape[1]:
 				raise ValueError("Column attribute must have %d values" % self.shape[1])
 			if self.file['/col_attrs'].__contains__(name):
-				self.file['/col_attrs/' + name][:] = values
-			else:
-				self.file['/col_attrs/' + name] = values
+				del self.file['/col_attrs/' + name]
+			self.file['/col_attrs/' + name] = values
 			self.col_attrs[name] = self.file['/col_attrs/' + name][:]
 		self.file.flush()
 
@@ -350,7 +351,7 @@ class LoomConnection(object):
 	# Return the result of applying f to each row/column, without loading entire dataset into memory
 	def apply_chunked(self, f, axis = 0, chunksize = 100000000):
 		if axis == 0:
-			rows_per_chunk = chunksize/self.shape[1]
+			rows_per_chunk = chunksize//self.shape[1]
 			result = np.zeros(self.shape[0])
 			ix = 0
 			while ix < self.shape[0]:
@@ -360,7 +361,7 @@ class LoomConnection(object):
 				ix = ix + rows_per_chunk
 			return result
 		elif axis == 1:
-			cols_per_chunk = chunksize/self.shape[0]
+			cols_per_chunk = chunksize//self.shape[0]
 			result = np.zeros(self.shape[1])
 			ix = 0
 			while ix < self.shape[1]:
@@ -370,71 +371,87 @@ class LoomConnection(object):
 				ix = ix + cols_per_chunk
 			return result
 
+	# Compute correlation on log2 scale and without casting to float64
+	def corr_matrix(self, axis = 0):
+		data = self.file['matrix'][:,:]
+		if axis == 1:
+		    data = data.T
+		N = data.shape[1]
+		data -= data.mean(axis=1, keepdims=True)
+		data = (np.dot(data, data.T) / (N-1))
+		d = np.diagonal(data)
+		data = data / np.sqrt(np.outer(d,d))
+		if axis == 1:
+			return data.T
+		return np.nan_to_num(data)
+
+	def permute(ordering, axis):
+		if axis == 0:
+			chunksize = 5000
+			start = 0
+			while start < self.shape[1]:
+				submatrix = self.file('matrix')[:, start:start + chunksize]
+				self.file('matrix')[:, start:start + chunksize] = submatrix[ordering, :]
+				start = start + chunksize
+			self.file.flush()
+		if axis == 1:
+			chunksize = 100000000//self.shape[1]
+			start = 0
+			while start < self.shape[0]:
+				submatrix = self.file('matrix')[start:start + chunksize, :]
+				self.file('matrix')[start:start + chunksize, :] = submatrix[:, ordering]
+				start = start + chunksize
+			self.file.flush()
+
+
+
+
 	#####################
 	# FEATURE SELECTION #
 	#####################
 
 
-	def feature_selection(self, n_genes, new_file_name = None):
+	def feature_selection(self, n_genes):
 		'''Fits a noise model (CV vs mean)
 		Parameters
 		----------
 			n_genes: integer, number of genes to include
-			new_file_name: string, name of new file (or None to simply add attributes to this file)
 
 		Returns
 		-------
 		Nothing, but creates new column attributes _LogMean, _LogCV, _Noise, _Excluded
-		If new_file_name is given, a new file is created with the new attributes and with _Excluded genes at the end
 		'''
-
+		print "Calculating means"
 		mu = self.apply_chunked(np.mean)
+		print "Calculating CVs"
 		cv = self.apply_chunked(np.std)/mu
 		log2_m = np.log2(mu)
+		log2_m[log2_m == float("-inf")] = 0
 		log2_cv = np.log2(cv)
+		log2_cv = np.nan_to_num(log2_cv)
+
 		
 		#Define the objective function to fit (least squares)
 		fun = lambda x, log2_m, log2_cv: sum(abs( np.log2( (2.**log2_m)**(-x[0])+x[1]) - log2_cv ))
 		#Fit using Nelder-Mead algorythm
+		print "Fitting the noise function"
 		x0=[0.5,0.5]
 		optimization =  minimize(fun, x0, args=(log2_m,log2_cv), method='Nelder-Mead')
 		params = optimization.x
 		#The fitted function
 		fitted_fun = lambda log_mu: np.log2( (2.**log_mu)**(-params[0]) + params[1])
 		# Score is the relative position with respect of the fitted curve
+		print "Calculating noise"
 		score = np.log2(cv) - fitted_fun(np.log2(mu))
+		score = np.nan_to_num(score)
 		threshold = np.percentile(score, 100 - n_genes/self.shape[0]*100)
 		excluded = (score < threshold).astype('int')
 
-		if new_file_name == None:
-			# Save the result as attributes
-			self.set_attr("_LogMean", log2_m, axis = 0)
-			self.set_attr("_LogCV", log2_cv, axis = 0)
-			self.set_attr("_Noise", score, axis = 0)
-			self.set_attr("_Excluded", excluded, axis = 0)		
-		else:
-			ordering = np.argsort(excluded)
-			ra = {}
-			for key in self.row_attrs.keys():
-				ra[key] = self.row_attrs[key][ordering]
-			ra["_LogMean"] = log2_m[ordering]
-			ra["_LogCV"] = log2_cv[ordering]
-			ra["_Noise"] = score[ordering]
-			ra["_Excluded"] = excluded[ordering]
-			chunksize = 5000	# We load this many columns at a time
-			column = 0
-			new_file = None
-			while column < self.shape[1]:
-				submatrix = self.file['matrix'][:, column:column + chunksize][ordering,:]
-				ca_chunk = {}
-				for c in self.col_attrs.keys():
-					ca_chunk[c] = self.col_attrs[c][column:column + chunksize]
-				if new_file == None:
-					create(new_file_name, submatrix, ra, ca_chunk)
-					new_file = connect(new_file_name)
-				else:
-					new_file.add_columns(submatrix, ca_chunk)
-				column = column + chunksize
+		print "Saving attributes"
+		self.set_attr("_LogMean", log2_m, axis = 0)
+		self.set_attr("_LogCV", log2_cv, axis = 0)
+		self.set_attr("_Noise", score, axis = 0)
+		self.set_attr("_Excluded", excluded, axis = 0)		
 
 
 	########
@@ -442,10 +459,13 @@ class LoomConnection(object):
 	########
 
 	def loom_prepare(self):
-		print "Creating heatmap."
-		self.dz_get_zoom_image(0,0,8)
 		print "Creating landscape view:"
-		self.project_to_2d()
+		if not self.col_attrs.has_key("_tSNE1"):
+			self.feature_selection(10000)
+			self.project_to_2d()
+		print "Creating heatmap."
+		if not self.file.__contains__('tiles'):
+			self.dz_get_zoom_image(0,0,8)
 		print "Done."
 
 	def loom_is_prepared(self):
@@ -461,20 +481,25 @@ class LoomConnection(object):
 		# Process max 100 MB at a time (assuming about 25000 genes)
 		batch_size = 1000
 		n_components = 50
+		selection = np.ones(self.shape[0]).astype('bool')
+		if self.row_attrs.__contains__("_Excluded"):
+			selection = (1-self.row_attrs["_Excluded"]).astype('bool')
+
 		print "  Computing %s PCA components." % n_components
 		ipca = IncrementalPCA(n_components=n_components)
 		col = 0
 		while col < self.shape[1]:
-			batch = self.file['matrix'][:,col:col+batch_size].T
+			batch = self.file['matrix'][selection,col:col+batch_size].T
 			batch = np.log2(batch + 1)
 			ipca.partial_fit(batch)
 			col = col + batch_size
+
 		# Project to PCA space
 		print "  Projecting data to PCA coordinates."
 		Xtransformed = []
 		col = 0
 		while col < self.shape[1]:
-			batch = self.file['matrix'][:,col:col+batch_size].T
+			batch = self.file['matrix'][selection,col:col+batch_size].T
 			batch = np.log2(batch + 1)
 			Xbatch = ipca.transform(batch)
 			Xtransformed.append(Xbatch)
@@ -483,18 +508,27 @@ class LoomConnection(object):
 
 		# Save first two dimensions as column attributes
 		print "  Saving two first PCA dimensions as column attributes _PC1 and _PC2."
-		self.set_attr("_PC1", Xtransformed[:,0], axis = 1)
-		self.set_attr("_PC2", Xtransformed[:,1], axis = 1)
+		pc1 = Xtransformed[:,0]	
+		pc2 = Xtransformed[:,1]
+		self.set_attr("_PC1", pc1, axis = 1)
+		self.set_attr("_PC2", pc2, axis = 1)
 
 		# Then, perform tSNE based on the 100 first components
 		print "  Computing tSNE based on %s PCA components." % n_components
-		model = TSNE(metric='correlation')
-		tsne = model.fit_transform(Xtransformed) 
+		# Precumpute the distance matrix
+		# This is necessary to work around a bug in sklearn TSNE 0.17
+		# (caused because pairwise_distances may give very slightly negative distances)
+		dists = pairwise_distances(Xtransformed, metric="correlation")
+		np.clip(dists, 0, 1, dists)	
+		model = TSNE(metric='precomputed', perplexity=20)
+		tsne = model.fit_transform(dists) 
 		
 		# Save first two dimensions as column attributes
 		print "  Saving tSNE dimensions as column attributes _tSNE1 and _tSNE2."
-		self.set_attr("_tSNE1", tsne[:,0], axis = 1)
-		self.set_attr("_tSNE2", tsne[:,1], axis = 1)
+		tsne1 = tsne[:,0]	
+		tsne2 = tsne[:,1]	
+		self.set_attr("_tSNE1", tsne1, axis = 1)
+		self.set_attr("_tSNE2", tsne2, axis = 1)
 
 
 	#############
@@ -528,7 +562,10 @@ class LoomConnection(object):
 
 	# Returns a PIL image 256x256 pixels
 	def dz_get_zoom_image(self, x, y, z):
-		tile = self.dz_get_zoom_tile(x, y, z)
+		if self.file.__contains__("tiles"):
+			tile = self.dz_get_zoom_tile(x, y, z)
+		else:
+			return scipy.misc.toimage(np.zeros((256,256)))
 		tile[tile == 255] = 254
 
 		# Crop outside matrix dimensions
@@ -578,11 +615,11 @@ class LoomConnection(object):
 		if z > zmid:
 			scale = pow(2,z - zmid)
 			# Get the z = zmid tile that contains this tile
-			x1_tile = self.dz_get_zoom_tile(x/scale,y/scale,zmid)
+			x1_tile = self.dz_get_zoom_tile(x//scale,y//scale,zmid)
 			# Take the right submatrix
-			x = x - x/scale*scale # This works because of rounding down at the first division
-			y = y - y/scale*scale
-			tile = x1_tile[y*256/scale:y*256/scale + 256/scale, x*256/scale:x*256/scale + 256/scale]
+			x = x - x//scale*scale # This works because of rounding down at the first division
+			y = y - y//scale*scale
+			tile = x1_tile[y*256//scale:y*256//scale + 256//scale, x*256//scale:x*256//scale + 256//scale]
 			# Resample
 			for ix in xrange(z - zmid):
 				temp = np.empty((tile.shape[0]*2, tile.shape[1]*2) , dtype='float32')
@@ -605,10 +642,54 @@ class LoomConnection(object):
 				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
 				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
 				tile = temp[0::2,0::2]
-				self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
+				f.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='lzf')
+				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
 				self.file.flush()
 			return tile
+	def view(where, orderby, axis = 0):
+		return LoomView(self, where, orderby, axis)
 
+class LoomView(object):
+	def __init__(self, parent, where_rows, order_rows_by, where_columns, order_columns_by):
+		# Peform the selection on rows
+		rsel = ne.evaluate(where_rows, local_dict=parent.row_attrs)
+		if rsel.size == 1 and rsel.item() == True:
+			rsel = np.ones(self.shape[0], dtype='bool')
+		elif rsel.size == 1 and rsel.item() == False:
+			rsel = np.zeros(self.shape[0], dtype='bool')
+		n_rows = sum(rsel)
+
+		# And on columns
+		csel = ne.evaluate(where_columns, local_dict=self.col_attrs)
+		if csel.size == 1 and csel.item() == True:
+			csel = np.ones(self.shape[1], dtype='bool')
+		elif csel.size == 1 and csel.item() == False:
+			csel = np.zeros(self.shape[1], dtype='bool')
+		n_cols = sum(csel)
+
+		# Collect the right row and column attributes
+		self.row_attrs = {}
+		for key in parent.row_attrs.keys():
+			if n_rows > 0:
+				self.row_attrs[key] = self.row_attrs[key][rsel]
+			else:
+				self.row_attrs[key] = np.array([], dtype = parent.row_attrs[key].dtype)
+
+		self.col_attrs = {}
+		for key in parent.col_attrs.keys():
+			if n_cols > 0:
+				self.col_attrs[key] = self.col_attrs[key][csel]
+			else:
+				self.col_attrs[key] = np.array([], dtype = parent.row_attrs[key].dtype)
+
+		self.parent = parent
+		self.shape = (n_rows, n_cols)
+		self.row_ordering = XXXXXXXXXXXXXXXX
+		self.col_ordering = XXXXXXXXXXXXXXXX
+
+	def get(row, col):
+		return self.parent.get(self.row_ordering[row], self.col_ordering[col])
+		
 
 class _CEF(object):
 	def __init__(self):

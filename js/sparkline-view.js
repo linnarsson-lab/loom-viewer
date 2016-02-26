@@ -11,6 +11,7 @@ export class SparklineView extends Component {
   	var fi = this.props.fileInfo;
   	var ss = this.props.sparklineState;
   	var ds = this.props.dataState;
+  	var vs = this.props.viewState;
   	var dispatch = this.props.dispatch;
 
   	var colData = fi.colAttrs[ss.colAttr];
@@ -36,7 +37,7 @@ export class SparklineView extends Component {
 	for (var i = 0; i < colData.length; ++i) temp[i] = colData[indices[i]];
 	colData = temp;
 	
-  	var genes = ss.genes.trim().split(/[ ,\r\n]+/);
+  	var genes = _.uniq(ss.genes.trim().split(/[ ,\r\n]+/));
   	if(genes.length > 0 && genes[0] != "") {
 	  	var geneSparklines = _.map(genes, (gene)=>{
 	  		if(ds.genes.hasOwnProperty(gene)) {
@@ -47,11 +48,11 @@ export class SparklineView extends Component {
 					<div key={gene}>
 						<Sparkline 
 							orientation="horizontal"
-							width={600}
+							width={vs.width - 450}
 							height={20}
 							data={geneData}
 							dataRange={[0, colData.length]}
-							screenRange={[0,600]}
+							screenRange={[0,vs.width - 450]}
 							mode={ss.geneMode}
 						/>
 						<span className="sparkline-label">{gene}</span>
@@ -66,37 +67,35 @@ export class SparklineView extends Component {
   	}
 
 	return (
-		<div className="container-fluid">
-			<div className="row">
-				<div className="col-xs-6 col-sm-3">
-					<SparklineSidepanel 
-						sparklineState={ss}
-						dataState={ds}
-						fileInfo={fi}
-						dispatch={dispatch}
-					/>
-				</div>
-				<div className="col-xs-12 col-sm-9 no-line-space">
-					{/* We're borrowing the Leaflet zoom buttons 
-				  	<div className="leaflet-top leaflet-left">
-						<div className="leaflet-control-zoom leaflet-bar leaflet-control">
-							<a className="leaflet-control-zoom-in" title="Zoom in">+</a>
-							<a className="leaflet-control-zoom-out leaflet-disabled" title="Zoom out">-</a>
-						</div>
-					</div>				*/}
-					<Sparkline 
-						orientation="horizontal"
-						width={600}
-						height={20}
-						data={colData}
-						dataRange={[0, colData.length]}
-						screenRange={[0,600]}
-						mode={ss.colMode}
-					/>
-					<span className="sparkline-label">{ss.colAttr}</span>
-					<div>
-						{geneSparklines}
+		<div className="view">
+			<div className="view-sidepanel">
+				<SparklineSidepanel 
+					sparklineState={ss}
+					dataState={ds}
+					fileInfo={fi}
+					dispatch={dispatch}
+				/>
+			</div>
+			<div className="view-main">
+				{/* Borrowing the Leaflet zoom buttons 
+			  	<div className="leaflet-top leaflet-left">
+					<div className="leaflet-control-zoom leaflet-bar leaflet-control">
+						<a className="leaflet-control-zoom-in" title="Zoom in">+</a>
+						<a className="leaflet-control-zoom-out leaflet-disabled" title="Zoom out">-</a>
 					</div>
+				</div>				*/}
+				<Sparkline 
+					orientation="horizontal"
+					width={vs.width - 450}
+					height={20}
+					data={colData}
+					dataRange={[0, colData.length]}
+					screenRange={[0,vs.width - 450]}
+					mode={ss.colMode}
+				/>
+				<span className="sparkline-label">{ss.colAttr}</span>
+				<div>
+					{geneSparklines}
 				</div>
 			</div>
 		</div>
@@ -105,6 +104,7 @@ export class SparklineView extends Component {
 }
 
 SparklineView.propTypes = {
+	viewState: 				PropTypes.object.isRequired,
 	dataState: 				PropTypes.object.isRequired,
 	sparklineState: 		PropTypes.object.isRequired,
 	fileInfo: 				PropTypes.object.isRequired,

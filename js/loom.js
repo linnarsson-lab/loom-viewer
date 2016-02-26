@@ -17,6 +17,23 @@ let store = applyMiddleware(thunk)(createStore)(loomAppReducer);
 
 
 class App extends Component {
+   	componentDidMount() {
+   		var dispatch = this.props.dispatch;
+		window.addEventListener("resize", ()=>{
+			console.log("resize");
+			dispatch(
+				{
+					type: 'SET_VIEW_PROPS', 
+					width: document.getElementById("react-root").clientWidth, 
+					height: window.innerHeight - document.getElementById("react-root").offsetTop
+				}
+			);
+		});
+	}
+	componentWillUnmount() {
+		// Should remove the resize event listener here, but since this component will never unmount, we don't bother
+		// Because if we did bother, we'd need to figure out how to use 'this' in an event handler (again)
+	}
   	render() {
 		// Injected by connect() call:
 		const dispatch = this.props.dispatch;
@@ -34,6 +51,7 @@ class App extends Component {
 			case "Heatmap":
 				view =
 					<HeatmapView 
+						viewState={vs}
 						dataState={ds}
 						heatmapState={hs}
 						fileInfo={fi}
@@ -43,6 +61,7 @@ class App extends Component {
 			case "Sparkline":
 				view =
 					<SparklineView 
+						viewState={vs}
 						dataState={ds}
 						sparklineState={ss}
 						fileInfo={fi}
@@ -51,6 +70,7 @@ class App extends Component {
 				break;
 			case "Landscape":
 				view = <LandscapeView
+					viewState={vs}
 					dataState={ds}
 					landscapeState={ls}
 					fileInfo={fi}
@@ -59,6 +79,7 @@ class App extends Component {
 				break;
 			case "Genescape":
 				view = <GenescapeView
+					viewState={vs}
 					dataState={ds}
 					genescapeState={gs}
 					fileInfo={fi}
@@ -73,9 +94,9 @@ class App extends Component {
 			<div>
 				<Navbar 
 					fileName={fi.fileName}
-					viewState={vs.view}
+					viewState={vs}
 
-					onSetViewState={(state)=>dispatch({type: 'SET_VIEW_STATE', state: state})}
+					onSetViewState={(state)=>dispatch({type: 'SET_VIEW_PROPS', view: state})}
 				/>
 				{view}
 			</div>

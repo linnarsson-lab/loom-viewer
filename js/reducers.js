@@ -3,12 +3,16 @@ import L from "leaflet";
 import { combineReducers } from 'redux'
 
 const initialViewState = {
-	view: 'Heatmap'
+	type: "SET_VIEW_PROPS",	// This will be set to the last action type
+
+	view: 'Heatmap',
+	width: document.getElementById("react-root").clientWidth, 
+	height: window.innerHeight - document.getElementById("react-root").offsetTop - 50 // For some reason, at launch the height is 50px off (=navbar height)
 }
 function viewState(state=initialViewState, action) {
 	switch (action.type) {
-		case 'SET_VIEW_STATE':
-			return Object.assign({}, state,	{view: action.state });	// NOTE: must start with an empty object {} to ensure we don't mutate state
+		case 'SET_VIEW_PROPS':
+			return Object.assign({}, state,	action);	// NOTE: must start with an empty object {} to ensure we don't mutate state
 		default:
 			return state
 	}
@@ -60,9 +64,9 @@ function landscapeState(state=initialLandscapeState, action) {
 const initialGenescapeState = {
 	type: "SET_GENESCAPE_PROPS",	// This will be set to the last action type
 
-	xCoordinate: "",
-	yCoordinate: "",
-	colorAttr: "",
+	xCoordinate: Object.keys(window.fileinfo.rowAttrs)[0],
+	yCoordinate: Object.keys(window.fileinfo.rowAttrs)[0],
+	colorAttr: Object.keys(window.fileinfo.rowAttrs)[0],
 	colorMode: "Heatmap"
 }
 

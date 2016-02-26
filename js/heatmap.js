@@ -63,13 +63,19 @@ export class Heatmap extends React.Component {
 	}
 
 	render() {
+		var heatmapStyle = {
+			width: this.props.width + "px",
+			height: this.props.height + "px"
+		};
 		return (
-		  <div ref="map" id="map" className="stack-left-to-right"></div>
+		  <div ref="map" style={heatmapStyle} className="stack-left-to-right"></div>
 		);
 	}
 }
 
 Heatmap.propTypes = {
+	width: 			PropTypes.number.isRequired,
+	height: 			PropTypes.number.isRequired,
 	zoom: 			PropTypes.number.isRequired,
 	center: 		PropTypes.object.isRequired,
 	shape: 			PropTypes.arrayOf(PropTypes.number).isRequired,

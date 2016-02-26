@@ -8,41 +8,42 @@ export class GenescapeView extends Component {
 		var fi = this.props.fileInfo;
 		var gs = this.props.genescapeState;
 		var ds = this.props.dataState;
+	  	var vs = this.props.viewState;
 
+	  	console.log(gs);
 		var color =  fi.rowAttrs[gs.colorAttr];
 		var x = fi.rowAttrs[gs.xCoordinate];
 		var y = fi.rowAttrs[gs.yCoordinate];
 		return (
-			<div className="container-fluid">
-				<div className="row">
-					<div className="col-xs-6 col-sm-3">
-						<GenescapeSidepanel 
-							fileInfo={fi}
-							genescapeState={gs}
-							dataState={ds}
-							dispatch={dispatch}
-						/>
-					</div>
-					<div className="col-xs-12 col-sm-9 no-line-space">
-						<Scatterplot
-							x={x}
-							y={y}
-							color={color}
-							colorMode={gs.colorMode}
-							width={800}
-							height={600}
-							logScaleColor={false}
-							logScaleX={false}
-							logScaleY={false}
-						/>
-					</div>
-				</div>
+		<div className="view">
+			<div className="view-sidepanel">
+				<GenescapeSidepanel 
+					fileInfo={fi}
+					genescapeState={gs}
+					dataState={ds}
+					dispatch={dispatch}
+				/>
 			</div>
+			<div className="view-main">
+				<Scatterplot
+					x={x}
+					y={y}
+					color={color}
+					colorMode={gs.colorMode}
+					width={vs.width - 350}
+					height={vs.height - 40}
+					logScaleColor={false}
+					logScaleX={false}
+					logScaleY={false}
+				/>
+			</div>
+		</div>
 		)
 	}
 }
 
 GenescapeView.propTypes = {
+	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,

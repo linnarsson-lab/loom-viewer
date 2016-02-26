@@ -26,6 +26,22 @@ body {
 -------------------------------------------------- */
 /* Not required for template or sticky footer method. */
 
+.container-main { width:90%; margin:auto; } 
+
+.view {
+  margin-top: 60px;
+}
+
+.view-sidepanel { 
+  width:300px; 
+  float:left; 
+  padding-right: 20px;
+}
+
+.view-main { 
+  margin-left: 300px; 
+}
+
 body > .container-fluid {
   padding: 60px 15px 0;
 }
@@ -59,10 +75,6 @@ a {
 
 .navbar-brand {
   cursor: default;
-}
-#map { 
-  height: 600px;
-  width: 600px; 
 }
 
 .selected {

@@ -93,7 +93,7 @@ export class HeatmapSidepanel extends Component {
 					</div>				
 					<div className="btn-group btn-block">
 						{hs.rowAttr == "(gene positions)" ? 
-							<textarea className="form-control" placeholder="Genes" value={this.props.selectedRowGenes} onChange={(event)=>dispatch({ 
+							<textarea className="form-control" placeholder="Genes" value={hs.rowGenes} onChange={(event)=>dispatch({ 
 								type: 'SET_HEATMAP_PROPS', 
 								rowGenes: event.target.value
 							})}/> : 

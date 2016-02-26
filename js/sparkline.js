@@ -1,6 +1,5 @@
 import React, {PropTypes} from 'react';
 import { render, findDOMNode } from 'react-dom';
-import autoscale from 'autoscale-canvas';
 import { nMostFrequent } from './util';
 import * as _ from 'lodash';
 import * as colors from './colors';
@@ -130,18 +129,30 @@ export class Sparkline extends React.Component {
 
 	componentDidMount() {
 	    var el = findDOMNode(this);
-	    autoscale(el);	// Make sure we get a sharp canvas on Retina displays
+	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays		
 	    var context = el.getContext('2d');
 	    this.paint(context);
 	}
 
 	componentDidUpdate() {
-	    var context = findDOMNode(this).getContext('2d');
+	    var el = findDOMNode(this);
+	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays		
+	    var context = el.getContext('2d');
 	    context.clearRect(0, 0, this.props.width, this.props.height);
-	    this.paint(context);
+	    this.paint(context);	    
 	}
 
 	componentWillUnmount() {
+	}
+
+	retina_scale(el) {
+	    var context = el.getContext('2d');
+		var ratio = window.devicePixelRatio || 1;
+		el.style.width = this.props.width + "px";
+		el.style.height = this.props.height + "px";
+		el.width = this.props.width * ratio;
+		el.height = this.props.height * ratio;
+		context.scale(ratio, ratio);
 	}
 
 	paint(context) {

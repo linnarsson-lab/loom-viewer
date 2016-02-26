@@ -28,10 +28,6 @@ if not ds.col_attrs.__contains__("CellID"):
 	print "ERROR: Column attribute 'CellID' is missing."
 	sys.exit(1)
 
-# Precompute zoom pyramid and tSNE
-if not ds.loom_is_prepared():
-	ds.loom_prepare()
-
 # Create fileinfo (javascript format)
 dims = ds.dz_dimensions()
 #fileinfo = "window.fileinfo = {fileName: '%s', pixelHeight: %s, pixelWidth: %s} " % (os.path.basename(sys.argv[1]), dims[1], dims[0])

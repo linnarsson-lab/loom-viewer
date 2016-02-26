@@ -19,41 +19,41 @@ export class LandscapeView extends Component {
 		var fi = this.props.fileInfo;
 		var ls = this.props.landscapeState;
 		var ds = this.props.dataState;
+	  	var vs = this.props.viewState;
 
 		var color = this.makeData(ls.colorAttr, ls.colorGene);
 		var x = this.makeData(ls.xCoordinate, ls.xGene);
 		var y = this.makeData(ls.yCoordinate, ls.yGene);
 		return (
-			<div className="container-fluid">
-				<div className="row">
-					<div className="col-xs-6 col-sm-3">
-						<LandscapeSidepanel 
-							fileInfo={fi}
-							landscapeState={ls}
-							dataState={ds}
-							dispatch={dispatch}
-						/>
-					</div>
-					<div className="col-xs-12 col-sm-9 no-line-space">
-						<Scatterplot
-							x={x}
-							y={y}
-							color={color}
-							colorMode={ls.colorMode}
-							width={800}
-							height={600}
-							logScaleColor={ls.colorAttr == "(gene)"}
-							logScaleX={ls.xCoordinate == "(gene)"}
-							logScaleY={ls.yCoordinate == "(gene)"}
-						/>
-					</div>
-				</div>
+		<div className="view">
+			<div className="view-sidepanel">
+				<LandscapeSidepanel 
+					fileInfo={fi}
+					landscapeState={ls}
+					dataState={ds}
+					dispatch={dispatch}
+				/>
 			</div>
+			<div className="view-main">
+				<Scatterplot
+					x={x}
+					y={y}
+					color={color}
+					colorMode={ls.colorMode}
+					width={vs.width - 350}
+					height={vs.height - 40}
+					logScaleColor={ls.colorAttr == "(gene)"}
+					logScaleX={ls.xCoordinate == "(gene)"}
+					logScaleY={ls.yCoordinate == "(gene)"}
+				/>
+			</div>
+		</div>
 		)
 	}
 }
 
 LandscapeView.propTypes = {
+	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
 	fileInfo: PropTypes.object.isRequired,
