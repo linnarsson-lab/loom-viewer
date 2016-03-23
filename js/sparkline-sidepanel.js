@@ -6,10 +6,9 @@ export class SparklineSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
 		var ss = this.props.sparklineState;	
-		var fi = this.props.fileInfo;
 		var ds = this.props.dataState;
 
-		var colOptions = Object.keys(fi.colAttrs).sort().map((name)=> {
+		var colOptions = Object.keys(ds.currentDataset.colAttrs).sort().map((name)=> {
 			return (
 				<li key={name}>
 					<a onClick={(event)=>dispatch({ 
@@ -22,7 +21,7 @@ export class SparklineSidepanel extends Component {
 			);
 		});
 
-		var temp = Object.keys(fi.colAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(original order)");
 		temp.push("(gene)");
 		var orderByOptions = temp.map((name)=> {
@@ -85,7 +84,7 @@ export class SparklineSidepanel extends Component {
 								type: 'SET_SPARKLINE_PROPS', 
 								orderByGene: event.target.value
 							});
-							dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+							dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
 						}}/> : 
 						<span></span>
 					}
@@ -117,7 +116,7 @@ export class SparklineSidepanel extends Component {
 					<textarea className="form-control" rows="5" value={ss.genes} onChange={(event)=>{
 						dispatch({ type: 'SET_SPARKLINE_PROPS', genes: event.target.value });
 						_.forEach(event.target.value.trim().split(/[ ,\r\n]+/), (gene)=>{
-							dispatch(fetchGene(fi.rowAttrs, gene, ds.genes));
+							dispatch(fetchGene(ds.currentDataset, gene, ds.genes));
 						})
 					}}>
 					</textarea>
@@ -144,6 +143,5 @@ export class SparklineSidepanel extends Component {
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
-	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

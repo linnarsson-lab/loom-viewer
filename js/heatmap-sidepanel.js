@@ -4,11 +4,10 @@ import { fetchGene } from './actions.js';
 export class HeatmapSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
-		var fi = this.props.fileInfo;
 		var hs = this.props.heatmapState;
 		var ds = this.props.dataState;
 
-		var temp = Object.keys(fi.colAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var colOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
@@ -16,7 +15,7 @@ export class HeatmapSidepanel extends Component {
 							colAttr: name
 						})}>{name}</a></li>;
 		});
-		var temp = Object.keys(fi.rowAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
 		temp.push("(gene positions)");
 		var rowOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
@@ -73,7 +72,7 @@ export class HeatmapSidepanel extends Component {
 										type: 'SET_HEATMAP_PROPS', 
 										colGene: event.target.value
 									});
-									dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+									dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
 								}
 							}/> : 
 							<span></span>
@@ -118,6 +117,5 @@ export class HeatmapSidepanel extends Component {
 HeatmapSidepanel.propTypes = {
 	heatmapState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
-	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

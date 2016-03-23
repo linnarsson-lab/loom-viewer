@@ -3,18 +3,16 @@ import { Heatmap } from './heatmap';
 import { SparklineSidepanel } from './sparkline-sidepanel';
 import { Sparkline } from './sparkline';
 import * as _ from 'lodash';
-import { fetchGene } from './actions.js';
 
 
 export class SparklineView extends Component {
   render() {
-  	var fi = this.props.fileInfo;
   	var ss = this.props.sparklineState;
   	var ds = this.props.dataState;
   	var vs = this.props.viewState;
   	var dispatch = this.props.dispatch;
 
-  	var colData = fi.colAttrs[ss.colAttr];
+  	var colData = ds.currentDataset.colAttrs[ss.colAttr];
   	// Figure out the ordering
 	var indices = new Array(colData.length);
 	for (var i = 0; i < colData.length; ++i) indices[i] = i;
@@ -25,7 +23,7 @@ export class SparklineView extends Component {
 	  			orderBy = ds.genes[ss.orderByGene];
 	  		}
 	  	} else {
-	  		orderBy = fi.colAttrs[ss.orderByAttr];
+	  		orderBy = ds.currentDataset.colAttrs[ss.orderByAttr];
 	  	}
 	  	if(orderBy != null) {
 			indices.sort(function (a, b) { return orderBy[a] < orderBy[b] ? -1 : orderBy[a] > orderBy[b] ? 1 : 0; });
@@ -72,7 +70,6 @@ export class SparklineView extends Component {
 				<SparklineSidepanel 
 					sparklineState={ss}
 					dataState={ds}
-					fileInfo={fi}
 					dispatch={dispatch}
 				/>
 			</div>
@@ -107,6 +104,5 @@ SparklineView.propTypes = {
 	viewState: 				PropTypes.object.isRequired,
 	dataState: 				PropTypes.object.isRequired,
 	sparklineState: 		PropTypes.object.isRequired,
-	fileInfo: 				PropTypes.object.isRequired,
 	dispatch: 				PropTypes.func.isRequired
 }

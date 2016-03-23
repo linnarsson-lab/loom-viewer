@@ -6,11 +6,12 @@ import { Provider, connect } from 'react-redux';
 import thunk from 'redux-thunk';
 import loomAppReducer from './reducers'
 import { Navbar } from './navbar';
+import { DatasetView } from './dataset-view';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
 import { GenescapeView } from './genescape-view';
-import { fetchGene } from './actions.js';
+import { fetchProjects } from './actions.js';
 
 // create a store that has redux-thunk middleware enabled
 let store = applyMiddleware(thunk)(createStore)(loomAppReducer);
@@ -20,7 +21,6 @@ class App extends Component {
    	componentDidMount() {
    		var dispatch = this.props.dispatch;
 		window.addEventListener("resize", ()=>{
-			console.log("resize");
 			dispatch(
 				{
 					type: 'SET_VIEW_PROPS', 
@@ -29,6 +29,7 @@ class App extends Component {
 				}
 			);
 		});
+		dispatch(fetchProjects());
 	}
 	componentWillUnmount() {
 		// Should remove the resize event listener here, but since this component will never unmount, we don't bother
@@ -38,7 +39,6 @@ class App extends Component {
 		// Injected by connect() call:
 		const dispatch = this.props.dispatch;
 		const ds = this.props.dataState;
-		const fi = this.props.fileInfo;
 		const hs = this.props.heatmapState;
 		const ss = this.props.sparklineState;
 		const ls = this.props.landscapeState;
@@ -48,13 +48,21 @@ class App extends Component {
 		var view = <div></div>;
 
 		switch(this.props.viewState.view) {
+			case "Dataset":
+				view =
+					<DatasetView 
+						viewState={vs}
+						dataState={ds}
+						heatmapState={hs}
+						dispatch={dispatch}
+					/>
+				break;
 			case "Heatmap":
 				view =
 					<HeatmapView 
 						viewState={vs}
 						dataState={ds}
 						heatmapState={hs}
-						fileInfo={fi}
 						dispatch={dispatch}
 					/>
 				break;
@@ -64,7 +72,6 @@ class App extends Component {
 						viewState={vs}
 						dataState={ds}
 						sparklineState={ss}
-						fileInfo={fi}
 						dispatch={dispatch}
 					/>
 				break;
@@ -73,7 +80,6 @@ class App extends Component {
 					viewState={vs}
 					dataState={ds}
 					landscapeState={ls}
-					fileInfo={fi}
 					dispatch={dispatch}
 				/>
 				break;
@@ -82,7 +88,6 @@ class App extends Component {
 					viewState={vs}
 					dataState={ds}
 					genescapeState={gs}
-					fileInfo={fi}
 					dispatch={dispatch}
 				/>
 				break;
@@ -93,10 +98,16 @@ class App extends Component {
 		return (
 			<div>
 				<Navbar 
-					fileName={fi.fileName}
 					viewState={vs}
+					dataState={ds}
+					onSetViewState={(state)=>
+						{
+							if(ds.hasDataset) {
+								dispatch({type: 'SET_VIEW_PROPS', view: state});
+							}
+						}
+					}
 
-					onSetViewState={(state)=>dispatch({type: 'SET_VIEW_PROPS', view: state})}
 				/>
 				{view}
 			</div>
@@ -108,7 +119,6 @@ App.propTypes = {
 	heatmapState: PropTypes.object,
 	landscapeState: PropTypes.object,
 	genescapeState: PropTypes.object,
-	fileInfo: PropTypes.object,
 	viewState: PropTypes.object
 }
 

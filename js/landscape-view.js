@@ -10,13 +10,12 @@ export class LandscapeView extends Component {
 				data = this.props.dataState.genes[gene];
 			}
 		} else {
-			data = this.props.fileInfo.colAttrs[attr];
+			data = this.props.dataState.currentDataset.colAttrs[attr];
 		}		
 		return data;
 	}
 	render() {
 		var dispatch = this.props.dispatch;
-		var fi = this.props.fileInfo;
 		var ls = this.props.landscapeState;
 		var ds = this.props.dataState;
 	  	var vs = this.props.viewState;
@@ -28,7 +27,6 @@ export class LandscapeView extends Component {
 		<div className="view">
 			<div className="view-sidepanel">
 				<LandscapeSidepanel 
-					fileInfo={fi}
 					landscapeState={ls}
 					dataState={ds}
 					dispatch={dispatch}
@@ -56,6 +54,5 @@ LandscapeView.propTypes = {
 	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
-	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

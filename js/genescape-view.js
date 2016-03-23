@@ -5,20 +5,18 @@ import { Scatterplot } from './scatterplot';
 export class GenescapeView extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
-		var fi = this.props.fileInfo;
 		var gs = this.props.genescapeState;
 		var ds = this.props.dataState;
 	  	var vs = this.props.viewState;
 
 	  	console.log(gs);
-		var color =  fi.rowAttrs[gs.colorAttr];
-		var x = fi.rowAttrs[gs.xCoordinate];
-		var y = fi.rowAttrs[gs.yCoordinate];
+		var color =  ds.currentDataset.rowAttrs[gs.colorAttr];
+		var x = ds.currentDataset.rowAttrs[gs.xCoordinate];
+		var y = ds.currentDataset.rowAttrs[gs.yCoordinate];
 		return (
 		<div className="view">
 			<div className="view-sidepanel">
 				<GenescapeSidepanel 
-					fileInfo={fi}
 					genescapeState={gs}
 					dataState={ds}
 					dispatch={dispatch}
@@ -46,6 +44,5 @@ GenescapeView.propTypes = {
 	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
-	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

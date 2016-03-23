@@ -7,7 +7,6 @@ import * as _ from 'lodash';
 export class HeatmapView extends Component {
   render() {
 	var dispatch = this.props.dispatch;
-	var fi = this.props.fileInfo;
 	var ds = this.props.dataState;
 	var hs = this.props.heatmapState;
 	var vs = this.props.viewState;
@@ -18,13 +17,13 @@ export class HeatmapView extends Component {
 			colData = ds.genes[hs.colGene];	
 		} 
 	} else {
-		colData = fi.colAttrs[hs.colAttr];
+		colData = ds.currentDataset.colAttrs[hs.colAttr];
 	}
 
-	var rowData = fi.rowAttrs[hs.rowAttr]
+	var rowData = ds.currentDataset.rowAttrs[hs.rowAttr]
 	if(hs.rowAttr == "(gene positions)") {
 		var genes = hs.rowGenes.trim().split(/[ ,\r\n]+/);
-		rowData = _.map(fi.rowAttrs["Gene"],(x)=>(_.indexOf(genes, x) != -1 ? x : ""));
+		rowData = _.map(ds.currentDataset.rowAttrs["Gene"],(x)=>(_.indexOf(genes, x) != -1 ? x : ""));
 	}
 
 	// Calculate the layout of everything
@@ -48,7 +47,6 @@ export class HeatmapView extends Component {
 		<div className="view">
 			<div className="view-sidepanel">
 				<HeatmapSidepanel 
-					fileInfo={fi}
 					heatmapState={hs}
 					dataState={ds}
 					dispatch={dispatch}
@@ -65,14 +63,15 @@ export class HeatmapView extends Component {
 					mode={hs.colMode}
 					/>					
 				<Heatmap
+					dataset={ds.currentDataset.project + "@" + ds.currentDataset.name}
 					width={heatmapWidth}
 					height={heatmapHeight}
 					zoom={hs.zoom}
 					center={hs.center}
-					shape={fi.shape}
-					zoomRange={fi.zoomRange}
-					fullZoomWidth={fi.fullZoomWidth}
-					fullZoomHeight={fi.fullZoomHeight}
+					shape={ds.currentDataset.shape}
+					zoomRange={ds.currentDataset.zoomRange}
+					fullZoomWidth={ds.currentDataset.fullZoomWidth}
+					fullZoomHeight={ds.currentDataset.fullZoomHeight}
 					onViewChanged={(bounds)=>dispatch({ 
 						type: 'SET_HEATMAP_PROPS', 
 						screenBounds: bounds.screenBounds,
@@ -99,6 +98,5 @@ HeatmapView.propTypes = {
 	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
-	fileInfo: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }

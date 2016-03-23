@@ -34,7 +34,7 @@ export class Heatmap extends React.Component {
 			attributionControl: false
 		});
 
-		L.tileLayer('/tiles/{z}/{x}_{y}.png', {
+		L.tileLayer(`/loom/${this.props.dataset}/tiles/{z}/{x}_{y}.png`, {
 			maxZoom: this.props.zoomRange[2],
 			minZoom: this.props.zoomRange[0] + 1,
 			continuousWorld: false,
@@ -74,8 +74,9 @@ export class Heatmap extends React.Component {
 }
 
 Heatmap.propTypes = {
+	dataset: 		PropTypes.string.isRequired,
 	width: 			PropTypes.number.isRequired,
-	height: 			PropTypes.number.isRequired,
+	height: 		PropTypes.number.isRequired,
 	zoom: 			PropTypes.number.isRequired,
 	center: 		PropTypes.object.isRequired,
 	shape: 			PropTypes.arrayOf(PropTypes.number).isRequired,

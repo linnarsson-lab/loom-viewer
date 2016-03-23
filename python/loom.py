@@ -167,7 +167,7 @@ class LoomConnection(object):
 	
 	def __getitem__(self, slice):
 		return self.file['matrix'].__getitem__(slice)
-		
+
 	def add_columns(self, submatrix, col_attrs):
 		if submatrix.shape[0] != self.shape[0]:
 			raise ValueError, "New submatrix must have same number of rows as existing matrix"
@@ -374,7 +374,7 @@ class LoomConnection(object):
 				ix = ix + cols_per_chunk
 			return result
 
-	# Compute correlation on log2 scale and without casting to float64
+	# Compute correlation matrix without casting to float64
 	def corr_matrix(self, axis = 0):
 		data = self.file['matrix'][:,:]
 		if axis == 1:

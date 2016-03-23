@@ -3,10 +3,10 @@ import React, { Component, PropTypes } from 'react';
 export class GenescapeSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
-		var fi = this.props.fileInfo;
 		var gs = this.props.genescapeState;
+		var ds = this.props.dataState;
 
-		var temp = Object.keys(fi.rowAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
 		var xOptions = temp.map((name)=> {
 			return <li key={name}>
 				<a onClick={(event)=>dispatch({ 
@@ -18,7 +18,7 @@ export class GenescapeSidepanel extends Component {
 			</li>;
 		});
 		
-		var temp = Object.keys(fi.rowAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
 		var yOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
 						type: 'SET_GENESCAPE_PROPS', 
@@ -26,7 +26,7 @@ export class GenescapeSidepanel extends Component {
 					})}>{name}</a></li>;
 		});
 
-		var temp = Object.keys(fi.rowAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
 		var colorOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
 						type: 'SET_GENESCAPE_PROPS', 
@@ -101,6 +101,6 @@ export class GenescapeSidepanel extends Component {
 
 GenescapeSidepanel.propTypes = {
 	genescapeState: 	PropTypes.object.isRequired,
-	fileInfo: 			PropTypes.object.isRequired,
+	dataState: 			PropTypes.object.isRequired,
 	dispatch: 			PropTypes.func.isRequired
 }

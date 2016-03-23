@@ -1,6 +1,8 @@
 import flask
 import os
+import os.path
 import loom
+from loom_cache import LoomCache
 import sys
 import StringIO
 import json
@@ -9,57 +11,29 @@ from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
 
-if len(sys.argv) != 2:
-	print "ERROR: a single argument is required (name of h5 file to browse)"
-	sys.exit(1)
+DEBUG = False
+if len(sys.argv) > 1:
+	if sys.argv[1] == "debug":
+		DEBUG = True
+	else:
+		print "Invalid flag: " + sys.argv[1]
+		print "(only valid flag is 'debug')"
+		sys.exit(1)
 
-try:
-	ds = loom.connect(sys.argv[1])
-except:
-	print "ERROR: file not found, or not a valid .loom file."
-	sys.exit(1)
+os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+print "Serving from: " + os.getcwd()
 
-if not ds.row_attrs.__contains__("GeneName"):
-	if not ds.row_attrs.__contains__("Gene"):
-		print "ERROR: Row attribute 'GeneName' is missing."
-
-
-if not ds.col_attrs.__contains__("CellID"):
-	print "ERROR: Column attribute 'CellID' is missing."
-	sys.exit(1)
-
-# Create fileinfo (javascript format)
-dims = ds.dz_dimensions()
-#fileinfo = "window.fileinfo = {fileName: '%s', pixelHeight: %s, pixelWidth: %s} " % (os.path.basename(sys.argv[1]), dims[1], dims[0])
-fileinfo = "window.fileinfo = " + json.dumps({
-		"fileName": os.path.basename(sys.argv[1]),
-		"shape": ds.shape,
-		"zoomRange": ds.dz_zoom_range(),
-		"fullZoomHeight": dims[1],
-		"fullZoomWidth": dims[0],
-		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.iteritems()]),
-		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()])
-	})
+datadir = os.path.join(os.getcwd(), "cache")
+if not os.path.exists(datadir):
+	os.makedirs(datadir)
+cache = LoomCache(datadir)
 
 class LoomServer(flask.Flask):
 	# Disable cacheing 
     def get_send_file_max_age(self, name):
         return 0
 
-
-os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-print "Serving from: " + os.getcwd()
 app = LoomServer(__name__)
-
-#
-# URL namespace
-#
-# /repo 										- List of all projects and datasets (JSON)
-# /repo/public/{project}/{dataset}/rev15.json	- Metadata (JSON)
-# /repo/public/{project}/{dataset}/tiles 	 	- Heatmap images
-# /repo/public/{project}/{dataset}/row/ 	 	- Row data
-# /repo/public/{project}/{dataset}/col/ 	 	- Column data
-
 
 #
 # Static assets
@@ -81,35 +55,62 @@ def send_img(path):
 def send_indexjs():
 	return app.send_static_file('index.html')
 
-@app.route('/fileinfo.js')
-def send_fileinfo():
-	return flask.Response(fileinfo, mimetype="application/javascript")
+#
+# Loom datasets
+#
 
-@app.route('/row/<int:row>')
-def send_row(row):
+# List of all datasets
+@app.route('/loom')
+def send_dataset_list():
+	return flask.Response(json.dumps(cache.list_datasets()), mimetype="application/json")
+
+# Info for a single dataset
+@app.route('/loom/<string:dataset>/fileinfo.json')
+def send_fileinfo(dataset):
+	ds = cache.get_dataset(dataset)
+	dims = ds.dz_dimensions()
+	fileinfo = {
+		"project": dataset.split("@")[0],
+		"name": dataset.split("@")[1],
+		"shape": ds.shape,
+		"zoomRange": ds.dz_zoom_range(),
+		"fullZoomHeight": dims[1],
+		"fullZoomWidth": dims[0],
+		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.iteritems()]),
+		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()])
+	}
+	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
+
+# Get one row of data (i.e. all the expression values for a single gene)
+@app.route('/loom/<string:dataset>/row/<int:row>')
+def send_row(dataset, row):
+	ds = cache.get_dataset(dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][row,:].tolist()), mimetype="application/json")
 
-@app.route('/col/<int:col>')
-def send_col(col):
+# Get one column of data (i.e. all the expression values for a single cell)
+@app.route('/loom/<string:dataset>/col/<int:col>')
+def send_col(dataset, col):
+	ds = cache.get_dataset(dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][:,col].tolist()), mimetype="application/json")
 
 #
 # Tiles 
 #
 
-def serve_pil_image(img):
+def serve_image(img):
 	img_io = StringIO.StringIO()
 	img.save(img_io, 'PNG')
 	img_io.seek(0)
 	return flask.send_file(img_io, mimetype='image/png')
 
-@app.route('/tiles/<int:z>/<int:x>_<int:y>.png')
-def send_tile(z,x,y):
+@app.route('/loom/<string:dataset>/tiles/<int:z>/<int:x>_<int:y>.png')
+def send_tile(dataset, z,x,y):
+	ds = cache.get_dataset(dataset)
 	img = ds.dz_get_zoom_image(x,y,z)
-	return serve_pil_image(img)
+	return serve_image(img)
 
 if __name__ == '__main__':
-	app.run(debug=False)
+	app.run(debug=DEBUG)
 
 
 

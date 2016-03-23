@@ -1,13 +1,18 @@
 #! /bin/bash
+echo "Saving cache folder from previous build."
+mv ./release/cache ./cache
 rm -r ./release
 set -o nounset
 set -o errexit
+export NODE_ENV=production  # To use DEBUG mode, just comment out this line
+echo "Building React in 'production' mode (for debug mode, edit this build script)."
 
 # Set up a cache-busting integer
 v=$RANDOM
 
 # Set up the release directories
 mkdir release
+mv ./cache ./release/cache
 mkdir release/python
 mkdir release/python/static
 mkdir release/python/static/img

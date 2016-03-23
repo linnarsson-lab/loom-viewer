@@ -6,11 +6,10 @@ import { fetchGene } from './actions.js';
 export class LandscapeSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
-		var fi = this.props.fileInfo;
 		var ls = this.props.landscapeState;
 		var ds = this.props.dataState;
 
-		var temp = Object.keys(fi.colAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var xOptions = temp.map((name)=> {
 			return <li key={name}>
@@ -23,7 +22,7 @@ export class LandscapeSidepanel extends Component {
 			</li>;
 		});
 		
-		var temp = Object.keys(fi.colAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var yOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
@@ -32,7 +31,7 @@ export class LandscapeSidepanel extends Component {
 					})}>{name}</a></li>;
 		});
 
-		var temp = Object.keys(fi.colAttrs).sort();
+		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var colorOptions = temp.map((name)=> {
 			return <li key={name}><a onClick={(event)=>dispatch({ 
@@ -93,7 +92,7 @@ export class LandscapeSidepanel extends Component {
 									type: 'SET_LANDSCAPE_PROPS', 
 									xGene: event.target.value
 								});
-								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
 							}}/> : 
 							<span></span>
 						}
@@ -118,7 +117,7 @@ export class LandscapeSidepanel extends Component {
 									type: 'SET_LANDSCAPE_PROPS', 
 									yGene: event.target.value
 								});
-								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
 							}}/> : 
 							<span></span>
 						}
@@ -157,7 +156,7 @@ export class LandscapeSidepanel extends Component {
 									type: 'SET_LANDSCAPE_PROPS', 
 									colorGene: event.target.value
 								});
-								dispatch(fetchGene(fi.rowAttrs, event.target.value, ds.genes));
+								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
 							}}/> : 
 							<span></span>
 						}
@@ -173,7 +172,6 @@ export class LandscapeSidepanel extends Component {
 
 LandscapeSidepanel.propTypes = {
 	landscapeState: 	PropTypes.object.isRequired,
-	fileInfo: 			PropTypes.object.isRequired,
 	dataState: 			PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
 }
