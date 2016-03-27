@@ -54,8 +54,8 @@ These tables are regenerated as needed when new data arrives. There are four mai
   
 User-defined **datasets** are also stored in BigQuery. Each dataset is defined by two tables:
 
-  * ```Cells:project@dataset.loom```
-  * ```Genes:project@dataset.loom```
+  * ```Cells:project@dataset.loom```.
+  * ```Genes:project@dataset.loom```.
 
  ...where *project* and *dataset* are names selected by the user. The ```Cells:...``` table must have column ```CellID``` and 
  the ```Genes:...``` table must have a column ```TranscriptID```. The dataset can be materialized by joining these tables
