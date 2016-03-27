@@ -27,7 +27,9 @@ The Linnarsson Lab Cloud serves the following purposes:
 * Standard cell annotations and gene annotations
 * User-defined cell and gene annotations (known as datasets)
 
-A user-defined **dataset** is a set of cells and a set of genes, together with custom annotations.
+A user-defined **dataset** is a set of cells and a set of genes, together with custom annotations. Each dataset belongs to
+a specific **transcriptome**, which is defined by a genome build and gene model database. For example, **mm10a_sUCSC**. 
+Note that transcriptome names must contain only letters, numbers and underscore (so "mm10.2_sUCSC" is illegal).
 
 Datasets are organized in **projects**, and a project may contain datasets from different species (or transcriptomes).
 
