@@ -57,9 +57,9 @@ User-defined **datasets** are also stored in BigQuery. Each dataset is defined b
   * ```Cells:project@dataset.loom```
   * ```Genes:project@dataset.loom```
 
-  ...where *project* and *dataset* are names selected by the user. The ```Cells:...``` table must have column ```CellID``` and 
-  the ```Genes:...``` table must have a column ```TranscriptID```. The dataset can be materialized by joining these tables
-  to the main tables (**Cells**, **Genes** and **Matrix**) for the transcriptome. 
+ ...where *project* and *dataset* are names selected by the user. The ```Cells:...``` table must have column ```CellID``` and 
+ the ```Genes:...``` table must have a column ```TranscriptID```. The dataset can be materialized by joining these tables
+ to the main tables (**Cells**, **Genes** and **Matrix**) for the transcriptome. 
 
 ##### [...in Cloud Storage bucket ```linnarsson-lab-loom```](https://console.cloud.google.com/storage/browser/linnarsson-lab-loom/?project=linnarsson-lab)
 Loom files prepared for browsing are stored in Cloud Storage with key equal to the fully qualified dataset name, e.g. ```myProject@my_dataset.loom``` 
