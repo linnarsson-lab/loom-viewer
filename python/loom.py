@@ -73,19 +73,19 @@ from sklearn.manifold import TSNE
 from sklearn.metrics.pairwise import pairwise_distances
 import __builtin__
 
-pd.set_option('display.multi_sparse', False)
-
-#
-# Create a new .loom file from the given data
-#
-# Arguments:
-#
-# 	filename	- name of the new file (typically ending in .loom)
-#	matrix 		- numpy 2-dimensional ndarray
-#	row_attrs 	- dictionary of row attributes {"Attr1": [1,2,32,4,4], ...}
-# 	col_attrs 	- dictionary of column attributes {"Attr1": [1,2,32,4,4], ...}
-#
 def create(filename, matrix, row_attrs, col_attrs):
+	"""
+	Create a new .loom file from the given data.
+
+	Args:
+		filename (str):			The filename (typically using a '.loom' file extension)
+		matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
+		row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N
+		col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
+
+	Returns:
+		Nothing. To work with the file, use loom.connect(filename).
+	"""
 	if len(row_attrs) == 0:
 		raise KeyError, "At least one row attribute must be supplied."
 	if len(col_attrs) == 0:
@@ -127,11 +127,35 @@ def create(filename, matrix, row_attrs, col_attrs):
 	f.close()
 
 def create_from_cef(cef_file, loom_file):
+	"""
+	Create a .loom file from a legacy CEF file.
+
+	Args:
+		cef_file (str):		filename of the input CEF file
+		loom_file (str):	filename of the output .loom file (will be created)
+	
+	Returns:
+		Nothing.
+	"""
 	cef = _CEF()
 	cef.readCEF(cef_file)
 	cef.export_as_loom(loom_file)
 
 def create_from_pandas(df, loom_file):
+	"""
+	Create a .loom file from a Pandas DataFrame.
+
+	Args:
+		df (pd.DataFrame):	Pandas DataFrame
+		loom_file (str):	Name of the output .loom file (will be created)
+
+	Returns:
+		Nothing.
+
+	The DataFrame can contain multi-indexes on both axes, which will be turned into row and column attributes
+	of the .loom file. The main matrix of the DataFrame must contain only float values. The datatypes of the
+	attributes will be inferred as either float or string. 
+	"""
 	n_rows = df.shape[0]
 	f = h5py.File(loom_file, "w")
 	f.create_group('/row_attrs')
@@ -151,10 +175,30 @@ def create_from_pandas(df, loom_file):
 	pass
 
 def connect(filename):
+	"""
+	Establish a connection to a .loom file.
+
+	Args:
+		filename (str):		Name of the .loom file to open
+
+	Returns:
+		Nothing.
+	"""
 	return LoomConnection(filename)
 
 class LoomConnection(object):
 	def __init__(self, filename):
+		"""
+		Establish a connection to a .loom file.
+
+		Args:
+			filename (str):		Name of the .loom file to open
+
+		Returns:
+			Nothing.
+
+		Row and column attributes are loaded into memory for fast access.		
+		"""
 		self.file = h5py.File(filename,'r+')
 		self.shape = self.file['matrix'].shape
 		self.row_attrs = {}
@@ -166,9 +210,30 @@ class LoomConnection(object):
 			self.col_attrs[x] = self.file['col_attrs'][x][:]
 	
 	def __getitem__(self, slice):
+		"""
+		Get a slice of the main matrix.
+
+		Args:
+			slice (slice):	A slice object (see http://docs.h5py.org/en/latest/high/dataset.html for syntax and limitations)
+
+		Returns:
+			Nothing.
+		"""
 		return self.file['matrix'].__getitem__(slice)
 
 	def add_columns(self, submatrix, col_attrs):
+		"""
+		Add columns of data and attribute values to the dataset.
+
+		Args:
+			submatrix (numpy.ndarray):	An N-by-M matrix of floats (N rows, M columns)
+			col_attrs (dict):			Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
+
+		Returns:
+			Nothing.
+
+		Note that this will modify the underlying HDF5 file, which will interfere with any concurrent readers.
+		"""
 		if submatrix.shape[0] != self.shape[0]:
 			raise ValueError, "New submatrix must have same number of rows as existing matrix"
 
@@ -194,6 +259,19 @@ class LoomConnection(object):
 		self.file.flush()
 
 	def set_attr(self, name, values, axis = 0):
+		"""
+		Create or modify an attribute.
+
+		Args:
+			name (str): 			Name of the attribute
+			values (numpy.ndarray):	Array of values of length equal to the axis length
+			axis (int):				Axis of the attribute (0 = rows, 1 = columns)
+
+		Returns:
+			Nothing.
+
+		This will overwrite any existing attribute of the same name.
+		"""
 		# Add annotation along the indicated axis
 		if axis == 0:
 			if len(values) != self.shape[0]:
@@ -212,6 +290,22 @@ class LoomConnection(object):
 		self.file.flush()
 
 	def set_attr_bydict(self, name, fromattr, dict, axis = 0, default = None):
+		"""
+		Create or modify an attribute by mapping source values to target values.
+
+		Args:
+			name (str): 			Name of the destination attribute
+			fromattr (str):			Name of the source attribute
+			dict (dict):			Key-value mapping from source to target values
+			axis (int):				Axis of the attribute (0 = rows, 1 = columns)
+			default: (float or str):	Default target value to use if no mapping exists for a source value
+
+		Returns:
+			Nothing.
+
+		This will overwrite any existing attribute of the same name. It is perfectly possible to map an
+		attribute to itself (in-place).
+		"""
 		if axis == 0:
 			if not self.row_attrs.__contains__(fromattr):
 				raise KeyError("Row attribute %s does not exist" % fromattr)
@@ -232,6 +326,27 @@ class LoomConnection(object):
 		self.file.flush()
 
 	def select_longform(self, row_expr, col_expr, row_index, col_index, transpose = False):
+		"""
+		Select a subset of the dataset in Pandas 'longform' format suitable for statistical analysis.
+
+		Args:
+			row_expr (str):		A row expression in numexpr format
+			col_expr (str):		A row expression in numexpr format
+			row_index (str):	The attribute to use as row index in the Pandas DataFrame
+			col_index (str):	The attribute to use as column index in the Pandas DataFrame
+			transpose (bool):	Indicates if the result should be transposed
+
+		Returns:
+			Pandas DataFrame object in 'longform' layout.
+
+		Row and column expressions must be given in numexpr format (see https://github.com/pydata/numexpr). All row (column)
+		attributes are available in the expression by simply using their names. Example: 
+
+			data = loom.connect(filename)
+			df = data.select_longform("GeneName=='Actb'", "Tissue=='cortex'", "TranscriptID", "CellID")
+
+		To select all rows (columns), use "True". To select no rows (columns), use "False". 
+		"""
 		# Peform the selection on rows
 		rsel = ne.evaluate(row_expr, local_dict=self.row_attrs)
 		if rsel.size == 1 and rsel.item() == True:
@@ -301,6 +416,24 @@ class LoomConnection(object):
 		return df
 
 	def select(self, row_expr, col_expr):
+		"""
+		Select a subset of the dataset as a Pandas DataFrame with multi-indexes
+
+		Args:
+			row_expr (str):		A row expression in numexpr format
+			col_expr (str):		A row expression in numexpr format
+
+		Returns:
+			Pandas DataFrame object with attributes in row and column indexes
+
+		Row and column expressions must be given in numexpr format (see https://github.com/pydata/numexpr). All row (column)
+		attributes are available in the expression by simply using their names. Example: 
+
+			data = loom.connect(filename)
+			df = data.select("GeneName=='Actb'", "Tissue=='cortex'")
+
+		To select all rows (columns), use "True". To select no rows (columns), use "False". 
+		"""
 		# Peform the selection on rows
 		rsel = ne.evaluate(row_expr, local_dict=self.row_attrs)
 		if rsel.size == 1 and rsel.item() == True:
@@ -353,6 +486,17 @@ class LoomConnection(object):
 
 	# Return the result of applying f to each row/column, without loading entire dataset into memory
 	def apply_chunked(self, f, axis = 0, chunksize = 100000000):
+		"""
+		Apply a function along an axis without loading the entire dataset in memory.
+
+		Args:
+			f (func):		Function that takes a numpy ndarray as argument
+			axis (int):		Axis along which to apply the function (0 = rows, 1 = columns)
+			chunksize (int): Number of values to load per chunk
+
+		Returns:
+			numpy.ndarray result of function application
+		"""
 		if axis == 0:
 			rows_per_chunk = chunksize//self.shape[1]
 			result = np.zeros(self.shape[0])
@@ -374,8 +518,19 @@ class LoomConnection(object):
 				ix = ix + cols_per_chunk
 			return result
 
-	# Compute correlation matrix without casting to float64
+	
 	def corr_matrix(self, axis = 0):
+	"""
+	Compute correlation matrix without casting to float64.
+
+	Args:
+		axis (int):	The axis along which to compute the correlation matrix.
+
+	Returns:
+		numpy.ndarray of float32 correlation coefficents
+
+	This function avoids casting intermediate values to double (float64), to reduce memory footprint.
+	"""
 		data = self.file['matrix'][:,:]
 		if axis == 1:
 		    data = data.T
@@ -389,6 +544,16 @@ class LoomConnection(object):
 		return np.nan_to_num(data)
 
 	def permute(ordering, axis):
+	"""
+	Permute the dataset along the indicated axis.
+
+	Args:
+		ordering (list of int): 	The desired order along the axis
+		axis (int):					The axis along which to permute
+
+	Returns:
+		Nothing.
+	"""
 		if axis == 0:
 			chunksize = 5000
 			start = 0
@@ -415,15 +580,16 @@ class LoomConnection(object):
 
 
 	def feature_selection(self, n_genes):
-		'''Fits a noise model (CV vs mean)
-		Parameters
-		----------
-			n_genes: integer, number of genes to include
+		"""
+		Fits a noise model (CV vs mean)
+		Args:
+			n_genes (int):	number of genes to include
 
-		Returns
-		-------
-		Nothing, but creates new column attributes _LogMean, _LogCV, _Noise, _Excluded
-		'''
+		Returns:
+			Nothing.
+		
+		This method creates new column attributes _LogMean, _LogCV, _Noise (CV relative to predicted CV), _Excluded (1/0)
+		"""
 		print "Calculating means"
 		mu = self.apply_chunked(np.mean)
 		print "Calculating CVs"
@@ -457,29 +623,24 @@ class LoomConnection(object):
 		self.set_attr("_Excluded", excluded, axis = 0)		
 
 
-	########
-	# LOOM #
-	########
-
-	def loom_prepare(self):
-		print "Creating landscape view:"
-		if not self.col_attrs.has_key("_tSNE1"):
-			self.feature_selection(10000)
-			self.project_to_2d()
-		print "Creating heatmap."
-		if not self.file.__contains__('tiles'):
-			self.dz_get_zoom_image(0,0,8)
-		print "Done."
-
-	def loom_is_prepared(self):
-		return self.file.__contains__('tiles')
-
 	##############
 	# PROJECTION #
 	##############
 
-	# Create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2
-	def project_to_2d(self):
+	def project_to_2d(self, n_components = 50):
+		"""
+		Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
+
+		Args:
+			n_components (int): 	Number of PCA components to use for tSNE
+
+		Returns:
+			Nothing.
+
+		This method first computes a PCA using scikit-learn IncrementalPCA (which doesn't load the whole
+		dataset in RAM), then uses the top principal components to compute a tSNE projection. If row 
+		attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
+		"""
 		# First perform PCA out of band
 		# Process max 100 MB at a time (assuming about 25000 genes)
 		batch_size = 1000
@@ -539,6 +700,9 @@ class LoomConnection(object):
 	#############
 
 	def dz_get_max_byrow(self):
+		"""
+		Calculate maximal values by row and cache in the file.
+		"""
 		try:
 			maxes = self.file['tiles/maxvalues']
 		except KeyError:
@@ -548,6 +712,9 @@ class LoomConnection(object):
 		return maxes
 
 	def dz_get_min_byrow(self):
+		"""
+		Calculate minimum values by row and cache in the file.
+		"""
 		try:
 			mins = self.file['tiles/minvalues']
 		except KeyError:
@@ -557,14 +724,37 @@ class LoomConnection(object):
 		return mins
 
 	def dz_zoom_range(self):
+		"""
+		Determine the zoom limits for this file.
+
+		Returns:
+			Tuple (middle, min_zoom, max_zoom) of integer zoom levels. 
+		"""
 		return (8, int(max(np.ceil(np.log2(self.shape)))), int(max(np.ceil(np.log2(self.shape)))+8))
 
 	def dz_dimensions(self):
+		"""
+		Determine the total size of the deep zoom image.
+
+		Returns:
+			Tuple (x,y) of integers
+		"""
 		(y,x) = np.divide(self.shape,256)*256*pow(2,8)
 		return (x,y)
 
 	# Returns a PIL image 256x256 pixels
 	def dz_get_zoom_image(self, x, y, z):
+		"""
+		Create a 256x256 pixel PIL image corresponding to the tile at x,y and z.
+
+		Args:
+			x (int):	Horizontal tile index (0 is left-most)
+			y (int): 	Vertical tile index (0 is top-most)
+			z (int): 	Zoom level (8 is 'middle' where pixels correspond to data values)
+
+		Returns:
+			Python image library Image object
+		"""
 		if self.file.__contains__("tiles"):
 			tile = self.dz_get_zoom_tile(x, y, z)
 		else:
@@ -586,6 +776,17 @@ class LoomConnection(object):
 
 	# Returns a submatrix scaled to 0-255 range
 	def dz_get_zoom_tile(self, x, y, z):
+		"""
+		Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
+
+		Args:
+			x (int):	Horizontal tile index (0 is left-most)
+			y (int): 	Vertical tile index (0 is top-most)
+			z (int): 	Zoom level (8 is 'middle' where pixels correspond to data values)
+
+		Returns:
+			Numpy ndarray of shape (256,256)
+		"""
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if z < zmin:
 			raise ValueError, ("z cannot be less than %s" % zmin)
@@ -649,50 +850,6 @@ class LoomConnection(object):
 				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
 				self.file.flush()
 			return tile
-	def view(where, orderby, axis = 0):
-		return LoomView(self, where, orderby, axis)
-
-class LoomView(object):
-	def __init__(self, parent, where_rows, order_rows_by, where_columns, order_columns_by):
-		# Peform the selection on rows
-		rsel = ne.evaluate(where_rows, local_dict=parent.row_attrs)
-		if rsel.size == 1 and rsel.item() == True:
-			rsel = np.ones(self.shape[0], dtype='bool')
-		elif rsel.size == 1 and rsel.item() == False:
-			rsel = np.zeros(self.shape[0], dtype='bool')
-		n_rows = sum(rsel)
-
-		# And on columns
-		csel = ne.evaluate(where_columns, local_dict=self.col_attrs)
-		if csel.size == 1 and csel.item() == True:
-			csel = np.ones(self.shape[1], dtype='bool')
-		elif csel.size == 1 and csel.item() == False:
-			csel = np.zeros(self.shape[1], dtype='bool')
-		n_cols = sum(csel)
-
-		# Collect the right row and column attributes
-		self.row_attrs = {}
-		for key in parent.row_attrs.keys():
-			if n_rows > 0:
-				self.row_attrs[key] = self.row_attrs[key][rsel]
-			else:
-				self.row_attrs[key] = np.array([], dtype = parent.row_attrs[key].dtype)
-
-		self.col_attrs = {}
-		for key in parent.col_attrs.keys():
-			if n_cols > 0:
-				self.col_attrs[key] = self.col_attrs[key][csel]
-			else:
-				self.col_attrs[key] = np.array([], dtype = parent.row_attrs[key].dtype)
-
-		self.parent = parent
-		self.shape = (n_rows, n_cols)
-		self.row_ordering = XXXXXXXXXXXXXXXX
-		self.col_ordering = XXXXXXXXXXXXXXXX
-
-	def get(row, col):
-		return self.parent.get(self.row_ordering[row], self.col_ordering[col])
-		
 
 class _CEF(object):
 	def __init__(self):

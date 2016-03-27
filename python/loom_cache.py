@@ -20,14 +20,22 @@ class LoomCache(object):
 		self.client = storage.Client(project="linnarsson-lab")
 		self.looms = {}
 
-	def list_datasets(self):
+	def get_projects(self):
 		bucket = self.client.get_bucket(self.remote_root)
 		result = []
 		for blob in bucket.list_blobs():
 			result.append({
 				"project": blob.name.split("@")[0],
 				"dataset": blob.name.split("@")[1],
-				"is_cached": self.is_cached(blob.name)
+				"is_cached": self.is_cached(blob.name),
+				"description": 
+
+
+
+				GET METADATA FROM STORAGE
+			
+
+
 			})
 		return result
 
