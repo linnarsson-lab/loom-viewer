@@ -16,15 +16,18 @@ export class DatasetView extends Component {
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "")}>
 						<a onClick={(event)=>dispatch(fetchDataset(proj + "@" + d.dataset))}>{d.dataset}</a>
+						<span>{" " + d.description}</span>
 						<div className="pull-right">
 							{(d.is_cached && !isCurrent) ? <span className="text-muted">Cached</span> : ""}
 							{isCurrent ? <span className="text-success">Active</span> : ""}
+							<a >Change</a>
 						</div>
 					</div>);
 			});
 			return <div key={proj} className="panel panel-primary">
 				<div className="panel-heading">
 					{proj}
+					<div className="panel-descritpion">{ds.projects[proj].description}</div>
 					<div className="pull-right">
 						<span>{ds.projects[proj].length.toString() + " dataset" + (ds.projects[proj].length > 1 ? "s" : "")}</span>
 					</div>
