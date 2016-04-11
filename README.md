@@ -55,10 +55,10 @@ npm install autoscale-canvas
 
 Run `build` 
 
-This will create a new folder `release`. Run `release/loom filename.loom` to start the loom server.
+This will create a new folder `release`. Run `release/loom` to start the loom server (or `release/loom debug` to run in debug mode).
 
-**Note:** By default, React runs in development mode, which has some performance issues (noticeable in Landscape view). To run in 
-production mode, issue the following command before building Loom:
+**Note:** By default, React is built in production mode, with less informative error messages (but good performance). To build in 
+debug mode, edit the build script before building Loom and remove the following line:
 
 ```
 export NODE_ENV=production
