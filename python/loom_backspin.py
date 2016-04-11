@@ -38,23 +38,11 @@ import sys
 import os
 import loom
 
-# Example usage
-from loom_backspin import BackSPIN
-bsp = BackSPIN(param1=0)
-dataset = loom.connect(filename)
-result = bsp.compute(dataset)   # Returns a result object
-result.apply(dataset)           # Applies the result to the file
 
 # TODO:
 #       bootstrapping
 #       null model clustering with bootstrapping
 #       pruning the result based on bootstrapping and null model
-
-def align_results(results):
-	result = results[0]
-	for ix in xrange(1, results.length):
-		result = 
-
 
 class Result(object):
 	def __init__():
@@ -64,20 +52,19 @@ class Result(object):
 		self.col_clusters = []
 		self.row_clusters_bylevel = []
 		self.col_clusters_bylevel = []
-		self.row_score_bylevel = []			# Bootstrap score by cluster by level
-		self.col_score_bylevel = []			#
+		self.row_score_bylevel = []			
+		self.col_score_bylevel = []			
 
 	def apply(loomfile):
-		loomfile.set_attr("_BackSPIN_Order", self.row_order, axis = 0)        
-		loomfile.set_attr("_BackSPIN_Order", self.col_order, axis = 1)
-		loomfile.set_attr("_BackSPIN_Cluster", self.row_clusters, axis = 0)        
-		loomfile.set_attr("_BackSPIN_Cluster", self.col_clusters, axis = 1)
+		loomfile.set_attr("_Order", self.row_order, axis = 0)        
+		loomfile.set_attr("_Order", self.col_order, axis = 1)
+		loomfile.set_attr("_Cluster", self.row_clusters, axis = 0)        
+		loomfile.set_attr("_Cluster", self.col_clusters, axis = 1)
 		loomfile.permute(self.row_order, axis = 0)
 		loomfile.permute(self.col_order, axis = 1)
 
 class BackSPIN(object):
-	def __init__(n_bootstraps = 10):
-		self.n_bootstraps = n_bootstraps
+	def __init__(self):
 		self.first_run_iters=10
 		self.first_run_step=0.05
 		self.runs_iters=8
@@ -90,7 +77,7 @@ class BackSPIN(object):
 		
 		self.mismatch_score = []
 
-	def _calc_weights_matrix(mat_size, wid):
+	def _calc_weights_matrix(self, mat_size, wid):
 		'''Calculate Weight Matrix
 		Parameters
 		----------
@@ -121,7 +108,7 @@ class BackSPIN(object):
 		return weights_mat
 
 
-	def _sort_neighbourhood( dist_matrix, wid ):
+	def _sort_neighbourhood(self, dist_matrix, wid ):
 		'''Perform a single iteration of SPIN
 		Parameters
 		----------
@@ -138,7 +125,7 @@ class BackSPIN(object):
 		assert wid > 0, 'Parameter wid < 0 is not allowed'
 		mat_size = dist_matrix.shape[0]
 		#assert mat_size>2, 'Matrix is too small to be sorted'
-		weights_mat = _calc_weights_matrix(mat_size, wid)
+		weights_mat = self._calc_weights_matrix(mat_size, wid)
 		#Calculate the dot product (can be very slow for big mat_size)
 		# We cache the output matrix to avoid excessive memory allocations
 		if self.mismatch_score == [] or self.mismatch_score.shape != (dist_matrix.shape[0], weights_mat.shape[0]):
@@ -155,7 +142,7 @@ class BackSPIN(object):
 		return sorted_ind
 
 
-	def sort_mat_by_neighborhood(dist_matrix, wid, times):
+	def sort_mat_by_neighborhood(self, dist_matrix, wid, times):
 		'''Perform several iterations of SPIN using a fixed wid parameter
 		Parameters
 		----------
@@ -185,7 +172,7 @@ class BackSPIN(object):
 		return indexes
 
 
-	def _generate_widlist(data, axis=1, step=0.6):
+	def _generate_widlist(self, data, axis=1, step=0.6):
 		'''Generate a list of wid parameters to execute sort_mat_by_neighborhood
 		Parameters
 		----------
@@ -209,7 +196,7 @@ class BackSPIN(object):
 			new_wid = int(ceil( new_wid + new_wid*(step) +1))
 		return wid_list[::-1]
 
-	def corrdissim(data):
+	def corrdissim(self, data):
 		"""Calculate a correlation dissimilarity (1 - correlation) without casting to double
 		Parameters
 		----------
@@ -228,7 +215,7 @@ class BackSPIN(object):
 				c[i,j] = 1 - (c[i,j] / sqrt(d[i]*d[j]))
 		return c
 
-	def SPIN(dt, widlist=[10,1], iters=30, axis='both', verbose=False):
+	def SPIN(self, dt, widlist=[10,1], iters=30, axis='both', verbose=False):
 		"""Run the original SPIN algorithm
 		Parameters
 		----------
@@ -263,8 +250,8 @@ class BackSPIN(object):
 		if axis == 'both':
 			if verbose:
 				print "Calculating correlation matrices on both axes"
-			CCc = corrdissim(dt.T)
-			CCr = corrdissim(dt)
+			CCc = self.corrdissim(dt.T)
+			CCr = self.corrdissim(dt)
 			if type(widlist) != list:
 				widlist_r = self._generate_widlist(dt, axis=0, step=widlist)
 				widlist_c = self._generate_widlist(dt, axis=1, step=widlist)
@@ -293,7 +280,7 @@ class BackSPIN(object):
 		elif axis == 0:
 			if verbose:
 				print "Calculating correlation matrix on rows"
-			CCr = corrdissim(dt)
+			CCr = self.corrdissim(dt)
 
 			if type(widlist) != list:
 				widlist = self._generate_widlist(dt, axis=0, step=widlist)
@@ -311,7 +298,7 @@ class BackSPIN(object):
 		elif axis == 1:
 			if verbose:
 				print "Calculating correlation matrix on columns"
-			CCc = corrdissim(dt.T)
+			CCc = self.corrdissim(dt.T)
 			# subtract(1, CCc, out=CCc)
 			if verbose:
 				print "Generating widlist"
@@ -330,35 +317,11 @@ class BackSPIN(object):
 				IXc = IXc[INDc]
 			return IXc
 
-	def compute(loomfile, row_range = None, col_range = None):
-		if row_range == None:
-			row_range = (0, loomfile.shape[0])
-		if col_range == None:
-			col_range = (0, loomfile.shape[1])
-		
-		numLevels=2
-		first_run_iters=10
-		first_run_step=0.05
-		runs_iters=8
-		runs_step=0.25,
-		split_limit_g=2
-		split_limit_c=2
-		stop_const = 1.15
-		low_thrs=0.2
-		verbose=False		
-		
-		data = loomfile.file('matrix')[row_range, col_range]
+	def compute(self, loomfile):				
+		data = loomfile.select("_Excluded==0","True").values
+		self.backSPIN(data)
 
-		# SPIN on both axes
-		rows_order = arange(data.shape[0])
-		rows_order = rows_order[self.SPIN(data, widlist=self._generate_widlist(data, axis=0, step=first_run_step), iters=first_run_iters, axis=0, verbose=verbose)]
-		cols_order = arange(data.shape[1])
-		cols_order = cols_order[self.SPIN(data, widlist=self._generate_widlist(data, axis=1, step=first_run_step), iters=first_run_iters, axis=1, verbose=verbose)]
-
-		# Split on both axes
-		divided = self.self._divide_to_2and_resort(data, wid=runs_step, iters_spin=runs_iters, stop_const=stop_const, low_thrs=low_thrs, sort_genes=False,verbose=verbose)
-
-	def backSPIN(data, numLevels=2, first_run_iters=10, first_run_step=0.05, runs_iters=8 ,runs_step=0.25,\
+	def backSPIN(self, data, numLevels=2, first_run_iters=10, first_run_step=0.05, runs_iters=8 ,runs_step=0.25,\
 		split_limit_g=2, split_limit_c=2, stop_const = 1.15, low_thrs=0.2, verbose=False):
 		'''Run the backSPIN algorithm
 		Parameters
@@ -496,7 +459,6 @@ class BackSPIN(object):
 		results.row_order = genes_order
 		results.col_order = cells_order
 
-		# TODO: bootstrap and make consensus clusters
 		results.genes_gr_level = genes_gr_level
 		results.cells_gr_level = cells_gr_level
 		results.cells_gr_level_sc = cells_gr_level_sc
@@ -505,7 +467,7 @@ class BackSPIN(object):
 		
 		
 
-	def _divide_to_2and_resort(sorted_data, wid, iters_spin=8, stop_const = 1.15, low_thrs=0.2 , sort_genes=True, verbose=False):
+	def _divide_to_2and_resort(self, sorted_data, wid, iters_spin=8, stop_const = 1.15, low_thrs=0.2 , sort_genes=True, verbose=False):
 		'''Core function of backSPIN: split the datamatrix in two and resort the two halves
 
 		Parameters
@@ -599,9 +561,9 @@ class BackSPIN(object):
 			# Resort group1
 			if min( datagr1.shape ) > 1:
 				if sort_genes:
-					genesorder1,cellorder1 = SPIN(datagr1, widlist=wid, iters=iters_spin, axis='both', verbose=verbose)
+					genesorder1,cellorder1 = self.SPIN(datagr1, widlist=wid, iters=iters_spin, axis='both', verbose=verbose)
 				else:
-					cellorder1 = SPIN(datagr1, widlist=wid, iters=iters_spin, axis=1, verbose=verbose)
+					cellorder1 = self.SPIN(datagr1, widlist=wid, iters=iters_spin, axis=1, verbose=verbose)
 					genesorder1 = arange(datagr1.shape[0])
 			elif len(genesgr1) == 1:
 				genesorder1 = 0
@@ -617,9 +579,9 @@ class BackSPIN(object):
 			# Resort group2
 			if min( datagr2.shape )>1:
 				if sort_genes:
-					genesorder2, cellorder2 = SPIN(datagr2, widlist=wid, iters=iters_spin, axis='both',verbose=verbose)
+					genesorder2, cellorder2 = self.SPIN(datagr2, widlist=wid, iters=iters_spin, axis='both',verbose=verbose)
 				else:
-					cellorder2 = SPIN(datagr2, widlist=wid, iters=iters_spin, axis=1,verbose=verbose)
+					cellorder2 = self.SPIN(datagr2, widlist=wid, iters=iters_spin, axis=1,verbose=verbose)
 					genesorder2 = arange(datagr2.shape[0])
 			elif len(genesgr2) == 1:
 				genesorder2 = 0

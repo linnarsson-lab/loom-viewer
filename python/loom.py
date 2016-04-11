@@ -23,45 +23,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-# HDF5-based file format for storing omics data
-#
-#	/matrix            Main data matrix, float32, normally cells in columns, genes in rows
-#	/row_attrs         Row (gene) attributes 
-#             GeneName    Vector of strings
-#             Chromosome  Vector of strings
-#             Strand
-#             Length      Vector of float32 numbers 
-#             ...
-#   /col_attrs         Column (cell) attributes
-#		Tissue
-#		Age
-#		...
-#   /tiles/{z}
-#             {x}_{y}     256x256 tile, part of image pyramid
-
-#
-# General notes about using HDF5 for storage
-#
-#   0. HDF5 files are not databases. If you process crashes while writing, the file is toast.
-#
-#	1. You can add datasets, and you can extend the main matrix by adding new columns,
-#	   and you can modify datasets in place, but you should never delete datasets. If
-#      you delete a dataset it doesn't really go away so the files would then grow indefinitely.
-#
-#
-#	2. ALWAYS flush after writing to the file
-#
-#   3. Multiple processes can read from the same HDF5, or one process can read/write,
-#      but if one process is writing, no-one else can read OR write.
-#
-
-
 
 
 from __future__ import division
+import math
 import numpy as np
 import h5py
 import numexpr as ne
+import bregression
 import os.path
 import pandas as pd
 import scipy
@@ -520,18 +489,24 @@ class LoomConnection(object):
 
 	
 	def corr_matrix(self, axis = 0):
-	"""
-	Compute correlation matrix without casting to float64.
+		"""
+		Compute correlation matrix without casting to float64.
 
-	Args:
-		axis (int):	The axis along which to compute the correlation matrix.
+		Args:
+			axis (int):	The axis along which to compute the correlation matrix.
 
-	Returns:
-		numpy.ndarray of float32 correlation coefficents
+		Returns:
+			numpy.ndarray of float32 correlation coefficents
 
-	This function avoids casting intermediate values to double (float64), to reduce memory footprint.
-	"""
-		data = self.file['matrix'][:,:]
+		This function avoids casting intermediate values to double (float64), to reduce memory footprint.
+		If row attribute _Excluded exists, those rows will be excluded from the calculation when axis = 1.
+		"""
+		if axis == 1 and self.row_attrs.__contains__("_Excluded"):
+			selection = (1-self.row_attrs["_Excluded"]).astype('bool')
+			data = self[selection,:]
+		else:
+			data = self[:,:]
+
 		if axis == 1:
 		    data = data.T
 		N = data.shape[1]
@@ -543,31 +518,34 @@ class LoomConnection(object):
 			return data.T
 		return np.nan_to_num(data)
 
-	def permute(ordering, axis):
-	"""
-	Permute the dataset along the indicated axis.
+	def permute(self, ordering, axis):
+		"""
+		Permute the dataset along the indicated axis.
 
-	Args:
-		ordering (list of int): 	The desired order along the axis
-		axis (int):					The axis along which to permute
+		Args:
+			ordering (list of int): 	The desired order along the axis
+			axis (int):					The axis along which to permute
 
-	Returns:
-		Nothing.
-	"""
+		Returns:
+			Nothing. As a side-effect, removes heatmap tiles.
+		"""
+		if self.file.__contains__("tiles"):
+			del self.file['tiles']
+
 		if axis == 0:
 			chunksize = 5000
 			start = 0
 			while start < self.shape[1]:
-				submatrix = self.file('matrix')[:, start:start + chunksize]
-				self.file('matrix')[:, start:start + chunksize] = submatrix[ordering, :]
+				submatrix = self.file['matrix'][:, start:start + chunksize]
+				self.file['matrix'][:, start:start + chunksize] = submatrix[ordering, :]
 				start = start + chunksize
 			self.file.flush()
 		if axis == 1:
 			chunksize = 100000000//self.shape[1]
 			start = 0
 			while start < self.shape[0]:
-				submatrix = self.file('matrix')[start:start + chunksize, :]
-				self.file('matrix')[start:start + chunksize, :] = submatrix[:, ordering]
+				submatrix = self.file['matrix'][start:start + chunksize, :]
+				self.file['matrix'][start:start + chunksize, :] = submatrix[:, ordering]
 				start = start + chunksize
 			self.file.flush()
 
@@ -590,33 +568,30 @@ class LoomConnection(object):
 		
 		This method creates new column attributes _LogMean, _LogCV, _Noise (CV relative to predicted CV), _Excluded (1/0)
 		"""
-		print "Calculating means"
 		mu = self.apply_chunked(np.mean)
-		print "Calculating CVs"
 		cv = self.apply_chunked(np.std)/mu
 		log2_m = np.log2(mu)
+		excluded = (log2_m == float("-inf"))
 		log2_m[log2_m == float("-inf")] = 0
 		log2_cv = np.log2(cv)
+		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
 
 		
 		#Define the objective function to fit (least squares)
 		fun = lambda x, log2_m, log2_cv: sum(abs( np.log2( (2.**log2_m)**(-x[0])+x[1]) - log2_cv ))
 		#Fit using Nelder-Mead algorythm
-		print "Fitting the noise function"
 		x0=[0.5,0.5]
 		optimization =  minimize(fun, x0, args=(log2_m,log2_cv), method='Nelder-Mead')
 		params = optimization.x
 		#The fitted function
 		fitted_fun = lambda log_mu: np.log2( (2.**log_mu)**(-params[0]) + params[1])
 		# Score is the relative position with respect of the fitted curve
-		print "Calculating noise"
 		score = np.log2(cv) - fitted_fun(np.log2(mu))
 		score = np.nan_to_num(score)
 		threshold = np.percentile(score, 100 - n_genes/self.shape[0]*100)
-		excluded = (score < threshold).astype('int')
+		excluded = np.logical_or(excluded, (score < threshold)).astype('int')
 
-		print "Saving attributes"
 		self.set_attr("_LogMean", log2_m, axis = 0)
 		self.set_attr("_LogCV", log2_cv, axis = 0)
 		self.set_attr("_Noise", score, axis = 0)
@@ -627,12 +602,12 @@ class LoomConnection(object):
 	# PROJECTION #
 	##############
 
-	def project_to_2d(self, n_components = 50):
+	def project_to_2d(self, perplexity = 20):
 		"""
 		Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
 
 		Args:
-			n_components (int): 	Number of PCA components to use for tSNE
+			perplexity (int): 	Perplexity to use for tSNE
 
 		Returns:
 			Nothing.
@@ -642,24 +617,20 @@ class LoomConnection(object):
 		attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
 		"""
 		# First perform PCA out of band
-		# Process max 100 MB at a time (assuming about 25000 genes)
 		batch_size = 1000
-		n_components = 50
 		selection = np.ones(self.shape[0]).astype('bool')
 		if self.row_attrs.__contains__("_Excluded"):
 			selection = (1-self.row_attrs["_Excluded"]).astype('bool')
 
-		print "  Computing %s PCA components." % n_components
-		ipca = IncrementalPCA(n_components=n_components)
+		ipca = IncrementalPCA(n_components=int(math.sqrt(selection.sum())/2))
 		col = 0
 		while col < self.shape[1]:
-			batch = self.file['matrix'][selection,col:col+batch_size].T
+			batch = self[selection,col:col+batch_size].T
 			batch = np.log2(batch + 1)
 			ipca.partial_fit(batch)
 			col = col + batch_size
 
 		# Project to PCA space
-		print "  Projecting data to PCA coordinates."
 		Xtransformed = []
 		col = 0
 		while col < self.shape[1]:
@@ -671,33 +642,100 @@ class LoomConnection(object):
 		Xtransformed = np.concatenate(Xtransformed)
 
 		# Save first two dimensions as column attributes
-		print "  Saving two first PCA dimensions as column attributes _PC1 and _PC2."
 		pc1 = Xtransformed[:,0]	
 		pc2 = Xtransformed[:,1]
 		self.set_attr("_PC1", pc1, axis = 1)
 		self.set_attr("_PC2", pc2, axis = 1)
 
-		# Then, perform tSNE based on the 100 first components
-		print "  Computing tSNE based on %s PCA components." % n_components
+		# Then, perform tSNE based on the top components
 		# Precumpute the distance matrix
 		# This is necessary to work around a bug in sklearn TSNE 0.17
 		# (caused because pairwise_distances may give very slightly negative distances)
 		dists = pairwise_distances(Xtransformed, metric="correlation")
 		np.clip(dists, 0, 1, dists)	
-		model = TSNE(metric='precomputed', perplexity=20)
+		model = TSNE(metric='precomputed', perplexity=perplexity)
 		tsne = model.fit_transform(dists) 
 		
 		# Save first two dimensions as column attributes
-		print "  Saving tSNE dimensions as column attributes _tSNE1 and _tSNE2."
 		tsne1 = tsne[:,0]	
 		tsne2 = tsne[:,1]	
 		self.set_attr("_tSNE1", tsne1, axis = 1)
 		self.set_attr("_tSNE2", tsne2, axis = 1)
 
+	##############
+	# REGRESSION #
+	##############
+
+	def bayesian_regression(group_attr, batch_size=100):
+		"""
+		Calculate bayesian generalized linear regression with 'group_attr' as the grouping of cells.
+
+		Args:
+			group_attr (string):	Name of the col_attr that will be used to group cells.
+			batch_size (int):		Number of genes to sample in each batch (run in parallel)
+
+		Returns:
+			Nothing, but (re)creates the following datasets in the file:
+				
+				'regression' 			3D matrix of floats, shaped as (genes, labels, samples).
+				'regression_labels'		Labels in lexical order.
+				'binarized'				Matrix of 64-bit integers, shaped as (genes, n).
+										n is sufficiently large to hold one bit per label
+		"""
+		if self.file.__contains__("regression"):
+			del self.file["regression"]
+		if self.file.__contains__("regression_labels"):
+			del self.file["regression_labels"]
+
+		labels = list(set(self.col_attrs[group_attr]))
+		labels.sort()
+		self.file["regression_labels"] = labels
+		x = []
+		for lbl in labels:
+			indicators = int(col_attrs[group_attr] == lbl)
+			x.append(indicators)
+		x = np.array(x).T
+		ix = 0
+		while ix < self.shape[0]:
+			batch_size = min(batch_size, self.shape[0] - ix)
+			result = bregression.fit(x, self[ix:ix + batch_size,:])
+			if not self.file.__contains__("regression"):
+				self.file.create_dataset("regression", data=result, compression='lzf', maxshape = (None, labels.shape[0], 1000))
+			else:
+				self.file["regression"].resize(self.file["regression"].shape[0] + batch_size)
+				self.file["regression"][-1,:-2,:] = result[:,:-2,:]		# The -2 here is to remove the r and lp_ samples, which we don't care about
+			ix += batch_size
+
+	def _binarize_regression(self, samples, sizes, minvalue = 0.2, maxfold = 20, pprob = 0.99):
+		"""
+		Binarize the posterior regression samples for a gene.
+
+		Args:
+			samples (numpy n-by-m matrix):	Posterior samples (n) for each of m labels
+			sizes (list of int)				Size of each class (number of cells)
+			minvalue (float):				Minimum absolute value to call a gene expressed
+			maxfold (float):				Maximum ratio relative to the highest-expressed label to call a gene expressed
+			pprob (float):					Posterior probability threshold to call a gene expressed
+
+		Returns:
+			numpy array of int64, one bit per label and padded to the nearest multiple of 64 bits
+
+		This function will call a gene expressed if 
+
+			1. Its absolute value is greater than minvalue with posterior probability > pprob
+			2. Its ratio to the highest-expressing label (group) is less than maxfold with posterior probability > pprob 
+			   (but not considering any group with less than 10 cells for the highest-expressing)
+		"""
+		pass
 
 	#############
 	# DEEP ZOOM #
 	#############
+
+	def prepare_heatmap(self):
+		if self.file.__contains__("tiles"):
+			del self.file['tiles']
+		self.dz_get_zoom_image(0,0,8)
 
 	def dz_get_max_byrow(self):
 		"""
@@ -755,10 +793,7 @@ class LoomConnection(object):
 		Returns:
 			Python image library Image object
 		"""
-		if self.file.__contains__("tiles"):
-			tile = self.dz_get_zoom_tile(x, y, z)
-		else:
-			return scipy.misc.toimage(np.zeros((256,256)))
+		tile = self.dz_get_zoom_tile(x, y, z)
 		tile[tile == 255] = 254
 
 		# Crop outside matrix dimensions
@@ -846,7 +881,7 @@ class LoomConnection(object):
 				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
 				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
 				tile = temp[0::2,0::2]
-				f.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='lzf')
+				self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='lzf')
 				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
 				self.file.flush()
 			return tile

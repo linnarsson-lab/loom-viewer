@@ -10,24 +10,21 @@ export class DatasetView extends Component {
 
 		var panels = Object.keys(ds.projects).map((proj) => {
 			var datasets = ds.projects[proj].map((d) => {
-				var isCurrent = d.dataset == ds.currentDataset.name;
+				var isCurrent = d.dataset == ds.currentDataset.dataset;
 				console.log(d);
 				console.log(ds.currentDataset);
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "")}>
-						<a onClick={(event)=>dispatch(fetchDataset(proj + "@" + d.dataset))}>{d.dataset}</a>
-						<span>{" " + d.description}</span>
+						<a onClick={(event)=>dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset))}>{d.dataset}</a>
+						<span>{" " + d.message}</span>
 						<div className="pull-right">
-							{(d.is_cached && !isCurrent) ? <span className="text-muted">Cached</span> : ""}
-							{isCurrent ? <span className="text-success">Active</span> : ""}
-							<a >Change</a>
+							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
 						</div>
 					</div>);
 			});
 			return <div key={proj} className="panel panel-primary">
 				<div className="panel-heading">
 					{proj}
-					<div className="panel-descritpion">{ds.projects[proj].description}</div>
 					<div className="pull-right">
 						<span>{ds.projects[proj].length.toString() + " dataset" + (ds.projects[proj].length > 1 ? "s" : "")}</span>
 					</div>
@@ -46,6 +43,12 @@ export class DatasetView extends Component {
 						<h3>&nbsp;</h3>
 						<div>
 						{panels}
+						</div>
+						<div>
+						{panels.length == 0 ? "(loading...)" : ""}
+						</div>
+						<div>
+						<a>Create new dataset...</a>
 						</div>
 					</div>
 				</div>

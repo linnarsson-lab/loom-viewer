@@ -2,7 +2,7 @@ import flask
 import os
 import os.path
 import loom
-from loom_cache import LoomCache
+from loom_cloud import LoomCloud
 import sys
 import StringIO
 import json
@@ -26,7 +26,7 @@ print "Serving from: " + os.getcwd()
 datadir = os.path.join(os.getcwd(), "cache")
 if not os.path.exists(datadir):
 	os.makedirs(datadir)
-cache = LoomCache(datadir)
+cache = LoomCloud(datadir)
 
 class LoomServer(flask.Flask):
 	# Disable cacheing 
@@ -62,16 +62,18 @@ def send_indexjs():
 # List of all datasets
 @app.route('/loom')
 def send_dataset_list():
-	return flask.Response(json.dumps(cache.list_datasets()), mimetype="application/json")
+	result = json.dumps([x.as_dict() for x in cache.list_datasets()])
+	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
-@app.route('/loom/<string:dataset>/fileinfo.json')
-def send_fileinfo(dataset):
-	ds = cache.get_dataset(dataset)
+@app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/fileinfo.json')
+def send_fileinfo(transcriptome, project, dataset):
+	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	dims = ds.dz_dimensions()
 	fileinfo = {
-		"project": dataset.split("@")[0],
-		"name": dataset.split("@")[1],
+		"transcriptome": transcriptome,
+		"project": project,
+		"dataset": dataset,
 		"shape": ds.shape,
 		"zoomRange": ds.dz_zoom_range(),
 		"fullZoomHeight": dims[1],
@@ -82,15 +84,15 @@ def send_fileinfo(dataset):
 	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
 
 # Get one row of data (i.e. all the expression values for a single gene)
-@app.route('/loom/<string:dataset>/row/<int:row>')
-def send_row(dataset, row):
-	ds = cache.get_dataset(dataset)
+@app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/row/<int:row>')
+def send_row(transcriptome, project, dataset, row):
+	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][row,:].tolist()), mimetype="application/json")
 
 # Get one column of data (i.e. all the expression values for a single cell)
-@app.route('/loom/<string:dataset>/col/<int:col>')
-def send_col(dataset, col):
-	ds = cache.get_dataset(dataset)
+@app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/col/<int:col>')
+def send_col(transcriptome, project, dataset, col):
+	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][:,col].tolist()), mimetype="application/json")
 
 #
@@ -103,9 +105,9 @@ def serve_image(img):
 	img_io.seek(0)
 	return flask.send_file(img_io, mimetype='image/png')
 
-@app.route('/loom/<string:dataset>/tiles/<int:z>/<int:x>_<int:y>.png')
-def send_tile(dataset, z,x,y):
-	ds = cache.get_dataset(dataset)
+@app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/tiles/<int:z>/<int:x>_<int:y>.png')
+def send_tile(transcriptome, project, dataset, z,x,y):
+	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	img = ds.dz_get_zoom_image(x,y,z)
 	return serve_image(img)
 
