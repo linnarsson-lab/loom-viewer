@@ -1,6 +1,8 @@
 #! /bin/bash
-echo "Saving cache folder from previous build."
-mv ./release/cache ./cache
+if [ -a ./release/cache ]; then
+  echo "Saving cache folder from previous build."
+  mv ./release/cache ./cache
+fi
 rm -r ./release
 set -o nounset
 set -o errexit
