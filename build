@@ -3,11 +3,19 @@ if [ -a ./release/cache ]; then
   echo "Saving cache folder from previous build."
   mv ./release/cache ./cache
 fi
-rm -r ./release
+if [ -a ./release ]; then
+  rm -r ./release
+fi
 set -o nounset
 set -o errexit
-export NODE_ENV=production  # To use DEBUG mode, just comment out this line
-echo "Building React in 'production' mode (for debug mode, edit this build script)."
+
+if [ "$1" = "debug" ]; then
+  echo "Building React in 'debug' mode"
+  export NODE_ENV=debug
+else
+  echo "Building React in 'production' mode. Run \"./build debug\" to build in 'debug' mode"
+  export NODE_ENV=production
+fi
 
 # Set up a cache-busting integer
 v=$RANDOM
