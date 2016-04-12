@@ -54,16 +54,18 @@ These tables are regenerated as needed when new data arrives. There are four mai
   * Matrix (expression counts)
   * Wiggle (alignment counts per chromosome position, exlcuding zeros)
   
-User-defined **datasets** are also stored in BigQuery. Each dataset is defined by two tables:
+User-defined **datasets** are also stored in BigQuery. There is one BigQuery "dataset" (not the same as our
+notion of "dataset") for each transcriptome (e.g. ```hg19_sUCSC```). Each loom dataset is defined by two tables:
 
-  * ```Cells:project@dataset.loom```
-  * ```Genes:project@dataset.loom```
+  * ```Cells__project__dataset```
+  * ```Genes__project__dataset```
 
-...where *project* and *dataset* are names selected by the user. The ```Cells:...``` table must have column ```CellID``` and 
-the ```Genes:...``` table must have a column ```TranscriptID```. The dataset can be materialized by joining these tables
+...where *project* and *dataset* are names selected by the user. The ```Cells___``` table must have column ```CellID``` and 
+the ```Genes___``` table must have a column ```TranscriptID```. The dataset can be materialized by joining these tables
 to the main tables (**Cells**, **Genes** and **Matrix**) for the transcriptome. 
 
 ##### [...in Cloud Storage bucket ```linnarsson-lab-loom```](https://console.cloud.google.com/storage/browser/linnarsson-lab-loom/?project=linnarsson-lab)
-Loom files prepared for browsing are stored in Cloud Storage with key equal to the fully qualified dataset name, e.g. ```myProject@my_dataset.loom``` 
-(note that the name includes the project name ```myProject``` and the dataset name ```my_dataset.loom```).
+Loom files prepared for browsing are stored in Cloud Storage with key equal to the fully qualified dataset name, e.g. ```transcriptome__project__dataset.loom``` 
+(note that the name includes the project name ```project``` and the dataset name ```dataset```). For each dataset, there is both a ```.json``` file and a ```.loom``` file. The JSON file defines the dataset and contains parameters that control how the dataset is 
+generated from raw data (e.g. parameters for clustering).
 
