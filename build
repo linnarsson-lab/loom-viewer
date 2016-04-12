@@ -23,9 +23,10 @@ cp -r python release/
 cp loom release/loom
 
 # Build all the static assets
-/usr/local/bin/uglifycss css/* > release/python/static/css/bundle-v$v.min.css
-/usr/local/bin/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
-/usr/local/bin/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/python/static/js/bundle-v$v.min.js
+BINPATH = npm -g bin
+$BINPATH/uglifycss css/* > release/python/static/css/bundle-v$v.min.css
+$BINPATH/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
+$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/python/static/js/bundle-v$v.min.js
 rm temp.js
 
 sed -e "s/{VERSION}/$v/g" index.html > release/python/static/index.html
