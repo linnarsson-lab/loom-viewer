@@ -9,7 +9,7 @@ fi
 set -o nounset
 set -o errexit
 
-if [ "$1" = "debug" ]; then
+if [ "$1" = "debug" ] || [ "$1" = "-d" ]; then
   echo "Building React in 'debug' mode"
   export NODE_ENV=debug
 else
