@@ -14,7 +14,10 @@ v=$RANDOM
 
 # Set up the release directories
 mkdir release
-mv ./cache ./release/cache
+if [ -a ./cache ]; then
+    echo "Restoring cache folder from previous build."
+  mv ./cache ./release/cache
+fi
 mkdir release/python
 mkdir release/python/static
 mkdir release/python/static/img
@@ -25,7 +28,7 @@ cp -r python release/
 cp loom release/loom
 
 # Build all the static assets
-BINPATH = npm -g bin
+BINPATH=$(npm -g bin)
 $BINPATH/uglifycss css/* > release/python/static/css/bundle-v$v.min.css
 $BINPATH/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
 $BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/python/static/js/bundle-v$v.min.js
