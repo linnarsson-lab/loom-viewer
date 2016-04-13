@@ -43,7 +43,7 @@ import pymysql.cursors
 import csv
 import pandas as pd
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
-
+import pymysql
 
 _dataset_pattern = "^[A-Za-z0-9_-]+__[A-Za-z0-9_-]+$"
 _cloud_project = "linnarsson-lab"
@@ -54,14 +54,14 @@ class MySQLToBigQueryPipeline(object):
 	"""
 	Pipeline to load cell expression data from MySQL into BigQuery, organized by transcriptome.
 	"""
-	def __init__(self, mysql_connection):
-		"""
-		Create a pipeline that uses the designated MySQL database connection
-
-		Args:
-			connection (pymsql.Connection): 	The MySQL connection to download data from
-		"""
-		self.mysql_connection = mysql_connection
+	def __init__(self):
+		self.mysql_connection = pymysql.connect(
+			host=os.environ['MYSQL_HOST'], 
+			port=os.environ['MYSQL_PORT'], 
+			user=os.environ['MYSQL_USERNAME'], 
+			password=os.environ['MYSQL_PASSWORD'], 
+			db='joomla', 
+			charset='utf8mb4')
 
 	def _make_std_numpy_type(self, array, sql_type):
 		field_type = {
@@ -269,13 +269,14 @@ class MySQLToBigQueryPipeline(object):
 				np.savetxt(tf, data, delimiter=",",fmt="%d")
 				table.upload_from_file(tf, "CSV", rewind=True, write_disposition='WRITE_APPEND')
 
-	def upload(self, transcriptome, dataset, cell_attrs = None, gene_attrs = None):
+	def upload(self, transcriptome, project, dataset, config, cell_attrs = None, gene_attrs = None):
 		"""
 		Upload a custom dataset annotation to BigQuery.
 
 		Args:
 			transcriptome (str):	Name of the transcriptome build (e.g. 'mm10a_aUCSC')
-			dataset (str):			A full loom dataset name without .loom extension (e.g. 'Myproject__somedataset')
+			project (str):			Name of the project
+			dataset (str):			A loom dataset name
 			cell_attrs (dict):		Optional dictionary of cell annotations (numpy arrays)
 			gene_attrs (dict): 		Optional dictionary of gene annotations (numpy arrays)
 
@@ -291,10 +292,6 @@ class MySQLToBigQueryPipeline(object):
 		"1772067-089_A01", these will be converted to integer CellIDs for you.
 		"""
 		connection = self.mysql_connection
-
-		# Check that the input is valid
-		if (not re.match(_dataset_pattern, dataset)) or len(dataset.split("__")) != 2:
-			raise ValueError, ("Invalid dataset name '%s' (should match '%s') and contain one double underscore in the middle." % (dataset, _dataset_pattern))
 
 		# Check the ID attributes, and convert as needed from string identifiers
 		if cell_attrs == None and gene_attrs == None:
@@ -319,10 +316,18 @@ class MySQLToBigQueryPipeline(object):
 		# Send the dataset to BigQuery
 		if cell_attrs != None:
 			print "Uploading cell annotations"
-			self._export_attrs_to_bigquery(cell_attrs, transcriptome, "Cells__" + dataset)
+			self._export_attrs_to_bigquery(cell_attrs, transcriptome, "Cells__" + project + "__" + dataset)
 		if gene_attrs != None:
 			print "Uploading gene annotations"
-			self._export_attrs_to_bigquery(gene_attrs, transcriptome, "Genes__" + dataset)
+			self._export_attrs_to_bigquery(gene_attrs, transcriptome, "Genes__" + project + "__" + dataset)
+		# Save the config
+		dsc = DatasetConfig(transcriptome, project, dataset, 
+			status = "created", 
+			message = "", 
+			n_features = config["n_features"], 
+			cluster_method = config["cluster_method"],
+			regression_label = config["regression_label"])
+		dsc.put()
 		print "Done."
 
 	def _export_attrs_to_bigquery(self, attrs, transcriptome, tablename):

@@ -1,8 +1,10 @@
 import flask
+from flask import request
 import os
 import os.path
 import loom
 from loom_cloud import LoomCloud
+from loom_pipeline import MySQLToBigQueryPipeline
 import sys
 import StringIO
 import json
@@ -22,6 +24,15 @@ if len(sys.argv) > 1:
 
 os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 print "Serving from: " + os.getcwd()
+
+try:
+	os.environ("MYSQL_HOST")
+	pipeline = MySQLToBigQueryPipeline()
+except:
+	print "You need to set the MYSQL environment variables:"
+	print "   MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, and MYSQL_PASSWORD"
+	print ""
+	print "Starting server without MySQL connection, so will not be able to PUT datasets."
 
 datadir = os.path.join(os.getcwd(), "cache")
 if not os.path.exists(datadir):
@@ -94,6 +105,14 @@ def send_row(transcriptome, project, dataset, row):
 def send_col(transcriptome, project, dataset, col):
 	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][:,col].tolist()), mimetype="application/json")
+
+@app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
+def upload_dataset(transcriptome, project, dataset):
+	col_attrs = request.form["col_attrs"]
+	row_attrs = request.form["row_attrs"]
+	config = request.form["config"]
+	pipeline.upload(transcriptome, project, dataset, config, col_attrs, row_attrs)
+	return "", 200
 
 #
 # Tiles 
