@@ -63,7 +63,9 @@ export class HeatmapView extends Component {
 					mode={hs.colMode}
 					/>					
 				<Heatmap
-					dataset={ds.currentDataset.project + "@" + ds.currentDataset.name}
+					transcriptome={ds.currentDataset.transcriptome}
+					project={ds.currentDataset.project}
+					dataset={ds.currentDataset.dataset}
 					width={heatmapWidth}
 					height={heatmapHeight}
 					zoom={hs.zoom}

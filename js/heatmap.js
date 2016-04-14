@@ -34,7 +34,7 @@ export class Heatmap extends React.Component {
 			attributionControl: false
 		});
 
-		L.tileLayer(`/loom/${this.props.dataset}/tiles/{z}/{x}_{y}.png`, {
+		L.tileLayer(`/loom/${this.props.transcriptome}__${this.props.project}__${this.props.dataset}/tiles/{z}/{x}_{y}.png`, {
 			maxZoom: this.props.zoomRange[2],
 			minZoom: this.props.zoomRange[0] + 1,
 			continuousWorld: false,
@@ -74,6 +74,8 @@ export class Heatmap extends React.Component {
 }
 
 Heatmap.propTypes = {
+	transcriptome:  PropTypes.string.isRequired,
+	project: 		PropTypes.string.isRequired,
 	dataset: 		PropTypes.string.isRequired,
 	width: 			PropTypes.number.isRequired,
 	height: 		PropTypes.number.isRequired,
