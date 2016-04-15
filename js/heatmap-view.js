@@ -39,10 +39,6 @@ export class HeatmapView extends Component {
 		horizontalSparklineHeight = 120;
 		heatmapHeight = vs.height - 140;
 	}
-	console.log("heatmapWidth: " + heatmapWidth);
-	console.log("heatmapHeight: " + heatmapHeight);
-	console.log("verticalSparklineWidth: " + verticalSparklineWidth);
-	console.log("horizontalSparklineHeight: " + horizontalSparklineHeight);
 	return (
 		<div className="view">
 			<div className="view-sidepanel">
@@ -63,7 +59,9 @@ export class HeatmapView extends Component {
 					mode={hs.colMode}
 					/>					
 				<Heatmap
-					dataset={ds.currentDataset.project + "@" + ds.currentDataset.name}
+					transcriptome={ds.currentDataset.transcriptome}
+					project={ds.currentDataset.project}
+					dataset={ds.currentDataset.dataset}
 					width={heatmapWidth}
 					height={heatmapHeight}
 					zoom={hs.zoom}

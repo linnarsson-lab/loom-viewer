@@ -11,7 +11,7 @@ Loom works with files in `.loom` format, a fast, scaleable format for omics data
 1. Install [Anaconda](https://www.continuum.io/downloads) for **Python 2.7** (not 3.xx).
 2. Download the [latest release](https://github.com/linnarsson-lab/Loom/releases).
 3. Get a dataset in .loom format (e.g. `data/cortex_5000.loom` in this Git repo).
-4. Run `loom cortex_5000.loom` in your Terminal.
+4. Run `loom` in your Terminal (from the `release` directory).
 5. Go to `localhost:5000` in your browser.
 6. Enjoy.
 
@@ -53,7 +53,7 @@ npm install leaflet
 npm install autoscale-canvas
 ```
 
-Run `build` 
+Run `./build` 
 
 This will create a new folder `release`. Run `release/loom` to start the loom server (or `release/loom debug` to run in debug mode).
 

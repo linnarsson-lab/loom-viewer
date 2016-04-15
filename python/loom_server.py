@@ -12,6 +12,8 @@ import json
 from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
+from pandas import DataFrame
+
 
 DEBUG = False
 if len(sys.argv) > 1:
@@ -106,13 +108,20 @@ def send_col(transcriptome, project, dataset, col):
 	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
 	return flask.Response(json.dumps(ds.file['/matrix'][:,col].tolist()), mimetype="application/json")
 
+#
+# Upload dataset for loom file generation
+#
+def csv_to_dict(s):
+	return DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
+
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
-	col_attrs = request.form["col_attrs"]
-	row_attrs = request.form["row_attrs"]
+	col_attrs = csv_to_dict(request.form["col_attrs"])
+	row_attrs = csv_to_dict(request.form["row_attrs"])
 	config = request.form["config"]
 	pipeline.upload(transcriptome, project, dataset, config, col_attrs, row_attrs)
 	return "", 200
+
 
 #
 # Tiles 
