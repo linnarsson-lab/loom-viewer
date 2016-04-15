@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
+import Dropzone from 'react-dropzone';
 
 export class DatasetView extends Component {
 
@@ -48,7 +49,8 @@ export class DatasetView extends Component {
 						{panels.length == 0 ? "(loading...)" : ""}
 						</div>
 						<div>
-						<a>Create new dataset...</a>
+						<FileUpload instructions="Click to select a CSV file with cell attributs (drag and drop also works)" />
+						<FileUpload instructions="(optional) Click to select a CSV file with cell attributs (drag and drop also works)" />
 						</div>
 					</div>
 				</div>
@@ -61,4 +63,18 @@ DatasetView.propTypes = {
 	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired
+}
+
+export class FileUpload extends Component {
+	onDrop (file) {
+      console.log('Received file: ', file);
+    }
+
+	render () {
+		return (
+			<Dropzone onDrop={this.onDrop} multiple={false}>
+				<div>{this.props.instructions}</div>
+			</Dropzone>
+		);
+	}
 }
