@@ -4,7 +4,7 @@ import Dropzone from 'react-dropzone';
 
 export class DatasetView extends Component {
 
-	render () {
+	render() {
 		var dispatch = this.props.dispatch;
 		var ds = this.props.dataState;
 		var vs = this.props.viewState;
@@ -48,12 +48,19 @@ export class DatasetView extends Component {
 						<h3>&nbsp; </h3>
 						<h4>Available datasets</h4>
 						<div>
-							{panels.length === 0 ? "(loading...)" : panels}
+							{ panels.length === 0 ?
+								<div className="panel panel-primary">
+									<div className="panel-heading">
+										Downloading list of available datasets...
+									</div>
+								</div>
+								:
+								panels
+							}
 						</div>
+						<hr />
 						<h4>Create a new dataset</h4>
-						<div>
-							<CreateDataset />
-						</div>
+						<CreateDataset />
 					</div>
 				</div>
 			</div>
@@ -68,29 +75,45 @@ DatasetView.propTypes = {
 }
 
 export class CreateDataset extends Component {
-	render (){
-		return (
-			<div class="panel panel-primary">
-				<div className="panel panel-heading">
-					<FileUpload instructions="Click to select a CSV file with cell attributs (drag and drop also works)" class="panel-body" />
-					<FileUpload instructions="(optional) Click to select a CSV file with cell attributs (drag and drop also works)" class="panel-body" />
-					<p>n_features: <input type="number" defaultValue="100" /></p>
-				</div>
-			</div>
-		);
-	}
-}
-
-export class FileUpload extends Component {
-	onDrop(file) {
-		console.log('Received file: ', file);
-    }
-
 	render() {
 		return (
-			<Dropzone onDrop={this.onDrop} multiple={false}>
-				<div>{this.props.instructions}</div>
-			</Dropzone>
+			<div>
+				<div className="panel panel-primary">
+					<div className="panel-heading">Attach CSV files below</div>
+					<div className="list-group">
+						<div className="list-group-item col-md-6">
+							<label for="CSV_cell">Cell attributes:</label>
+							<Dropzone onDrop={this.onDrop} multiple={false} id="CSV_cell" />
+						</div>
+						<div className="list-group-item col-md-6">
+							<label for="CSV_gene_attributes">Gene attributes: (optional)</label>
+							<Dropzone onDrop={this.onDrop} multiple={false} id="CSV_gene_attributes" />
+						</div>
+					</div>
+					<div className="panel-heading">Set parameters</div>
+					<div className="list-group">
+						<div className="list-group-item">
+							<label for="input_n_features" >Number of features:</label>
+							<input type="number" className="form-control" defaultValue="100" id="input_n_features" />
+							<p>TODO: AP/Backspin dropdown</p>
+							<label for="input_n_features" >Regression Label:</label>
+							<input type="text"  className="form_control" defaultValue="" id="input_regression_label" />
+						</div>
+					</div>
+					<div className="panel-heading">Other settings</div>
+					<div className="list-group">
+						<div className="list-group-item">
+							<div class="checkbox">
+								<input type="checkbox" /> Zip files before uploading (may not work in older browsers)
+							</div>
+						</div>
+					</div>
+				</div>
+				<br />
+				<div className="pull-right">
+					<button type="submit" className="btn btn-default">Submit request for new dataset</button>
+				</div>
+			</div>
 		);
 	}
 }
