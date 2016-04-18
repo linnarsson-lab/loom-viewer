@@ -82,12 +82,10 @@ export class CreateDataset extends Component {
 					<div className="panel-heading">Attach CSV files below</div>
 					<div className="list-group">
 						<div className="list-group-item col-md-6">
-							<label for="CSV_cell">Cell attributes:</label>
-							<Dropzone onDrop={this.onDrop} multiple={false} id="CSV_cell" />
+							<FileUpload label="Cell attributes:" id="CSV_cell" />
 						</div>
 						<div className="list-group-item col-md-6">
-							<label for="CSV_gene_attributes">Gene attributes: (optional)</label>
-							<Dropzone onDrop={this.onDrop} multiple={false} id="CSV_gene_attributes" />
+							<FileUpload label="Gene attributes: (optional)" id="CSV_gene_attributes" />
 						</div>
 					</div>
 					<div className="panel-heading">Set parameters</div>
@@ -114,6 +112,31 @@ export class CreateDataset extends Component {
 					<button type="submit" className="btn btn-default">Submit request for new dataset</button>
 				</div>
 			</div>
+		);
+	}
+}
+
+export class FileUpload extends Component {
+	onDrop (files) {
+		console.log('Received files: ', files);
+	}
+
+	render () {
+		let style = { width: '100%', height: '3em',
+				padding: '2em', textAlign: 'center',
+				borderWidth: 2, borderColor: '#666',
+				borderStyle: 'dashed',borderRadius: 5
+			};
+		let activeStyle = { borderStyle: 'solid', backgroundColor: '#dfd' };
+		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
+		return (
+			<div>
+				<label for={this.props.id}>{this.props.label}</label>
+				<Dropzone onDrop={this.onDrop} multiple={false} id={this.props.id} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
+					Click to select,&nbsp;or drag and drop a file
+				</Dropzone>
+			</div>
+
 		);
 	}
 }
