@@ -82,19 +82,19 @@ export class CreateDataset extends Component {
 					<div className="panel-heading">Attach CSV files below</div>
 					<div className="list-group">
 						<div className="list-group-item col-md-6">
-							<FileUpload label="Cell attributes:" id="CSV_cell" />
+							<UploadCSV label="Cell attributes:" id="CSV_cell" />
 						</div>
 						<div className="list-group-item col-md-6">
-							<FileUpload label="Gene attributes: (optional)" id="CSV_gene_attributes" />
+							<UploadCSV label="Gene attributes: (optional)" id="CSV_gene_attributes" />
 						</div>
 					</div>
 					<div className="panel-heading">Set parameters</div>
 					<div className="list-group">
 						<div className="list-group-item">
-							<label for="input_n_features" >Number of features:</label>
+							<label for="input_n_features" >Number of features: </label>
 							<input type="number" className="form-control" defaultValue="100" id="input_n_features" />
 							<p>TODO: AP/Backspin dropdown</p>
-							<label for="input_n_features" >Regression Label:</label>
+							<label for="input_n_features" >Regression Label: </label>
 							<input type="text"  className="form_control" defaultValue="" id="input_regression_label" />
 						</div>
 					</div>
@@ -116,27 +116,51 @@ export class CreateDataset extends Component {
 	}
 }
 
-export class FileUpload extends Component {
-	onDrop (files) {
-		console.log('Received files: ', files);
+export class UploadCSV extends Component {
+
+	constructor(props, context) {
+		super(props, context);
+		this.state = {
+			droppedFile: null
+		};
 	}
 
-	render () {
-		let style = { width: '100%', height: '3em',
-				padding: '2em', textAlign: 'center',
-				borderWidth: 2, borderColor: '#666',
-				borderStyle: 'dashed',borderRadius: 5
-			};
+	shouldComponentUpdate() {
+		return true;
+	}
+
+	onDrop(files) {
+		var f = files[0];
+		if (f.type === "text/csv") {
+			console.log('Received CSV file: ', f);
+			this.setState({ droppedFile: f }, function () { console.log('setState was called') });
+		} else {
+			console.log(f.name, ' is of type ', f.type, ', which is not a recognised CSV file extension!')
+		}
+	}
+
+	render() {
+		let style = {
+			width: '100%', height: 'auto',
+			padding: 20, textAlign: 'center',
+			borderWidth: 2, borderColor: '#666',
+			borderStyle: 'dashed', borderRadius: 5
+		};
 		let activeStyle = { borderStyle: 'solid', backgroundColor: '#dfd' };
 		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
+
+		console.log('render() called, passed, this.state.droppedFile === ', this.state.droppedFile);
+
 		return (
 			<div>
 				<label for={this.props.id}>{this.props.label}</label>
 				<Dropzone onDrop={this.onDrop} multiple={false} id={this.props.id} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
-					Click to select,&nbsp;or drag and drop a file
+					<div>
+						Click to select a CSV file<br />
+						(drag and drop also works)
+					</div>
 				</Dropzone>
-			</div>
-
+			</div >
 		);
 	}
 }
