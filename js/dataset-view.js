@@ -114,96 +114,107 @@ export class CreateDataset extends Component {
 
 export class CSVFileChooser extends Component {
 
-	constructor(props, context) {
-		super(props, context);
-		this.state = {
-			droppedFile: null,
-			fileName: '-',
-			fileSize: '-',
-			extraInfo: null,
-			backgroundColor: '#ffffff',
-		};
-	}
+   constructor(props, context) {
+      super(props, context);
+      this.state = {
+         droppedFile: null,
+         validFileName: false,
+         fileName: '-',
+         fileSize: 0,
+         fileSizeString: '-',
+         extraInfo: null,
+         validContent: false,
+         backgroundColor: '#ffffff',
+      };
+   }
 
-	onDrop(files) {
-		let file = files[0];
-		let fileIsCSV = file.type === "text/csv";
-		let newState = {
-			droppedFile: file,
-			fileName: file.name,
-			fileSize: this.bytesToString(file.size),
-		};
+   onDrop(files) {
+      let file = files[0];
+      let fileIsCSV = file.type === "text/csv";
+      let newState = {
+         droppedFile: file,
+         validFileName: false,
+         fileName: file.name,
+         fileSize: file.size,
+         fileSizeString: this.bytesToString(file.size),
+      };
 
-		if (fileIsCSV) {
-			newState.backgroundColor = '#dddddd';
-			newState.extraInfo = 'Please wait, checking for semicolons';
-		} else {
-			newState.backgroundColor = '#ffcccc';
-			newState.extraInfo = 'WARNING: "' + file.name + '" does not have a CSV file extension!';
-		}
+      if (fileIsCSV) {
+         newState.validFileName = true;
+         newState.backgroundColor = '#dddddd';
+         newState.extraInfo = 'Please wait, checking for semicolons';
+         newState.validContent = false;
+      } else {
+         newState.validFileName = false;
+         newState.backgroundColor = '#ffcccc';
+         newState.extraInfo = 'WARNING: "' + file.name + '" does not have a CSV file extension!';
+         newState.validContent = false;
+      }
 
-		this.setState(newState);
+      this.setState(newState);
 
-		if (fileIsCSV) {
-			// Since file IO is asynchronous, validation needs
-			// to be done as a callback, calling setState when done
-			let reader = new FileReader();
-			reader.onload = (event) => {
-				let splitColons = reader.result.split(';');
-				var validatedState = {}
-				if (splitColons.length > 1) {
-					validatedState.extraInfo = 'WARNING: semicolons found, is this a properly formatted CSV?';
-					validatedState.backgroundColor = '#ffcccc';
-				} else {
-					validatedState.extraInfo = null;
-					validatedState.backgroundColor = '#ccffcc';
-				}
-				this.setState(validatedState);
-			};
-			// take the first 10kb, or less if the file is smaller
-			let first10KB = file.slice(0, Math.min(10240, file.size));
-			reader.readAsText(first10KB);
-		}
-	}
+      if (fileIsCSV) {
+         // Since file IO is asynchronous, validation needs
+         // to be done as a callback, calling setState when done
+         let reader = new FileReader();
+         reader.onload = (event) => {
+            let splitColons = reader.result.split(';');
+            var validatedState = {}
+            if (splitColons.length > 1) {
+               validatedState.extraInfo = 'WARNING: semicolons found, is this a properly formatted CSV?';
+               validatedState.backgroundColor = '#ffcccc';
+               validatedState.validContent = false;
+            } else {
+               validatedState.extraInfo = null;
+               validatedState.backgroundColor = '#ccffcc';
+               validatedState.validContent = true;
+            }
+            this.setState(validatedState);
+         };
+         // take the first 10kb, or less if the file is smaller
+         let first10KB = file.slice(0, Math.min(10240, file.size));
+         reader.readAsText(first10KB);
+      }
+   }
 
-	validate(file) {
+   validate(file) {
 
-	}
+   }
 
-	bytesToString(bytes) {
-		var displaybytes = bytes;
-		var magnitude = 0;
-		const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
-		while (displaybytes > 512) {
-			magnitude++
-			displaybytes /= 1024;
-		}
-		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude]
-	}
+   bytesToString(bytes) {
+      var displaybytes = bytes;
+      var magnitude = 0;
+      const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+      while (displaybytes > 512 && magnitude < scale.length) {
+         magnitude++
+         displaybytes /= 1024;
+      }
+      return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude]
+   }
 
-	render() {
-		let style = {
-			width: '100%', height: '100%',
-			padding: 15, textAlign: 'center',
-			borderWidth: 2, borderColor: '#666',
-			borderStyle: 'dashed', borderRadius: 5,
-			backgroundColor: this.state.backgroundColor
-		};
-		let activeStyle = { borderStyle: 'solid', backgroundColor: '#eee' };
-		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
+   render() {
+      let style = {
+         width: '100%', height: '100%',
+         padding: 15, textAlign: 'center',
+         borderWidth: 2, borderColor: '#666',
+         borderStyle: 'dashed', borderRadius: 5,
+         backgroundColor: this.state.backgroundColor
+      };
+      let activeStyle = { borderStyle: 'solid', backgroundColor: '#eee' };
+      let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
 
-		return (
-			<div className={this.props.className}>
-				<label>{this.props.label}</label>
-				<Dropzone onDrop={(files) => this.onDrop(files) } multiple={false} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
-					<b>Drag and drop a CSV file, or click to browse</b>
-					<div style={{ padding: 15, textAlign: 'left' }}>
-						<div>name: <i>{this.state.fileName}</i></div>
-						<div>size: <i>{this.state.fileSize}</i></div>
-						<div><b>{this.state.extraInfo}</b></div>
-					</div>
-				</Dropzone>
-			</div >
-		);
-	}
+      return (
+         <div className={this.props.className}>
+            <label>{this.props.label}</label>
+            <Dropzone onDrop={(files) => this.onDrop(files) } multiple={false} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
+               <b>Drag and drop a CSV file, or click to browse</b>
+               <div style={{ padding: 15, textAlign: 'left' }}>
+                  <div>{this.state.validFileName ? '☑' : ' ☐'} name: <i>{this.state.fileName}</i></div>
+                  <div>{this.state.fileSize > 0 ? '☑' : ' ☐'} size: <i>{this.state.fileSizeString}</i></div>
+                  <div>{this.state.validContent ? '☑' : ' ☐'} content: <b>{this.state.extraInfo}</b></div>
+               </div>
+            </Dropzone>
+         </div >
+      );
+   }
 }
