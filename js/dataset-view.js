@@ -81,13 +81,8 @@ export class CreateDataset extends Component {
 				<div className="panel panel-primary">
 					<div className="panel-heading">Attach CSV files below</div>
 					<div className="list-group">
-						<FooComponent />
-						<div className="list-group-item col-md-6">
-							<UploadCSV label="Cell attributes:" id="CSV_cell" />
-						</div>
-						<div className="list-group-item col-md-6">
-							<UploadCSV label="Gene attributes: (optional)" id="CSV_gene_attributes" />
-						</div>
+						<CSVFileChooser className="list-group-item" label='Cell attributes:'/>
+						<CSVFileChooser className="list-group-item" label='Gene attributes: (optional)' />
 					</div>
 					<div className="panel-heading">Set parameters</div>
 					<div className="list-group">
@@ -117,68 +112,95 @@ export class CreateDataset extends Component {
 	}
 }
 
-export class FooComponent extends Component {
-
-	constructor(props, context) {
-		super(props, context);
-		this.state = { bar: 0 };
-	}
-
-	handleClick() {
-		const i = this.state.bar + 1;
-		this.setState({ bar: i });
-		console.log(this.state);
-	}
-
-	render() {
-		console.log(this.state);
-		return (<div onClick={() => this.handleClick()}>{this.state.bar}</div>);
-	}
-}
-
-export class UploadCSV extends Component {
+export class CSVFileChooser extends Component {
 
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
 			droppedFile: null,
-			displayString: `Click to select a CSV file (or drag and drop)`
+			fileName: '-',
+			fileSize: '-',
+			extraInfo: null,
+			backgroundColor: '#ffffff',
 		};
 	}
 
 	onDrop(files) {
-		let f = files[0];
-		let newState = f.type === "text/csv" ? { droppedFile: f, displayString: 'Selected ' + f.name }
-			: {
-				droppedFile: null,
-				displayString: ('"' + f.name + '" is not a recognised CSV file extension!')
+		let file = files[0];
+		let fileIsCSV = file.type === "text/csv";
+		let newState = {
+			droppedFile: file,
+			fileName: file.name,
+			fileSize: this.bytesToString(file.size),
+		};
+
+		if (fileIsCSV) {
+			newState.backgroundColor = '#dddddd';
+			newState.extraInfo = 'Please wait, checking for semicolons';
+		} else {
+			newState.backgroundColor = '#ffcccc';
+			newState.extraInfo = 'WARNING: "' + file.name + '" does not have a CSV file extension!';
+		}
+
+		this.setState(newState);
+
+		if (fileIsCSV) {
+			// Since file IO is asynchronous, validation needs
+			// to be done as a callback, calling setState when done
+			let reader = new FileReader();
+			reader.onload = (event) => {
+				let splitColons = reader.result.split(';');
+				var validatedState = {}
+				if (splitColons.length > 1) {
+					validatedState.extraInfo = 'WARNING: semicolons found, is this a properly formatted CSV?';
+					validatedState.backgroundColor = '#ffcccc';
+				} else {
+					validatedState.extraInfo = null;
+					validatedState.backgroundColor = '#ccffcc';
+				}
+				this.setState(validatedState);
 			};
-		this.setState(
-			newState,
-			function () {
-				console.log('setState called with ', newState);
-			}
-		);
+			// take the first 10kb, or less if the file is smaller
+			let first10KB = file.slice(0, Math.min(10240, file.size));
+			reader.readAsText(first10KB);
+		}
+	}
+
+	validate(file) {
+
+	}
+
+	bytesToString(bytes) {
+		var displaybytes = bytes;
+		var magnitude = 0;
+		const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+		while (displaybytes > 512) {
+			magnitude++
+			displaybytes /= 1024;
+		}
+		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude]
 	}
 
 	render() {
 		let style = {
-			width: '100%', height: 'auto',
-			padding: 20, textAlign: 'center',
+			width: '100%', height: '100%',
+			padding: 15, textAlign: 'center',
 			borderWidth: 2, borderColor: '#666',
-			borderStyle: 'dashed', borderRadius: 5
+			borderStyle: 'dashed', borderRadius: 5,
+			backgroundColor: this.state.backgroundColor
 		};
-		let activeStyle = { borderStyle: 'solid', backgroundColor: '#dfd' };
+		let activeStyle = { borderStyle: 'solid', backgroundColor: '#eee' };
 		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
 
-		// console.log('render() called, this.state.droppedFile === ', this.state.droppedFile);
-
 		return (
-			<div>
-				<label for={this.props.id}>{this.props.label}</label>
-				<Dropzone onDrop={(files) => this.onDrop(files)} multiple={false} id={this.props.id} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
-					<div>
-						{this.state.displayString}
+			<div className={this.props.className}>
+				<label>{this.props.label}</label>
+				<Dropzone onDrop={(files) => this.onDrop(files) } multiple={false} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
+					<b>Drag and drop a CSV file, or click to browse</b>
+					<div style={{ padding: 15, textAlign: 'left' }}>
+						<div>name: <i>{this.state.fileName}</i></div>
+						<div>size: <i>{this.state.fileSize}</i></div>
+						<div><b>{this.state.extraInfo}</b></div>
 					</div>
 				</Dropzone>
 			</div >
