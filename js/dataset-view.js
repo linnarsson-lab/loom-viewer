@@ -81,6 +81,7 @@ export class CreateDataset extends Component {
 				<div className="panel panel-primary">
 					<div className="panel-heading">Attach CSV files below</div>
 					<div className="list-group">
+						<FooComponent />
 						<div className="list-group-item col-md-6">
 							<UploadCSV label="Cell attributes:" id="CSV_cell" />
 						</div>
@@ -116,27 +117,48 @@ export class CreateDataset extends Component {
 	}
 }
 
+export class FooComponent extends Component {
+
+	constructor(props, context) {
+		super(props, context);
+		this.state = { bar: 0 };
+	}
+
+	handleClick() {
+		const i = this.state.bar + 1;
+		this.setState({ bar: i });
+		console.log(this.state);
+	}
+
+	render() {
+		console.log(this.state);
+		return (<div onClick={() => this.handleClick()}>{this.state.bar}</div>);
+	}
+}
+
 export class UploadCSV extends Component {
 
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
-			droppedFile: null
+			droppedFile: null,
+			displayString: `Click to select a CSV file (or drag and drop)`
 		};
 	}
 
-	shouldComponentUpdate() {
-		return true;
-	}
-
 	onDrop(files) {
-		var f = files[0];
-		if (f.type === "text/csv") {
-			console.log('Received CSV file: ', f);
-			this.setState({ droppedFile: f }, function () { console.log('setState was called') });
-		} else {
-			console.log(f.name, ' is of type ', f.type, ', which is not a recognised CSV file extension!')
-		}
+		let f = files[0];
+		let newState = f.type === "text/csv" ? { droppedFile: f, displayString: 'Selected ' + f.name }
+			: {
+				droppedFile: null,
+				displayString: ('"' + f.name + '" is not a recognised CSV file extension!')
+			};
+		this.setState(
+			newState,
+			function () {
+				console.log('setState called with ', newState);
+			}
+		);
 	}
 
 	render() {
@@ -149,15 +171,14 @@ export class UploadCSV extends Component {
 		let activeStyle = { borderStyle: 'solid', backgroundColor: '#dfd' };
 		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
 
-		console.log('render() called, passed, this.state.droppedFile === ', this.state.droppedFile);
+		// console.log('render() called, this.state.droppedFile === ', this.state.droppedFile);
 
 		return (
 			<div>
 				<label for={this.props.id}>{this.props.label}</label>
-				<Dropzone onDrop={this.onDrop} multiple={false} id={this.props.id} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
+				<Dropzone onDrop={(files) => this.onDrop(files)} multiple={false} id={this.props.id} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
 					<div>
-						Click to select a CSV file<br />
-						(drag and drop also works)
+						{this.state.displayString}
 					</div>
 				</Dropzone>
 			</div >
