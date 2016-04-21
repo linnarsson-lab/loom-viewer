@@ -1,33 +1,52 @@
 
-Next steps
-==========
-```
-Show popups overlaid on top of the heatmap (for Find genes)
+Deploying to the cloud
+======================
 
-Sparkline view
-	Sort by col attr
-	Color by col attr
-	Show col attribute on top
-	Enter list of genes to show
-Landscape view
-	Automatically scale marker diameters based on total number of markers
-	x Select X and Y coordinates
-	x Buttons to quickly select tSNE or PCA
-	x Select cell annotation or (gene)
-	x Input gene to show as color
+We want to run several server and daemon processes in the cloud using containers. 
+Here's what I've learned so far:
 
-Work with gene sets
-	Select gene sets from Panther (incl GO)
-	Upload gene sets
-	Named gene sets get added to Sparkline view
+To set up gcloud for containers (especially: set gcloud defaults) 
 
-Summary view
-Tool runner
-Back-end based on files instead of .h5 (for concurrent read-only access)
-Make URL namespace include hash of matrix, to allow concurrent access to multiple files
-Tool (page) to download the backing data (for data portal)
-Maybe use Celery to run tools in background
-```
+	https://cloud.google.com/container-engine/docs/before-you-begin
+	
+To set gcloud defaults
+
+	gcloud config set project linnarsson-lab
+	gcloud config set compute/zone us-east1-c
+	gcloud config set container/cluster container-cluster-2
+	gcloud container clusters get-credentials container-cluster-2
+	
+To build a docker image
+
+	cd python
+	docker build -t gcr.io/linnarsson-lab/loom-server:v1 -f loom-server.dockerfile .
+	
+To add required Python libraries, edit requirements.txt
+
+To push the image to Google Container Registry
+
+	gcloud docker push gcr.io/linnarsson-lab/loom-server:v1
+	
+	# The parts are as follows:
+	#	gcr.io			Hostname for the registry (don't change)
+	#   linnarsson-lab	Cloud project name (no need to change)
+	#	loom-server		The image name
+	#	v1				The image tag (change when you make a new version)
+
+To create a deployment
+
+	kubectl run loom-server --image=gcr.io/linnarsson-lab/loom-server:v1 --port=5000
+
+To list deployments and pods
+
+	kubectl get deployments
+	kubectl get pods
+	
+
+We need to attach a persistent disk, read-only so all containers can access it:
+
+	http://kubernetes.io/docs/user-guide/volumes/#gcepersistentdisk
+
 
 
 Development stack

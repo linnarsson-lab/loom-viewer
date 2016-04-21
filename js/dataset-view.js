@@ -39,7 +39,7 @@ export class DatasetView extends Component {
 				<div className="row">
 					<div className="view col-md-8">
 						<h3>&nbsp;</h3>
-						<h3>Linnarsson lab single-cell data repository</h3>
+						<h3>Linnarsson lab single-cell RNA-seq repository</h3>
 						<h3>&nbsp;</h3>
 						<div>
 						{panels}

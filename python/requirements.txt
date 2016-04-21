@@ -1,0 +1,4 @@
+pystan==2.9.0.0
+gcloud==0.12.1
+grequests==0.3.0
+PyMySQL==0.7.2

@@ -43,7 +43,6 @@ import pymysql.cursors
 import csv
 import pandas as pd
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
-import pymysql
 
 _dataset_pattern = "^[A-Za-z0-9_-]+__[A-Za-z0-9_-]+$"
 _cloud_project = "linnarsson-lab"
@@ -269,14 +268,12 @@ class MySQLToBigQueryPipeline(object):
 				np.savetxt(tf, data, delimiter=",",fmt="%d")
 				table.upload_from_file(tf, "CSV", rewind=True, write_disposition='WRITE_APPEND')
 
-	def upload(self, transcriptome, project, dataset, config, cell_attrs = None, gene_attrs = None):
+	def upload(self, config, cell_attrs = None, gene_attrs = None):
 		"""
 		Upload a custom dataset annotation to BigQuery.
 
 		Args:
-			transcriptome (str):	Name of the transcriptome build (e.g. 'mm10a_aUCSC')
-			project (str):			Name of the project
-			dataset (str):			A loom dataset name
+			config (DatasetConfig):	Configuration for the dataset
 			cell_attrs (dict):		Optional dictionary of cell annotations (numpy arrays)
 			gene_attrs (dict): 		Optional dictionary of gene annotations (numpy arrays)
 
@@ -302,7 +299,7 @@ class MySQLToBigQueryPipeline(object):
 			if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
 				raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
 			if cell_attrs["CellID"].dtype.kind == 'S':
-				cell_id_mapping = self.get_cell_id_mapping(transcriptome)
+				cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
 				cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
 		if gene_attrs != None:
 			if not gene_attrs.__contains__("TranscriptID"):
@@ -310,24 +307,18 @@ class MySQLToBigQueryPipeline(object):
 			if gene_attrs["TranscriptID"].dtype.kind != 'i' and gene_attrs["TranscriptID"].dtype.kind != 'S':
 				raise ValueError, "'TranscriptID' attribute is not of type INTEGER or STRING."
 			if gene_attrs["TranscriptID"].dtype.kind == 'S':
-				gene_id_mapping = self.get_transcript_id_mapping(transcriptome)
+				gene_id_mapping = self.get_transcript_id_mapping(config.transcriptome)
 				gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
 
 		# Send the dataset to BigQuery
 		if cell_attrs != None:
 			print "Uploading cell annotations"
-			self._export_attrs_to_bigquery(cell_attrs, transcriptome, "Cells__" + project + "__" + dataset)
+			self._export_attrs_to_bigquery(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset)
 		if gene_attrs != None:
 			print "Uploading gene annotations"
-			self._export_attrs_to_bigquery(gene_attrs, transcriptome, "Genes__" + project + "__" + dataset)
+			self._export_attrs_to_bigquery(gene_attrs, condfig.transcriptome, "Genes__" + config.project + "__" + config.dataset)
 		# Save the config
-		dsc = DatasetConfig(transcriptome, project, dataset, 
-			status = "created", 
-			message = "", 
-			n_features = config["n_features"], 
-			cluster_method = config["cluster_method"],
-			regression_label = config["regression_label"])
-		dsc.put()
+		config.put()
 		print "Done."
 
 	def _export_attrs_to_bigquery(self, attrs, transcriptome, tablename):

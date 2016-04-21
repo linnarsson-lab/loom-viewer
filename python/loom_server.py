@@ -119,7 +119,13 @@ def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	row_attrs = csv_to_dict(request.form["row_attrs"])
 	config = request.form["config"]
-	pipeline.upload(transcriptome, project, dataset, config, col_attrs, row_attrs)
+	dsc = DatasetConfig(transcriptome, project, dataset, 
+		status = "created", 
+		message = "Waiting for dataset to be generated.", 
+		n_features = config["n_features"], 
+		cluster_method = config["cluster_method"],
+		regression_label = config["regression_label"])
+	pipeline.upload(config, col_attrs, row_attrs)
 	return "", 200
 
 
@@ -140,7 +146,7 @@ def send_tile(transcriptome, project, dataset, z,x,y):
 	return serve_image(img)
 
 if __name__ == '__main__':
-	app.run(debug=DEBUG)
+	app.run(debug=DEBUG, host="0.0.0.0", port=80)
 
 
 
