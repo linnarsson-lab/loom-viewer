@@ -1,8 +1,9 @@
 # Mac OSX hidden folder
 .DS_Store
 
-# Build folder for static files
+# Build folder for static files, and cache for loom files
 static/
+cache/
 
 # Visual Studio Code
 .vscode/
