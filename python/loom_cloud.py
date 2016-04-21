@@ -29,10 +29,24 @@ from gcloud import storage
 import loom
 import re
 import json
+import time
 
 _valid_pattern = "^[A-Za-z0-9_-]+__[A-Za-z0-9_-]+__[A-Za-z0-9_-]+.loom$"
 
-# TODO: test and fix this function; I wrote it without access to the Cloud Storage docs
+def list_datasets(self):
+	"""
+	Return a list of DatasetConfig objects for loom files stored remotely.
+	"""
+	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
+	bucket = client.get_bucket("linnarsson-lab-loom")
+	result = []
+	for blob in bucket.list_blobs():
+		if blob.name.endswith(".json"):
+			parts = blob.name.split("__")
+			config = get_dataset_config(parts[0], parts[1], parts[2][:-5])
+			result.append(config)
+	return result
+
 def get_dataset_config(transcriptome, project, dataset):
 	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
 	bucket = client.get_bucket("linnarsson-lab-loom")
@@ -56,8 +70,7 @@ class DatasetConfig(object):
 	Configuration and status for a .loom file in Cloud Storage.
 
 	This object is stored as a JSON string under they same key as the corresponding dataset, but with
-	extension .json instead of .loom. To initiate the creation of a .loom dataset, a config 
-	object is created with status = "create".
+	extension .json instead of .loom. 
 	"""
 	def __init__(self, transcriptome, project, dataset, status = "unknown", message = "", n_features = 1000, cluster_method = "AP", regression_label = "_Cluster"):
 		"""
@@ -67,7 +80,7 @@ class DatasetConfig(object):
 			transcriptome (string): 	Name of the transcriptome (e.g. "hg19_sUCSC")
 			project (string): 			Name of the project (e.g. "Midbrain")
 			dataset (string): 			Short name of the dataset (e.g. "human")
-			status (string):			"create", "creating", "done", "unknown", or "error"
+			status (string):			"willcreate", "creating", "created", "unknown", or "error"
 			message (string):			A user-friendly message describing the current status (default: "").
 			n_features (int):			Number of genes to select for clustering (default: 1000)
 			cluster_method (string):	"AP" (affinity propagation; default) or "BackSPIN"
@@ -139,15 +152,21 @@ class LoomCloud(object):
 		Return a list of DatasetConfig objects for loom files stored remotely.
 
 		"""
-		bucket = self.client.get_bucket(self.remote_root)
-		result = []
-		for blob in bucket.list_blobs():
-			if blob.name.endswith(".json"):
-				parts = blob.name.split("__")
-				config = get_dataset_config(parts[0], parts[1], parts[2][:-5])
-				result.append(config)
-		return result
+		return list_datasets()
 
+	def refresh_cache(self):
+		for ds in self.list_datasets():
+			if self.looms.__contains__(ds.get_loom_filename()):
+				continue
+			absolute_path = os.path.join(self.local_root, name)
+			if not os.path.isfile(absolute_path):
+				print "Fetching %s for cache." % absolute_path
+				bucket = self.client.get_bucket(self.remote_root)
+				blob = bucket.blob(name)
+				with open(absolute_path, 'wb') as outfile:
+					blob.download_to_file(outfile)
+			
+		
 	def connect_dataset_locally(self, transcriptome, project, dataset):
 		"""
 		Download the dataset (if needed) and connect it as a local loom file.
@@ -158,7 +177,7 @@ class LoomCloud(object):
 			dataset (string): 			Short name of the dataset (e.g. "human")
 
 		Returns:
-			A loom file connection.	Note that only files that have status "done" can be connected.
+			A loom file connection.	Note that only files that have status "created" can be connected.
 		"""
 		config = DatasetConfig(transcriptome, project, dataset)
 		name = config.get_loom_filename()
@@ -176,3 +195,10 @@ class LoomCloud(object):
 		result = loom.connect(absolute_path)
 		self.looms[name] = result
 		return result
+
+# Keep downloading datasets to the local cache
+if __name__ == '__main__':
+	cloud = LoomCloud(sys.argv[0])
+	while True:
+		cloud.refresh_cache()
+		time.sleep(60*5)		# Sleep 5 minutes		

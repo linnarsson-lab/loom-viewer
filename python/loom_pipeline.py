@@ -33,6 +33,7 @@ import time
 import loom
 from loom_backspin import BackSPIN
 from loom_cloud import DatasetConfig
+from loom_cloud import list_datasets
 import tempfile
 import re
 import uuid
@@ -549,11 +550,11 @@ class BigQueryToLoomPipeline(object):
 	# Check for work, then sleep a little, for ever
 	def run(self):
 		time.sleep(60*10)
-		for t in transcriptomes:
-			for d in datasets:
-				self.create_loom_from_dataset(t, d)
-				self.prepare_loom(t, d)
-				self.loom_to_storage(t, d)
+		for ds in list_datasets():
+			if ds.status == "willcreate":
+				self.create_loom_from_dataset(ds)
+				self.prepare_loom(ds)
+				self.store_loom(ds)
 
 	def create_loom_from_dataset(self, config):
 		"""
@@ -674,15 +675,21 @@ class BigQueryToLoomPipeline(object):
 
 		# Regression
 		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")
-		ds.bayesian_regression(config.regression_label)
+		#ds.bayesian_regression(config.regression_label)
 
 		# Heatmap tiles
 		config.set_status("creating", "Preparing the dataset: Step 5 (preparing heatmap tiles).")
 		ds.prepare_heatmap()
 
-		config.set_status("done")
-
+	def store_loom(self, config):
+		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
+		bucket = client.get_bucket("linnarsson-lab-loom")
+		config = DatasetConfig(transcriptome, project, dataset)
+		blob = bucket.get_blob(config.get_loom_filename())
+		blob.upload_from_file(config.get_loom_filename())
+		config.set_status("created", "Ready to browse.")
+		
 if __name__ == '__main__':
 	print "Starting the Loom pipeline..."
-	lp = LoomPipeline()
+	lp = BigQueryToLoomPipeline()
 	lp.run()

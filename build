@@ -35,9 +35,11 @@ rm temp.js
 
 sed -e "s/{VERSION}/$v/g" index.html > static/index.html
 
-# Build and deploy the container
-echo "Building docker container."
+# Build and deploy the containers
+echo "Building docker containers."
 docker build --no-cache -t gcr.io/linnarsson-lab/loom-server:v$v -f docker/loom-server.dockerfile .
-echo "Pushing container to cloud."
+docker build --no-cache -t gcr.io/linnarsson-lab/loom-pipeline:v$v -f docker/loom-pipeline.dockerfile .
+echo "Pushing containers to cloud."
 gcloud docker push gcr.io/linnarsson-lab/loom-server:v$v
+gcloud docker push gcr.io/linnarsson-lab/loom-pipeline:v$v
 echo "Done."

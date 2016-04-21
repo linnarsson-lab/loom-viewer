@@ -8,12 +8,11 @@ from loom_pipeline import MySQLToBigQueryPipeline
 import sys
 import StringIO
 import json
-#import click
 from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
 from pandas import DataFrame
-
+import subprocess
 
 DEBUG = False
 if len(sys.argv) > 1:
@@ -36,10 +35,16 @@ except:
 	print ""
 	print "Starting server without MySQL connection, so will not be able to PUT datasets."
 
+# Set up the local loom file cache
 datadir = os.path.join(os.getcwd(), "cache")
 if not os.path.exists(datadir):
 	os.makedirs(datadir)
 cache = LoomCloud(datadir)
+
+# And start the loom cache refresher in the background
+if not DEBUG:
+	subprocess.Popen(["python","loom_cloud.py", os.getcwd()])
+
 
 class LoomServer(flask.Flask):
 	# Disable cacheing 
@@ -120,7 +125,7 @@ def upload_dataset(transcriptome, project, dataset):
 	row_attrs = csv_to_dict(request.form["row_attrs"])
 	config = request.form["config"]
 	dsc = DatasetConfig(transcriptome, project, dataset, 
-		status = "created", 
+		status = "willcreate", 
 		message = "Waiting for dataset to be generated.", 
 		n_features = config["n_features"], 
 		cluster_method = config["cluster_method"],
