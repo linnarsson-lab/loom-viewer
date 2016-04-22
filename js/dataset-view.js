@@ -114,107 +114,136 @@ export class CreateDataset extends Component {
 
 export class CSVFileChooser extends Component {
 
-   constructor(props, context) {
-      super(props, context);
-      this.state = {
-         droppedFile: null,
-         validFileName: false,
-         fileName: '-',
-         fileSize: 0,
-         fileSizeString: '-',
-         extraInfo: null,
-         validContent: false,
-         backgroundColor: '#ffffff',
-      };
-   }
+	constructor(props, context) {
+		super(props, context);
+		this.state = {
+			droppedFile: null,
+			validFileName: false,
+			fileName: '-',
+			fileIsCSV: false,
+			fileSize: 0,
+			fileSizeString: '-',
+			fileContent: null,
+			validContent: false,
+			backgroundColor: '#ffffff',
+			extraInfo: [],
+		};
+	}
 
-   onDrop(files) {
-      let file = files[0];
-      let fileIsCSV = file.type === "text/csv";
-      let newState = {
-         droppedFile: file,
-         validFileName: false,
-         fileName: file.name,
-         fileSize: file.size,
-         fileSizeString: this.bytesToString(file.size),
-      };
+	onDrop(files) {
+		let file = files[0];
+		let newState = {
+			droppedFile: file,
+			validFileName: false,
+			fileName: file.name,
+			fileIsCSV: file.type === "text/csv",
+			fileSize: file.size,
+			fileSizeString: this.bytesToString(file.size),
+			fileContent: 'Please wait, performing basic validation',
+			extraInfo: []
+		};
 
-      if (fileIsCSV) {
-         newState.validFileName = true;
-         newState.backgroundColor = '#dddddd';
-         newState.extraInfo = 'Please wait, checking for semicolons';
-         newState.validContent = false;
-      } else {
-         newState.validFileName = false;
-         newState.backgroundColor = '#ffcccc';
-         newState.extraInfo = 'WARNING: "' + file.name + '" does not have a CSV file extension!';
-         newState.validContent = false;
-      }
+		if (file.size > 0) {
+			if (newState.fileIsCSV) {
+				newState.validFileName = true;
+				newState.backgroundColor = '#ccffcc';
+				newState.validContent = false;
+			} else {
+				newState.validFileName = false;
+				newState.backgroundColor = '#ffcccc';
+				newState.extraInfo.push('WARNING: "' + file.name + '" does not have a CSV file extension!');
+				newState.validContent = false;
+			}
+			this.setState(newState);
 
-      this.setState(newState);
+			// take the first 10kb, or less if the file is smaller
+			// and validate it asynchronously
+			let first10KB = file.slice(0, Math.min(10240, file.size));
+			this.validate(first10KB);
 
-      if (fileIsCSV) {
-         // Since file IO is asynchronous, validation needs
-         // to be done as a callback, calling setState when done
-         let reader = new FileReader();
-         reader.onload = (event) => {
-            let splitColons = reader.result.split(';');
-            var validatedState = {}
-            if (splitColons.length > 1) {
-               validatedState.extraInfo = 'WARNING: semicolons found, is this a properly formatted CSV?';
-               validatedState.backgroundColor = '#ffcccc';
-               validatedState.validContent = false;
-            } else {
-               validatedState.extraInfo = null;
-               validatedState.backgroundColor = '#ccffcc';
-               validatedState.validContent = true;
-            }
-            this.setState(validatedState);
-         };
-         // take the first 10kb, or less if the file is smaller
-         let first10KB = file.slice(0, Math.min(10240, file.size));
-         reader.readAsText(first10KB);
-      }
-   }
+		} else {
+			newState.backgroundColor = '#ffcccc';
+			newState.extraInfo.push('WARNING: "' + file.name + '" is an empty file! Did you drop a folder?');
+			newState.validContent = false;
+			this.setState(newState);
+		}
 
-   validate(file) {
+	}
 
-   }
+	validate(file) {
+		// Since file IO is asynchronous, validation needs
+		// to be done as a callback, calling setState when done
+		let reader = new FileReader();
+		reader.onload = (event) => {
+			var validatedState = {
+				fileContent: reader.result.substr(0, 80) + '...',
+				extraInfo: this.state.extraInfo
+			};
+			if (reader.result.indexOf(';') !== -1) {
+				validatedState.extraInfo.push('WARNING: semicolons found, check if this is a properly formatted CSV');
+				validatedState.backgroundColor = '#ffcccc';
+				validatedState.validContent = false;
+			} else if (reader.result.indexOf(',') === -1) {
+				validatedState.extraInfo.push('ERROR: no commas found, check if this is a properly formatted CSV' + reader.result.substr(0, 50));
+				validatedState.backgroundColor = '#ffcccc';
+				validatedState.validContent = false;
+			} else if (this.state.fileIsCSV){
+				validatedState.extraInfo.push('File extension is recognised CSV, and basic formatting appears to be in order');
+				validatedState.validContent = true;
+			}
+			this.setState(validatedState);
+		};
+		// Handle abort and error cases
+		reader.onabort = (event) => {
+			validatedState.extraInfo.push('File reading aborted before validation');
+			validatedState.backgroundColor = '#ffcccc';
+			validatedState.validContent = false;
+		}
+		reader.onerror = (event) => {
+			console.log(event.error);
+			validatedState.extraInfo.push('Error while reading' + file.name + ': ' + reader.error.name);
+			validatedState.backgroundColor = '#ffcccc';
+			validatedState.validContent = false;
+		}
+		reader.readAsText(file);
+	}
 
-   bytesToString(bytes) {
-      var displaybytes = bytes;
-      var magnitude = 0;
-      const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
-      while (displaybytes > 512 && magnitude < scale.length) {
-         magnitude++
-         displaybytes /= 1024;
-      }
-      return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude]
-   }
+	bytesToString(bytes) {
+		var displaybytes = bytes;
+		var magnitude = 0;
+		const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+		while (displaybytes > 512 && magnitude < scale.length) {
+			magnitude++
+			displaybytes /= 1024;
+		}
+		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude]
+	}
 
-   render() {
-      let style = {
-         width: '100%', height: '100%',
-         padding: 15, textAlign: 'center',
-         borderWidth: 2, borderColor: '#666',
-         borderStyle: 'dashed', borderRadius: 5,
-         backgroundColor: this.state.backgroundColor
-      };
-      let activeStyle = { borderStyle: 'solid', backgroundColor: '#eee' };
-      let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
-
-      return (
-         <div className={this.props.className}>
-            <label>{this.props.label}</label>
-            <Dropzone onDrop={(files) => this.onDrop(files) } multiple={false} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
-               <b>Drag and drop a CSV file, or click to browse</b>
-               <div style={{ padding: 15, textAlign: 'left' }}>
-                  <div>{this.state.validFileName ? '☑' : ' ☐'} name: <i>{this.state.fileName}</i></div>
-                  <div>{this.state.fileSize > 0 ? '☑' : ' ☐'} size: <i>{this.state.fileSizeString}</i></div>
-                  <div>{this.state.validContent ? '☑' : ' ☐'} content: <b>{this.state.extraInfo}</b></div>
-               </div>
-            </Dropzone>
-         </div >
-      );
-   }
+	render() {
+		let style = {
+			width: '100%', height: '100%',
+			padding: 15, textAlign: 'center',
+			borderWidth: 2, borderColor: '#666',
+			borderStyle: 'dashed', borderRadius: 5,
+			backgroundColor: this.state.backgroundColor
+		};
+		let activeStyle = { borderStyle: 'solid', backgroundColor: '#ffffff' };
+		let rejectStyle = { borderStyle: 'solid', backgroundColor: '#ffcccc' };
+		return (
+			<div className={this.props.className}>
+				<label>{this.props.label}</label>
+				<Dropzone onDrop={(files) => this.onDrop(files) } multiple={false} style={style} activeStyle={activeStyle} rejectStyle={rejectStyle}>
+					<b>Drag and drop a CSV file, or click to browse</b>
+					<div style={{ padding: 15, textAlign: 'left' }}>
+						<div>{this.state.validFileName && this.state.validContent ? '☑' : '☐'} file:  <i>{this.state.fileName}</i></div>
+						<div>{this.state.fileSize > 0 ? '☑' : '☐'} size:  <i>{this.state.fileSizeString}</i></div>
+						<div>{this.state.validContent > 0 ? '☑' : '☐'} content:
+							<pre>{this.state.fileContent}</pre>
+							{this.state.extraInfo.length ? this.state.extraInfo.map((info, i) => { return(<div key={i}><b>{info}</b></div>) }) : null}
+						</div>
+					</div>
+				</Dropzone>
+			</div >
+		);
+	}
 }
