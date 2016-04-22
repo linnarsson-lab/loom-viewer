@@ -44,10 +44,9 @@ import pymysql.cursors
 import csv
 import pandas as pd
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
+import logging
 
-_dataset_pattern = "^[A-Za-z0-9_-]+__[A-Za-z0-9_-]+$"
-_cloud_project = "linnarsson-lab"
-_bucket = "linnarsson-lab-loom"
+logger = logging.getLogger("loom")
 
 
 class MySQLToBigQueryPipeline(object):
@@ -116,7 +115,7 @@ class MySQLToBigQueryPipeline(object):
 		connection = self.mysql_connection
 
 		# Connect to BigQuery
-		client = bigquery.Client(project=_cloud_project)
+		client = bigquery.Client(project="linnarsson-lab")
 		bq_dataset = client.dataset(transcriptome)
 		if not bq_dataset.exists():
 			bq_dataset.create()
@@ -360,7 +359,7 @@ class MySQLToBigQueryPipeline(object):
 				raise TypeError, "Unsupported numpy datatype of kind '%s'" % kind
 
 		# Prepare the table in BigQuery
-		client = bigquery.Client(project=_cloud_project)
+		client = bigquery.Client(project="linnarsson-lab")
 		bq_dataset = client.dataset(transcriptome)
 		if not bq_dataset.exists():
 			bq_dataset.create()
@@ -473,7 +472,8 @@ class MySQLToBigQueryPipeline(object):
 
 class _Query(object):
 	def __init__(self, sql):
-		client = bigquery.Client()
+		logger.info(sql)
+		client = bigquery.Client(project="linnarsson-lab")
 		request = client.run_sync_query(sql)
 		request.timeout_ms = 60 * 1000 # One minute
 		request.run()
@@ -493,22 +493,22 @@ class _Query(object):
 		Return the result as a dictionary of column names -> column values.
 		"""
 		(row_data, total_rows, page_token) = self.request.fetch_data()
-
+		total_rows = int(total_rows)
 		# Create empty numpy arrays to hold all the data
 		result = {}
 		type_conv = {"STRING": "string", "INTEGER": "int", "BOOLEAN": "bool", "FLOAT": "float"}
 		for column in self.request.schema:
-			result[column.name] = np.empty((total_rows,), dtype=type_conv[column.field_type])
+			result[column.name] = np.empty(total_rows, dtype=type_conv[column.field_type])
 
 		row_count = 0
 		for row in row_data:
-			for ix in len(self.request.schema):
+			for ix in xrange(len(self.request.schema)):
 				result[self.request.schema[ix].name][row_count] = row[ix]
 			row_count += 1
 		while page_token != None:
 			(row_data, total_rows, page_token) = request.fetch_data(page_token = page_token)
 			for row in row_data:
-				for ix in len(self.request.schema):
+				for ix in xrange(len(self.request.schema)):
 					result[self.request.schema[ix].name][row_count] = row[ix]
 				row_count += 1
 		return result
@@ -520,20 +520,18 @@ class _Query(object):
 		This will only work if the result is columns of the same types.
 		"""
 		(row_data, total_rows, page_token) = self.request.fetch_data()
+		total_rows = int(total_rows)
 		
 		type_conv = {"STRING": "string", "INTEGER": "int", "BOOLEAN": "bool", "FLOAT": "float"}
-		result = np.array((total_rows, len(row_data[0])), dtype = type_conv[self.request.schema[0].field_type])
-
+		result = np.zeros((total_rows, len(row_data[0])), dtype = type_conv[self.request.schema[0].field_type])
 		row_count = 0
 		for row in row_data:
-			for ix in len(row_data):
-				result[row_count, ix] = row[ix]
+			result[row_count, :] = row
 			row_count += 1
 		while page_token != None:
-			(row_data, total_rows, page_token) = request.fetch_data(page_token = page_token)
+			(row_data, total_rows, page_token) = self.request.fetch_data(page_token = page_token)
 			for row in row_data:
-				for ix in len(row_data):
-					result[row_count, ix] = row[ix]
+				result[row_count, :] = row
 				row_count += 1
 
 		return result
@@ -547,15 +545,6 @@ class BigQueryToLoomPipeline(object):
 	def __init__(self):
 		pass
 
-	# Check for work, then sleep a little, for ever
-	def run(self):
-		time.sleep(60*10)
-		for ds in list_datasets():
-			if ds.status == "willcreate":
-				self.create_loom_from_dataset(ds)
-				self.prepare_loom(ds)
-				self.store_loom(ds)
-
 	def create_loom_from_dataset(self, config):
 		"""
 		Fetch a dataset from BigQuery and save it as a .loom file
@@ -566,14 +555,12 @@ class BigQueryToLoomPipeline(object):
 		Returns:
 			Nothing, but a .loom file is created.
 		"""
-		dname = dataset.split("__")[1]
-
 		config.set_status("creating", "Collecting data and annotations.")
 
-		client = bigquery.Client()
+		client = bigquery.Client(project="linnarsson-lab")
 
-		genes_sql = ("SELECT * FROM [%s.Genes] all " % transcriptome) + \
-				  ("JOIN [%s.Genes__%s] ds ON all.TranscriptID = ds.TranscriptID " % (transcriptome, dataset)) + \
+		genes_sql = ("SELECT * FROM [%s.Genes] all " % config.transcriptome) + \
+				  ("JOIN [%s.Genes__%s__%s] ds ON all.TranscriptID = ds.TranscriptID " % (config.transcriptome, config.project, config.dataset)) + \
 				  ("ORDER BY all.TranscriptID")
 		genes = _Query(genes_sql).as_dict()
 		ngenes = len(genes[genes.keys()[0]])
@@ -581,12 +568,12 @@ class BigQueryToLoomPipeline(object):
 		genes_converted = {}
 		for key in genes.keys():
 			if key.startswith("ds_"):
-				genes_converted[dname + key[2:]] = genes[key]
+				genes_converted[config.dataset + key[2:]] = genes[key]
 			else:
 				genes_converted[key] = genes[key]
 
-		cells_sql = ("SELECT * FROM [%s.Cells] all " % transcriptome) + \
-				  ("JOIN [%s.Cells__%s] ds ON all.CellID = ds.CellID " % (transcriptome, dataset)) + \
+		cells_sql = ("SELECT * FROM [%s.Cells] all " % config.transcriptome) + \
+				  ("JOIN [%s.Cells__%s__%s] ds ON all.CellID = ds.CellID " % (config.transcriptome, config.project, config.dataset)) + \
 				  ("ORDER BY all.CellID")
 		cells = _Query(cells_sql).as_dict()
 		ncells = len(cells[cells.keys()[0]])
@@ -594,13 +581,13 @@ class BigQueryToLoomPipeline(object):
 		cells_converted = {}
 		for key in cells.keys():
 			if key.startswith("ds_"):
-				cells_converted[dname + key[2:]] = cells[key]
+				cells_converted[config.dataset + key[2:]] = cells[key]
 			else:
 				cells_converted[key] = cells[key]
 
-		count_sql = ("SELECT Count FROM [%s.Counts] m " % transcriptome) + \
-				("JOIN [%s.Cells__%s] c ON m.CellID = c.CellID " % (transcriptome,dataset)) +\
-				("JOIN [%s.Genes__%s] g ON m.TranscriptID = g.TranscriptID " % (transcriptome,dataset)) +\
+		count_sql = ("SELECT Count FROM [%s.Counts] m " % config.transcriptome) + \
+				("JOIN [%s.Cells__%s__%s] c ON m.CellID = c.CellID " % (config.transcriptome, config.project, config.dataset)) +\
+				("JOIN [%s.Genes__%s__%s] g ON m.TranscriptID = g.TranscriptID " % (config.transcriptome, config.project, config.dataset)) +\
 				("ORDER BY g.TranscriptID, c.CellID")
 		matrix = _Query(count_sql).as_matrix().reshape(ngenes, ncells)
 		loom.create(config.get_loom_filename(), matrix, genes_converted, cells_converted)
@@ -684,12 +671,18 @@ class BigQueryToLoomPipeline(object):
 	def store_loom(self, config):
 		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
 		bucket = client.get_bucket("linnarsson-lab-loom")
-		config = DatasetConfig(transcriptome, project, dataset)
-		blob = bucket.get_blob(config.get_loom_filename())
-		blob.upload_from_file(config.get_loom_filename())
+		config = DatasetConfig(config.transcriptome, config.project, config.dataset)
+		blob = bucket.blob(config.get_loom_filename())
+		blob.upload_from_filename(config.get_loom_filename())
 		config.set_status("created", "Ready to browse.")
 		
 if __name__ == '__main__':
-	print "Starting the Loom pipeline..."
+	logger.info("Starting the Loom pipeline...")
 	lp = BigQueryToLoomPipeline()
-	lp.run()
+	while True:
+		for ds in list_datasets():
+			if ds.status == "willcreate":
+				lp.create_loom_from_dataset(ds)
+				lp.prepare_loom(ds)
+				lp.store_loom(ds)
+		time.sleep(60*10)

@@ -3,7 +3,7 @@ from flask import request
 import os
 import os.path
 import loom
-from loom_cloud import LoomCloud
+import loom_cloud
 from loom_pipeline import MySQLToBigQueryPipeline
 import sys
 import StringIO
@@ -13,6 +13,9 @@ from functools import wraps, update_wrapper
 from datetime import datetime
 from pandas import DataFrame
 import subprocess
+import logging
+
+logger = logging.getLogger("loom")
 
 DEBUG = False
 if len(sys.argv) > 1:
@@ -23,8 +26,8 @@ if len(sys.argv) > 1:
 		print "(only valid flag is 'debug')"
 		sys.exit(1)
 
-os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-print "Serving from: " + os.getcwd()
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+logger.info("Serving from: " + os.getcwd())
 
 try:
 	os.environ("MYSQL_HOST")
@@ -33,17 +36,14 @@ except:
 	print "You need to set the MYSQL environment variables:"
 	print "   MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, and MYSQL_PASSWORD"
 	print ""
-	print "Starting server without MySQL connection, so will not be able to PUT datasets."
+	logger.info("Starting server without MySQL connection, so will not be able to PUT datasets.")
 
 # Set up the local loom file cache
-datadir = os.path.join(os.getcwd(), "cache")
-if not os.path.exists(datadir):
-	os.makedirs(datadir)
-cache = LoomCloud(datadir)
+cache = loom_cloud.LoomCache()
 
 # And start the loom cache refresher in the background
 if not DEBUG:
-	subprocess.Popen(["python","loom_cloud.py", os.getcwd()])
+	subprocess.Popen(["python","./loom_cloud.py"])
 
 
 class LoomServer(flask.Flask):
@@ -80,7 +80,7 @@ def send_indexjs():
 # List of all datasets
 @app.route('/loom')
 def send_dataset_list():
-	result = json.dumps([x.as_dict() for x in cache.list_datasets()])
+	result = json.dumps([x.as_dict() for x in loom_cloud.list_datasets()])
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset

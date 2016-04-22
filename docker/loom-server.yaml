@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "2"
+  creationTimestamp: 2016-04-20T22:31:26Z
+  generation: 4
+  labels:
+    run: loom-server
+  name: loom-server
+  namespace: default
+  resourceVersion: "469"
+  selfLink: /apis/extensions/v1beta1/namespaces/default/deployments/loom-server
+  uid: 9e41c891-0747-11e6-8c50-42010af00082
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: loom-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: loom-server
+    spec:
+      containers:
+      - image: gcr.io/linnarsson-lab/loom-server:v1
+        imagePullPolicy: Always
+        name: loom-server
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  observedGeneration: 4
+  replicas: 1
+  updatedReplicas: 1

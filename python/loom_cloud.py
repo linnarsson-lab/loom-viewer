@@ -30,10 +30,13 @@ import loom
 import re
 import json
 import time
+import logging
+
+logger = logging.getLogger("loom")
 
 _valid_pattern = "^[A-Za-z0-9_-]+__[A-Za-z0-9_-]+__[A-Za-z0-9_-]+.loom$"
 
-def list_datasets(self):
+def list_datasets():
 	"""
 	Return a list of DatasetConfig objects for loom files stored remotely.
 	"""
@@ -113,58 +116,37 @@ class DatasetConfig(object):
 	def put(self):
 		client = storage.Client(project="linnarsson-lab")
 		bucket = client.get_bucket("linnarsson-lab-loom")
-		bucket.store(self.get_json_filename())
-		blob.upload(json.dumps(self.as_dict()))
+		blob = bucket.get_blob(self.get_json_filename())
+		blob.upload_from_string(json.dumps(self.as_dict()))
 
 	def set_status(self, status, message=""):
 		self.status = status
 		self.message = message
 		self.put()
-		print status + ": " + message
-
+		logger.info(status + ": " + message)
+		 
 	def get_loom_filename(self):	# Haha, those strings below look like grumpy cats!
 		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".loom"
 
 	def get_json_filename(self):
 		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".json"
 
-class LoomCloud(object):
+class LoomCache(object):
 	"""
-	Represents loom files in Cloud Storage.
+	Represents loom files in Cloud Storage, cached locally.
 	"""
-	def __init__(self, cache_dir):
+	def __init__(self):
 		"""
-		Create a LoomCloud object that will cache loom files (on demand) in cache_dir
-
-		Args:
-			cache_dir (string): 	Path to the directory in which loom files should be cached as needed
+		Create a LoomCache object that will cache loom files (on demand)
 
 		Returns:
-			The LoomCloud object.
+			The LoomCache object.
 		"""
-		self.local_root = cache_dir
+		if not os.path.exists("cache"):
+			os.makedirs("cache")
 		self.remote_root = "linnarsson-lab-loom"
 		self.client = storage.Client(project="linnarsson-lab")
 		self.looms = {}
-
-	def list_datasets(self):
-		"""
-		Return a list of DatasetConfig objects for loom files stored remotely.
-
-		"""
-		return list_datasets()
-
-	def refresh_cache(self):
-		for ds in self.list_datasets():
-			if self.looms.__contains__(ds.get_loom_filename()):
-				continue
-			absolute_path = os.path.join(self.local_root, name)
-			if not os.path.isfile(absolute_path):
-				print "Fetching %s for cache." % absolute_path
-				bucket = self.client.get_bucket(self.remote_root)
-				blob = bucket.blob(name)
-				with open(absolute_path, 'wb') as outfile:
-					blob.download_to_file(outfile)
 			
 		
 	def connect_dataset_locally(self, transcriptome, project, dataset):
@@ -177,7 +159,8 @@ class LoomCloud(object):
 			dataset (string): 			Short name of the dataset (e.g. "human")
 
 		Returns:
-			A loom file connection.	Note that only files that have status "created" can be connected.
+			A loom file connection.	Note that only files that have status "created" can be connected,
+			and only if they are cached locally.
 		"""
 		config = DatasetConfig(transcriptome, project, dataset)
 		name = config.get_loom_filename()
@@ -185,20 +168,22 @@ class LoomCloud(object):
 		if self.looms.__contains__(config.get_loom_filename()):
 			return self.looms[name]
 
-		absolute_path = os.path.join(self.local_root, name)
+		absolute_path = os.path.join("cache", name)
 		if not os.path.isfile(absolute_path):
-			print "Fetching %s for cache." % absolute_path
-			bucket = self.client.get_bucket(self.remote_root)
-			blob = bucket.blob(name)
-			with open(absolute_path, 'wb') as outfile:
-				blob.download_to_file(outfile)
+			return None
 		result = loom.connect(absolute_path)
 		self.looms[name] = result
 		return result
 
 # Keep downloading datasets to the local cache
 if __name__ == '__main__':
-	cloud = LoomCloud(sys.argv[0])
 	while True:
-		cloud.refresh_cache()
+		for ds in list_datasets():
+			absolute_path = os.path.join("cache", ds.get_loom_filename())
+			if ds.status == "created" and not os.path.isfile(absolute_path):
+				print "Fetching %s for cache." % absolute_path
+				bucket = self.client.get_bucket(self.remote_root)
+				blob = bucket.blob(name)
+				with open(absolute_path, 'wb') as outfile:
+					blob.download_to_file(outfile)
 		time.sleep(60*5)		# Sleep 5 minutes		
