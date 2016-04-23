@@ -177,13 +177,14 @@ class LoomCache(object):
 
 # Keep downloading datasets to the local cache
 if __name__ == '__main__':
+	client = storage.Client(project="linnarsson-lab")
 	while True:
 		for ds in list_datasets():
 			absolute_path = os.path.join("cache", ds.get_loom_filename())
 			if ds.status == "created" and not os.path.isfile(absolute_path):
-				print "Fetching %s for cache." % absolute_path
-				bucket = self.client.get_bucket(self.remote_root)
-				blob = bucket.blob(name)
+				logger.info("Fetching %s for cache." % absolute_path)
+				bucket = client.get_bucket("linnarsson-lab-loom")
+				blob = bucket.blob(ds.get_loom_filename())
 				with open(absolute_path, 'wb') as outfile:
 					blob.download_to_file(outfile)
 		time.sleep(60*5)		# Sleep 5 minutes		

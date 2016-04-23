@@ -26,7 +26,7 @@ if len(sys.argv) > 1:
 		print "(only valid flag is 'debug')"
 		sys.exit(1)
 
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
+#os.chdir(os.path.dirname(os.path.realpath(__file__)))
 logger.info("Serving from: " + os.getcwd())
 
 try:
@@ -43,7 +43,7 @@ cache = loom_cloud.LoomCache()
 
 # And start the loom cache refresher in the background
 if not DEBUG:
-	subprocess.Popen(["python","./loom_cloud.py"])
+	subprocess.Popen(["python","/python/loom_cloud.py"])
 
 
 class LoomServer(flask.Flask):
@@ -87,6 +87,8 @@ def send_dataset_list():
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/fileinfo.json')
 def send_fileinfo(transcriptome, project, dataset):
 	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
+	if ds == None:
+		return "", 404
 	dims = ds.dz_dimensions()
 	fileinfo = {
 		"transcriptome": transcriptome,

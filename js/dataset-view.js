@@ -16,7 +16,7 @@ export class DatasetView extends Component {
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "")}>
 						<a onClick={(event)=>dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset))}>{d.dataset}</a>
-						<span>{" " + d.message}</span>
+						<span className="weak">{"     " + d.message}</span>
 						<div className="pull-right">
 							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
 						</div>
