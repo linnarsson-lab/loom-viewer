@@ -19,7 +19,10 @@
         "curly": 2,
         "no-unmodified-loop-condition": 2,
         "yoda": 2,
-        "arrow-body-style": [ "error", "always" ],
+        "arrow-body-style": [
+            "error",
+            "always"
+        ],
         "arrow-parens": 2,
         "arrow-spacing": 2,
         "prefer-arrow-callback": 2,
@@ -37,10 +40,39 @@
                 "after": true
             }
         ],
-        "comma-dangle": [ "error", "always-multiline" ],
+        "comma-dangle": [
+            "error",
+            "always-multiline"
+        ],
         "jsx-quotes": [
             "error",
             "prefer-single"
         ],
+        "no-mixed-spaces-and-tabs": 2,
+        "no-whitespace-before-property": 2,
+        "no-unneeded-ternary": 2,
+        "indent": [
+            "error",
+            "tab"
+        ],
+
+        //Not so much errors as warnings that
+        //it might be time to refactor the code
+        "max-params": [
+            1,
+            {
+                "max": 4
+            }
+        ], // too many function parameters
+        "max-nested-callbacks": [
+            1,
+            3
+        ], // callback nesting gets too deep
+        "max-depth": [
+            1,
+            {
+                "max": 4
+            }
+        ], // max depth of nesting in general
     }
 }

@@ -251,7 +251,7 @@ export class CSVFileChooser extends Component {
 		return (
 			<div className={this.props.className} style={{ backgroundColor: state.backgroundColor, color: state.fontColor }}>
 				<label>{this.props.label}</label>
-			<Dropzone onDrop={(files) => { this.onDrop(files); } } multiple={false}
+				<Dropzone onDrop={(files) => { this.onDrop(files); } } multiple={false}
 					style={DZstyle} activeStyle={DZactiveStyle} rejectStyle={DZrejectStyle}>
 					<b>Drag and drop a CSV file here, or click to browse</b>
 				</Dropzone>
