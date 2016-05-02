@@ -61,7 +61,7 @@ export class DatasetView extends Component {
 						<hr />
 						<h4>Create a new dataset</h4>
 						<h5>Instructions</h5>
-						<p>To upload a dataset, the user must supply the names of: </p>
+						<p>To generate a dataset, the user must supply the names of: </p>
 						<ul>
 							<li>the dataset to be created</li>
 							<li>the user the dataset belongs to</li>
@@ -83,7 +83,7 @@ export class DatasetView extends Component {
 						<ul>
 							<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
 							<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
-							<li>Regresion label - must be one of the column attributes
+							<li>Regression label - must be one of the column attributes
 							(either from the file supplied by the user or from the standard cell attributes) </li>
 						</ul>
 						<br />
