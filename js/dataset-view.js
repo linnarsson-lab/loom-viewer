@@ -61,26 +61,31 @@ export class DatasetView extends Component {
 						<hr />
 						<h4>Create a new dataset</h4>
 						<h5>Instructions</h5>
-						<p>To upload a dataset, the user must supply:</p>
+						<p>To upload a dataset, the user must supply the names of: </p>
 						<ul>
-						<li>a CSV file of cell attributes</li>
-						<li><i>(optionally)</i> a CSV file of gene attributes</li>
+							<li>the dataset to be created</li>
+							<li>the user the dataset belongs to</li>
+							<li>the project the dataset belongs to</li>
 						</ul>
-						<p>Before uploading a minimal check will be applied, hopefully catching the most likely
-						scenarios. If the CSV file contains semi-colons instead of commas (most likely the result of regional
-						settings in whatever tool was used to generate the file), they will automatically be replace
-						before submitting. Please double-check if the result is correct in that case.</p>
-						<p><i>Note:</i> you can still submit a file with a wrong file extension or (what appears to be)
-						malformed content, as validation might turn up false positives. We assume you know what you are doing,
-						just be careful!</p>
-						<p>In addition, the pipeline requires that you supply the following parameters:</p>
+						<p>Furthermore, the pipeline also needs:</p>
 						<ul>
-						<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
-						<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
-						<li>Regresion label - must be one of the column attributes
-						(either from the file supplied by the user or from the standard cell attributes)</li>
+							<li>a CSV file of cell attributes from which the dataset is generated</li>
+							<li><i>(optionally) </i> a CSV file of gene attributes</li>
 						</ul>
-						<p>Finally, a </p>
+						<p>Before uploading these CSV files a minimal check will be applied, hopefully catching the most likely
+							scenarios. If the CSV file contains semi-colons instead of commas (most likely the result of regional
+							settings in whatever tool was used to generate the file), they will automatically be replace
+							before submitting.Please double-check if the result is correct in that case.</p>
+						<p><i>Note: </i> you can still submit a file with a wrong file extension or (what appears to be)
+							malformed content, as validation might turn up false positives.We assume you know what you are doing,
+							just be careful!</p>
+						<p>Finally, the pipeline requires the following parameters: </p>
+						<ul>
+							<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
+							<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
+							<li>Regresion label - must be one of the column attributes
+							(either from the file supplied by the user or from the standard cell attributes) </li>
+						</ul>
 						<br />
 						<CreateDataset />
 					</div>
@@ -99,45 +104,71 @@ DatasetView.propTypes = {
 export class CreateDataset extends Component {
 	render() {
 		return (
-			<div>
 				<div className='panel panel-primary'>
-					<div className='panel-heading'>CSV files</div>
+					<div className='panel-heading'>
+						<h3 className='panel-title'>Required information</h3>
+					</div>
+					<div className='panel-body'>
+						<form className='form-horizontal' role='form'>
+							<div className='form-group'>
+								<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
+								<div className='col-sm-10'>
+									<input type='text' className='form-control' defaultValue='' name='transcriptome' id='input_transcriptome' />
+								</div>
+							</div>
+							<div className='form-group'>
+								<label for='input_project' className='col-sm-2 control-label'>Project: </label>
+								<div className='col-sm-10'>
+									<input type='text' className='form-control' defaultValue='' name='project' id='input_project' />
+								</div>
+							</div>
+							<div className='form-group'>
+								<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
+								<div className='col-sm-10'>
+									<input type='text' className='form-control' defaultValue='' name='dataset' id='input_dataset' />
+								</div>
+							</div>
+						</form>
+					</div>
+					<div className='panel-heading'>
+						<h3 className='panel-title'>CSV files</h3>
+					</div>
 					<div className='list-group'>
 						<CSVFileChooser className='list-group-item' label='Cell attributes:'/>
 						<CSVFileChooser className='list-group-item' label='[OPTIONAL] Gene attributes:' />
 					</div>
-					<div className='panel-heading'>Additional parameters</div>
-					<div className='list-group'>
-						<div className='list-group-item'>
+					<div className='panel-heading'>
+						<h3 className='panel-title'>Additional parameters</h3>
+					</div>
+					<div className='panel-body'>
+						<form className='form-horizontal' role='form'>
 							<div className='form-group'>
-								<label for='input_n_features'>Number of features: </label>
-								<div>
+								<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
+								<div className='col-sm-10'>
 									<input type='number' className='form-control' defaultValue='100' name='n_features' id='input_n_features' />
 								</div>
 							</div>
 							<div className='form-group'>
-								<label  for='clustering_method'>Clustering Method: </label>
-								<div>
-									<select name='clustering_method' id='input_clustering_method'>
+								<label for='clustering_method' className='col-sm-2 control-label'>Clustering Method: </label>
+								<div className='col-sm-10'>
+									<select className='form-control' name='clustering_method' id='input_clustering_method'>
 										<option value='value1' selected>BackSPIN</option>
 										<option value='value1'>Affinity Propagation</option>
 									</select>
 								</div>
 							</div>
 							<div className='form-group'>
-								<label for='input_regression_label'>Regression Label: </label>
-								<div>
-									<input type='text' className='form_control' defaultValue='' name='regression_label' id='input_regression_label' />
+								<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
+								<div className='col-sm-10'>
+									<input type='text' className='form-control' defaultValue='' name='regression_label' id='input_regression_label' />
 								</div>
 							</div>
-						</div>
+							<div className='form-group pull-right'>
+								<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
+							</div>
+						</form>
 					</div>
 				</div >
-				<br />
-				<div className='pull-right'>
-					<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
-				</div>
-			</div >
 		);
 	}
 }
@@ -220,7 +251,7 @@ export class CSVFileChooser extends Component {
 					newState.contentInfo.push('No commas found, check if this is a properly formatted CSV');
 				}
 				newState.validContent = false;
-			} else if (semiColonsFound){
+			} else if (semiColonsFound) {
 				newState.contentInfo.push('Mix of commas and semicolons found, check if this is a properly formatted CSV');
 				newState.validContent = false;
 			} else if (this.state.fileIsCSV) {
@@ -228,9 +259,8 @@ export class CSVFileChooser extends Component {
 			}
 			this.setState(newState);
 
-			// Try replacing semicolons with commas if and only if
-			// there are no commas already present, since something
-			// will certainly break otherwise.
+			// Try replacing semicolons with commas if and only if there are no other commas present,
+			// since something will almost certainly break otherwise.
 			if (semiColonsFound && noCommasFound) {
 				this.semicolonsToCommas(file);
 			}
@@ -258,11 +288,10 @@ export class CSVFileChooser extends Component {
 		reader.readAsText(file);
 	}
 
-	// Takes a File, reads it as a string, replaces the semicolons in
-	// the string with commas, turns this into a Blob and replaces
-	// the dropped file with this Blob.
-	// while updating the fileContent state to show a preview of the.
-	// resulting string.
+	// Takes a File object, reads it as a string, replaces the semicolons in
+	// the string with commas, turns this into a Blob with MIME-type 'text/csv',
+	// then replaces the dropped file with this Blob. Then updates fileContent
+	// to show a preview of the result, so the user can verify the result.
 	semicolonsToCommas(file) {
 		let reader = new FileReader();
 
@@ -279,7 +308,7 @@ export class CSVFileChooser extends Component {
 		reader.onload = () => {
 			const commaFix = reader.result.replace(/\;/gi, ',');
 
-			const commaBlob = new Blob([commaFix], {type : 'text/csv'});
+			const commaBlob = new Blob([commaFix], { type: 'text/csv' });
 			let subStrIdx = -1;
 			// Display up to the first eight lines to the user
 			for (let i = 0; i < 8; i++) {
@@ -292,7 +321,7 @@ export class CSVFileChooser extends Component {
 			}
 			let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : reader.result;
 
-			this.setState({ commaFix, fileContent });
+			this.setState({ droppedFile: commaBlob, commaFix, fileContent });
 		};
 
 		reader.readAsText(file);
