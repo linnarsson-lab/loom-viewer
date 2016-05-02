@@ -2,8 +2,10 @@
 .DS_Store
 
 # Release folder
-
 release/
+
+# Visual Studio Code
+.vscode/
 
 # Logs
 logs
