@@ -262,7 +262,7 @@ export class CSVFileChooser extends Component {
 			// Try replacing semicolons with commas if and only if there are no other commas present,
 			// since something will almost certainly break otherwise.
 			if (semiColonsFound && noCommasFound) {
-				this.semicolonsToCommas(file);
+				this.semicolonsToCommas(reader.result);
 			}
 		};
 
@@ -288,43 +288,26 @@ export class CSVFileChooser extends Component {
 		reader.readAsText(file);
 	}
 
-	// Takes a File object, reads it as a string, replaces the semicolons in
-	// the string with commas, turns this into a Blob with MIME-type 'text/csv',
+	// Takes a string (consisting of the content of a file), replaces all of its
+	// semicolons with commas, turns this into a Blob with MIME-type 'text/csv',
 	// then replaces the dropped file with this Blob. Then updates fileContent
 	// to show a preview of the result, so the user can verify the result.
-	semicolonsToCommas(file) {
-		let reader = new FileReader();
+	semicolonsToCommas(fileContentString) {
+		const commaFix = fileContentString.replace(/\;/gi, ',');
 
-		// abort and error cases
-		reader.onabort = () => {
-			console.log('reading of ' + file.name + ' aborted during attempt at replacing semicolons with commas');
-			this.setState({ commaFix: undefined });
-		};
-		reader.onerror = (event) => {
-			console.log(event.error);
-			this.setState({ commaFix: undefined });
-		};
-
-		reader.onload = () => {
-			const commaFix = reader.result.replace(/\;/gi, ',');
-
-			const commaBlob = new Blob([commaFix], { type: 'text/csv' });
-			let subStrIdx = -1;
-			// Display up to the first eight lines to the user
-			for (let i = 0; i < 8; i++) {
-				let nextIdx = commaFix.indexOf('\n', subStrIdx + 1);
-				if (nextIdx === -1) {
-					break;
-				} else {
-					subStrIdx = nextIdx;
-				}
+		const commaBlob = new Blob([commaFix], { type: 'text/csv' });
+		let subStrIdx = -1;
+		// Display up to the first eight lines to the user
+		for (let i = 0; i < 8; i++) {
+			let nextIdx = commaFix.indexOf('\n', subStrIdx + 1);
+			if (nextIdx === -1) {
+				break;
+			} else {
+				subStrIdx = nextIdx;
 			}
-			let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : reader.result;
-
-			this.setState({ droppedFile: commaBlob, commaFix, fileContent });
-		};
-
-		reader.readAsText(file);
+		}
+		let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : reader.result;
+		this.setState({ droppedFile: commaBlob, commaFix, fileContent });
 	}
 
 	bytesToString(bytes) {
