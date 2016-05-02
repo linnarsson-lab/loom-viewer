@@ -78,6 +78,13 @@ def send_dataset_list():
 	result = json.dumps([x.as_dict() for x in cache.list_datasets()])
 	return flask.Response(result, mimetype="application/json")
 
+# List of valid transcriptomes
+@app.route('/loom/transcriptomes')
+def send_dataset_list():
+	result = json.dumps(pipeline.list_transcriptomes())
+	return flask.Response(result, mimetype="application/json")
+
+
 # Info for a single dataset
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/fileinfo.json')
 def send_fileinfo(transcriptome, project, dataset):
@@ -95,6 +102,7 @@ def send_fileinfo(transcriptome, project, dataset):
 		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()])
 	}
 	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
+
 
 # Get one row of data (i.e. all the expression values for a single gene)
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/row/<int:row>')
