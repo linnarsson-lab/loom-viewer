@@ -49,9 +49,10 @@ import logging
 logger = logging.getLogger("loom")
 
 
-class MySQLToBigQueryPipeline(object):
+
+class LoomPipeline(object):
 	"""
-	Pipeline to load cell expression data from MySQL into BigQuery, organized by transcriptome.
+	Pipeline to collect datasets from MySQL, create .loom files and perform standard analyses.
 	"""
 	def __init__(self):
 		self.mysql_connection = pymysql.connect(
@@ -100,25 +101,20 @@ class MySQLToBigQueryPipeline(object):
 			temp[temp == np.array(None)] = 0
 			return temp.astype(field_type[sql_type])
 
-	def rebuild_bigquery(self, transcriptome):
+	def create_loom(self, config):
 		"""
-		Rebuild the main BigQuery tables (Cells, Genes and Counts) for the given transcriptome.
+		Create a loom file by collecting cells from MySQL
 
 		Args:
-			transcriptome (str): 	The transcriptome to rebuild (e.g. 'mm10a_aUCSC')
+			config (DatasetConfig):	Configuration object for the dataset
 
 		Returns:
-			Nothing.
-
-		This function downloads all raw data from MySQL, and uploads it to BigQuery. 
+			Nothing, but creates a .loom file
 		"""
+		transcriptome = config.transcriptome
+		project = config.project
+		dataset = config.dataset
 		connection = self.mysql_connection
-
-		# Connect to BigQuery
-		client = bigquery.Client(project="linnarsson-lab")
-		bq_dataset = client.dataset(transcriptome)
-		if not bq_dataset.exists():
-			bq_dataset.create()
 
 		# Get the transcriptome ID
 		try:
@@ -132,11 +128,14 @@ class MySQLToBigQueryPipeline(object):
 		# Download gene annotations
 		cursor = connection.cursor()
 		cursor.execute("""
-			SELECT * FROM cells10k.Transcript
-			WHERE TranscriptomeID = %s
-			AND Type <> "repeat"
-			ORDER BY ExprBlobIdx
-		""", transcriptome_id)
+			SELECT * FROM cells10k.Transcript tr
+			LEFT JOIN datasets__%s.Genes__%s__%s ds 
+			ON tr.TranscriptomeID = ds.TranscriptomeID 
+			WHERE tr.TranscriptomeID = %s
+			AND tr.Type <> "repeat"
+			ORDER BY tr.ExprBlobIdx
+		""", (transcriptome, project, dataset, transcriptome_id))
+		
 		transcriptome_headers = map(lambda x: x[0],cursor.description)
 		rows = cursor.fetchall()
 		row_attrs = {}
@@ -151,31 +150,9 @@ class MySQLToBigQueryPipeline(object):
 			row_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(row_attrs[cursor.description[ix][0]], cursor.description[ix][1])
 		gene_ids = row_attrs["TranscriptID"]
 
-		# Remove any previous gene annotations
-		table = bq_dataset.table(name="Genes")
-		if table.exists():
-			table.delete()
-
-		# Upload the gene annotations
-		self._export_attrs_to_bigquery(row_attrs, transcriptome, "Genes")
-
-		# Remove any previous cell annotations
-		table = bq_dataset.table(name="Cells")
-		if table.exists():
-			table.delete()
-
-		# Prepare to upload counts
-		table = bq_dataset.table(name="Counts")
-		if table.exists():
-			table.delete()
-		table.create()
-		table.schema = [
-			bigquery.table.SchemaField("TranscriptID", 'INTEGER', mode='required'),
-			bigquery.table.SchemaField("CellID", 'INTEGER', mode='required'),
-			bigquery.table.SchemaField("Count", 'INTEGER', mode='required')
-		]
-		table.update()
-
+		# TODO: separate the names of standard and custom attributes
+		
+		# Fetch counts
 		nrows = 0
 		while True:
 			cursor = connection.cursor()
@@ -256,21 +233,101 @@ class MySQLToBigQueryPipeline(object):
 				col_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(col_attrs[cursor.description[ix][0]], cursor.description[ix][1])
 			cell_ids = col_attrs["CellID"]
 
-			self._export_attrs_to_bigquery(col_attrs, transcriptome, "Cells")
-
 			# Save to a CSV file with three columns, TranscriptID, CellID, Count
 			counts = np.array(matrix).transpose().reshape(-1).astype("int64")
 			gene_ids_rept = np.repeat(gene_ids, len(cell_ids))
 			cell_ids_rept = np.tile(cell_ids, len(gene_ids))
 			data = np.array([gene_ids_rept, cell_ids_rept, counts]).T
 
-			with tempfile.TemporaryFile(suffix=".csv") as tf:
-				np.savetxt(tf, data, delimiter=",",fmt="%d")
-				table.upload_from_file(tf, "CSV", rewind=True, write_disposition='WRITE_APPEND')
+			loom.create(config.get_loom_filename(), data, row_attrs, col_attrs)
+			
+	def prepare_loom(self, config):
+		"""
+		Prepare a loom file for browsing: clustering, projection, regression
 
+		Args:
+			config (DatasetConfig):	Configuration object for the dataset
+
+		Returns:
+			Nothing, but modifies the .loom file to add the following attributes:
+
+			For cells:
+
+				_PC1, _PC2			First and second principal component
+				_tSNE1, _tSNE2		tSNE coordinates 1 and 2
+				_Ordering			Ordering based on clustering
+				_Cluster 			Cluster label
+				_TotalRNA			Total number of RNA molecules (across included genes only)
+
+			For genes:
+
+				_Ordering			Ordering based on clustering
+				_Cluster 			Cluster label
+				_LogMean			Log of mean expression level
+				_LogCV				Log of CV
+				_Excluded			1 if the gene was excluded by feature selection, 0 otherwise
+				_Noise				Excess noise above the noise model		
+
+		"""
+
+		# Connect
+		config.set_status("creating", "Preparing the dataset: Step 0 (connecting).")
+		ds = loom.connect(config.get_loom_filename())
+
+		# feature selection
+		config.set_status("creating", "Preparing the dataset: Step 1 (feature selection).")
+		ds.feature_selection(config.n_features)
+
+		# Projection
+		config.set_status("creating", "Preparing the dataset: Step 2 (projection to 2D).")
+		ds.project_to_2d()
+
+		# Clustering
+		if config.cluster_method == "BackSPIN":
+			config.set_status("creating", "Preparing the dataset: Step 3 (BackSPIN clustering).")
+			bsp = BackSPIN()
+			result = bsp.backSPIN(ds)
+			result.apply(dataset)
+		elif config.cluster_method == "AP":
+			config.set_status("creating", "Preparing the dataset: Step 3A (Affinity propagation on cells).")
+			# Cells
+			S = -ds.corr_matrix(axis = 1)
+			preference = np.median(S) * 10
+			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
+			ds.set_attr("_Cluster", labels, axis = 1)
+			ordering = np.argsort(labels)
+			ds.set_attr("_Ordering", ordering, axis = 1)
+			ds.permute(ordering, axis = 1)
+
+			config.set_status("creating", "Preparing the dataset: Step 3B (Affinity propagation on genes).")
+			# Genes
+			S = -ds.corr_matrix(axis = 0)
+			preference = np.median(S) * 10
+			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
+			ds.set_attr("_Cluster", labels, axis = 0)
+			ordering = np.argsort(labels)
+			ds.set_attr("_Ordering", ordering, axis = 0)
+			ds.permute(ordering, axis = 0)
+
+		# Regression
+		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")
+		#ds.bayesian_regression(config.regression_label)
+
+		# Heatmap tiles
+		config.set_status("creating", "Preparing the dataset: Step 5 (preparing heatmap tiles).")
+		ds.prepare_heatmap()
+
+	def store_loom(self, config):
+		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
+		bucket = client.get_bucket("linnarsson-lab-loom")
+		config = DatasetConfig(config.transcriptome, config.project, config.dataset)
+		blob = bucket.blob(config.get_loom_filename())
+		blob.upload_from_filename(config.get_loom_filename())
+		config.set_status("created", "Ready to browse.")
+		
 	def upload(self, config, cell_attrs = None, gene_attrs = None):
 		"""
-		Upload a custom dataset annotation to BigQuery.
+		Upload a custom dataset annotation to MySQL.
 
 		Args:
 			config (DatasetConfig):	Configuration for the dataset
@@ -310,32 +367,34 @@ class MySQLToBigQueryPipeline(object):
 				gene_id_mapping = self.get_transcript_id_mapping(config.transcriptome)
 				gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
 
-		# Send the dataset to BigQuery
+		# Send the dataset to MySQL
 		if cell_attrs != None:
 			print "Uploading cell annotations"
-			self._export_attrs_to_bigquery(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset)
+			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset)
 		if gene_attrs != None:
 			print "Uploading gene annotations"
-			self._export_attrs_to_bigquery(gene_attrs, condfig.transcriptome, "Genes__" + config.project + "__" + config.dataset)
+			self._export_attrs_to_mysql(gene_attrs, condfig.transcriptome, "Genes__" + config.project + "__" + config.dataset)
 		# Save the config
 		config.put()
 		print "Done."
 
-	def _export_attrs_to_bigquery(self, attrs, transcriptome, tablename):
+	def _export_attrs_to_mysql(self, attrs, transcriptome, tablename, pk):
 		"""
-		Export a set of attributes to a table in BigQuery.
+		Export a set of attributes to a table in MySQL
 
 		Args:
+			
 			attrs (dict): 			A dictionary of attributes. Keys are attribute names. Values are numpy arrays, all the same length.
 			transcriptome (str):	Name of the genome build (e.g. 'mm10a_aUCSC')
-			tablename (str): 		Name of the BigQuery table (e.g. 'Cells:Myproject@somedataset.loom')
-			append (bool):			If True, append values instead of replacing existing values
+			tablename (str): 		Name of the MySQL table (e.g. 'Cells__project__dataset')
+			pk (str):				Primary key, e.g. "CellID" or "TranscriptID"
 
 		Returns:
 			Nothing
 
-		Tables for custom annotations are named like so: {Cells|Genes}:<project_name>@<datatset>.loom. For example, dataset "midbrain_embryo" in
-		project "Midbrain" have annotations in Cells:Midbrain@midbrain_embryo.loom and Genes:Midbrain@midbrain_embryo.loom. Since project
+		Tables for custom annotations are stored in table "dataset__<transcriptome>" (e.g. "dataset__hg19_sUCSC"), and are named 
+		like so: {Cells|Genes}__<project>__<datatset>. For example, dataset "midbrain_embryo" in
+		project "Midbrain" has annotations in Cells__Midbrain__midbrain_embryo and Genes__Midbrain__midbrain_embryo. Since project
 		names can be used across transcriptome builds, projects can group together multi-species datasets.
 		"""
 		fields = attrs.keys()
@@ -345,18 +404,21 @@ class MySQLToBigQueryPipeline(object):
 			kind = attrs[fields[ix]].dtype.kind
 			if kind == "S" or kind == "U":
 				formats.append("%s")
-				schema.append(bigquery.table.SchemaField(fields[ix], 'STRING'))
+				schema.append('text')
 			elif kind == "b":
 				formats.append("%s")
-				schema.append(bigquery.table.SchemaField(fields[ix], 'BOOLEAN'))
+				schema.append('bool')
 			elif kind == "f":
 				formats.append("%f")
-				schema.append(bigquery.table.SchemaField(fields[ix], 'FLOAT'))
+				schema.append('float')
 			elif kind == "i" or kind == "u":
 				formats.append("%d")
-				schema.append(bigquery.table.SchemaField(fields[ix], 'INTEGER'))
+				schema.append('int')
 			else:
 				raise TypeError, "Unsupported numpy datatype of kind '%s'" % kind
+
+
+		# Create the table in MySQL
 
 		# Prepare the table in BigQuery
 		client = bigquery.Client(project="linnarsson-lab")
@@ -382,7 +444,7 @@ class MySQLToBigQueryPipeline(object):
 			csvwriter = csv.writer(tf, delimiter=',', doublequote = True, quoting = csv.QUOTE_ALL)
 			csvwriter.writerows(rows)
 			table.upload_from_file(tf, "CSV", rewind=True, write_disposition='WRITE_APPEND')
-
+			
 	def get_transcript_id_mapping(self, transcriptome):
 		"""
 		Get a dictionary that maps gene names to TranscriptID for the given transcriptome
@@ -535,150 +597,10 @@ class _Query(object):
 				row_count += 1
 
 		return result
-
-
-
-class BigQueryToLoomPipeline(object):
-	"""
-	Pipeline to create .loom files from annotations in BigQuery and store them in Cloud Storage
-	"""
-	def __init__(self):
-		pass
-
-	def create_loom_from_dataset(self, config):
-		"""
-		Fetch a dataset from BigQuery and save it as a .loom file
-
-		Args:
-			config (DatasetConfig):	Configuration object for the dataset
-
-		Returns:
-			Nothing, but a .loom file is created.
-		"""
-		config.set_status("creating", "Collecting data and annotations.")
-
-		client = bigquery.Client(project="linnarsson-lab")
-
-		genes_sql = ("SELECT * FROM [%s.Genes] all " % config.transcriptome) + \
-				  ("JOIN [%s.Genes__%s__%s] ds ON all.TranscriptID = ds.TranscriptID " % (config.transcriptome, config.project, config.dataset)) + \
-				  ("ORDER BY all.TranscriptID")
-		genes = _Query(genes_sql).as_dict()
-		ngenes = len(genes[genes.keys()[0]])
-		# Convert keys
-		genes_converted = {}
-		for key in genes.keys():
-			if key.startswith("ds_"):
-				genes_converted[config.dataset + key[2:]] = genes[key]
-			else:
-				genes_converted[key] = genes[key]
-
-		cells_sql = ("SELECT * FROM [%s.Cells] all " % config.transcriptome) + \
-				  ("JOIN [%s.Cells__%s__%s] ds ON all.CellID = ds.CellID " % (config.transcriptome, config.project, config.dataset)) + \
-				  ("ORDER BY all.CellID")
-		cells = _Query(cells_sql).as_dict()
-		ncells = len(cells[cells.keys()[0]])
-		# Convert keys
-		cells_converted = {}
-		for key in cells.keys():
-			if key.startswith("ds_"):
-				cells_converted[config.dataset + key[2:]] = cells[key]
-			else:
-				cells_converted[key] = cells[key]
-
-		count_sql = ("SELECT Count FROM [%s.Counts] m " % config.transcriptome) + \
-				("JOIN [%s.Cells__%s__%s] c ON m.CellID = c.CellID " % (config.transcriptome, config.project, config.dataset)) +\
-				("JOIN [%s.Genes__%s__%s] g ON m.TranscriptID = g.TranscriptID " % (config.transcriptome, config.project, config.dataset)) +\
-				("ORDER BY g.TranscriptID, c.CellID")
-		matrix = _Query(count_sql).as_matrix().reshape(ngenes, ncells)
-		loom.create(config.get_loom_filename(), matrix, genes_converted, cells_converted)
-
-	def prepare_loom(self, config):
-		"""
-		Prepare a loom file for browsing: clustering, projection, regression
-
-		Args:
-			config (DatasetConfig):	Configuration object for the dataset
-
-		Returns:
-			Nothing, but modifies the .loom file to add the following attributes:
-
-			For cells:
-
-				_PC1, _PC2			First and second principal component
-				_tSNE1, _tSNE2		tSNE coordinates 1 and 2
-				_Ordering			Ordering based on clustering
-				_Cluster 			Cluster label
-				_TotalRNA			Total number of RNA molecules (across included genes only)
-
-			For genes:
-
-				_Ordering			Ordering based on clustering
-				_Cluster 			Cluster label
-				_LogMean			Log of mean expression level
-				_LogCV				Log of CV
-				_Excluded			1 if the gene was excluded by feature selection, 0 otherwise
-				_Noise				Excess noise above the noise model		
-
-		"""
-
-		# Connect
-		config.set_status("creating", "Preparing the dataset: Step 0 (connecting).")
-		ds = loom.connect(config.get_loom_filename())
-
-		# feature selection
-		config.set_status("creating", "Preparing the dataset: Step 1 (feature selection).")
-		ds.feature_selection(config.n_features)
-
-		# Projection
-		config.set_status("creating", "Preparing the dataset: Step 2 (projection to 2D).")
-		ds.project_to_2d()
-
-		# Clustering
-		if config.cluster_method == "BackSPIN":
-			config.set_status("creating", "Preparing the dataset: Step 3 (BackSPIN clustering).")
-			bsp = BackSPIN()
-			result = bsp.backSPIN(ds)
-			result.apply(dataset)
-		elif config.cluster_method == "AP":
-			config.set_status("creating", "Preparing the dataset: Step 3A (Affinity propagation on cells).")
-			# Cells
-			S = -ds.corr_matrix(axis = 1)
-			preference = np.median(S) * 10
-			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
-			ds.set_attr("_Cluster", labels, axis = 1)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 1)
-			ds.permute(ordering, axis = 1)
-
-			config.set_status("creating", "Preparing the dataset: Step 3B (Affinity propagation on genes).")
-			# Genes
-			S = -ds.corr_matrix(axis = 0)
-			preference = np.median(S) * 10
-			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
-			ds.set_attr("_Cluster", labels, axis = 0)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 0)
-			ds.permute(ordering, axis = 0)
-
-		# Regression
-		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")
-		#ds.bayesian_regression(config.regression_label)
-
-		# Heatmap tiles
-		config.set_status("creating", "Preparing the dataset: Step 5 (preparing heatmap tiles).")
-		ds.prepare_heatmap()
-
-	def store_loom(self, config):
-		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
-		bucket = client.get_bucket("linnarsson-lab-loom")
-		config = DatasetConfig(config.transcriptome, config.project, config.dataset)
-		blob = bucket.blob(config.get_loom_filename())
-		blob.upload_from_filename(config.get_loom_filename())
-		config.set_status("created", "Ready to browse.")
 		
 if __name__ == '__main__':
 	logger.info("Starting the Loom pipeline...")
-	lp = BigQueryToLoomPipeline()
+	lp = LoomPipeline()
 	while True:
 		for ds in list_datasets():
 			if ds.status == "willcreate":

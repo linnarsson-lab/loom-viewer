@@ -12,41 +12,30 @@ To set up gcloud for containers (especially: set gcloud defaults)
 To set gcloud defaults
 
 	gcloud config set project linnarsson-lab
-	gcloud config set compute/zone us-east1-c
-	gcloud config set container/cluster container-cluster-2
-	gcloud container clusters get-credentials container-cluster-2
+	gcloud config set compute/zone us-central1-a
+	gcloud config set container/cluster container-cluster-3
+	gcloud container clusters get-credentials container-cluster-3
 	
-To build a docker image
+To build a docker image and push it to Google
 
-	cd python
-	docker build -t gcr.io/linnarsson-lab/loom-server:v1 -f loom-server.dockerfile .
+	./build
 	
-To add required Python libraries, edit requirements.txt
+To add required Python libraries, edit `requirements.txt`
 
-To push the image to Google Container Registry
+To create a deployment (only do this once!)
 
-	gcloud docker push gcr.io/linnarsson-lab/loom-server:v1
-	
-	# The parts are as follows:
-	#	gcr.io			Hostname for the registry (don't change)
-	#   linnarsson-lab	Cloud project name (no need to change)
-	#	loom-server		The image name
-	#	v1				The image tag (change when you make a new version)
-
-To create a deployment
-
-	kubectl run loom-server --image=gcr.io/linnarsson-lab/loom-server:v1 --port=5000
+	kubectl run loom-server --image=gcr.io/linnarsson-lab/loom-server:v1 --port=80
+	kubectl expose ... something (forgot the details)
 
 To list deployments and pods
 
 	kubectl get deployments
 	kubectl get pods
 	
+To look at the logs
 
-We need to attach a persistent disk, read-only so all containers can access it:
-
-	http://kubernetes.io/docs/user-guide/volumes/#gcepersistentdisk
-
+	kubectl logs <pod>
+	
 
 
 Development stack

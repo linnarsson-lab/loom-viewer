@@ -4,7 +4,7 @@ import os
 import os.path
 import loom
 import loom_cloud
-from loom_pipeline import MySQLToBigQueryPipeline
+from loom_pipeline import LoomPipeline
 import sys
 import StringIO
 import json
@@ -31,7 +31,7 @@ logger.info("Serving from: " + os.getcwd())
 
 try:
 	os.environ("MYSQL_HOST")
-	pipeline = MySQLToBigQueryPipeline()
+	pipeline = LoomPipeline()
 except:
 	print "You need to set the MYSQL environment variables:"
 	print "   MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, and MYSQL_PASSWORD"

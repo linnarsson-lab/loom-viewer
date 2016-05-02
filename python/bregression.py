@@ -83,7 +83,7 @@ def regression():					# Run the regression model on a single gene
 	return Response(fit.extract(permuted=False).tobytes(), mimetype="application/octet-stream")
 
 if __name__ == '__main__':
-	app.run(debug=True)
+	app.run(debug=False, host="0.0.0.0", port=80)
 
 
 
