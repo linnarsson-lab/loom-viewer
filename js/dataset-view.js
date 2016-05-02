@@ -60,6 +60,28 @@ export class DatasetView extends Component {
 						</div>
 						<hr />
 						<h4>Create a new dataset</h4>
+						<h5>Instructions</h5>
+						<p>To upload a dataset, the user must supply:</p>
+						<ul>
+						<li>a CSV file of cell attributes</li>
+						<li><i>(optionally)</i> a CSV file of gene attributes</li>
+						</ul>
+						<p>Before uploading a minimal check will be applied, hopefully catching the most likely
+						scenarios. If the CSV file contains semi-colons instead of commas (most likely the result of regional
+						settings in whatever tool was used to generate the file), they will automatically be replace
+						before submitting. Please double-check if the result is correct in that case.</p>
+						<p><i>Note:</i> you can still submit a file with a wrong file extension or (what appears to be)
+						malformed content, as validation might turn up false positives. We assume you know what you are doing,
+						just be careful!</p>
+						<p>In addition, the pipeline requires that you supply the following parameters:</p>
+						<ul>
+						<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
+						<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
+						<li>Regresion label - must be one of the column attributes
+						(either from the file supplied by the user or from the standard cell attributes)</li>
+						</ul>
+						<p>Finally, a </p>
+						<br />
 						<CreateDataset />
 					</div>
 				</div>
@@ -79,33 +101,33 @@ export class CreateDataset extends Component {
 		return (
 			<div>
 				<div className='panel panel-primary'>
-					<div className='panel-heading'>Attach CSV files below</div>
+					<div className='panel-heading'>CSV files</div>
 					<div className='list-group'>
 						<CSVFileChooser className='list-group-item' label='Cell attributes:'/>
 						<CSVFileChooser className='list-group-item' label='[OPTIONAL] Gene attributes:' />
 					</div>
-					<div className='panel-heading'>Set parameters</div>
+					<div className='panel-heading'>Additional parameters</div>
 					<div className='list-group'>
 						<div className='list-group-item'>
 							<div className='form-group'>
 								<label for='input_n_features'>Number of features: </label>
 								<div>
-									<input type='number' className='form-control' defaultValue='100' id='input_n_features' />
+									<input type='number' className='form-control' defaultValue='100' name='n_features' id='input_n_features' />
 								</div>
 							</div>
 							<div className='form-group'>
 								<label  for='clustering_method'>Clustering Method: </label>
 								<div>
-									<select id='clustering_method'>
-										<option>BackSPIN</option>
-										<option>Affinity Propagation</option>
+									<select name='clustering_method' id='input_clustering_method'>
+										<option value='value1' selected>BackSPIN</option>
+										<option value='value1'>Affinity Propagation</option>
 									</select>
 								</div>
 							</div>
 							<div className='form-group'>
 								<label for='input_regression_label'>Regression Label: </label>
 								<div>
-									<input type='text' className='form_control' defaultValue='' id='input_regression_label' />
+									<input type='text' className='form_control' defaultValue='' name='regression_label' id='input_regression_label' />
 								</div>
 							</div>
 						</div>
@@ -133,6 +155,7 @@ export class CSVFileChooser extends Component {
 			fileSizeString: ' -',
 			fileContent: null,
 			validContent: undefined,
+			commaFix: undefined,
 			backgroundColor: '#fff',
 			fontColor: '#111',
 			contentInfo: [],
@@ -149,26 +172,30 @@ export class CSVFileChooser extends Component {
 			fileSizeString: this.bytesToString(file.size),
 			fileContent: null,
 			validContent: file.size > 0 ? undefined : null,
+			commaFix: undefined,
 			contentInfo: [],
 		};
 		this.setState(newState);
 
 		if (file.size > 0) {
-			// take the first 10kb, or less if the file is smaller
-			// and validate it asynchronously
-			let first10KB = file.slice(0, Math.min(10240, file.size));
-			this.validate(first10KB);
-
+			this.validate(file);
 		}
 	}
 
+	// Rudimentary check if the provided CSV file is a proper
+	// CSV file. Checks for:
+	// - file size (greater than zero?)
+	// - extension name (ends with .csv?)
+	// - commas and semicolons (presence and absence, respectively)
+	// This catches the (hopefully) most common mistakes of selecting
+	// the wrong file, or bad formatting due to regional settings.
 	validate(file) {
 		// Since file IO is asynchronous, validation needs
 		// to be done as a callback, calling setState when done
 		let reader = new FileReader();
 		reader.onload = () => {
 			let subStrIdx = -1;
-			// grab up to the first eight lines
+			// Display up to the first eight lines to the user
 			for (let i = 0; i < 8; i++) {
 				let nextIdx = reader.result.indexOf('\n', subStrIdx + 1);
 				if (nextIdx === -1) {
@@ -184,16 +211,29 @@ export class CSVFileChooser extends Component {
 				contentInfo: this.state.contentInfo,
 			};
 
-			if (reader.result.indexOf(';') !== -1) {
-				newState.contentInfo.push('Semicolons found, check if this is a properly formatted CSV');
+			let noCommasFound = reader.result.indexOf(',') === -1;
+			let semiColonsFound = reader.result.indexOf(';') !== -1;
+			if (noCommasFound) {
+				if (semiColonsFound) {
+					newState.contentInfo.push('Only semicolons found, replacing with commas. Please double-check results above');
+				} else {
+					newState.contentInfo.push('No commas found, check if this is a properly formatted CSV');
+				}
 				newState.validContent = false;
-			} else if (reader.result.indexOf(',') === -1) {
-				newState.contentInfo.push('No commas found, check if this is a properly formatted CSV');
+			} else if (semiColonsFound){
+				newState.contentInfo.push('Mix of commas and semicolons found, check if this is a properly formatted CSV');
 				newState.validContent = false;
 			} else if (this.state.fileIsCSV) {
 				newState.validContent = true;
 			}
 			this.setState(newState);
+
+			// Try replacing semicolons with commas if and only if
+			// there are no commas already present, since something
+			// will certainly break otherwise.
+			if (semiColonsFound && noCommasFound) {
+				this.semicolonsToCommas(file);
+			}
 		};
 
 		// Handle abort and error cases
@@ -213,6 +253,46 @@ export class CSVFileChooser extends Component {
 			};
 			newState.contentInfo.push('Error while reading' + file.name);
 			this.setState(newState);
+		};
+
+		reader.readAsText(file);
+	}
+
+	// Takes a File, reads it as a string, replaces the semicolons in
+	// the string with commas, turns this into a Blob and replaces
+	// the dropped file with this Blob.
+	// while updating the fileContent state to show a preview of the.
+	// resulting string.
+	semicolonsToCommas(file) {
+		let reader = new FileReader();
+
+		// abort and error cases
+		reader.onabort = () => {
+			console.log('reading of ' + file.name + ' aborted during attempt at replacing semicolons with commas');
+			this.setState({ commaFix: undefined });
+		};
+		reader.onerror = (event) => {
+			console.log(event.error);
+			this.setState({ commaFix: undefined });
+		};
+
+		reader.onload = () => {
+			const commaFix = reader.result.replace(/\;/gi, ',');
+
+			const commaBlob = new Blob([commaFix], {type : 'text/csv'});
+			let subStrIdx = -1;
+			// Display up to the first eight lines to the user
+			for (let i = 0; i < 8; i++) {
+				let nextIdx = commaFix.indexOf('\n', subStrIdx + 1);
+				if (nextIdx === -1) {
+					break;
+				} else {
+					subStrIdx = nextIdx;
+				}
+			}
+			let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : reader.result;
+
+			this.setState({ commaFix, fileContent });
 		};
 
 		reader.readAsText(file);
