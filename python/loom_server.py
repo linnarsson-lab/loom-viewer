@@ -27,14 +27,41 @@ if len(sys.argv) > 1:
 os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 print "Serving from: " + os.getcwd()
 
+print "\nTesting for presence of MySQL environment variables..."
 try:
-	os.environ("MYSQL_HOST")
-	pipeline = MySQLToBigQueryPipeline()
+	os.environ["MYSQL_HOST"]
 except:
-	print "You need to set the MYSQL environment variables:"
-	print "   MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, and MYSQL_PASSWORD"
-	print ""
-	print "Starting server without MySQL connection, so will not be able to PUT datasets."
+	print "WARNING: MYSQL_HOST not set!"
+else:
+    print "MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
+
+try:
+	os.environ["MYSQL_USERNAME"]
+except:
+	print "WARNING: MYSQL_USERNAME not set!"
+else:
+    print "MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
+
+try:
+	os.environ["MYSQL_PASSWORD"]
+except:
+	print "WARNING: MYSQL_PASSWORD not set!"
+else:
+    print "MYSQL_PASSWORD set"
+
+try:
+	os.environ["MYSQL_PORT"]
+except:
+	print "WARNING: MYSQL_PORT not set!"
+else:
+    print "MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
+
+print '\n'
+
+try:
+	pipeline = MySQLToBigQueryPipeline()
+except Exception, e:
+	print e
 
 datadir = os.path.join(os.getcwd(), "cache")
 if not os.path.exists(datadir):
@@ -42,7 +69,7 @@ if not os.path.exists(datadir):
 cache = LoomCloud(datadir)
 
 class LoomServer(flask.Flask):
-	# Disable cacheing 
+	# Disable cacheing
     def get_send_file_max_age(self, name):
         return 0
 
@@ -132,7 +159,7 @@ def upload_dataset(transcriptome, project, dataset):
 
 
 #
-# Tiles 
+# Tiles
 #
 
 def serve_image(img):
