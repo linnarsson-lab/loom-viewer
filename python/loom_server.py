@@ -24,45 +24,43 @@ if len(sys.argv) > 1:
 		print "(only valid flag is 'debug')"
 		sys.exit(1)
 
-os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-print "Serving from: " + os.getcwd()
-
-print "\nTesting for presence of MySQL environment variables..."
+print "loom_server.py: Testing for presence of MySQL environment variables before attempting to connect to database"
 try:
 	os.environ["MYSQL_HOST"]
 except:
-	print "WARNING: MYSQL_HOST not set!"
+	print "loom_server.py: WARNING: MYSQL_HOST not set!"
 else:
-	print "MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
+	print "loom_server.py: MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
 
 try:
 	os.environ["MYSQL_PORT"]
 except:
-	print "WARNING: MYSQL_PORT not set!"
+	print "loom_server.py: WARNING: MYSQL_PORT not set!"
 else:
-	print "MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
+	print "loom_server.py: MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
 
 try:
 	os.environ["MYSQL_USERNAME"]
 except:
-	print "WARNING: MYSQL_USERNAME not set!"
+	print "loom_server.py: WARNING: MYSQL_USERNAME not set!"
 else:
-	print "MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
+	print "loom_server.py: MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
 
 try:
 	os.environ["MYSQL_PASSWORD"]
 except:
-	print "WARNING: MYSQL_PASSWORD not set!"
+	print "loom_server.py: WARNING: MYSQL_PASSWORD not set!"
 else:
-	print "MYSQL_PASSWORD set"
+	print "loom_server.py: MYSQL_PASSWORD set..."
 
-
-print '\n'
-
+print 'loom_server.py: Connecting to database'
 try:
 	pipeline = MySQLToBigQueryPipeline()
 except Exception, e:
 	print e
+
+os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+print "\nServing from: " + os.getcwd()
 
 datadir = os.path.join(os.getcwd(), "cache")
 if not os.path.exists(datadir):
