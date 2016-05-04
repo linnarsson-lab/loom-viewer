@@ -73,6 +73,5 @@ fi
 read -s -p "Enter MYSQL_PASSWORD: " t
 export MYSQL_PASSWORD=$t
 echo ''
-echo ''
 
 ./release/loom
