@@ -33,28 +33,29 @@ try:
 except:
 	print "WARNING: MYSQL_HOST not set!"
 else:
-    print "MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
-
-try:
-	os.environ["MYSQL_USERNAME"]
-except:
-	print "WARNING: MYSQL_USERNAME not set!"
-else:
-    print "MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
-
-try:
-	os.environ["MYSQL_PASSWORD"]
-except:
-	print "WARNING: MYSQL_PASSWORD not set!"
-else:
-    print "MYSQL_PASSWORD set"
+	print "MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
 
 try:
 	os.environ["MYSQL_PORT"]
 except:
 	print "WARNING: MYSQL_PORT not set!"
 else:
-    print "MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
+	print "MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
+
+try:
+	os.environ["MYSQL_USERNAME"]
+except:
+	print "WARNING: MYSQL_USERNAME not set!"
+else:
+	print "MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
+
+try:
+	os.environ["MYSQL_PASSWORD"]
+except:
+	print "WARNING: MYSQL_PASSWORD not set!"
+else:
+	print "MYSQL_PASSWORD set"
+
 
 print '\n'
 
