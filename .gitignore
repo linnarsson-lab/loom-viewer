@@ -3,6 +3,7 @@
 
 # Build folder for static files, and cache for loom files
 static/
+python/static/
 cache/
 
 # Visual Studio Code
