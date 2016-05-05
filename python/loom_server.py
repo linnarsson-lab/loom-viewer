@@ -30,7 +30,7 @@ if len(sys.argv) > 1:
 logger.info("Serving from: " + os.getcwd())
 
 try:
-	os.environ("MYSQL_HOST")
+	os.getenv("MYSQL_HOST")
 	pipeline = LoomPipeline()
 except:
 	print "You need to set the MYSQL environment variables:"
@@ -43,7 +43,7 @@ cache = loom_cloud.LoomCache()
 
 # And start the loom cache refresher in the background
 if not DEBUG:
-	subprocess.Popen(["python","/python/loom_cloud.py"])
+	subprocess.Popen(["python","python/loom_cloud.py"])
 
 
 class LoomServer(flask.Flask):
@@ -122,10 +122,20 @@ def csv_to_dict(s):
 	data = DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
 	return {key: np.array(data[key]) for key in data}
 
+# curl -X PUT -F "config=@./hg19_sUCSC__midbrain__human_20160505.json" -F "col_attrs=@/Users/Sten/tmp/midbrain__human_20160505.csv" http://loom.linnarssonlab.org/hg19_sUCSC__midbrain__human_20160505
+
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
-	row_attrs = csv_to_dict(request.form["row_attrs"])
+	if not col_attrs.has_key("CellID"):
+		return "CellID attribute is missing", 400
+	
+	if request.form.has_key("row_attrs"):
+		row_attrs = csv_to_dict(request.form["row_attrs"])
+		if not col_attrs.has_key("TranscriptID"):
+			return "TranscriptID attribute is missing", 400		
+	else:
+		row_attrs = None
 	config = request.form["config"]
 	dsc = DatasetConfig(transcriptome, project, dataset, 
 		status = "willcreate", 
@@ -155,6 +165,5 @@ def send_tile(transcriptome, project, dataset, z,x,y):
 
 if __name__ == '__main__':
 	app.run(debug=DEBUG, host="0.0.0.0", port=80)
-
 
 

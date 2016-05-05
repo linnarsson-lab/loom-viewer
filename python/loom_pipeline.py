@@ -594,16 +594,14 @@ class LoomPipeline(object):
 		return [r[0] for r in rows]
 
 
-if __name__ == '__main__':
-	np.fromfile()
 
-# if __name__ == '__main__':
-# 	logger.info("Starting the Loom pipeline...")
-# 	lp = LoomPipeline()
-# 	while True:
-# 		for ds in list_datasets():
-# 			if ds.status == "willcreate":
-# 				lp.create_loom(ds)
-# 				lp.prepare_loom(ds)
-# 				lp.store_loom(ds)
-# 		time.sleep(60*10)
+if __name__ == '__main__':
+	logger.info("Starting the Loom pipeline...")
+	lp = LoomPipeline()
+	while True:
+		for ds in list_datasets():
+			if ds.status == "willcreate":
+				lp.create_loom(ds)
+				lp.prepare_loom(ds)
+				lp.store_loom(ds)
+		time.sleep(60*10)

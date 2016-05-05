@@ -1,5 +1,9 @@
 #! /bin/bash
 # Build and deploy the containers
+
+# Current version
+v=1
+
 echo "Building docker containers."
 docker build --no-cache -t gcr.io/linnarsson-lab/loom-server:v$v -f docker/loom-server.dockerfile .
 docker build --no-cache -t gcr.io/linnarsson-lab/loom-pipeline:v$v -f docker/loom-pipeline.dockerfile .
