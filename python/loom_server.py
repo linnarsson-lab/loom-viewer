@@ -29,16 +29,8 @@ if len(sys.argv) > 1:
 #os.chdir(os.path.dirname(os.path.realpath(__file__)))
 logger.info("Serving from: " + os.getcwd())
 
-try:
-	os.getenv("MYSQL_HOST")
-	pipeline = LoomPipeline()
-except:
-	print "You need to set the MYSQL environment variables:"
-	print "   MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, and MYSQL_PASSWORD"
-	print ""
-	logger.info("Starting server without MySQL connection, so will not be able to PUT datasets.")
 
-# Set up the local loom file cache
+pipeline = LoomPipeline()
 cache = loom_cloud.LoomCache()
 
 # And start the loom cache refresher in the background
