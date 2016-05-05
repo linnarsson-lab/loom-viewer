@@ -36,14 +36,12 @@ from loom_cloud import DatasetConfig
 from loom_cloud import list_datasets
 import tempfile
 import re
-import uuid
-from gcloud import bigquery
 from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
-import pandas as pd
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
+import hdbscan
 import logging
 
 logger = logging.getLogger("loom")
@@ -54,12 +52,17 @@ class LoomPipeline(object):
 	"""
 	Pipeline to collect datasets from MySQL, create .loom files and perform standard analyses.
 	"""
-	def __init__(self):
+	def __init__(self, 
+		host = os.getenv('MYSQL_HOST',''),
+		port = int(os.getenv('MYSQL_PORT','3306')),
+		username = os.getenv('MYSQL_USERNAME',''),
+		password = os.getenv('MYSQL_PASSWORD','') ):
+
 		self.mysql_connection = pymysql.connect(
-			host=os.environ['MYSQL_HOST'], 
-			port=os.environ['MYSQL_PORT'], 
-			user=os.environ['MYSQL_USERNAME'], 
-			password=os.environ['MYSQL_PASSWORD'], 
+			host=host, 
+			port=port, 
+			user=username, 
+			password=password, 
 			db='joomla', 
 			charset='utf8mb4')
 
@@ -115,7 +118,8 @@ class LoomPipeline(object):
 		project = config.project
 		dataset = config.dataset
 		connection = self.mysql_connection
-
+		logger.info("Processing: " + config.get_json_filename())
+		
 		# Get the transcriptome ID
 		try:
 			cursor = connection.cursor()
@@ -124,122 +128,155 @@ class LoomPipeline(object):
 		except:
 			raise ValueError, ("Could not find transcriptome ID for '%s'" % transcriptome)
 		cursor.close()
-
 		# Download gene annotations
 		cursor = connection.cursor()
-		cursor.execute("""
-			SELECT * FROM cells10k.Transcript tr
+		query = """
+			SELECT 
+				jos_aaatranscriptomeid TranscriptID,
+				Name,
+				Type,
+				GeneName,
+				EntrezID,
+				Description,
+				Chromosome,
+				Start,
+				End,
+				Length,
+				Strand,
+				ds.*
+			FROM jos_aaatranscript tr
 			LEFT JOIN datasets__%s.Genes__%s__%s ds 
-			ON tr.TranscriptomeID = ds.TranscriptomeID 
-			WHERE tr.TranscriptomeID = %s
+			ON tr.jos_aaatranscriptomeid = ds.TranscriptID 
+			WHERE tr.jos_aaatranscriptomeid = %d
 			AND tr.Type <> "repeat"
 			ORDER BY tr.ExprBlobIdx
-		""", (transcriptome, project, dataset, transcriptome_id))
+		"""
+		cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
+		
+		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
 		
 		transcriptome_headers = map(lambda x: x[0],cursor.description)
 		rows = cursor.fetchall()
 		row_attrs = {}
 		for i in xrange(len(transcriptome_headers)):
-			row_attrs[transcriptome_headers[i]] = []
+			hdr = transcriptome_headers[i]
+			if i >= N_STD_FIELDS:
+				hdr = "(" + dataset + ")_" + hdr
+			row_attrs[hdr] = []
 			for j in xrange(len(rows)):
-				row_attrs[transcriptome_headers[i]].append(rows[j][i])
+				row_attrs[hdr].append(rows[j][i])
 		cursor.close()
 
 		# Convert to standard numpy types
 		for ix in xrange(len(cursor.description)):
 			row_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(row_attrs[cursor.description[ix][0]], cursor.description[ix][1])
 		gene_ids = row_attrs["TranscriptID"]
-
-		# TODO: separate the names of standard and custom attributes
 		
+		matrix = []
+		col_attrs = {}
+
 		# Fetch counts
 		nrows = 0
+		
+		# Fetch 1000 rows at a time
 		while True:
 			cursor = connection.cursor()
 			cursor.execute("""
-			SELECT  
-				CellID,
-				TranscriptomeID,
-				ChipWell,
-				PlateWell,
-				Diameter,
-				Area,
-				Red,
-				Green,
-				Blue,
-				c.Valid,
-				ChipID,
-				StrtProtocol,
-				DateDissected,
-				DateCollected,
-				h.Species,
-				Strain,
-				DonorID,
-				Age,
-				Sex,
-				Weight,
-				h.Tissue,
-				Treatment,
-				h.SpikeMolecules,
-				Comments,
-				h.User,
-				"Time",
-				Title,
-				ProductionDate,
-				PlateID,
-				PlateReference,
-				SampleType,
-				CollectionMethod,
-				FragmentLength,
-				MolarConcentration,
-				WeightConcentration,
-				Protocol,
-				BarcodeSet,
-				"Status",
-				"Comment",
-				Aligner,
-				Data
-			FROM jos_aaacell c 
-			LEFT JOIN jos_aaachip h 
-				ON c.jos_aaachipid=h.id 
-			LEFT JOIN jos_aaaproject p 
-				ON h.jos_aaaprojectid=p.id
-			RIGHT JOIN cells10k.ExprBlob e
-				ON e.CellID=c.id 
-			WHERE c.valid=1 AND e.TranscriptomeID = %s
-			LIMIT 1000 OFFSET %s
-			""", (transcriptome_id, nrows))
+				SELECT  
+					e.CellID,
+					e.TranscriptomeID,
+					ChipWell,
+					PlateWell,
+					Diameter,
+					Area,
+					Red,
+					Green,
+					Blue,
+					c.Valid,
+					ChipID,
+					StrtProtocol,
+					DateDissected,
+					DateCollected,
+					h.Species,
+					Strain,
+					DonorID,
+					h.Age,
+					h.Sex,
+					h.Weight,
+					h.Tissue,
+					h.Treatment,
+					h.SpikeMolecules,
+					h.Comments,
+					h.User,
+					p.Time,
+					Title,
+					ProductionDate,
+					PlateID,
+					PlateReference,
+					SampleType,
+					CollectionMethod,
+					FragmentLength,
+					MolarConcentration,
+					WeightConcentration,
+					Protocol,
+					BarcodeSet,
+					Status,
+					Comment,
+					Aligner,
+					ds.*,
+					Data
+				FROM jos_aaacell c 
+				LEFT JOIN jos_aaachip h 
+					ON c.jos_aaachipid=h.id 
+				LEFT JOIN jos_aaaproject p 
+					ON h.jos_aaaprojectid=p.id
+				JOIN cells10k.ExprBlob e
+					ON e.CellID=c.id
+				JOIN datasets__%s.Cells__%s__%s ds 
+					ON ds.CellID = c.id
+				WHERE c.valid=1 AND e.TranscriptomeID = %s
+				LIMIT 1000 OFFSET %s
+			""" % (transcriptome, project, dataset, transcriptome_id, nrows))
+
+			N_STD_FIELDS = 40	# UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
+								# Count all standard fields but not including "Data"
+								# NOTE: Data field should always be last!
+								
 			if cursor.rowcount <= 0:
 				if nrows == 0:
 					print "No data available for this transcriptome: %d " % transcriptome_id
 				break
-			nrows += cursor.rowcount
-			matrix = []
-			headers = map(lambda x: x[0], cursor.description)
-			col_attrs = {}
-			for i in xrange(len(headers) - 1):	# -1 because the last column is "Data", the expression blob
-				col_attrs[headers[i]] = []
+			
+			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
+			if nrows == 0:
+				for i in xrange(len(headers)):		
+					if i >= N_STD_FIELDS:
+						headers[i] = "(" + dataset + ")_" + headers[i]
+					col_attrs[headers[i]] = []
 			dt = np.dtype('int32')  # datatype for unpacking the Data blob
 			dt = dt.newbyteorder('>')
 			for row in cursor:
 				data = np.frombuffer(row[-1], dt)
 				matrix.append(data)
-				for i in xrange(len(headers) - 1):
+				for i in xrange(len(headers)):
 					col_attrs[headers[i]].append(row[i])
+			nrows += cursor.rowcount
 			cursor.close()
 
-			# Convert to the appropriate numpy datatype
-			for ix in xrange(len(cursor.description) - 1):	# -1 because we need to treat the Data column differently
-				col_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(col_attrs[cursor.description[ix][0]], cursor.description[ix][1])
-			cell_ids = col_attrs["CellID"]
+		# End of while-loop
 
-			# Save to a CSV file with three columns, TranscriptID, CellID, Count
-			counts = np.array(matrix).transpose().reshape(-1).astype("int64")
-			gene_ids_rept = np.repeat(gene_ids, len(cell_ids))
-			cell_ids_rept = np.tile(cell_ids, len(gene_ids))
-			data = np.array([gene_ids_rept, cell_ids_rept, counts]).T
+		# Convert to the appropriate numpy datatype
+		for ix in xrange(len(headers)):
+			col_attrs[headers[ix]] = self._make_std_numpy_type(col_attrs[headers[ix]], cursor.description[ix][1])
+		cell_ids = col_attrs["CellID"]
 
-			loom.create(config.get_loom_filename(), data, row_attrs, col_attrs)
+		# Create the loom file
+		print len(matrix)
+		print col_attrs["CellID"].shape
+		print row_attrs["TranscriptID"].shape
+		counts = np.array(matrix).transpose()
+		print counts.shape
+		loom.create(config.get_loom_filename(), counts, row_attrs, col_attrs)
 			
 	def prepare_loom(self, config):
 		"""
@@ -283,11 +320,12 @@ class LoomPipeline(object):
 		ds.project_to_2d()
 
 		# Clustering
-		if config.cluster_method == "BackSPIN":
+		if config.cluster_method == "BackSPIN_notimplemented":
 			config.set_status("creating", "Preparing the dataset: Step 3 (BackSPIN clustering).")
 			bsp = BackSPIN()
 			result = bsp.backSPIN(ds)
 			result.apply(dataset)
+
 		elif config.cluster_method == "AP":
 			config.set_status("creating", "Preparing the dataset: Step 3A (Affinity propagation on cells).")
 			# Cells
@@ -309,6 +347,26 @@ class LoomPipeline(object):
 			ds.set_attr("_Ordering", ordering, axis = 0)
 			ds.permute(ordering, axis = 0)
 
+		elif config.cluster_method == "HDBSCAN":
+			config.set_status("creating", "Preparing the dataset: Step 3A (HDBSCAN on cells).")
+			# Cells
+			S = -ds.corr_matrix(axis = 1)
+			clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
+			labels = clusterer.fit_predict(S)
+			ds.set_attr("_Cluster", labels, axis = 1)
+			ordering = np.argsort(labels)
+			ds.set_attr("_Ordering", ordering, axis = 1)
+			ds.permute(ordering, axis = 1)
+
+			config.set_status("creating", "Preparing the dataset: Step 3B (HDBSCAN on genes).")
+			# Genes
+			S = -ds.corr_matrix(axis = 0)
+			labels = clusterer.fit_predict(S)
+			ds.set_attr("_Cluster", labels, axis = 0)
+			ordering = np.argsort(labels)
+			ds.set_attr("_Ordering", ordering, axis = 0)
+			ds.permute(ordering, axis = 0)
+
 		# Regression
 		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")
 		#ds.bayesian_regression(config.regression_label)
@@ -325,7 +383,7 @@ class LoomPipeline(object):
 		blob.upload_from_filename(config.get_loom_filename())
 		config.set_status("created", "Ready to browse.")
 		
-	def upload(self, config, cell_attrs = None, gene_attrs = None):
+	def upload(self, config, cell_attrs, gene_attrs = None):
 		"""
 		Upload a custom dataset annotation to MySQL.
 
@@ -337,7 +395,7 @@ class LoomPipeline(object):
 		Returns:
 			Nothing.
 
-		At least one of cell_attrs or gene_attrs must be given. Both are dictionaries where the keys are attribute 
+		At least cell_attrs must be given. Both are dictionaries where the keys are attribute 
 		names and the values are numpy arrays (of the same length). The 'CellID' (integer) field is required for
 		cell_attrs, and the 'TranscriptID' (integer) is required for gene_attrs. However, if TranscriptID is a string
 		array, integer TranscriptIDs will be created for you using the given transcriptome. Similarly, if CellID
@@ -345,20 +403,19 @@ class LoomPipeline(object):
 		PlateWell fields in the database (separated by an underscore). For example if CellID contains strings like
 		"1772067-089_A01", these will be converted to integer CellIDs for you.
 		"""
-		connection = self.mysql_connection
 
 		# Check the ID attributes, and convert as needed from string identifiers
-		if cell_attrs == None and gene_attrs == None:
-			raise ValueError, "Both cell_attrs and gene_attrs cannot be None."
-		if cell_attrs != None:
-			if not cell_attrs.__contains__("CellID"):
-				raise ValueError, "'CellID' attribute is missing from cell_attrs."
-			if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
-				raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
-			if cell_attrs["CellID"].dtype.kind == 'S':
-				cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
-				cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
-		if gene_attrs != None:
+		if not cell_attrs.__contains__("CellID"):
+			raise ValueError, "'CellID' attribute is missing from cell_attrs."
+		if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
+			raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
+		if cell_attrs["CellID"].dtype.kind == 'S':
+			cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
+			cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
+
+		if gene_attrs == None:
+			gene_attrs = {"TranscriptID":np.zeros((0,))}
+		else:
 			if not gene_attrs.__contains__("TranscriptID"):
 				raise ValueError, "'TranscriptID' attribute is missing from gene_attrs."
 			if gene_attrs["TranscriptID"].dtype.kind != 'i' and gene_attrs["TranscriptID"].dtype.kind != 'S':
@@ -370,10 +427,10 @@ class LoomPipeline(object):
 		# Send the dataset to MySQL
 		if cell_attrs != None:
 			print "Uploading cell annotations"
-			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset)
+			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
 		if gene_attrs != None:
 			print "Uploading gene annotations"
-			self._export_attrs_to_mysql(gene_attrs, condfig.transcriptome, "Genes__" + config.project + "__" + config.dataset)
+			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
 		# Save the config
 		config.put()
 		print "Done."
@@ -397,6 +454,7 @@ class LoomPipeline(object):
 		project "Midbrain" has annotations in Cells__Midbrain__midbrain_embryo and Genes__Midbrain__midbrain_embryo. Since project
 		names can be used across transcriptome builds, projects can group together multi-species datasets.
 		"""
+
 		fields = attrs.keys()
 		formats = []
 		schema = []
@@ -404,34 +462,35 @@ class LoomPipeline(object):
 			kind = attrs[fields[ix]].dtype.kind
 			if kind == "S" or kind == "U":
 				formats.append("%s")
-				schema.append('text')
+				schema.append("`" + fields[ix] + "` text")
 			elif kind == "b":
 				formats.append("%s")
-				schema.append('bool')
+				schema.append("`" + fields[ix] + "` bool")
 			elif kind == "f":
 				formats.append("%f")
-				schema.append('float')
+				schema.append("`" + fields[ix] + "` float")
 			elif kind == "i" or kind == "u":
 				formats.append("%d")
-				schema.append('int')
+				schema.append("`" + fields[ix] + "` int")
 			else:
 				raise TypeError, "Unsupported numpy datatype of kind '%s'" % kind
 
 
 		# Create the table in MySQL
-
-		# Prepare the table in BigQuery
-		client = bigquery.Client(project="linnarsson-lab")
-		bq_dataset = client.dataset(transcriptome)
-		if not bq_dataset.exists():
-			bq_dataset.create()
-		table = bq_dataset.table(name=tablename)
-		table.schema = schema
-
-		if not table.exists():
-			table.create()
-		table.update()
-
+		connection = self.mysql_connection
+		cursor = connection.cursor()
+		full_tablename = "datasets__" + transcriptome + "." + tablename
+		query = """
+			DROP TABLE IF EXISTS %s;
+			CREATE TABLE %s (
+			%s,
+			PRIMARY KEY (`%s`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+		""" % (full_tablename,full_tablename,",".join(schema), pk)
+		print query
+		cursor.execute(query)
+		cursor.close()
+		
 		# Upload the data
 		rows = []
 		for ix in xrange(attrs[attrs.keys()[0]].shape[0]):
@@ -440,10 +499,13 @@ class LoomPipeline(object):
 				row.append(formats[a] % (attrs[fields[a]][ix]))
 			rows.append(row)
 
-		with tempfile.NamedTemporaryFile(suffix = ".csv") as tf:
-			csvwriter = csv.writer(tf, delimiter=',', doublequote = True, quoting = csv.QUOTE_ALL)
-			csvwriter.writerows(rows)
-			table.upload_from_file(tf, "CSV", rewind=True, write_disposition='WRITE_APPEND')
+		if len(rows) > 0:
+			insert = """
+				INSERT INTO %s VALUES %s;
+			""" % (full_tablename, ",".join([connection.escape(row) for row in rows]))
+			cursor = connection.cursor()
+			cursor.execute(insert)
+			cursor.close()
 			
 	def get_transcript_id_mapping(self, transcriptome):
 		"""
@@ -461,8 +523,8 @@ class LoomPipeline(object):
 
 		cursor = connection.cursor()
 		cursor.execute("""
-			SELECT GeneName, TranscriptID FROM cells10k.Transcript t1
-			JOIN cells10k.Transcriptome t2 ON t1.TranscriptomeID = t2.TranscriptomeID 
+			SELECT GeneName, jos_aaatranscriptomeid TranscriptID FROM jos_aaatranscript t1
+			JOIN jos_aaatranscriptome t2 ON t1.jos_aaatranscriptomeid = t2.id 
 			WHERE t2.name = %s
 		""", transcriptome)
 		rows = cursor.fetchall()
@@ -503,8 +565,8 @@ class LoomPipeline(object):
 			SELECT jos_aaacell.id as CellID, ChipID, ChipWell
 			FROM jos_aaacell
 			JOIN jos_aaachip ON jos_aaachip.id = jos_aaacell.jos_aaachipid
-			JOIN cells10k.ExprBlob ON jos_aaacell.id = cells10k.ExprBlob.CellID
-			WHERE cells10k.ExprBlob.TranscriptomeID = %s
+			JOIN jos_aaaexprblob ON jos_aaacell.id = jos_aaaexprblob.jos_aaacellid
+			WHERE jos_aaaexprblob.jos_aaatranscriptomeid = %s
 		""", transcriptome_id)
 		rows = cursor.fetchall()
 		cursor.close()
@@ -526,85 +588,22 @@ class LoomPipeline(object):
 		"""
 		cursor = self.mysql_connection.cursor()
 		cursor.execute("""
-			SELECT Name FROM cells10k.Transcriptome;
+			SELECT Name FROM jos_aaatranscriptome;
 		""")
 		rows = cursor.fetchall()
 		return [r[0] for r in rows]
 
 
-class _Query(object):
-	def __init__(self, sql):
-		logger.info(sql)
-		client = bigquery.Client(project="linnarsson-lab")
-		request = client.run_sync_query(sql)
-		request.timeout_ms = 60 * 1000 # One minute
-		request.run()
-		retries = 60 # One hour
-		while retries > 0 and not request.complete:
-			retries -= 1
-			time.sleep(60)
-			request.reload()
-		if not request.complete:
-			raise IOError, "Request did not complete in time"
-
-		self.request = request
-		self.schema = request.schema
-
-	def as_dict(self):			
-		"""
-		Return the result as a dictionary of column names -> column values.
-		"""
-		(row_data, total_rows, page_token) = self.request.fetch_data()
-		total_rows = int(total_rows)
-		# Create empty numpy arrays to hold all the data
-		result = {}
-		type_conv = {"STRING": "string", "INTEGER": "int", "BOOLEAN": "bool", "FLOAT": "float"}
-		for column in self.request.schema:
-			result[column.name] = np.empty(total_rows, dtype=type_conv[column.field_type])
-
-		row_count = 0
-		for row in row_data:
-			for ix in xrange(len(self.request.schema)):
-				result[self.request.schema[ix].name][row_count] = row[ix]
-			row_count += 1
-		while page_token != None:
-			(row_data, total_rows, page_token) = request.fetch_data(page_token = page_token)
-			for row in row_data:
-				for ix in xrange(len(self.request.schema)):
-					result[self.request.schema[ix].name][row_count] = row[ix]
-				row_count += 1
-		return result
-
-	def as_matrix(self):
-		"""
-		Return result as a single numpy matrix.
-
-		This will only work if the result is columns of the same types.
-		"""
-		(row_data, total_rows, page_token) = self.request.fetch_data()
-		total_rows = int(total_rows)
-		
-		type_conv = {"STRING": "string", "INTEGER": "int", "BOOLEAN": "bool", "FLOAT": "float"}
-		result = np.zeros((total_rows, len(row_data[0])), dtype = type_conv[self.request.schema[0].field_type])
-		row_count = 0
-		for row in row_data:
-			result[row_count, :] = row
-			row_count += 1
-		while page_token != None:
-			(row_data, total_rows, page_token) = self.request.fetch_data(page_token = page_token)
-			for row in row_data:
-				result[row_count, :] = row
-				row_count += 1
-
-		return result
-		
 if __name__ == '__main__':
-	logger.info("Starting the Loom pipeline...")
-	lp = LoomPipeline()
-	while True:
-		for ds in list_datasets():
-			if ds.status == "willcreate":
-				lp.create_loom_from_dataset(ds)
-				lp.prepare_loom(ds)
-				lp.store_loom(ds)
-		time.sleep(60*10)
+	np.fromfile()
+
+# if __name__ == '__main__':
+# 	logger.info("Starting the Loom pipeline...")
+# 	lp = LoomPipeline()
+# 	while True:
+# 		for ds in list_datasets():
+# 			if ds.status == "willcreate":
+# 				lp.create_loom(ds)
+# 				lp.prepare_loom(ds)
+# 				lp.store_loom(ds)
+# 		time.sleep(60*10)

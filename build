@@ -35,14 +35,3 @@ rm temp.js
 
 sed -e "s/{VERSION}/$v/g" index.html > static/index.html
 
-# Build and deploy the containers
-echo "Building docker containers."
-docker build --no-cache -t gcr.io/linnarsson-lab/loom-server:v$v -f docker/loom-server.dockerfile .
-docker build --no-cache -t gcr.io/linnarsson-lab/loom-pipeline:v$v -f docker/loom-pipeline.dockerfile .
-echo "Pushing containers to cloud."
-gcloud docker push gcr.io/linnarsson-lab/loom-server:v$v
-gcloud docker push gcr.io/linnarsson-lab/loom-pipeline:v$v
-kubectl delete pods -l run=loom-server
-echo "Server pods have been restarted. To restart loom pipeline, issue this command (only if not currently processing a dataset):"
-echo "kubectl delete pods -l run=loom-pipeline"
-echo "Done."

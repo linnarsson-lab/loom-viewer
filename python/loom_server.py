@@ -119,7 +119,8 @@ def send_col(transcriptome, project, dataset, col):
 # Upload dataset for loom file generation
 #
 def csv_to_dict(s):
-	return DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
+	data = DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
+	return {key: np.array(data[key]) for key in data}
 
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
