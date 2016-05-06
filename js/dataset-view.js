@@ -101,6 +101,8 @@ DatasetView.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
+
+//TODO: add listeners to forms to update state
 export class CreateDataset extends Component {
 
 	constructor(props, context) {
@@ -115,10 +117,20 @@ export class CreateDataset extends Component {
 		};
 	}
 
-	validateTextInput(event) {
-		this.setState({ value: event.target.value });
+	// Valid entries:
+	// - cannot start with '_'
+	// - may contain letters, numbers and underscores
+	// - may NOT contain double (or more) underscores
+	// This function strips invalid characters,
+	// then replaces whitespace with underscores,
+	// then reduces all underscores to single underscores.
+	// Note that this should be validated on the server side too!
+	// This is just so that the user knows what to expect.
+	fixTextInput(string) {
+		return string.replace('/([^A-Za-z0-9])+([^A-Za-z0-9_])+/g', '')
+		.replace('/\s+/g', '_')
+		.replace('/_+/g', '_');
 	}
-
 
 	sendData(data) {
 		let FD = new FormData();
@@ -139,7 +151,6 @@ export class CreateDataset extends Component {
 		XHR.open('PUT', urlString);
 		XHR.send(FD);
 	}
-
 
 	render() {
 		return (
