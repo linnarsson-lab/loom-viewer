@@ -67,13 +67,13 @@ export class DatasetView extends Component {
 							<li>the user the dataset belongs to</li>
 							<li>the project the dataset belongs to</li>
 						</ul>
-						<p>Furthermore, the pipeline also needs:</p>
+						<p>Furthermore, the pipeline also needs: </p>
 						<ul>
 							<li>a CSV file of cell attributes from which the dataset is generated</li>
 							<li><i>(optionally) </i> a CSV file of gene attributes</li>
 						</ul>
 						<p>Before uploading these CSV files a minimal check will be applied, hopefully catching the most likely
-							scenarios. If the CSV file contains semi-colons instead of commas (most likely the result of regional
+							scenarios.If the CSV file contains semi-colons instead of commas (most likely the result of regional
 							settings in whatever tool was used to generate the file), they will automatically be replace
 							before submitting.Please double-check if the result is correct in that case.</p>
 						<p><i>Note: </i> you can still submit a file with a wrong file extension or (what appears to be)
@@ -102,73 +102,92 @@ DatasetView.propTypes = {
 };
 
 export class CreateDataset extends Component {
+
+	sendData(data) {
+		let XHR = new XMLHttpRequest();
+		let FD = new FormData();
+
+		// See ../docs/loom_server_API.md
+		FD.append('col_attrs', data.cell_attributes);
+		FD.append('row_attrs', data.gene_attributes);
+		FD.append('cluster_method', data.cluster_method);
+		FD.append('regression_label', data.regression_label);
+
+		XHR.addEventListener('load', (event) => { console.log(event); });
+		XHR.addEventListener('error', (event) => { console.log(event); });
+
+		let urlString = '/' + data.transcriptome + '__' + data.project + '__' + data.dataset;
+		XHR.open('PUT', urlString);
+		XHR.send(FD);
+	}
+
 	render() {
 		return (
-				<div className='panel panel-primary'>
-					<div className='panel-heading'>
-						<h3 className='panel-title'>Required information</h3>
-					</div>
-					<div className='panel-body'>
-						<form className='form-horizontal' role='form'>
-							<div className='form-group'>
-								<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
-								<div className='col-sm-10'>
-									<input type='text' className='form-control' defaultValue='' name='transcriptome' id='input_transcriptome' />
-								</div>
+			<div className='panel panel-primary'>
+				<div className='panel-heading'>
+					<h3 className='panel-title'>Required information</h3>
+				</div>
+				<div className='panel-body'>
+					<form className='form-horizontal' role='form'>
+						<div className='form-group'>
+							<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
+							<div className='col-sm-10'>
+								<input type='text' className='form-control' defaultValue='' name='transcriptome' id='input_transcriptome' />
 							</div>
-							<div className='form-group'>
-								<label for='input_project' className='col-sm-2 control-label'>Project: </label>
-								<div className='col-sm-10'>
-									<input type='text' className='form-control' defaultValue='' name='project' id='input_project' />
-								</div>
+						</div>
+						<div className='form-group'>
+							<label for='input_project' className='col-sm-2 control-label'>Project: </label>
+							<div className='col-sm-10'>
+								<input type='text' className='form-control' defaultValue='' name='project' id='input_project' />
 							</div>
-							<div className='form-group'>
-								<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
-								<div className='col-sm-10'>
-									<input type='text' className='form-control' defaultValue='' name='dataset' id='input_dataset' />
-								</div>
+						</div>
+						<div className='form-group'>
+							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
+							<div className='col-sm-10'>
+								<input type='text' className='form-control' defaultValue='' name='dataset' id='input_dataset' />
 							</div>
-						</form>
-					</div>
-					<div className='panel-heading'>
-						<h3 className='panel-title'>CSV files</h3>
-					</div>
-					<div className='list-group'>
-						<CSVFileChooser className='list-group-item' label='Cell attributes:'/>
-						<CSVFileChooser className='list-group-item' label='[OPTIONAL] Gene attributes:' />
-					</div>
-					<div className='panel-heading'>
-						<h3 className='panel-title'>Additional parameters</h3>
-					</div>
-					<div className='panel-body'>
-						<form className='form-horizontal' role='form'>
-							<div className='form-group'>
-								<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
-								<div className='col-sm-10'>
-									<input type='number' className='form-control' defaultValue='100' name='n_features' id='input_n_features' />
-								</div>
+						</div>
+					</form>
+				</div>
+				<div className='panel-heading'>
+					<h3 className='panel-title'>CSV files</h3>
+				</div>
+				<div className='list-group'>
+					<CSVFileChooser className='list-group-item' label='Cell attributes:'/>
+					<CSVFileChooser className='list-group-item' label='[OPTIONAL] Gene attributes:' />
+				</div>
+				<div className='panel-heading'>
+					<h3 className='panel-title'>Additional parameters</h3>
+				</div>
+				<div className='panel-body'>
+					<form className='form-horizontal' role='form'>
+						<div className='form-group'>
+							<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
+							<div className='col-sm-10'>
+								<input type='number' className='form-control' defaultValue='100' name='n_features' id='input_n_features' />
 							</div>
-							<div className='form-group'>
-								<label for='clustering_method' className='col-sm-2 control-label'>Clustering Method: </label>
-								<div className='col-sm-10'>
-									<select className='form-control' name='clustering_method' id='input_clustering_method'>
-										<option value='value1' selected>BackSPIN</option>
-										<option value='value1'>Affinity Propagation</option>
-									</select>
-								</div>
+						</div>
+						<div className='form-group'>
+							<label for='clustering_method' className='col-sm-2 control-label'>Clustering Method: </label>
+							<div className='col-sm-10'>
+								<select className='form-control' name='clustering_method' id='input_clustering_method'>
+									<option value='value1' selected>BackSPIN</option>
+									<option value='value1'>Affinity Propagation</option>
+								</select>
 							</div>
-							<div className='form-group'>
-								<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
-								<div className='col-sm-10'>
-									<input type='text' className='form-control' defaultValue='' name='regression_label' id='input_regression_label' />
-								</div>
+						</div>
+						<div className='form-group'>
+							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
+							<div className='col-sm-10'>
+								<input type='text' className='form-control' defaultValue='' name='regression_label' id='input_regression_label' />
 							</div>
-							<div className='form-group pull-right'>
-								<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
-							</div>
-						</form>
-					</div>
-				</div >
+						</div>
+						<div className='form-group pull-right'>
+							<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
+						</div>
+					</form>
+				</div>
+			</div >
 		);
 	}
 }
