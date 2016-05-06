@@ -103,23 +103,43 @@ DatasetView.propTypes = {
 
 export class CreateDataset extends Component {
 
-	sendData(data) {
-		let XHR = new XMLHttpRequest();
-		let FD = new FormData();
+	constructor(props, context) {
+		super(props, context);
+		this.state = {
+			n_features: 100,
+			cluster_method: 'BackSPIN',
+			regression_label: '',
+			transcriptome: '',
+			project: '',
+			dataset: '',
+		};
+	}
 
+	validateTextInput(event) {
+		this.setState({ value: event.target.value });
+	}
+
+
+	sendData(data) {
+		let FD = new FormData();
 		// See ../docs/loom_server_API.md
 		FD.append('col_attrs', data.cell_attributes);
 		FD.append('row_attrs', data.gene_attributes);
-		FD.append('cluster_method', data.cluster_method);
-		FD.append('regression_label', data.regression_label);
+		FD.append('n_features', this.state.n_features);
+		FD.append('cluster_method', this.state.cluster_method);
+		FD.append('regression_label', this.state.regression_label);
 
+		let XHR = new XMLHttpRequest();
 		XHR.addEventListener('load', (event) => { console.log(event); });
 		XHR.addEventListener('error', (event) => { console.log(event); });
 
-		let urlString = '/' + data.transcriptome + '__' + data.project + '__' + data.dataset;
+		let urlString = '/' + this.state.transcriptome +
+			'__' + this.state.project +
+			'__' + this.state.dataset;
 		XHR.open('PUT', urlString);
 		XHR.send(FD);
 	}
+
 
 	render() {
 		return (
@@ -325,7 +345,7 @@ export class CSVFileChooser extends Component {
 				subStrIdx = nextIdx;
 			}
 		}
-		let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : reader.result;
+		let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : commaFix;
 		this.setState({ droppedFile: commaBlob, commaFix, fileContent });
 	}
 
