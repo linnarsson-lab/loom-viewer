@@ -127,9 +127,13 @@ export class CreateDataset extends Component {
 	// Note that this should be validated on the server side too!
 	// This is just so that the user knows what to expect.
 	fixTextInput(string) {
-		return string.replace('/([^A-Za-z0-9])+([^A-Za-z0-9_])+/g', '')
-		.replace('/\s+/g', '_')
-		.replace('/_+/g', '_');
+		string = string.replace(/([^A-Za-z0-9_])+/g, '')
+		.replace(/\s+/g, '_')
+		.replace(/_+/g, '_');
+		let idx = 0;
+		while(string.charAt(idx) === '_'){ idx++; }
+		return string.substr(idx);
+
 	}
 
 	sendData(data) {
