@@ -138,7 +138,7 @@ export class CreateDataset extends Component {
 		// Note that this requires that all input forms have a name prop!
 		let newState = {};
 		newState[event.target.props.name] = event.target.value;
-		this.setState(netState);
+		this.setState(newState);
 	},
 
 	render() {
