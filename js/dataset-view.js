@@ -134,16 +134,16 @@ export class CreateDataset extends Component {
 		XHR.send(FD);
 	}
 
-	handleFormChange(event) {
+	handleFormUpdate(formName, newVal) {
 		// Note that this requires that all input forms have a name prop!
 		let newState = {};
-		newState[event.target.props.name] = event.target.value;
+		newState[formName] = newVal;
 		this.setState(newState);
 	}
 
-	handleFileChooserChange(event) {
+	handleFileChooserUpdate(name, newFile) {
 		let newState = {};
-		newState[event.target.props.name] = event.target.state.droppedFile;
+		newState[name] = newFile;
 		this.setState(newState);
 	}
 
@@ -161,7 +161,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => { this.handleFormChange(event); } }
+								componentUpdateHandler={this.handleFormUpdate}
 								name='transcriptome'
 								id='input_transcriptome' />
 						</div>
@@ -171,7 +171,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => { this.handleFormChange(event); } }
+								componentUpdateHandler={this.handleFormUpdate}
 								name='project'
 								id='input_project' />
 						</div>
@@ -181,7 +181,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => { this.handleFormChange(event); } }
+								componentUpdateHandler={this.handleFormUpdate}
 								name='dataset'
 								id='input_dataset' />
 						</div>
@@ -195,13 +195,13 @@ export class CreateDataset extends Component {
 						name='cell_attributes'
 						className='list-group-item'
 						label='Cell attributes:'
-						onChange={(event) => {this.handleFileChooserChange(event);} }
+						componentUpdateHandler={this.handleFileChooserUpdate}
 						/>
 					<CSVFileChooser
 						name='gene_attributes'
 						className='list-group-item'
 						label='[OPTIONAL] Gene attributes:'
-						onChange={(event) => {this.handleFileChooserChange(event);} }
+						componentUpdateHandler={this.handleFileChooserUpdate}
 						/>
 				</div>
 				<div className='panel-heading'>
@@ -216,7 +216,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={(event) => { this.handleFormChange(event); } }
+									componentUpdateHandler={this.handleFormUpdate}
 									name='n_features'
 									id='input_n_features' />
 							</div>
@@ -228,7 +228,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									name='cluster_method'
 									id='input_cluster_method'
-									onChange={(event) => { this.handleFormChange(event); } }>
+									componentUpdateHandler={this.handleFormUpdate}>
 									<option value='BacSPIN' selected>BackSPIN</option>
 									<option value='AP'>Affinity Propagation</option>
 								</select>
@@ -240,7 +240,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={false}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => { this.handleFormChange(event); } }
+								componentUpdateHandler={this.handleFormUpdate}
 								name='regression_label'
 								id='input_regression_label' />
 						</div>
@@ -270,7 +270,7 @@ export class LoomTextEntry extends Component {
 			value: this.props.defaultValue,
 			fixedVal: '',
 		};
-		this.fixTextInput = _.debounce(this.fixTextInput, 500);
+		this.fixTextInput = _.debounce(this.fixTextInput, 250);
 	}
 
 	handleChange(event) {
@@ -298,6 +298,13 @@ export class LoomTextEntry extends Component {
 			value: fix,
 			fixedVal: fix,
 		});
+	}
+
+	componentWillUpdate(nextProps, nextState){
+		if (this.props.componentUpdateHandler) {
+			// bubble up fixed string to parent
+			this.props.componentUpdateHandler(nextProps.name, nextState.fixedVal);
+		}
 	}
 
 	render() {
@@ -463,6 +470,13 @@ export class CSVFileChooser extends Component {
 			displaybytes /= 1024;
 		}
 		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude];
+	}
+
+	componentWillUpdate(nextProps, nextState){
+		if (this.props.componentUpdateHandler) {
+			// bubble up new file to parent
+			this.props.componentUpdateHandler(nextProps.name, nextState.droppedFile);
+		}
 	}
 
 	render() {
