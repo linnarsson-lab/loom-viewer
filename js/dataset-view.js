@@ -114,11 +114,11 @@ export class CreateDataset extends Component {
 		};
 	}
 
-	sendData(data) {
+	sendData() {
 		let FD = new FormData();
 		// See ../docs/loom_server_API.md
-		FD.append('col_attrs', data.cell_attributes);
-		FD.append('row_attrs', data.gene_attributes);
+		FD.append('col_attrs', this.state.cell_attributes);
+		FD.append('row_attrs', this.state.gene_attributes);
 		FD.append('n_features', this.state.n_features);
 		FD.append('cluster_method', this.state.cluster_method);
 		FD.append('regression_label', this.state.regression_label);
@@ -134,12 +134,18 @@ export class CreateDataset extends Component {
 		XHR.send(FD);
 	}
 
-	handleChange(event) {
+	handleFormChange(event) {
 		// Note that this requires that all input forms have a name prop!
 		let newState = {};
 		newState[event.target.props.name] = event.target.value;
 		this.setState(newState);
-	},
+	}
+
+	handleFileChooserChange(event) {
+		let newState = {};
+		newState[event.target.props.name] = event.target.state.droppedFile;
+		this.setState(newState);
+	}
 
 	render() {
 		return (
@@ -155,7 +161,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => this.handleChange(event)}
+								onChange={(event) => { this.handleFormChange(event); } }
 								name='transcriptome'
 								id='input_transcriptome' />
 						</div>
@@ -165,7 +171,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => this.handleChange(event)}
+								onChange={(event) => { this.handleFormChange(event); } }
 								name='project'
 								id='input_project' />
 						</div>
@@ -175,7 +181,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => this.handleChange(event)}
+								onChange={(event) => { this.handleFormChange(event); } }
 								name='dataset'
 								id='input_dataset' />
 						</div>
@@ -185,8 +191,18 @@ export class CreateDataset extends Component {
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
 				<div className='list-group'>
-					<CSVFileChooser name='cell_attributes' className='list-group-item' label='Cell attributes:'/>
-					<CSVFileChooser name='gene_attributes' className='list-group-item' label='[OPTIONAL] Gene attributes:' />
+					<CSVFileChooser
+						name='cell_attributes'
+						className='list-group-item'
+						label='Cell attributes:'
+						onChange={(event) => {this.handleFileChooserChange(event);} }
+						/>
+					<CSVFileChooser
+						name='gene_attributes'
+						className='list-group-item'
+						label='[OPTIONAL] Gene attributes:'
+						onChange={(event) => {this.handleFileChooserChange(event);} }
+						/>
 				</div>
 				<div className='panel-heading'>
 					<h3 className='panel-title'>Additional parameters</h3>
@@ -200,7 +216,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={(event) => this.handleChange(event)}
+									onChange={(event) => { this.handleFormChange(event); } }
 									name='n_features'
 									id='input_n_features' />
 							</div>
@@ -212,9 +228,9 @@ export class CreateDataset extends Component {
 									className='form-control'
 									name='cluster_method'
 									id='input_cluster_method'
-									onChange={(event) => this.handleChange(event)}>
-									<option value='value1' selected>BackSPIN</option>
-									<option value='value1'>Affinity Propagation</option>
+									onChange={(event) => { this.handleFormChange(event); } }>
+									<option value='BacSPIN' selected>BackSPIN</option>
+									<option value='AP'>Affinity Propagation</option>
 								</select>
 							</div>
 						</div>
@@ -224,7 +240,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={false}
 								className='col-sm-10'
 								defaultValue=''
-								onChange={(event) => this.handleChange(event)}
+								onChange={(event) => { this.handleFormChange(event); } }
 								name='regression_label'
 								id='input_regression_label' />
 						</div>
@@ -294,7 +310,7 @@ export class LoomTextEntry extends Component {
 					name={this.props.name}
 					id={this.props.id}
 					value={this.state.value}
-					onChange={(event) => this.handleChange(event)}
+					onChange={(event) => { this.handleChange(event); } }
 					/>
 			</div>
 		);
