@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
 import Dropzone from 'react-dropzone';
+import * as _ from 'lodash';
 
 export class DatasetView extends Component {
 
@@ -103,37 +104,14 @@ DatasetView.propTypes = {
 
 
 //TODO: add listeners to forms to update state
+//TODO: add debouncer for auto-fixing name entries
 export class CreateDataset extends Component {
 
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
 			n_features: 100,
-			cluster_method: 'BackSPIN',
-			regression_label: '',
-			transcriptome: '',
-			project: '',
-			dataset: '',
 		};
-	}
-
-	// Valid entries:
-	// - cannot start with '_'
-	// - may contain letters, numbers and underscores
-	// - may NOT contain double (or more) underscores
-	// This function strips invalid characters,
-	// then replaces whitespace with underscores,
-	// then reduces all underscores to single underscores.
-	// Note that this should be validated on the server side too!
-	// This is just so that the user knows what to expect.
-	fixTextInput(string) {
-		string = string.replace(/([^A-Za-z0-9_])+/g, '')
-		.replace(/\s+/g, '_')
-		.replace(/_+/g, '_');
-		let idx = 0;
-		while(string.charAt(idx) === '_'){ idx++; }
-		return string.substr(idx);
-
 	}
 
 	sendData(data) {
@@ -166,21 +144,15 @@ export class CreateDataset extends Component {
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
 							<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<div className='col-sm-10'>
-								<input type='text' className='form-control' defaultValue='' name='transcriptome' id='input_transcriptome' />
-							</div>
+							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='transcriptome' id='input_transcriptome' />
 						</div>
 						<div className='form-group'>
 							<label for='input_project' className='col-sm-2 control-label'>Project: </label>
-							<div className='col-sm-10'>
-								<input type='text' className='form-control' defaultValue='' name='project' id='input_project' />
-							</div>
+							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='project' id='input_project' />
 						</div>
 						<div className='form-group'>
 							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
-							<div className='col-sm-10'>
-								<input type='text' className='form-control' defaultValue='' name='dataset' id='input_dataset' />
-							</div>
+							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='dataset' id='input_dataset' />
 						</div>
 					</form>
 				</div>
@@ -213,9 +185,7 @@ export class CreateDataset extends Component {
 						</div>
 						<div className='form-group'>
 							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
-							<div className='col-sm-10'>
-								<input type='text' className='form-control' defaultValue='' name='regression_label' id='input_regression_label' />
-							</div>
+							<LoomTextEntry trimUnderscores={false} className='col-sm-10' defaultValue='' name='regression_label' id='input_regression_label' />
 						</div>
 						<div className='form-group pull-right'>
 							<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
@@ -223,6 +193,69 @@ export class CreateDataset extends Component {
 					</form>
 				</div>
 			</div >
+		);
+	}
+}
+
+// Valid entries:
+// - may contain letters, numbers and underscores
+// - may NOT contain double (or more) underscores
+// - may NOT have leading or trailing underscores
+// This function attempts to autofix names by replacing all sequences of
+// invalid characters (including whitespace) with single underscores.
+// Note that this is purely for user feedback!
+// Input should be validated and fixed on the server side too!
+export class LoomTextEntry extends Component {
+
+	constructor(props, context) {
+		super(props, context);
+		this.state = {
+			value: this.props.defaultValue,
+			fixedVal: '',
+		};
+		this.fixTextInput = _.debounce(this.fixTextInput, 500);
+	}
+
+	handleChange(event) {
+		// immediately show newly typed characters
+		this.setState({ value: event.target.value });
+		// fix errors 500ms after user stops typing
+		this.fixTextInput();
+	}
+
+	fixTextInput() {
+		// replace all non-valid characters with underscores, followed by
+		// replacing each sequence of underscores with a single underscore.
+		let fix = this.state.value
+			.replace(/([^A-Za-z0-9_])+/g, '_')
+			.replace(/_+/g, '_');
+
+		if (this.props.trimUnderscores) {
+			// strip leading/trailing underscore, if present. Note that the
+			// above procedure has already reduced any leading underscores
+			// to a single character.
+			fix = fix.startsWith('_') ? fix.substr(1) : fix;
+			fix = fix.endsWith('_') ? fix.substr(0, fix.length - 1) : fix;
+		}
+		this.setState({
+			value: fix,
+			fixedVal: fix,
+		});
+	}
+
+	render() {
+		return (
+			<div className={this.props.className} >
+				<input
+					type='text'
+					className='form-control'
+					defaultValue={this.props.defaultValue}
+					name={this.props.name}
+					id={this.props.id}
+					value={this.state.value}
+					onChange={this.handleChange}
+					/>
+			</div>
 		);
 	}
 }
