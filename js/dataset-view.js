@@ -301,9 +301,9 @@ export class LoomTextEntry extends Component {
 	}
 
 	componentWillUpdate(nextProps, nextState){
-		if (this.props.componentUpdateHandler) {
+		if (nextProps.componentUpdateHandler) {
 			// bubble up fixed string to parent
-			this.props.componentUpdateHandler(nextProps.name, nextState.fixedVal);
+			nextProps.componentUpdateHandler(nextProps.name, nextState.fixedVal);
 		}
 	}
 
@@ -473,9 +473,9 @@ export class CSVFileChooser extends Component {
 	}
 
 	componentWillUpdate(nextProps, nextState){
-		if (this.props.componentUpdateHandler) {
+		if (nextProps.componentUpdateHandler) {
 			// bubble up new file to parent
-			this.props.componentUpdateHandler(nextProps.name, nextState.droppedFile);
+			nextProps.componentUpdateHandler(nextProps.name, nextState.droppedFile);
 		}
 	}
 
