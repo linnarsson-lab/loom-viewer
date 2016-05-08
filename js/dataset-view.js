@@ -134,6 +134,13 @@ export class CreateDataset extends Component {
 		XHR.send(FD);
 	}
 
+	handleChange(event) {
+		// Note that this requires that all input forms have a name prop!
+		let newState = {};
+		newState[event.target.props.name] = event.target.value;
+		this.setState(netState);
+	},
+
 	render() {
 		return (
 			<div className='panel panel-primary'>
@@ -144,15 +151,33 @@ export class CreateDataset extends Component {
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
 							<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='transcriptome' id='input_transcriptome' />
+							<LoomTextEntry
+								trimUnderscores={true}
+								className='col-sm-10'
+								defaultValue=''
+								onChange={(event) => this.handleChange(event)}
+								name='transcriptome'
+								id='input_transcriptome' />
 						</div>
 						<div className='form-group'>
 							<label for='input_project' className='col-sm-2 control-label'>Project: </label>
-							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='project' id='input_project' />
+							<LoomTextEntry
+								trimUnderscores={true}
+								className='col-sm-10'
+								defaultValue=''
+								onChange={(event) => this.handleChange(event)}
+								name='project'
+								id='input_project' />
 						</div>
 						<div className='form-group'>
 							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
-							<LoomTextEntry trimUnderscores={true} className='col-sm-10' defaultValue='' name='dataset' id='input_dataset' />
+							<LoomTextEntry
+								trimUnderscores={true}
+								className='col-sm-10'
+								defaultValue=''
+								onChange={(event) => this.handleChange(event)}
+								name='dataset'
+								id='input_dataset' />
 						</div>
 					</form>
 				</div>
@@ -160,8 +185,8 @@ export class CreateDataset extends Component {
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
 				<div className='list-group'>
-					<CSVFileChooser className='list-group-item' label='Cell attributes:'/>
-					<CSVFileChooser className='list-group-item' label='[OPTIONAL] Gene attributes:' />
+					<CSVFileChooser name='cell_attributes' className='list-group-item' label='Cell attributes:'/>
+					<CSVFileChooser name='gene_attributes' className='list-group-item' label='[OPTIONAL] Gene attributes:' />
 				</div>
 				<div className='panel-heading'>
 					<h3 className='panel-title'>Additional parameters</h3>
@@ -171,13 +196,23 @@ export class CreateDataset extends Component {
 						<div className='form-group'>
 							<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
 							<div className='col-sm-10'>
-								<input type='number' className='form-control' defaultValue='100' name='n_features' id='input_n_features' />
+								<input type='number'
+									className='form-control'
+									defaultValue='100'
+									value={this.state.n_features}
+									onChange={(event) => this.handleChange(event)}
+									name='n_features'
+									id='input_n_features' />
 							</div>
 						</div>
 						<div className='form-group'>
-							<label for='clustering_method' className='col-sm-2 control-label'>Clustering Method: </label>
+							<label for='input_cluster_method' className='col-sm-2 control-label'>Clustering Method: </label>
 							<div className='col-sm-10'>
-								<select className='form-control' name='clustering_method' id='input_clustering_method'>
+								<select
+									className='form-control'
+									name='cluster_method'
+									id='input_cluster_method'
+									onChange={(event) => this.handleChange(event)}>
 									<option value='value1' selected>BackSPIN</option>
 									<option value='value1'>Affinity Propagation</option>
 								</select>
@@ -185,7 +220,13 @@ export class CreateDataset extends Component {
 						</div>
 						<div className='form-group'>
 							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
-							<LoomTextEntry trimUnderscores={false} className='col-sm-10' defaultValue='' name='regression_label' id='input_regression_label' />
+							<LoomTextEntry
+								trimUnderscores={false}
+								className='col-sm-10'
+								defaultValue=''
+								onChange={(event) => this.handleChange(event)}
+								name='regression_label'
+								id='input_regression_label' />
 						</div>
 						<div className='form-group pull-right'>
 							<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
@@ -253,7 +294,7 @@ export class LoomTextEntry extends Component {
 					name={this.props.name}
 					id={this.props.id}
 					value={this.state.value}
-					onChange={this.handleChange}
+					onChange={(event) => this.handleChange(event)}
 					/>
 			</div>
 		);
