@@ -5,3 +5,4 @@ if [ -a ./static ]; then
     mv ./static/ ./python/
 fi
 sudo -E python python/loom_server.py 
+
