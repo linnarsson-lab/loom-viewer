@@ -104,7 +104,6 @@ DatasetView.propTypes = {
 
 
 //TODO: add listeners to forms to update state
-//TODO: add debouncer for auto-fixing name entries
 export class CreateDataset extends Component {
 
 	constructor(props, context) {
@@ -116,14 +115,25 @@ export class CreateDataset extends Component {
 
 	sendData() {
 		let FD = new FormData();
+
 		// See ../docs/loom_server_API.md
-		FD.append('col_attrs', this.state.cell_attributes);
-		FD.append('row_attrs', this.state.gene_attributes);
-		FD.append('n_features', this.state.n_features);
-		FD.append('cluster_method', this.state.cluster_method);
-		FD.append('regression_label', this.state.regression_label);
+		let formData = [
+			'col_attrs',
+			'row_attrs',
+			'n_features',
+			'cluster_method',
+			'regression_label',
+		];
+		formData.forEach( (element) => {
+			if (this.state[element]){
+				FD.append(element, this.state[element]);
+			} else {
+				console.log("ERROR: missing " + element);
+			}
+		});
 
 		let XHR = new XMLHttpRequest();
+		//TODO: display server response in the UI
 		XHR.addEventListener('load', (event) => { console.log(event); });
 		XHR.addEventListener('error', (event) => { console.log(event); });
 
@@ -192,13 +202,13 @@ export class CreateDataset extends Component {
 				</div>
 				<div className='list-group'>
 					<CSVFileChooser
-						name='cell_attributes'
+						name='col_attrs'
 						className='list-group-item'
 						label='Cell attributes:'
 						componentUpdateHandler={this.handleFileChooserUpdate}
 						/>
 					<CSVFileChooser
-						name='gene_attributes'
+						name='row_attrs'
 						className='list-group-item'
 						label='[OPTIONAL] Gene attributes:'
 						componentUpdateHandler={this.handleFileChooserUpdate}
@@ -300,7 +310,7 @@ export class LoomTextEntry extends Component {
 		});
 	}
 
-	componentWillUpdate(nextProps, nextState){
+	componentWillUpdate(nextProps, nextState) {
 		if (nextProps.componentUpdateHandler) {
 			// bubble up fixed string to parent
 			nextProps.componentUpdateHandler(nextProps.name, nextState.fixedVal);
@@ -472,7 +482,7 @@ export class CSVFileChooser extends Component {
 		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude];
 	}
 
-	componentWillUpdate(nextProps, nextState){
+	componentWillUpdate(nextProps, nextState) {
 		if (nextProps.componentUpdateHandler) {
 			// bubble up new file to parent
 			nextProps.componentUpdateHandler(nextProps.name, nextState.droppedFile);
