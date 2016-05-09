@@ -5,38 +5,59 @@ import numpy as np
 import grequests
 
 model = """
-	data {
-			int<lower=0> N;				# number of outcomes
-			int	<lower=0> K;			# number of predictors
-			matrix<lower=0>[N,K] x;		# predictor matrix 
-			int y[N];					# outcomes
+# Bayesian NNMF for single-cell RNA-seq
+
+data {
+	int <lower=0> G;					# number of genes
+	int	<lower=0> C;					# number of cells
+	int <lower=0> K;					# number of components
+	int <lower=0> y[G, C];				# observed molecule counts
+	real <lower=0> omega[C];			# relative transcriptome size for each cell
+	real <lower=0> kappa0;				# prior on the distribution of component coefficients
+	int <lower=0> alpha0;				# prior on the distribution of gene activity per component
+}
+
+transformed data {
+	vector <lower=0>[K] alpha0_vec; 
+	for (k in 1:K)
+		alpha0_vec[k] <- alpha0;
+}
+
+parameters {
+	simplex[K] theta[G];		# gene expression profiles across components
+	vector<lower=0>[K] beta[C];	# component coefficients
+	real<lower=0> r;			# overdispersion
+}
+
+model {
+	real mu;
+	
+	for (g in 1:G)
+		theta[g] ~ dirichlet(alpha0_vec); 
+
+	for (c in 1:C)
+		beta[c] ~ exponential(a,b);
+	
+	r <- cauchy(0, 1);
+	
+	for (g in 1:G) { 
+		for (c in 1:C) {
+			mu <- omega[c] * theta[g]‘ * beta[c]		
+			increment_log_prob(neg_binomial_log( y[g,c], mu / r, 1 / r) );
+		} 
 	}
-
-	parameters {
-			vector<lower=0>[K] beta;	# coefficients
-			real<lower=0> r;		# overdispersion
-	}
-
-	model {	
-			vector[N] mu;
-
-			# priors
-			r ~ cauchy(0, 1);
-			beta ~ pareto(0.01, 1.5);
-
-			# regression
-			mu <- x * beta;
-			y ~ neg_binomial(mu / r, 1 / r);
-	}
+}
 """
 
-def fit(x, y, chains=2, iterations=1000):
+def fit(y, k, kappa0=0.1, alpha0=1000, chains=2, iterations=1000):
 	"""
-	Run a Bayesian generalized linear regression model on the given design matrix (x) and observed data (y).
+	Run a Bayesian non-negative matrix factorization model on the observed data (y).
 
 	Args:
-		x (numpy N-by-M matrix):			The design matrix
-		y (numpy K-by-N matrix):			The observed values for K genes
+		y (numpy matrix of ints):			The observed values
+		k (int):							The desired number of components
+		kappa0 (float):						The sparsity of component usage by cells
+		alpha0 (float):						The sparsity of component usage by genes 						
 
 	Returns:
 		A numpy K-by-L-by-(M+2) matrix, where L is iterations*chains/2. The (M+2) columns are one for each of the predictors (beta), 
@@ -52,9 +73,6 @@ def fit(x, y, chains=2, iterations=1000):
 		2	1	7	8				3	2	8	(observables for gene 2)
 
 		2	3	2	2
-
-
-	Note that the function will run all the independent inputs (rows in y) in parallel. 
 	"""
 	reqs = []
 	for ix in xrange(y.shape[1]):

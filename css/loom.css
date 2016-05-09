@@ -88,3 +88,7 @@ a {
 .no-line-space {
   line-height: 0px;
 }
+
+.weak {
+  color: gray;
+}

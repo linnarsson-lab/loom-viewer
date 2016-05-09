@@ -75,3 +75,10 @@ export MYSQL_PASSWORD=$t
 echo ''
 
 ./release/loom
+#echo "Moving the static folder to inside the python folder"
+#echo "Feel free to delete it when you're done"
+#if [ -a ./static ]; then
+#    mv ./static/ ./python/
+#fi
+#sudo -E python python/loom_server.py 
+

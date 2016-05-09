@@ -1,33 +1,41 @@
 
-Next steps
-==========
-```
-Show popups overlaid on top of the heatmap (for Find genes)
+Deploying to the cloud
+======================
 
-Sparkline view
-	Sort by col attr
-	Color by col attr
-	Show col attribute on top
-	Enter list of genes to show
-Landscape view
-	Automatically scale marker diameters based on total number of markers
-	x Select X and Y coordinates
-	x Buttons to quickly select tSNE or PCA
-	x Select cell annotation or (gene)
-	x Input gene to show as color
+We want to run several server and daemon processes in the cloud using containers. 
+Here's what I've learned so far:
 
-Work with gene sets
-	Select gene sets from Panther (incl GO)
-	Upload gene sets
-	Named gene sets get added to Sparkline view
+To set up gcloud for containers (especially: set gcloud defaults) 
 
-Summary view
-Tool runner
-Back-end based on files instead of .h5 (for concurrent read-only access)
-Make URL namespace include hash of matrix, to allow concurrent access to multiple files
-Tool (page) to download the backing data (for data portal)
-Maybe use Celery to run tools in background
-```
+	https://cloud.google.com/container-engine/docs/before-you-begin
+	
+To set gcloud defaults
+
+	gcloud config set project linnarsson-lab
+	gcloud config set compute/zone us-central1-a
+	gcloud config set container/cluster container-cluster-3
+	gcloud container clusters get-credentials container-cluster-3
+	
+To build a docker image and push it to Google
+
+	./build
+	
+To add required Python libraries, edit `requirements.txt`
+
+To create a deployment (only do this once!)
+
+	kubectl run loom-server --image=gcr.io/linnarsson-lab/loom-server:v1 --port=80
+	kubectl expose ... something (forgot the details)
+
+To list deployments and pods
+
+	kubectl get deployments
+	kubectl get pods
+	
+To look at the logs
+
+	kubectl logs <pod>
+	
 
 
 Development stack

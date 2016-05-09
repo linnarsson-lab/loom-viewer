@@ -488,12 +488,13 @@ class LoomConnection(object):
 			return result
 
 	
-	def corr_matrix(self, axis = 0):
+	def corr_matrix(self, axis = 0, log=False):
 		"""
 		Compute correlation matrix without casting to float64.
 
 		Args:
 			axis (int):	The axis along which to compute the correlation matrix.
+			log (bool):	If true, compute correlation on log(x+1) values
 
 		Returns:
 			numpy.ndarray of float32 correlation coefficents
@@ -510,6 +511,8 @@ class LoomConnection(object):
 		if axis == 1:
 		    data = data.T
 		N = data.shape[1]
+		if log:
+			data = np.log(data + 1)
 		data -= data.mean(axis=1, keepdims=True)
 		data = (np.dot(data, data.T) / (N-1))
 		d = np.diagonal(data)

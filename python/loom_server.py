@@ -3,17 +3,19 @@ from flask import request
 import os
 import os.path
 import loom
-from loom_cloud import LoomCloud
-from loom_pipeline import MySQLToBigQueryPipeline
+import loom_cloud
+from loom_pipeline import LoomPipeline
 import sys
 import StringIO
 import json
-#import click
 from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
 from pandas import DataFrame
+import subprocess
+import logging
 
+logger = logging.getLogger("loom")
 
 DEBUG = False
 if len(sys.argv) > 1:
@@ -24,48 +26,18 @@ if len(sys.argv) > 1:
 		print "(only valid flag is 'debug')"
 		sys.exit(1)
 
-print "loom_server.py: Testing for presence of MySQL environment variables before attempting to connect to database"
-try:
-	os.environ["MYSQL_HOST"]
-except:
-	print "loom_server.py: WARNING: MYSQL_HOST not set!"
-else:
-	print "loom_server.py: MYSQL_HOST set to " + os.environ["MYSQL_HOST"]
+#os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+#print "\nServing from: " + os.getcwd()
+#os.chdir(os.path.dirname(os.path.realpath(__file__)))
+logger.info("Serving from: " + os.getcwd())
 
-try:
-	os.environ["MYSQL_PORT"]
-except:
-	print "loom_server.py: WARNING: MYSQL_PORT not set!"
-else:
-	print "loom_server.py: MYSQL_PORT set to " + os.environ["MYSQL_PORT"]
+pipeline = LoomPipeline()
+cache = loom_cloud.LoomCache()
 
-try:
-	os.environ["MYSQL_USERNAME"]
-except:
-	print "loom_server.py: WARNING: MYSQL_USERNAME not set!"
-else:
-	print "loom_server.py: MYSQL_USERNAME set to " + os.environ["MYSQL_USERNAME"]
+# And start the loom cache refresher in the background
+if not DEBUG:
+	subprocess.Popen(["python","python/loom_cloud.py"])
 
-try:
-	os.environ["MYSQL_PASSWORD"]
-except:
-	print "loom_server.py: WARNING: MYSQL_PASSWORD not set!"
-else:
-	print "loom_server.py: MYSQL_PASSWORD set..."
-
-print 'loom_server.py: Connecting to database'
-try:
-	pipeline = MySQLToBigQueryPipeline()
-except Exception, e:
-	print e
-
-os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-print "\nServing from: " + os.getcwd()
-
-datadir = os.path.join(os.getcwd(), "cache")
-if not os.path.exists(datadir):
-	os.makedirs(datadir)
-cache = LoomCloud(datadir)
 
 class LoomServer(flask.Flask):
 	# Disable cacheing
@@ -101,7 +73,7 @@ def send_indexjs():
 # List of all datasets
 @app.route('/loom')
 def send_dataset_list():
-	result = json.dumps([x.as_dict() for x in cache.list_datasets()])
+	result = json.dumps([x.as_dict() for x in loom_cloud.list_datasets()])
 	return flask.Response(result, mimetype="application/json")
 
 # List of valid transcriptomes
@@ -115,6 +87,8 @@ def send_dataset_list():
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>/fileinfo.json')
 def send_fileinfo(transcriptome, project, dataset):
 	ds = cache.connect_dataset_locally(transcriptome, project, dataset)
+	if ds == None:
+		return "", 404
 	dims = ds.dz_dimensions()
 	fileinfo = {
 		"transcriptome": transcriptome,
@@ -146,14 +120,31 @@ def send_col(transcriptome, project, dataset, col):
 # Upload dataset for loom file generation
 #
 def csv_to_dict(s):
-	return DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
+	data = DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
+	return {key: np.array(data[key]) for key in data}
+
+# curl -X PUT -F "config=@./hg19_sUCSC__midbrain__human_20160505.json" -F "col_attrs=@/Users/Sten/tmp/midbrain__human_20160505.csv" http://loom.linnarssonlab.org/hg19_sUCSC__midbrain__human_20160505
 
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
-	row_attrs = csv_to_dict(request.form["row_attrs"])
+	if not col_attrs.has_key("CellID"):
+		return "CellID attribute is missing", 400
+	
+	if request.form.has_key("row_attrs"):
+		row_attrs = csv_to_dict(request.form["row_attrs"])
+		if not col_attrs.has_key("TranscriptID"):
+			return "TranscriptID attribute is missing", 400		
+	else:
+		row_attrs = None
 	config = request.form["config"]
-	pipeline.upload(transcriptome, project, dataset, config, col_attrs, row_attrs)
+	dsc = DatasetConfig(transcriptome, project, dataset, 
+		status = "willcreate", 
+		message = "Waiting for dataset to be generated.", 
+		n_features = config["n_features"], 
+		cluster_method = config["cluster_method"],
+		regression_label = config["regression_label"])
+	pipeline.upload(config, col_attrs, row_attrs)
 	return "", 200
 
 
@@ -174,7 +165,6 @@ def send_tile(transcriptome, project, dataset, z,x,y):
 	return serve_image(img)
 
 if __name__ == '__main__':
-	app.run(debug=DEBUG)
-
+	app.run(debug=DEBUG, host="0.0.0.0", port=80)
 
 

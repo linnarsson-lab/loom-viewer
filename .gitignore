@@ -1,8 +1,10 @@
 # Mac OSX hidden folder
 .DS_Store
 
-# Release folder
-release/
+# Build folder for static files, and cache for loom files
+static/
+python/static/
+cache/
 
 # Visual Studio Code
 .vscode/

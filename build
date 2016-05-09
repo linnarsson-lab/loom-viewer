@@ -1,10 +1,6 @@
 #! /bin/bash
-if [ -a ./release/cache ]; then
-  echo "Saving cache folder from previous build."
-  mv ./release/cache ./cache
-fi
-if [ -a ./release ]; then
-  rm -r ./release
+if [ -a ./static ]; then
+  rm -r ./static
 fi
 set -o nounset
 set -o errexit
@@ -19,29 +15,23 @@ else
   export NODE_ENV=production
 fi
 
-# Set up a cache-busting integer
-v=$RANDOM
+# Current version
+v=1
 
-# Set up the release directories
-mkdir release
-if [ -a ./cache ]; then
-    echo "Restoring cache folder from previous build."
-  mv ./cache ./release/cache
-fi
-mkdir release/python
-mkdir release/python/static
-mkdir release/python/static/img
-mkdir release/python/static/css
-mkdir release/python/static/js
-cp img/* release/python/static/img/
-cp -r python release/
-cp loom release/loom
+# Set up the static directory
+mkdir static
+mkdir static/img
+mkdir static/css
+mkdir static/js
 
 # Build all the static assets
+echo "Building static assets."
+cp img/* static/img/
 BINPATH=$(npm -g bin)
-$BINPATH/uglifycss css/* > release/python/static/css/bundle-v$v.min.css
+$BINPATH/uglifycss css/* > static/css/bundle-v$v.min.css
 $BINPATH/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
-$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o release/python/static/js/bundle-v$v.min.js
+$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o static/js/bundle-v$v.min.js
 rm temp.js
 
-sed -e "s/{VERSION}/$v/g" index.html > release/python/static/index.html
+sed -e "s/{VERSION}/$v/g" index.html > static/index.html
+
