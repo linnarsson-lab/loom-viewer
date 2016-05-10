@@ -124,8 +124,8 @@ export class CreateDataset extends Component {
 			'cluster_method',
 			'regression_label',
 		];
-		formData.forEach( (element) => {
-			if (this.state[element]){
+		formData.forEach((element) => {
+			if (this.state[element]) {
 				FD.append(element, this.state[element]);
 			} else {
 				console.log("ERROR: missing " + element);
@@ -140,8 +140,12 @@ export class CreateDataset extends Component {
 		let urlString = '/' + this.state.transcriptome +
 			'__' + this.state.project +
 			'__' + this.state.dataset;
-		XHR.open('PUT', urlString);
-		XHR.send(FD);
+		//XHR.open('PUT', urlString);
+		//XHR.send(FD);
+
+		// Just log the results for now
+		console.log(XHR);
+		console.log(urlString);
 	}
 
 	handleFormUpdate(formName, newVal) {
@@ -255,7 +259,7 @@ export class CreateDataset extends Component {
 								id='input_regression_label' />
 						</div>
 						<div className='form-group pull-right'>
-							<button type='submit' className='btn btn-default'>Submit request for new dataset</button>
+							<button type='button' className='btn btn-default' onClick={ () => { this.sendData(); } } >Submit request for new dataset</button>
 						</div>
 					</form>
 				</div>
