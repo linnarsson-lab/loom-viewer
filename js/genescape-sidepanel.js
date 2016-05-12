@@ -36,9 +36,7 @@ export class GenescapeSidepanel extends Component {
 		const colorOptions = temp.map((name) => {
 			return (<li key={name}>
 				<a onClick={
-					() => {
-						dispatch({ type: 'SET_GENESCAPE_PROPS', colorAttr: name });
-					}
+					() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorAttr: name }); }
 				}>
 					{name}
 				</a>
