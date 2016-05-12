@@ -4,25 +4,25 @@ import { Scatterplot } from './scatterplot';
 
 export class GenescapeView extends Component {
 	render() {
-		var dispatch = this.props.dispatch;
-		var gs = this.props.genescapeState;
-		var ds = this.props.dataState;
-	  	var vs = this.props.viewState;
+		const dispatch = this.props.dispatch;
+		const gs = this.props.genescapeState;
+		const ds = this.props.dataState;
+		const vs = this.props.viewState;
 
-	  	console.log(gs);
-		var color =  ds.currentDataset.rowAttrs[gs.colorAttr];
-		var x = ds.currentDataset.rowAttrs[gs.xCoordinate];
-		var y = ds.currentDataset.rowAttrs[gs.yCoordinate];
+		console.log(gs);
+		const color =  ds.currentDataset.rowAttrs[gs.colorAttr];
+		const x = ds.currentDataset.rowAttrs[gs.xCoordinate];
+		const y = ds.currentDataset.rowAttrs[gs.yCoordinate];
 		return (
-		<div className="view">
-			<div className="view-sidepanel">
-				<GenescapeSidepanel 
+		<div className='view'>
+			<div className='view-sidepanel'>
+				<GenescapeSidepanel
 					genescapeState={gs}
 					dataState={ds}
 					dispatch={dispatch}
 				/>
 			</div>
-			<div className="view-main">
+			<div className='view-main'>
 				<Scatterplot
 					x={x}
 					y={y}
@@ -36,7 +36,7 @@ export class GenescapeView extends Component {
 				/>
 			</div>
 		</div>
-		)
+		);
 	}
 }
 
@@ -44,5 +44,5 @@ GenescapeView.propTypes = {
 	viewState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired
-}
+	dispatch: PropTypes.func.isRequired,
+};
