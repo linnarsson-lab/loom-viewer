@@ -6,126 +6,88 @@ export class GenescapeSidepanel extends Component {
 		const gs = this.props.genescapeState;
 		const ds = this.props.dataState;
 
-		const temp = Object.keys(ds.currentDataset.rowAttrs).sort();
-		const xOptions = temp.map((name) => {
+		const rowAttrKeys = Object.keys(ds.currentDataset.rowAttrs).sort();
+
+		const newOptions = (sortedKeys, typeLabel, nameLabel) => {
 			return (
-				<li key={name}>
+				sortedKeys.map((name) => {
+
+					let dispatchParam = { type: typeLabel };
+					dispatchParam[nameLabel] = name;
+
+					return (
+						<ul className='dropdown-menu btn-block scrollable-menu'>
+							<li key={name}>
+								<a onClick={
+									() => { dispatch(dispatchParam); }
+								}>
+									{name}
+								</a>
+							</li>
+						</ul>
+					);
+				})
+			);
+		};
+
+
+		const xOptions = newOptions(rowAttrKeys, 'SET_GENESCAPE_PROPS', 'xCoordinate');
+		const yOptions = newOptions(rowAttrKeys, 'SET_GENESCAPE_PROPS', 'yCoordinate');
+		const colorOptions = newOptions(rowAttrKeys, 'SET_GENESCAPE_PROPS', 'colorAttr');
+
+		const colorModes = (
+			<ul className='dropdown-menu'>
+				<li key='Categorical'>
 					<a onClick={
-						() => { dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: name }); }
+						() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorMode: 'Categorical' }); }
 					}>
-						{name}
+						Categorical
 					</a>
 				</li>
-			);
-		});
-
-		//let temp = Object.keys(ds.currentDataset.rowAttrs).sort();
-		const yOptions = temp.map((name) => {
-			return (
-				<li key={name}>
+				<li key='Heatmap'>
 					<a onClick={
-						() => { dispatch({ type: 'SET_GENESCAPE_PROPS', yCoordinate: name }); }
+						() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorMode: 'Heatmap' }); }
 					}>
-						{name}
+						Quantitative
 					</a>
 				</li>
-			);
-		});
+			</ul>
+		);
 
-		//var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
-		const colorOptions = temp.map((name) => {
-			return (<li key={name}>
-				<a onClick={
-					() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorAttr: name }); }
-				}>
-					{name}
-				</a>
-			</li>);
-		});
+		const newButtonmenu = (labelString, buttonName, options) => {
+			return (
+				<div className='form-group'>
+					{ labelString ? <label>{labelString}</label> : null }
+					<div className='btn-group btn-block'>
+						<button
+							type='button'
+							className='btn btn-block btn-default dropdown-toggle'
+							data-toggle='dropdown'
+							aria-haspopup='true'
+							aria-expanded='false' >
+							{ buttonName + '  '}
+							<span className='caret' />
+						</button>
+						{ options }
+					</div>
+				</div>
+			);
+		};
+
+		const xButton = newButtonmenu('X Coordinate', gs.xCoordinate, xOptions);
+		const yButton = newButtonmenu('Y Coordinate', gs.yCoordinate, yOptions);
+		const colorButton = newButtonmenu('Color', gs.colorAttr, colorOptions);
+		const colorModeButton = newButtonmenu(null, gs.colorMode, colorModes);
 
 		return (
 			<div className='panel panel-default'>
 				<div className='panel-heading'><h3 className='panel-title'>Settings</h3></div>
 				<div className='panel-body'>
 					<form>
-
-						<div className='form-group'>
-							<label>X Coordinate</label>
-							<div className='btn-group btn-block'>
-								<button
-									type='button'
-									className='btn btn-block btn-default dropdown-toggle'
-									data-toggle='dropdown'
-									aria-haspopup='true'
-									aria-expanded='false' >
-									{gs.xCoordinate + "  "}<span className='caret'></span>
-								</button>
-								<ul className='dropdown-menu btn-block scrollable-menu'>
-									{xOptions}
-								</ul>
-							</div>
-						</div>
-
-
-						<div className='form-group'>
-							<label>Y Coordinate</label>
-							<div className='btn-group btn-block'>
-								<button
-									type='button'
-									className='btn btn-block btn-default dropdown-toggle'
-									data-toggle='dropdown'
-									aria-haspopup='true'
-									aria-expanded='false'>
-									{gs.yCoordinate + "  "}<span className='caret'></span>
-								</button>
-								<ul className='dropdown-menu btn-block scrollable-menu'>
-									{yOptions}
-								</ul>
-							</div>
-						</div>
-
-						<div className='form-group'>
-							<label>Color</label>
-							<div className='btn-group btn-block'>
-								<button
-									type='button'
-									className='btn btn-block btn-default dropdown-toggle'
-									data-toggle='dropdown'
-									aria-haspopup='true'
-									aria-expanded='false'>
-									{gs.colorAttr + "  "}<span className='caret'></span>
-								</button>
-								<ul className='dropdown-menu btn-block scrollable-menu'>
-									{colorOptions}
-								</ul>
-							</div>
-							<div className='btn-group btn-block'>
-								<button
-									type='button'
-									className='btn btn-block btn-default dropdown-toggle'
-									data-toggle='dropdown'
-									aria-haspopup='true'
-									aria-expanded='false'>
-									{gs.colorMode + "  "}<span className='caret'></span>
-								</button>
-								<ul className='dropdown-menu'>
-									<li key='Categorical'>
-										<a onClick={
-											() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorMode: 'Categorical' }); }
-										}>
-											Categorical
-										</a>
-									</li>
-									<li key='Heatmap'>
-										<a onClick={
-											() => { dispatch({ type: 'SET_GENESCAPE_PROPS', colorMode: 'Heatmap' }); }
-										}>
-											Quantitative
-										</a>
-									</li>
-								</ul>
-							</div>
-						</div>
+						{xButton}
+						{yButton}
+						{colorButton}
+						{colorModeButton}
 					</form>
 				</div>
 			</div>
