@@ -30,7 +30,7 @@ import math
 import numpy as np
 import h5py
 import numexpr as ne
-import bregression
+# import bregression
 import os.path
 import pandas as pd
 import scipy
@@ -669,45 +669,45 @@ class LoomConnection(object):
 	# REGRESSION #
 	##############
 
-	def bayesian_regression(group_attr, batch_size=100):
-		"""
-		Calculate bayesian generalized linear regression with 'group_attr' as the grouping of cells.
+	# def bayesian_regression(group_attr, batch_size=100):
+	# 	"""
+	# 	Calculate bayesian generalized linear regression with 'group_attr' as the grouping of cells.
 
-		Args:
-			group_attr (string):	Name of the col_attr that will be used to group cells.
-			batch_size (int):		Number of genes to sample in each batch (run in parallel)
+	# 	Args:
+	# 		group_attr (string):	Name of the col_attr that will be used to group cells.
+	# 		batch_size (int):		Number of genes to sample in each batch (run in parallel)
 
-		Returns:
-			Nothing, but (re)creates the following datasets in the file:
+	# 	Returns:
+	# 		Nothing, but (re)creates the following datasets in the file:
 				
-				'regression' 			3D matrix of floats, shaped as (genes, labels, samples).
-				'regression_labels'		Labels in lexical order.
-				'binarized'				Matrix of 64-bit integers, shaped as (genes, n).
-										n is sufficiently large to hold one bit per label
-		"""
-		if self.file.__contains__("regression"):
-			del self.file["regression"]
-		if self.file.__contains__("regression_labels"):
-			del self.file["regression_labels"]
+	# 			'regression' 			3D matrix of floats, shaped as (genes, labels, samples).
+	# 			'regression_labels'		Labels in lexical order.
+	# 			'binarized'				Matrix of 64-bit integers, shaped as (genes, n).
+	# 									n is sufficiently large to hold one bit per label
+	# 	"""
+	# 	if self.file.__contains__("regression"):
+	# 		del self.file["regression"]
+	# 	if self.file.__contains__("regression_labels"):
+	# 		del self.file["regression_labels"]
 
-		labels = list(set(self.col_attrs[group_attr]))
-		labels.sort()
-		self.file["regression_labels"] = labels
-		x = []
-		for lbl in labels:
-			indicators = int(col_attrs[group_attr] == lbl)
-			x.append(indicators)
-		x = np.array(x).T
-		ix = 0
-		while ix < self.shape[0]:
-			batch_size = min(batch_size, self.shape[0] - ix)
-			result = bregression.fit(x, self[ix:ix + batch_size,:])
-			if not self.file.__contains__("regression"):
-				self.file.create_dataset("regression", data=result, compression='lzf', maxshape = (None, labels.shape[0], 1000))
-			else:
-				self.file["regression"].resize(self.file["regression"].shape[0] + batch_size)
-				self.file["regression"][-1,:-2,:] = result[:,:-2,:]		# The -2 here is to remove the r and lp_ samples, which we don't care about
-			ix += batch_size
+	# 	labels = list(set(self.col_attrs[group_attr]))
+	# 	labels.sort()
+	# 	self.file["regression_labels"] = labels
+	# 	x = []
+	# 	for lbl in labels:
+	# 		indicators = int(col_attrs[group_attr] == lbl)
+	# 		x.append(indicators)
+	# 	x = np.array(x).T
+	# 	ix = 0
+	# 	while ix < self.shape[0]:
+	# 		batch_size = min(batch_size, self.shape[0] - ix)
+	# 		result = bregression.fit(x, self[ix:ix + batch_size,:])
+	# 		if not self.file.__contains__("regression"):
+	# 			self.file.create_dataset("regression", data=result, compression='lzf', maxshape = (None, labels.shape[0], 1000))
+	# 		else:
+	# 			self.file["regression"].resize(self.file["regression"].shape[0] + batch_size)
+	# 			self.file["regression"][-1,:-2,:] = result[:,:-2,:]		# The -2 here is to remove the r and lp_ samples, which we don't care about
+	# 		ix += batch_size
 
 	def _binarize_regression(self, samples, sizes, minvalue = 0.2, maxfold = 20, pprob = 0.99):
 		"""

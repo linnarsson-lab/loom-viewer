@@ -2,9 +2,8 @@
 .DS_Store
 
 # Build folder for static files, and cache for loom files
-static/
 python/static/
-cache/
+python/cache/
 
 # Visual Studio Code
 .vscode/
