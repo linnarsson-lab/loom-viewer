@@ -140,8 +140,13 @@ class LoomPipeline(object):
 			AND tr.Type <> "repeat"
 			ORDER BY tr.ExprBlobIdx
 		"""
-		cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
-		
+		try:
+			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
+		except ProgrammingError as pe:
+			logger.error(pe)
+			config.set_status("error","Dataset definition not found in database")
+			return
+				
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
 		
 		transcriptome_headers = map(lambda x: x[0],cursor.description)
