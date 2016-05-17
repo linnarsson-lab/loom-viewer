@@ -30,7 +30,12 @@ cp img/* ./python/static/img/
 BINPATH=$(npm -g bin)
 $BINPATH/uglifycss css/* > ./python/static/css/bundle-v$v.min.css
 $BINPATH/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
-$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
+
+if [ "$DEBUGMODE" = "debug" ] || [ "$DEBUGMODE" = "-d" ]; then
+  $BINPATH/uglifyjs -b -nm -ns -v js/jquery.min.js js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
+else
+  $BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
+fi
 rm temp.js
 
 sed -e "s/{VERSION}/$v/g" index.html > ./python/static/index.html
