@@ -1,6 +1,6 @@
 #! /bin/bash
-if [ -a ./static ]; then
-  rm -r ./static
+if [ -a ./python/static ]; then
+  rm -r ./python/static
 fi
 set -o nounset
 set -o errexit
@@ -19,19 +19,19 @@ fi
 v=1
 
 # Set up the static directory
-mkdir static
-mkdir static/img
-mkdir static/css
-mkdir static/js
+mkdir ./python/static
+mkdir ./python/static/img
+mkdir ./python/static/css
+mkdir ./python/static/js
 
 # Build all the static assets
 echo "Building static assets."
-cp img/* static/img/
+cp img/* ./python/static/img/
 BINPATH=$(npm -g bin)
-$BINPATH/uglifycss css/* > static/css/bundle-v$v.min.css
+$BINPATH/uglifycss css/* > ./python/static/css/bundle-v$v.min.css
 $BINPATH/browserify js/loom.js -o temp.js -t [ babelify --presets [ es2015 react ] ]
-$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o static/js/bundle-v$v.min.js
+$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
 rm temp.js
 
-sed -e "s/{VERSION}/$v/g" index.html > static/index.html
+sed -e "s/{VERSION}/$v/g" index.html > ./python/static/index.html
 

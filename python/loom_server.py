@@ -78,7 +78,7 @@ def send_dataset_list():
 
 # List of valid transcriptomes
 @app.route('/loom/transcriptomes')
-def send_dataset_list():
+def send_transcriptome_list():
 	result = json.dumps(pipeline.list_transcriptomes())
 	return flask.Response(result, mimetype="application/json")
 

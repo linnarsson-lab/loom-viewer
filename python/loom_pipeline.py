@@ -52,19 +52,8 @@ class LoomPipeline(object):
 	"""
 	Pipeline to collect datasets from MySQL, create .loom files and perform standard analyses.
 	"""
-	def __init__(self, 
-		host = os.getenv('MYSQL_HOST',''),
-		port = int(os.getenv('MYSQL_PORT','3306')),
-		username = os.getenv('MYSQL_USERNAME',''),
-		password = os.getenv('MYSQL_PASSWORD','') ):
-
-		self.mysql_connection = pymysql.connect(
-			host=host, 
-			port=port, 
-			user=username, 
-			password=password, 
-			db='joomla', 
-			charset='utf8mb4')
+	def __init__(self, host = '104.197.219.40',	port = 3306, username = 'cloud_user', password = 'cloud_user'):
+		self.mysql_connection = pymysql.connect(host=host, port=port, user=username, password=password, db='joomla', charset='utf8mb4')
 
 	def _make_std_numpy_type(self, array, sql_type):
 		field_type = {
@@ -151,8 +140,13 @@ class LoomPipeline(object):
 			AND tr.Type <> "repeat"
 			ORDER BY tr.ExprBlobIdx
 		"""
-		cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
-		
+		try:
+			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
+		except ProgrammingError as pe:
+			logger.error(pe)
+			config.set_status("error","Dataset definition not found in database")
+			return
+				
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
 		
 		transcriptome_headers = map(lambda x: x[0],cursor.description)
@@ -481,12 +475,13 @@ class LoomPipeline(object):
 		cursor = connection.cursor()
 		full_tablename = "datasets__" + transcriptome + "." + tablename
 		query = """
+			CREATE DATABASE IF NOT EXISTS %s;
 			DROP TABLE IF EXISTS %s;
 			CREATE TABLE %s (
 			%s,
 			PRIMARY KEY (`%s`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-		""" % (full_tablename,full_tablename,",".join(schema), pk)
+		""" % ("datasets__" + transcriptome, full_tablename,full_tablename,",".join(schema), pk)
 		print query
 		cursor.execute(query)
 		cursor.close()
