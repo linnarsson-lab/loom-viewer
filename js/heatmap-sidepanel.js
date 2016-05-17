@@ -1,121 +1,96 @@
 import React, { Component, PropTypes } from 'react';
+import { DropdownMenu } from './dropdown';
 import { fetchGene } from './actions.js';
 
 export class HeatmapSidepanel extends Component {
 	render() {
-		var dispatch = this.props.dispatch;
-		var hs = this.props.heatmapState;
-		var ds = this.props.dataState;
+		const { dispatch, heatmapState, dataState } = this.props;
 
-		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
-		temp.push("(gene)");
-		var colOptions = temp.map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-							type: 'SET_HEATMAP_PROPS', 
-							colAttr: name
-						})}>{name}</a></li>;
-		});
-		var temp = Object.keys(ds.currentDataset.rowAttrs).sort();
-		temp.push("(gene positions)");
-		var rowOptions = temp.map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-							type: 'SET_HEATMAP_PROPS', 
-							rowAttr: name
-						})}>{name}</a></li>;
-		});
-		var showOptionsForRows = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-							type: 'SET_HEATMAP_PROPS', 
-							rowMode: name
-						})}>{name}</a></li>;
-		});
-		var showOptionsForCols = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-							type: 'SET_HEATMAP_PROPS', 
-							colMode: name
-						})}>{name}</a></li>;
-		});
+		const colAttrKeys = Object.keys(dataState.currentDataset.colAttrs).sort().push("(gene)");
+		const rowAttrKeys = Object.keys(dataState.currentDataset.colAttrs).sort().push("(gene positions)");
+		const optionNames = ["Text", "Bars", "Heatmap", "Categorical"];
 
-		return(
-		  <div className="panel panel-default">
-			<div className="panel-heading"><h3 className="panel-title">Settings</h3></div>
-			<div className="panel-body">
-			  <form>
-	{/*			<div className="form-group">
-					<label>Find genes</label>
-					<input className="form-control" defaultValue={this.props.genesToFind} onChange={(event)=>{this.props.onFindGenes(event.target.value)}}/>
-				</div>
-	*/}
-				<div className="form-group">
-					<label>Show cell attribute</label>
-					<div className="btn-group btn-block">
-						<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							{hs.colAttr + "  "}<span className="caret"></span>
-						</button>
-						<ul className="dropdown-menu btn-block scrollable-menu">
-							{colOptions}
-						</ul>
-					</div>				
-					<div className="btn-group btn-block">
-						<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							{hs.colMode + "  "}<span className="caret"></span>
-						</button>
-						<ul className="dropdown-menu btn-block scrollable-menu">
-							{showOptionsForCols}
-						</ul>
-					</div>				
-					<div className="btn-group btn-block">
-						{hs.colAttr == "(gene)" ? 
-							<input className="form-control" placeholder="Gene" value={hs.colGene} onChange={
-								(event)=>{
-									dispatch({ 
-										type: 'SET_HEATMAP_PROPS', 
-										colGene: event.target.value
-									});
-									dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
+		return (
+			<div className='panel panel-default'>
+				<div className='panel-heading'><h3 className='panel-title'>Settings</h3></div>
+				<div className='panel-body'>
+					<form>
+
+						<DropdownMenu
+							buttonLabel={'Show cell attribute'}
+							buttonName={heatmapState.colAttr}
+							attributes={colAttrKeys}
+							attrType={'SET_HEATMAP_PROPS'}
+							attrName={'colAttr'}
+							dispatch={dispatch}
+							/>
+
+						<DropdownMenu
+							buttonLabel={undefined}
+							buttonName={heatmapState.colMode}
+							attributes={optionNames}
+							attrType={'SET_HEATMAP_PROPS'}
+							attrName={'colMode'}
+							dispatch={dispatch}
+							/>
+
+						<div className='form-group'>
+							<div className='btn-group btn-block'>
+								{heatmapState.colAttr === "(gene)" ?
+									<input
+										className='form-control'
+										placeholder='Gene'
+										value={heatmapState.colGene}
+										onChange={
+											(event) => {
+												dispatch({ type: 'SET_HEATMAP_PROPS', colGene: event.target.value });
+												dispatch(fetchGene(dataState.currentDataset, event.target.value, dataState.genes));
+											}
+										}/>
+									:
+									<span></span>
 								}
-							}/> : 
-							<span></span>
-						}
-					</div>
-				</div>
-
-				<div className="form-group">
-					<label>Show gene attribute</label>
-					<div className="btn-group btn-block">
-						<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							{hs.rowAttr + "  "}<span className="caret"></span>
-						</button>
-						<ul className="dropdown-menu btn-block scrollable-menu">
-							{rowOptions}
-						</ul>
-					</div>				
-					<div className="btn-group btn-block">
-						{hs.rowAttr == "(gene positions)" ? 
-							<textarea className="form-control" placeholder="Genes" value={hs.rowGenes} onChange={(event)=>dispatch({ 
-								type: 'SET_HEATMAP_PROPS', 
-								rowGenes: event.target.value
-							})}/> : 
-						<div>
-							<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-								{hs.rowMode + "  "}<span className="caret"></span>
-							</button>
-							<ul className="dropdown-menu btn-block scrollable-menu">
-								{showOptionsForRows}
-							</ul>
+							</div>
 						</div>
+
+						<DropdownMenu
+							buttonLabel={'Show gene attribute'}
+							buttonName={heatmapState.rowAttr}
+							attributes={rowAttrKeys}
+							attrType={'SET_HEATMAP_PROPS'}
+							attrName={'rowAttr'}
+							dispatch={dispatch}
+							/>
+						{
+							(heatmapState.rowAttr === '(gene positions)') ?
+								<div className='form-group'>
+									<div className='btn-group btn-block'>
+										<textarea className='form-control' placeholder='Genes'
+											value={heatmapState.rowGenes}
+											onChange={
+												(event) => { dispatch({ type: 'SET_HEATMAP_PROPS', rowGenes: event.target.value }); }
+											}/>
+									</div>
+								</div>
+								:
+								<DropdownMenu
+									buttonLabel={undefined}
+									buttonName={heatmapState.rowMode}
+									attributes={optionNames}
+									attrType={'SET_HEATMAP_PROPS'}
+									attrName={'rowMode'}
+									dispatch={dispatch}
+									/>
 						}
-					</div>
+					</form>
 				</div>
-			  </form>            
 			</div>
-		  </div>
-	  	);
+		);
 	}
 }
 
 HeatmapSidepanel.propTypes = {
 	heatmapState: PropTypes.object.isRequired,
 	dataState: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired
-}
+	dispatch: PropTypes.func.isRequired,
+};

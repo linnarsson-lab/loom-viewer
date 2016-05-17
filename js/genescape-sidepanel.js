@@ -3,7 +3,7 @@ import { DropdownMenu } from './dropdown';
 
 export class GenescapeSidepanel extends Component {
 	render() {
-		const {dispatch, genescapeState, dataState } = this.props;
+		const { dispatch, genescapeState, dataState } = this.props;
 		const rowAttrKeys = Object.keys(dataState.currentDataset.rowAttrs).sort();
 
 		// TODO: If dropdown menu works here, refactor into heatmap-sidepanel.js
