@@ -5,29 +5,32 @@ import numpy as np
 import grequests
 
 model = """
-	data {
-			int<lower=0> N;				# number of outcomes
-			int	<lower=0> K;			# number of predictors
-			matrix<lower=0>[N,K] x;		# predictor matrix 
-			int y[N];					# outcomes
-	}
+# Variational inference version running on a whole matrix
 
-	parameters {
-			vector<lower=0>[K] beta;	# coefficients
-			real<lower=0> r;		# overdispersion
-	}
+data {
+	int <lower=0> G;					# number of genes
+	int	<lower=0> C;					# number of cells
+	int <lower=0> K;					# number of predictors
+	int <lower=0> y[C, G];				# observed molecule counts
+	matrix <lower=0> [C, K] x;			# predictor matrix 
+}
 
-	model {	
-			vector[N] mu;
+parameters {
+	matrix <lower=0> [K, G] beta;		# coefficients for each gene
+	real <lower=0> r;					# overdispersion
+}
 
-			# priors
-			r ~ cauchy(0, 1);
-			beta ~ pareto(0.01, 1.5);
+model {
+	matrix [C, G] mu;
 
-			# regression
-			mu <- x * beta;
-			y ~ neg_binomial(mu / r, 1 / r);
-	}
+	# priors
+	r ~ cauchy(0, 1);
+	beta ~ pareto(0.01, 1.5);
+
+	# regression
+	mu <- x * beta;
+	y ~ neg_binomial(mu / r, 1 / r);
+}
 """
 
 def fit(x, y, chains=2, iterations=1000):
@@ -35,26 +38,11 @@ def fit(x, y, chains=2, iterations=1000):
 	Run a Bayesian generalized linear regression model on the given design matrix (x) and observed data (y).
 
 	Args:
-		x (numpy N-by-M matrix):			The design matrix
-		y (numpy K-by-N matrix):			The observed values for K genes
+		x (numpy C-by-K matrix):			The design matrix for C cells and K predictors
+		y (numpy C-by-G matrix):			The observed values for C cells and G genes
 
 	Returns:
-		A numpy K-by-L-by-(M+2) matrix, where L is iterations*chains/2. The (M+2) columns are one for each of the predictors (beta), 
-		one for the noise term (r) and one for the log probability (lp_). The L columns is one for each sample (the chains are concatenated).
-		Note that if 1000 iterations and 2 chains are requested, the result will be 1000 samples, because half of the samples are used as warm-up.
-
-	Example input, with N = 3, M = 4, K = 2:
-
-		x							y
-
-		1	3	7	2				4	3	6	(observables for gene 1)
-			
-		2	1	7	8				3	2	8	(observables for gene 2)
-
-		2	3	2	2
-
-
-	Note that the function will run all the independent inputs (rows in y) in parallel. 
+		beta (numpy G-by-K-by-S matrix):	Posterior variational inference samples for each coefficient beta. S = iterations * chains / 2.			
 	"""
 	reqs = []
 	for ix in xrange(y.shape[1]):
