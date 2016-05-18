@@ -39,72 +39,63 @@ class App extends Component {
 
 	render() {
 		// Injected by connect() call:
-		const dispatch = this.props.dispatch;
-		const ds = this.props.dataState;
-		const hs = this.props.heatmapState;
-		const ss = this.props.sparklineState;
-		const ls = this.props.landscapeState;
-		const gs = this.props.genescapeState;
-		const vs = this.props.viewState;
+		const { dispatch, dataState, heatmapState, sparklineState, landscapeState, genescapeState, viewState } = this.props;
 
 		let view = <div></div>;
 
 		switch (this.props.viewState.view) {
-		case "Dataset":
-			view =
-					<DatasetView
-						viewState={vs}
-						dataState={ds}
-						heatmapState={hs}
-						dispatch={dispatch}
-						/>;
-			break;
-		case "Heatmap":
-			view =
-					<HeatmapView
-						viewState={vs}
-						dataState={ds}
-						heatmapState={hs}
-						dispatch={dispatch}
-						/>;
-			break;
-		case "Sparkline":
-			view =
-					<SparklineView
-						viewState={vs}
-						dataState={ds}
-						sparklineState={ss}
-						dispatch={dispatch}
-						/>;
-			break;
-		case "Landscape":
-			view = <LandscapeView
-					viewState={vs}
-					dataState={ds}
-					landscapeState={ls}
+			case "Dataset":
+				view = <DatasetView
+					viewState={viewState}
+					dataState={dataState}
+					heatmapState={heatmapState}
 					dispatch={dispatch}
 					/>;
-			break;
-		case "Genescape":
-			view = <GenescapeView
-					viewState={vs}
-					dataState={ds}
-					genescapeState={gs}
+				break;
+			case "Heatmap":
+				view = <HeatmapView
+					viewState={viewState}
+					dataState={dataState}
+					heatmapState={heatmapState}
 					dispatch={dispatch}
 					/>;
-			break;
-		default:
-			view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
-			break;
+				break;
+			case "Sparkline":
+				view = <SparklineView
+					viewState={viewState}
+					dataState={dataState}
+					sparklineState={sparklineState}
+					dispatch={dispatch}
+					/>;
+				break;
+			case "Landscape":
+				view = <LandscapeView
+					viewState={viewState}
+					dataState={dataState}
+					landscapeState={landscapeState}
+					dispatch={dispatch}
+					/>;
+				break;
+			case "Genescape":
+				view = <GenescapeView
+					viewState={viewState}
+					dataState={dataState}
+					genescapeState={genescapeState}
+					dispatch={dispatch}
+					/>;
+				break;
+			default:
+				view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
+				break;
 		}
 		return (
 			<div>
 				<Navbar
-					viewState={vs}
-					dataState={ds}
+					viewState={viewState}
+					dataState={dataState}
 					onSetViewState={
 						(state) => {
-							ds.hasDataset ? dispatch({ type: 'SET_VIEW_PROPS', view: state }) : undefined;
+							dataState.hasDataset ? dispatch({ type: 'SET_VIEW_PROPS', view: state }) : undefined;
 						}
 					}/>
 				{view}
@@ -112,6 +103,7 @@ class App extends Component {
 		);
 	}
 }
+
 App.propTypes = {
 	dataState: PropTypes.object,
 	heatmapState: PropTypes.object,
@@ -128,8 +120,6 @@ function select(state) {
 
 // Wrap the component to inject dispatch and state into it
 let LoomApp = connect(select)(App);
-
-
 
 render(
 	<Provider store={store}>
