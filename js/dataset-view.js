@@ -6,15 +6,14 @@ import * as _ from 'lodash';
 export class DatasetView extends Component {
 
 	render() {
-		const dispatch = this.props.dispatch;
-		const ds = this.props.dataState;
-		//var vs = this.props.viewState;
+		// unused at the moment: this.props.viewState
+		const { dispatch, dataState } = this.props;
 
-		const panels = Object.keys(ds.projects).map((proj) => {
-			const datasets = ds.projects[proj].map((d) => {
-				const isCurrent = d.dataset === ds.currentDataset.dataset;
+		const panels = Object.keys(dataState.projects).map((proj) => {
+			const datasets = dataState.projects[proj].map((d) => {
+				const isCurrent = d.dataset === dataState.currentDataset.dataset;
 				console.log(d);
-				console.log(ds.currentDataset);
+				console.log(dataState.currentDataset);
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "") }>
 						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset)); } }>{d.dataset}</a>
@@ -30,7 +29,7 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{ds.projects[proj].length.toString() + " dataset" + (ds.projects[proj].length > 1 ? "s" : "") }</span>
+							<span>{dataState.projects[proj].length.toString() + " dataset" + (dataState.projects[proj].length > 1 ? "s" : "") }</span>
 						</div>
 					</div>
 					<div className='list-group'>
