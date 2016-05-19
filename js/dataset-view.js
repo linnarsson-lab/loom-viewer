@@ -6,15 +6,14 @@ import * as _ from 'lodash';
 export class DatasetView extends Component {
 
 	render() {
-		const dispatch = this.props.dispatch;
-		const ds = this.props.dataState;
-		//var vs = this.props.viewState;
+		// unused at the moment: this.props.viewState
+		const { dispatch, dataState } = this.props;
 
-		const panels = Object.keys(ds.projects).map((proj) => {
-			const datasets = ds.projects[proj].map((d) => {
-				const isCurrent = d.dataset === ds.currentDataset.dataset;
+		const panels = Object.keys(dataState.projects).map((proj) => {
+			const datasets = dataState.projects[proj].map((d) => {
+				const isCurrent = d.dataset === dataState.currentDataset.dataset;
 				console.log(d);
-				console.log(ds.currentDataset);
+				console.log(dataState.currentDataset);
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "") }>
 						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset)); } }>{d.dataset}</a>
@@ -30,7 +29,7 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{ds.projects[proj].length.toString() + " dataset" + (ds.projects[proj].length > 1 ? "s" : "") }</span>
+							<span>{dataState.projects[proj].length.toString() + " dataset" + (dataState.projects[proj].length > 1 ? "s" : "") }</span>
 						</div>
 					</div>
 					<div className='list-group'>
@@ -110,7 +109,10 @@ export class CreateDataset extends Component {
 		super(props, context);
 		this.state = {
 			n_features: 100,
+			cluster_method: 'BackSPIN',
 		};
+
+		this.sendDate = this.sendData.bind(this);
 	}
 
 	sendData() {
@@ -127,8 +129,9 @@ export class CreateDataset extends Component {
 		formData.forEach((element) => {
 			if (this.state[element]) {
 				FD.append(element, this.state[element]);
+				console.log('Appended ' + element + ' to form');
 			} else {
-				console.log("ERROR: missing " + element);
+				console.log('ERROR: missing'  + element);
 			}
 		});
 
@@ -148,19 +151,6 @@ export class CreateDataset extends Component {
 		console.log(urlString);
 	}
 
-	handleFormUpdate(formName, newVal) {
-		// Note that this requires that all input forms have a name prop!
-		let newState = {};
-		newState[formName] = newVal;
-		this.setState(newState);
-	}
-
-	handleFileChooserUpdate(name, newFile) {
-		let newState = {};
-		newState[name] = newFile;
-		this.setState(newState);
-	}
-
 	render() {
 		return (
 			<div className='panel panel-primary'>
@@ -175,8 +165,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								componentUpdateHandler={this.handleFormUpdate}
-								name='transcriptome'
+								onChange={ (val) => { this.setState({ transcriptome: val }); } }
 								id='input_transcriptome' />
 						</div>
 						<div className='form-group'>
@@ -185,8 +174,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								componentUpdateHandler={this.handleFormUpdate}
-								name='project'
+								onChange={ (val) => { this.setState({ project: val }); } }
 								id='input_project' />
 						</div>
 						<div className='form-group'>
@@ -195,8 +183,7 @@ export class CreateDataset extends Component {
 								trimUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
-								componentUpdateHandler={this.handleFormUpdate}
-								name='dataset'
+								onChange={ (val) => { this.setState({ dataset: val }); } }
 								id='input_dataset' />
 						</div>
 					</form>
@@ -206,16 +193,14 @@ export class CreateDataset extends Component {
 				</div>
 				<div className='list-group'>
 					<CSVFileChooser
-						name='col_attrs'
 						className='list-group-item'
 						label='Cell attributes:'
-						componentUpdateHandler={this.handleFileChooserUpdate}
+						onChange={ (val) => { this.setState({ col_attrs: val }); } }
 						/>
 					<CSVFileChooser
-						name='row_attrs'
 						className='list-group-item'
 						label='[OPTIONAL] Gene attributes:'
-						componentUpdateHandler={this.handleFileChooserUpdate}
+						onChange={ (val) => { this.setState({ row_attrs: val }); } }
 						/>
 				</div>
 				<div className='panel-heading'>
@@ -230,8 +215,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									componentUpdateHandler={this.handleFormUpdate}
-									name='n_features'
+									onChange={ (val) => { this.setState({ n_features: val }); } }
 									id='input_n_features' />
 							</div>
 						</div>
@@ -240,10 +224,9 @@ export class CreateDataset extends Component {
 							<div className='col-sm-10'>
 								<select
 									className='form-control'
-									name='cluster_method'
-									id='input_cluster_method'
-									componentUpdateHandler={this.handleFormUpdate}>
-									<option value='BacSPIN' selected>BackSPIN</option>
+									onChange={ (val) => { this.setState({ cluster_method: val }); } }
+									id='input_cluster_method'>
+									<option value='BackSPIN' selected>BackSPIN</option>
 									<option value='AP'>Affinity Propagation</option>
 								</select>
 							</div>
@@ -254,15 +237,14 @@ export class CreateDataset extends Component {
 								trimUnderscores={false}
 								className='col-sm-10'
 								defaultValue=''
-								componentUpdateHandler={this.handleFormUpdate}
-								name='regression_label'
+								onChange={ (val) => { this.setState({ regression_label: val }); } }
 								id='input_regression_label' />
 						</div>
 						<div className='form-group pull-right'>
 							<button type='button' className='btn btn-default' onClick={ () => { this.sendData(); } } >Submit request for new dataset</button>
 						</div>
 					</form>
-				</div>
+				</div >
 			</div >
 		);
 	}
@@ -284,41 +266,44 @@ export class LoomTextEntry extends Component {
 			value: this.props.defaultValue,
 			fixedVal: '',
 		};
+		// fix errors 500ms after user stops typing
 		this.fixTextInput = _.debounce(this.fixTextInput, 250);
+		this.handleChange = this.handleChange.bind(this);
+		this.fixTextInput = this.fixTextInput.bind(this);
 	}
 
 	handleChange(event) {
 		// immediately show newly typed characters
 		this.setState({ value: event.target.value });
-		// fix errors 500ms after user stops typing
-		this.fixTextInput();
+		// then make a (debounced) call to fixTextInput
+		this.fixTextInput(event.target.value);
 	}
 
-	fixTextInput() {
+	fixTextInput(txt) {
 		// replace all non-valid characters with underscores, followed by
 		// replacing each sequence of underscores with a single underscore.
-		let fix = this.state.value
-			.replace(/([^A-Za-z0-9_])+/g, '_')
+		txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
 			.replace(/_+/g, '_');
 
 		if (this.props.trimUnderscores) {
 			// strip leading/trailing underscore, if present. Note that the
 			// above procedure has already reduced any leading underscores
 			// to a single character.
-			fix = fix.startsWith('_') ? fix.substr(1) : fix;
-			fix = fix.endsWith('_') ? fix.substr(0, fix.length - 1) : fix;
+			txt = txt.startsWith('_') ? txt.substr(1) : txt;
+			txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
 		}
 		this.setState({
-			value: fix,
-			fixedVal: fix,
+			value: txt,
+			fixedVal: txt,
 		});
 	}
 
-	componentWillUpdate(nextProps, nextState) {
-		if (nextProps.componentUpdateHandler) {
-			// bubble up fixed string to parent
-			nextProps.componentUpdateHandler(nextProps.name, nextState.fixedVal);
-		}
+	shouldComponentUpdate(nextProps, nextState) {
+		return (this.state.value !== nextState.value) || (this.state.fixedVal !== nextState.fixedVal);
+	}
+
+	componentDidUpdate() {
+		this.props.onChange(this.state.fixedVal);
 	}
 
 	render() {
@@ -338,6 +323,12 @@ export class LoomTextEntry extends Component {
 	}
 }
 
+LoomTextEntry.propTypes = {
+	trimUnderscores: PropTypes.bool.isRequired,
+	defaultValue: PropTypes.string.isRequired,
+	onChange: PropTypes.func.isRequired,
+};
+
 export class CSVFileChooser extends Component {
 
 	constructor(props, context) {
@@ -356,6 +347,10 @@ export class CSVFileChooser extends Component {
 			fontColor: '#111',
 			contentInfo: [],
 		};
+
+		this.onDrop = this.onDrop.bind(this);
+		this.validate = this.validate.bind(this);
+		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
 	}
 
 	onDrop(files) {
@@ -435,7 +430,7 @@ export class CSVFileChooser extends Component {
 		reader.onabort = () => {
 			let newState = {
 				contentInfo: this.state.contentInfo,
-				validContend: false,
+				validContent: false,
 			};
 			newState.contentInfo.push('File reading aborted before validation');
 			this.setState(newState);
@@ -444,7 +439,7 @@ export class CSVFileChooser extends Component {
 			console.log(event.error);
 			let newState = {
 				contentInfo: this.state.contentInfo,
-				validContend: false,
+				validContent: false,
 			};
 			newState.contentInfo.push('Error while reading' + file.name);
 			this.setState(newState);
@@ -486,11 +481,13 @@ export class CSVFileChooser extends Component {
 		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude];
 	}
 
-	componentWillUpdate(nextProps, nextState) {
-		if (nextProps.componentUpdateHandler) {
-			// bubble up new file to parent
-			nextProps.componentUpdateHandler(nextProps.name, nextState.droppedFile);
-		}
+	shouldComponentUpdate(nextProps, nextState) {
+		// risky: we assume that props never change here
+		return !(_.isEqual(this.state, nextState));
+	}
+
+	componentDidUpdate() {
+		this.props.onChange(this.state.droppedFile);
 	}
 
 	render() {

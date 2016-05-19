@@ -5,8 +5,8 @@
         "sourceType": "module",
         "ecmaFeatures": {
             "impliedStrict": true,
-            "jsx": true,
-        },
+            "jsx": true
+        }
     },
     "env": {
         "browser": true
@@ -55,7 +55,6 @@
             "error",
             "tab"
         ],
-
         //Not so much errors as warnings that
         //it might be time to refactor the code
         "max-params": [
@@ -73,6 +72,6 @@
             {
                 "max": 4
             }
-        ], // max depth of nesting in general
+        ] // max depth of nesting in general
     }
 }

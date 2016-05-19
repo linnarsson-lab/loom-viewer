@@ -14,21 +14,21 @@ import * as _ from 'lodash';
 
 function requestProjects() {
 	return {
-		type: 'REQUEST_PROJECTS'
-	}
+		type: 'REQUEST_PROJECTS',
+	};
 }
 
 function requestProjectsFailed() {
 	return {
-		type: 'REQUEST_PROJECTS_FAILED'
-	}
+		type: 'REQUEST_PROJECTS_FAILED',
+	};
 }
 
 function receiveProjects(projects) {
 	return {
 		type: 'RECEIVE_PROJECTS',
-		projects: projects
-	}
+		projects: projects,
+	};
 }
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -36,23 +36,24 @@ function receiveProjects(projects) {
 // store.dispatch(fetchgene(...))
 
 export function fetchProjects() {
-	return dispatch => {
+	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestProjects());
 		// Second, perform the request (async)
 		return fetch(`/loom`)
-			.then(response => response.json())
-			.then(json => {
+			.then((response) => { response.json(); })
+			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				// Group by project
-				var projs = _.groupBy(json, (item) => { return item.project; });
+				const projs = _.groupBy(json, (item) => { return item.project; });
 				dispatch(receiveProjects(projs));
 			})
 			// Or, if it failed, dispatch an action to set the error flag
-			.catch(err => {
+			.catch((err) => {
+				console.log(err);
 				dispatch(requestProjectsFailed());
 			});
-	}
+	};
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -65,21 +66,21 @@ export function fetchProjects() {
 function requestDataset(dataset) {
 	return {
 		type: 'REQUEST_DATASET',
-		dataset: dataset
-	}
+		dataset: dataset,
+	};
 }
 
 function requestDatasetFailed() {
 	return {
-		type: 'REQUEST_DATASET_FAILED'
-	}
+		type: 'REQUEST_DATASET_FAILED',
+	};
 }
 
 function receiveDataset(dataset) {
 	return {
 		type: 'RECEIVE_DATASET',
-		dataset: dataset
-	}
+		dataset: dataset,
+	};
 }
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -87,27 +88,28 @@ function receiveDataset(dataset) {
 // store.dispatch(fetchgene(...))
 
 export function fetchDataset(dataset) {
-	return dispatch => {
+	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestDataset(dataset));
 		// Second, perform the request (async)
 		return fetch(`/loom/${dataset}/fileinfo.json`)
-			.then(response => response.json())
-			.then(ds => {
+			.then((response) => { response.json(); })
+			.then((ds) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				// Also, dispatch some actions to set required properties on the subviews
-				var ra = ds.rowAttrs[0];
-				var ca = ds.colAttrs[0];
+				const ra = ds.rowAttrs[0];
+				const ca = ds.colAttrs[0];
 				dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
 				dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
 				dispatch(receiveDataset(ds)); // This goes last, to ensure the above defaults are set when the views are rendered
-				dispatch({ type: "SET_VIEW_PROPS", view: "Landscape"});
+				dispatch({ type: "SET_VIEW_PROPS", view: "Landscape" });
 			})
 			// Or, if it failed, dispatch an action to set the error flag
-			.catch(err => {
+			.catch((err) => {
+				console.log(err);
 				dispatch(requestDatasetFailed(dataset));
 			});
-	}
+	};
 }
 
 
@@ -121,14 +123,14 @@ export function fetchDataset(dataset) {
 function requestGene(gene) {
 	return {
 		type: 'REQUEST_GENE',
-		gene: gene
-	}
+		gene: gene,
+	};
 }
 
 function requestGeneFailed() {
 	return {
-		type: 'REQUEST_GENE_FAILED'
-	}
+		type: 'REQUEST_GENE_FAILED',
+	};
 }
 
 function receiveGene(gene, list) {
@@ -136,8 +138,8 @@ function receiveGene(gene, list) {
 		type: 'RECEIVE_GENE',
 		gene: gene,
 		data: list,
-		receivedAt: Date.now()
-	}
+		receivedAt: Date.now(),
+	};
 }
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -145,27 +147,28 @@ function receiveGene(gene, list) {
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataset, gene, cache) {
-	var rowAttrs = dataset.rowAttrs;
-	return dispatch => {
-		if(!rowAttrs.hasOwnProperty("GeneName")) {
+	const rowAttrs = dataset.rowAttrs;
+	return (dispatch) => {
+		if (!rowAttrs.hasOwnProperty("GeneName")) {
 			return;
 		}
-		var row = rowAttrs["GeneName"].indexOf(gene);
-		if(cache.hasOwnProperty(gene)) {
+		const row = rowAttrs["GeneName"].indexOf(gene);
+		if (cache.hasOwnProperty(gene)) {
 			return;
 		}
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
 		return fetch(`/loom/${dataset.name}/row/${row}`)
-			.then(response => response.json())
-			.then(json => {
+			.then((response) => { response.json(); })
+			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				dispatch(receiveGene(gene, json));
 			})
 			// Or, if it failed, dispatch an action to set the error flag
-			.catch(err => {
+			.catch((err) => {
+				console.log(err);
 				dispatch(requestGeneFailed());
 			});
-	}
+	};
 }
