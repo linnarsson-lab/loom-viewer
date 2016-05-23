@@ -8,6 +8,7 @@ from loom_pipeline import LoomPipeline
 import sys
 import StringIO
 import json
+import numpy as np
 from flask import make_response
 from functools import wraps, update_wrapper
 from datetime import datetime
@@ -120,8 +121,10 @@ def send_col(transcriptome, project, dataset, col):
 # Upload dataset for loom file generation
 #
 def csv_to_dict(s):
-	data = DataFrame.from_csv(StringIO(s), sep=",", parse_dates=False,index_col = None).to_dict(orient="list")
-	return {key: np.array(data[key]) for key in data}
+	stringFile = StringIO.StringIO(s)
+	data = DataFrame.from_csv(stringFile, sep=",", parse_dates=False, index_col=None)
+	dataDict = data.to_dict(orient="list")
+	return {key: np.array(dataDict[key]) for key in dataDict}
 
 # curl -X PUT -F "config=@./hg19_sUCSC__midbrain__human_20160505.json" -F "col_attrs=@/Users/Sten/tmp/midbrain__human_20160505.csv" http://loom.linnarssonlab.org/hg19_sUCSC__midbrain__human_20160505
 
@@ -130,18 +133,18 @@ def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	if not col_attrs.has_key("CellID"):
 		return "CellID attribute is missing", 400
-	
+
 	if request.form.has_key("row_attrs"):
 		row_attrs = csv_to_dict(request.form["row_attrs"])
 		if not col_attrs.has_key("TranscriptID"):
-			return "TranscriptID attribute is missing", 400		
+			return "TranscriptID attribute is missing", 400
 	else:
 		row_attrs = None
 	config = request.form["config"]
-	dsc = DatasetConfig(transcriptome, project, dataset, 
-		status = "willcreate", 
-		message = "Waiting for dataset to be generated.", 
-		n_features = config["n_features"], 
+	dsc = DatasetConfig(transcriptome, project, dataset,
+		status = "willcreate",
+		message = "Waiting for dataset to be generated.",
+		n_features = config["n_features"],
 		cluster_method = config["cluster_method"],
 		regression_label = config["regression_label"])
 	pipeline.upload(config, col_attrs, row_attrs)
