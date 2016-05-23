@@ -130,18 +130,19 @@ def csv_to_dict(s):
 
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
+
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	if not col_attrs.has_key("CellID"):
 		return "CellID attribute is missing", 400
 
 	if request.form.has_key("row_attrs"):
 		row_attrs = csv_to_dict(request.form["row_attrs"])
-		if not col_attrs.has_key("TranscriptID"):
+		if not row_attrs.has_key("TranscriptID"):
 			return "TranscriptID attribute is missing", 400
 	else:
 		row_attrs = None
-	config = request.form["config"]
-	dsc = DatasetConfig(transcriptome, project, dataset,
+	config = json.loads(request.form["config"])
+	dsc = loom_cloud.DatasetConfig(transcriptome, project, dataset,
 		status = "willcreate",
 		message = "Waiting for dataset to be generated.",
 		n_features = config["n_features"],
