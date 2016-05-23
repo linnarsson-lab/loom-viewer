@@ -115,40 +115,64 @@ export class CreateDataset extends Component {
 		this.sendDate = this.sendData.bind(this);
 	}
 
+	// See ../docs/loom_server_API.md
 	sendData() {
 		let FD = new FormData();
 
-		// See ../docs/loom_server_API.md
-		let formData = [
+		let filledForm = true;
+		const formData = [
 			'col_attrs',
-			'row_attrs',
 			'n_features',
 			'cluster_method',
 			'regression_label',
 		];
 		formData.forEach((element) => {
-			if (this.state[element]) {
-				FD.append(element, this.state[element]);
-				console.log('Appended ' + element + ' to form');
-			} else {
-				console.log('ERROR: missing'  + element);
+			// if an element is missing, we cannot submit
+			// TODO: instead of this approach,
+			// deactivate submit button until all relevant fields are defined
+			if (!this.state[element]) {
+				//row_attrs is optional, the rest is not
+				filledForm = false;
+				console.log('Warning! Missing ' + element);
 			}
 		});
 
-		let XHR = new XMLHttpRequest();
-		//TODO: display server response in the UI
-		XHR.addEventListener('load', (event) => { console.log(event); });
-		XHR.addEventListener('error', (event) => { console.log(event); });
+		if (filledForm) {
+			if (this.state.col_attrs) {
+				FD.append('col_attrs', this.state.col_attrs);
+				console.log('Appended col_attrs to form');
+			}
 
-		let urlString = '/' + this.state.transcriptome +
-			'__' + this.state.project +
-			'__' + this.state.dataset;
-		//XHR.open('PUT', urlString);
-		//XHR.send(FD);
+			if (this.state.row_attrs) {
+				FD.append('row_attrs', this.state.row_attrs);
+				console.log('Appended row_attrs to form');
+			} else {
+				console.log('No row_attrs defined, skipping');
+			}
 
-		// Just log the results for now
-		console.log(XHR);
-		console.log(urlString);
+			let config = JSON.stringify({
+				"n_features": this.state.n_features,
+				"cluster_method": this.state.cluster_method,
+				"regression_label": this.state.regression_label,
+			});
+
+			FD.append('config', config);
+			console.log('Appended config JSON to form');
+
+			let XHR = new XMLHttpRequest();
+			//TODO: display server response in the UI
+			XHR.addEventListener('load', (event) => { console.log(event); });
+			XHR.addEventListener('error', (event) => { console.log(event); });
+
+			let urlString = '/loom/' + this.state.transcriptome +
+				'__' + this.state.project +
+				'__' + this.state.dataset;
+			XHR.open('PUT', urlString);
+			XHR.send(FD);
+
+			console.log(XHR);
+			console.log(urlString);
+		}
 	}
 
 	render() {
@@ -266,8 +290,9 @@ export class LoomTextEntry extends Component {
 			value: this.props.defaultValue,
 			fixedVal: '',
 		};
-		// fix errors 500ms after user stops typing
-		this.fixTextInput = _.debounce(this.fixTextInput, 250);
+		// fix errors with a small delay after user stops typing
+		const delayMillis = 500;
+		this.fixTextInput = _.debounce(this.fixTextInput, delayMillis);
 		this.handleChange = this.handleChange.bind(this);
 		this.fixTextInput = this.fixTextInput.bind(this);
 	}
@@ -329,10 +354,18 @@ LoomTextEntry.propTypes = {
 	onChange: PropTypes.func.isRequired,
 };
 
-export class CSVFileChooser extends Component {
 
+// A file chooser for CSV files
+// - rudimentary validation (extension name, commas or semicolons, size)
+// - accepts files via drag & drop, for ease of used
+export class CSVFileChooser extends Component {
 	constructor(props, context) {
 		super(props, context);
+
+		this.onDrop = this.onDrop.bind(this);
+		this.CSVFileReader = this.CSVFileReader.bind(this);
+		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
+
 		this.state = {
 			// NOTE: we distinguish between false and undefined for validation!
 			droppedFile: undefined,
@@ -340,17 +373,14 @@ export class CSVFileChooser extends Component {
 			fileIsCSV: undefined,
 			fileSize: undefined,
 			fileSizeString: ' -',
-			fileContent: null,
+			filePreview: null,
 			validContent: undefined,
-			commaFix: undefined,
+			fileContentString: undefined,
 			backgroundColor: '#fff',
 			fontColor: '#111',
 			contentInfo: [],
+			fileReader: this.CSVFileReader(),
 		};
-
-		this.onDrop = this.onDrop.bind(this);
-		this.validate = this.validate.bind(this);
-		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
 	}
 
 	onDrop(files) {
@@ -361,29 +391,48 @@ export class CSVFileChooser extends Component {
 			fileIsCSV: file.type === "text/csv",
 			fileSize: file.size,
 			fileSizeString: this.bytesToString(file.size),
-			fileContent: null,
+			filePreview: null,
 			validContent: file.size > 0 ? undefined : null,
-			commaFix: undefined,
+			fileContentString: undefined,
 			contentInfo: [],
 		};
 		this.setState(newState);
 
 		if (file.size > 0) {
-			this.validate(file);
+			this.state.fileReader.readAsText(file);
 		}
 	}
 
-	// Rudimentary check if the provided CSV file is a proper
-	// CSV file. Checks for:
-	// - file size (greater than zero?)
-	// - extension name (ends with .csv?)
-	// - commas and semicolons (presence and absence, respectively)
-	// This catches the (hopefully) most common mistakes of selecting
-	// the wrong file, or bad formatting due to regional settings.
-	validate(file) {
-		// Since file IO is asynchronous, validation needs
-		// to be done as a callback, calling setState when done
+	// Create a FileReader to re-use, which performs a rudimentary
+	// check if the provided CSV file is a proper CSV file.
+	CSVFileReader() {
 		let reader = new FileReader();
+
+		// Handle abort and error cases
+		reader.onabort = (event) => {
+			let newState = {
+				contentInfo: this.state.contentInfo,
+				validContent: false,
+			};
+			newState.contentInfo.push('File reading aborted before validation\n', event);
+			this.setState(newState);
+		};
+		reader.onerror = (event) => {
+			console.log(event.error);
+			let newState = {
+				contentInfo: this.state.contentInfo,
+				validContent: false,
+			};
+			newState.contentInfo.push('Error while reading file\n', event);
+			this.setState(newState);
+		};
+
+		// Rudimentary check if file was successfully loaded. Checks for:
+		// - file size (greater than zero?)
+		// - extension name (ends with .csv?)
+		// - commas and semicolons (presence and absence, respectively)
+		// This catches the (hopefully) most common mistakes of selecting
+		// the wrong file, or bad formatting due to regional settings.
 		reader.onload = () => {
 			let subStrIdx = -1;
 			// Display up to the first eight lines to the user
@@ -398,7 +447,7 @@ export class CSVFileChooser extends Component {
 			let subString = (subStrIdx !== -1) ? (reader.result.substr(0, subStrIdx)) : reader.result;
 
 			let newState = {
-				fileContent: subString,
+				filePreview: subString,
 				contentInfo: this.state.contentInfo,
 			};
 
@@ -417,57 +466,44 @@ export class CSVFileChooser extends Component {
 			} else if (this.state.fileIsCSV) {
 				newState.validContent = true;
 			}
-			this.setState(newState);
 
-			// Try replacing semicolons with commas if and only if there are no other commas present,
-			// since something will almost certainly break otherwise.
-			if (semiColonsFound && noCommasFound) {
+			if (!(noCommasFound || semiColonsFound)) {
+				// The check found no errors, pass the
+				// file content string as is
+				newState.fileContentString = reader.result;
+				this.setState(newState);
+			} else if (semiColonsFound && noCommasFound) {
+				// Try replacing semicolons with commas if and only if no other
+				// commas are present, something will certainly break if they are.
 				this.semicolonsToCommas(reader.result);
 			}
 		};
 
-		// Handle abort and error cases
-		reader.onabort = () => {
-			let newState = {
-				contentInfo: this.state.contentInfo,
-				validContent: false,
-			};
-			newState.contentInfo.push('File reading aborted before validation');
-			this.setState(newState);
-		};
-		reader.onerror = (event) => {
-			console.log(event.error);
-			let newState = {
-				contentInfo: this.state.contentInfo,
-				validContent: false,
-			};
-			newState.contentInfo.push('Error while reading' + file.name);
-			this.setState(newState);
-		};
-
-		reader.readAsText(file);
+		return reader;
 	}
 
-	// Takes a string (consisting of the content of a file), replaces all of its
-	// semicolons with commas, turns this into a Blob with MIME-type 'text/csv',
-	// then replaces the dropped file with this Blob. Then updates fileContent
-	// to show a preview of the result, so the user can verify the result.
-	semicolonsToCommas(fileContentString) {
-		const commaFix = fileContentString.replace(/\;/gi, ',');
+	// Takes a string (consisting of the content of a file),
+	// replaces all of its semicolons with commas.
+	// Updates filePreview to show (part of) the result,
+	// so the user can verify the result.
+	semicolonsToCommas(filePreviewString) {
+		const fileContentString = filePreviewString.replace(/\;/gi, ',');
 
-		const commaBlob = new Blob([commaFix], { type: 'text/csv' });
+		const commaBlob = new Blob([fileContentString], { type: 'text/csv' });
 		let subStrIdx = -1;
 		// Display up to the first eight lines to the user
 		for (let i = 0; i < 8; i++) {
-			let nextIdx = commaFix.indexOf('\n', subStrIdx + 1);
+			let nextIdx = fileContentString.indexOf('\n', subStrIdx + 1);
 			if (nextIdx === -1) {
 				break;
 			} else {
-				subStrIdx = nextIdx;
+				// if the file contains less than 8 newlines,
+				// we'll just show the whole string.
+				subStrIdx = -1;
 			}
 		}
-		let fileContent = (subStrIdx !== -1) ? (commaFix.substr(0, subStrIdx)) : commaFix;
-		this.setState({ droppedFile: commaBlob, commaFix, fileContent });
+		let filePreview = (subStrIdx !== -1) ? (fileContentString.substr(0, subStrIdx)) : fileContentString;
+		this.setState({ droppedFile: commaBlob, fileContentString, filePreview });
 	}
 
 	bytesToString(bytes) {
@@ -487,7 +523,7 @@ export class CSVFileChooser extends Component {
 	}
 
 	componentDidUpdate() {
-		this.props.onChange(this.state.droppedFile);
+		this.props.onChange(this.state.fileContentString);
 	}
 
 	render() {
@@ -530,7 +566,7 @@ export class CSVFileChooser extends Component {
 					<div style={ warnIf(state.validContent === false) } >
 						{ state.validContent ? '☑ ' : '☐ ' }
 						content: (first eight lines)
-						{ state.fileContent ? <pre>{state.fileContent}</pre> : null }
+						{ state.filePreview ? <pre>{state.filePreview}</pre> : null }
 						{ state.contentInfo.length ? state.contentInfo.map((info, i) => { return (<p key={i}><b>{info}</b></p>); }) : null }
 					</div>
 				</div>
