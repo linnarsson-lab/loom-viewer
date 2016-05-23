@@ -130,7 +130,6 @@ def csv_to_dict(s):
 
 @app.route('/loom/<string:transcriptome>__<string:project>__<string:dataset>', methods=['PUT'])
 def upload_dataset(transcriptome, project, dataset):
-
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	if not col_attrs.has_key("CellID"):
 		return "CellID attribute is missing", 400
