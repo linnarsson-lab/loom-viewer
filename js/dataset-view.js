@@ -12,8 +12,6 @@ export class DatasetView extends Component {
 		const panels = Object.keys(dataState.projects).map((proj) => {
 			const datasets = dataState.projects[proj].map((d) => {
 				const isCurrent = d.dataset === dataState.currentDataset.dataset;
-				console.log(d);
-				console.log(dataState.currentDataset);
 				return (
 					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "") }>
 						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset)); } }>{d.dataset}</a>
@@ -133,21 +131,17 @@ export class CreateDataset extends Component {
 			if (!this.state[element]) {
 				//row_attrs is optional, the rest is not
 				filledForm = false;
-				console.log('Warning! Missing ' + element);
 			}
 		});
 
 		if (filledForm) {
 			if (this.state.col_attrs) {
 				FD.append('col_attrs', this.state.col_attrs);
-				console.log('Appended col_attrs to form');
 			}
 
 			if (this.state.row_attrs) {
 				FD.append('row_attrs', this.state.row_attrs);
-				console.log('Appended row_attrs to form');
 			} else {
-				console.log('No row_attrs defined, skipping');
 			}
 
 			let config = JSON.stringify({
@@ -160,7 +154,6 @@ export class CreateDataset extends Component {
 			});
 
 			FD.append('config', config);
-			console.log('Appended config JSON to form');
 
 			let XHR = new XMLHttpRequest();
 			//TODO: display server response in the UI
@@ -173,8 +166,6 @@ export class CreateDataset extends Component {
 			XHR.open('PUT', urlString);
 			XHR.send(FD);
 
-			console.log(XHR);
-			console.log(urlString);
 		}
 	}
 
@@ -421,7 +412,6 @@ export class CSVFileChooser extends Component {
 			this.setState(newState);
 		};
 		reader.onerror = (event) => {
-			console.log(event.error);
 			let newState = {
 				contentInfo: this.state.contentInfo,
 				validContent: false,
