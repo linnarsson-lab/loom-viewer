@@ -151,6 +151,9 @@ export class CreateDataset extends Component {
 			}
 
 			let config = JSON.stringify({
+				"transcriptome": this.state.transcriptome,
+				"project": this.state.project,
+				"dataset": this.state.dataset,
 				"n_features": this.state.n_features,
 				"cluster_method": this.state.cluster_method,
 				"regression_label": this.state.regression_label,
