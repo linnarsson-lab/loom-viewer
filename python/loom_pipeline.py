@@ -103,9 +103,9 @@ class LoomPipeline(object):
 		Returns:
 			Nothing, but creates a .loom file
 		"""
-		transcriptome = config['transcriptome']
-		project = config['project']
-		dataset = config['dataset']
+		transcriptome = config.transcriptome
+		project = config.project
+		dataset = config.dataset
 		connection = self.mysql_connection
 		logger.info("Processing: " + config.get_json_filename())
 
@@ -372,7 +372,7 @@ class LoomPipeline(object):
 	def store_loom(self, config):
 		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
 		bucket = client.get_bucket("linnarsson-lab-loom")
-		config = DatasetConfig(config['transcriptome'], config['project'], config['dataset'])
+		config = DatasetConfig(config.transcriptome, config.project, config.dataset)
 		blob = bucket.blob(config.get_loom_filename())
 		blob.upload_from_filename(config.get_loom_filename())
 		config.set_status("created", "Ready to browse.")
@@ -404,7 +404,7 @@ class LoomPipeline(object):
 		if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
 			raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
 		if cell_attrs["CellID"].dtype.kind == 'S':
-			cell_id_mapping = self.get_cell_id_mapping(config['transcriptome'])
+			cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
 			cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
 
 		if gene_attrs == None:
@@ -415,16 +415,16 @@ class LoomPipeline(object):
 			if gene_attrs["TranscriptID"].dtype.kind != 'i' and gene_attrs["TranscriptID"].dtype.kind != 'S':
 				raise ValueError, "'TranscriptID' attribute is not of type INTEGER or STRING."
 			if gene_attrs["TranscriptID"].dtype.kind == 'S':
-				gene_id_mapping = self.get_transcript_id_mapping(config['transcriptome'])
+				gene_id_mapping = self.get_transcript_id_mapping(config.transcriptome)
 				gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
 
 		# Send the dataset to MySQL
 		if cell_attrs != None:
 			print "Uploading cell annotations"
-			self._export_attrs_to_mysql(cell_attrs, config['transcriptome'], "Cells__" + config['project'] + "__" + config['dataset'], "CellID")
+			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
 		if gene_attrs != None:
 			print "Uploading gene annotations"
-			self._export_attrs_to_mysql(gene_attrs, config['transcriptome'], "Genes__" + config['project'] + "__" + config['dataset'], "TranscriptID")
+			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
 		# Save the config
 		config.put()
 		print "Done."

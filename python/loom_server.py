@@ -140,14 +140,14 @@ def upload_dataset(transcriptome, project, dataset):
 			return "TranscriptID attribute is missing", 400
 	else:
 		row_attrs = None
-	config = json.loads(request.form["config"])
+	configJSON = json.loads(request.form["config"])
 	dsc = loom_cloud.DatasetConfig(transcriptome, project, dataset,
 		status = "willcreate",
 		message = "Waiting for dataset to be generated.",
-		n_features = config["n_features"],
-		cluster_method = config["cluster_method"],
-		regression_label = config["regression_label"])
-	pipeline.upload(config, col_attrs, row_attrs)
+		n_features = configJSON["n_features"],
+		cluster_method = configJSON["cluster_method"],
+		regression_label = configJSON["regression_label"])
+	pipeline.upload(dsc, col_attrs, row_attrs)
 	return "", 200
 
 
