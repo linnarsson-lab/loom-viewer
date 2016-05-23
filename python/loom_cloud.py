@@ -58,12 +58,12 @@ def get_dataset_config(transcriptome, project, dataset):
 	temp = json.loads(blob)
 
 	return DatasetConfig(
-		transcriptome, 
-		project, 
-		dataset, 
-		status = temp["status"], 
-		message=temp["message"], 
-		n_features=temp["n_features"], 
+		transcriptome,
+		project,
+		dataset,
+		status = temp["status"],
+		message=temp["message"],
+		n_features=temp["n_features"],
 		cluster_method=temp["cluster_method"],
 		regression_label=temp["regression_label"]
 		)
@@ -73,7 +73,7 @@ class DatasetConfig(object):
 	Configuration and status for a .loom file in Cloud Storage.
 
 	This object is stored as a JSON string under they same key as the corresponding dataset, but with
-	extension .json instead of .loom. 
+	extension .json instead of .loom.
 	"""
 	def __init__(self, transcriptome, project, dataset, status = "unknown", message = "", n_features = 1000, cluster_method = "AP", regression_label = "_Cluster"):
 		"""
@@ -116,7 +116,10 @@ class DatasetConfig(object):
 	def put(self):
 		client = storage.Client(project="linnarsson-lab")
 		bucket = client.get_bucket("linnarsson-lab-loom")
-		blob = bucket.get_blob(self.get_json_filename())
+		blobName = self.get_json_filename()
+		blob = bucket.get_blob(blobName)
+		if blob is None:
+			blob = bucket.blob(blobName)
 		blob.upload_from_string(json.dumps(self.as_dict()))
 
 	def set_status(self, status, message=""):
@@ -124,7 +127,7 @@ class DatasetConfig(object):
 		self.message = message
 		self.put()
 		logger.info(status + ": " + message)
-		 
+
 	def get_loom_filename(self):	# Haha, those strings below look like grumpy cats!
 		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".loom"
 
@@ -147,8 +150,8 @@ class LoomCache(object):
 		self.remote_root = "linnarsson-lab-loom"
 		self.client = storage.Client(project="linnarsson-lab")
 		self.looms = {}
-			
-		
+
+
 	def connect_dataset_locally(self, transcriptome, project, dataset):
 		"""
 		Download the dataset (if needed) and connect it as a local loom file.
@@ -187,4 +190,4 @@ if __name__ == '__main__':
 				blob = bucket.blob(ds.get_loom_filename())
 				with open(absolute_path, 'wb') as outfile:
 					blob.download_to_file(outfile)
-		time.sleep(60*5)		# Sleep 5 minutes		
+		time.sleep(60*5)		# Sleep 5 minutes
