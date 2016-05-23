@@ -83,7 +83,7 @@ class LoomPipeline(object):
 			252: "string",
 			253: "string",
 			254: "string",
-			255: "string" 
+			255: "string"
 		}
 		try:
 			return np.array(array).astype(field_type[sql_type])
@@ -108,7 +108,7 @@ class LoomPipeline(object):
 		dataset = config.dataset
 		connection = self.mysql_connection
 		logger.info("Processing: " + config.get_json_filename())
-		
+
 		# Get the transcriptome ID
 		try:
 			cursor = connection.cursor()
@@ -120,7 +120,7 @@ class LoomPipeline(object):
 		# Download gene annotations
 		cursor = connection.cursor()
 		query = """
-			SELECT 
+			SELECT
 				jos_aaatranscriptomeid TranscriptID,
 				Name,
 				Type,
@@ -134,8 +134,8 @@ class LoomPipeline(object):
 				Strand,
 				ds.*
 			FROM jos_aaatranscript tr
-			LEFT JOIN datasets__%s.Genes__%s__%s ds 
-			ON tr.jos_aaatranscriptomeid = ds.TranscriptID 
+			LEFT JOIN datasets__%s.Genes__%s__%s ds
+			ON tr.jos_aaatranscriptomeid = ds.TranscriptID
 			WHERE tr.jos_aaatranscriptomeid = %d
 			AND tr.Type <> "repeat"
 			ORDER BY tr.ExprBlobIdx
@@ -146,9 +146,9 @@ class LoomPipeline(object):
 			logger.error(pe)
 			config.set_status("error","Dataset definition not found in database")
 			return
-				
-		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
-		
+
+		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
+
 		transcriptome_headers = map(lambda x: x[0],cursor.description)
 		rows = cursor.fetchall()
 		row_attrs = {}
@@ -165,18 +165,18 @@ class LoomPipeline(object):
 		for ix in xrange(len(cursor.description)):
 			row_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(row_attrs[cursor.description[ix][0]], cursor.description[ix][1])
 		gene_ids = row_attrs["TranscriptID"]
-		
+
 		matrix = []
 		col_attrs = {}
 
 		# Fetch counts
 		nrows = 0
-		
+
 		# Fetch 1000 rows at a time
 		while True:
 			cursor = connection.cursor()
 			cursor.execute("""
-				SELECT  
+				SELECT
 					e.CellID,
 					e.TranscriptomeID,
 					ChipWell,
@@ -219,31 +219,31 @@ class LoomPipeline(object):
 					Aligner,
 					ds.*,
 					Data
-				FROM jos_aaacell c 
-				LEFT JOIN jos_aaachip h 
-					ON c.jos_aaachipid=h.id 
-				LEFT JOIN jos_aaaproject p 
+				FROM jos_aaacell c
+				LEFT JOIN jos_aaachip h
+					ON c.jos_aaachipid=h.id
+				LEFT JOIN jos_aaaproject p
 					ON h.jos_aaaprojectid=p.id
 				JOIN cells10k.ExprBlob e
 					ON e.CellID=c.id
-				JOIN datasets__%s.Cells__%s__%s ds 
+				JOIN datasets__%s.Cells__%s__%s ds
 					ON ds.CellID = c.id
 				WHERE c.valid=1 AND e.TranscriptomeID = %s
 				LIMIT 1000 OFFSET %s
 			""" % (transcriptome, project, dataset, transcriptome_id, nrows))
 
-			N_STD_FIELDS = 40	# UPDATE THIS IF YOU CHANGE THE SQL ABOVE!! 
+			N_STD_FIELDS = 40	# UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
 								# Count all standard fields but not including "Data"
 								# NOTE: Data field should always be last!
-								
+
 			if cursor.rowcount <= 0:
 				if nrows == 0:
 					print "No data available for this transcriptome: %d " % transcriptome_id
 				break
-			
+
 			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
 			if nrows == 0:
-				for i in xrange(len(headers)):		
+				for i in xrange(len(headers)):
 					if i >= N_STD_FIELDS:
 						headers[i] = "(" + dataset + ")_" + headers[i]
 					col_attrs[headers[i]] = []
@@ -271,7 +271,7 @@ class LoomPipeline(object):
 		counts = np.array(matrix).transpose()
 		print counts.shape
 		loom.create(config.get_loom_filename(), counts, row_attrs, col_attrs)
-			
+
 	def prepare_loom(self, config):
 		"""
 		Prepare a loom file for browsing: clustering, projection, regression
@@ -297,7 +297,7 @@ class LoomPipeline(object):
 				_LogMean			Log of mean expression level
 				_LogCV				Log of CV
 				_Excluded			1 if the gene was excluded by feature selection, 0 otherwise
-				_Noise				Excess noise above the noise model		
+				_Noise				Excess noise above the noise model
 
 		"""
 
@@ -376,7 +376,7 @@ class LoomPipeline(object):
 		blob = bucket.blob(config.get_loom_filename())
 		blob.upload_from_filename(config.get_loom_filename())
 		config.set_status("created", "Ready to browse.")
-		
+
 	def upload(self, config, cell_attrs, gene_attrs = None):
 		"""
 		Upload a custom dataset annotation to MySQL.
@@ -389,7 +389,7 @@ class LoomPipeline(object):
 		Returns:
 			Nothing.
 
-		At least cell_attrs must be given. Both are dictionaries where the keys are attribute 
+		At least cell_attrs must be given. Both are dictionaries where the keys are attribute
 		names and the values are numpy arrays (of the same length). The 'CellID' (integer) field is required for
 		cell_attrs, and the 'TranscriptID' (integer) is required for gene_attrs. However, if TranscriptID is a string
 		array, integer TranscriptIDs will be created for you using the given transcriptome. Similarly, if CellID
@@ -404,7 +404,7 @@ class LoomPipeline(object):
 		if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
 			raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
 		if cell_attrs["CellID"].dtype.kind == 'S':
-			cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
+			cell_id_mapping = self.get_cell_id_mapping(config['transcriptome'])
 			cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
 
 		if gene_attrs == None:
@@ -434,7 +434,7 @@ class LoomPipeline(object):
 		Export a set of attributes to a table in MySQL
 
 		Args:
-			
+
 			attrs (dict): 			A dictionary of attributes. Keys are attribute names. Values are numpy arrays, all the same length.
 			transcriptome (str):	Name of the genome build (e.g. 'mm10a_aUCSC')
 			tablename (str): 		Name of the MySQL table (e.g. 'Cells__project__dataset')
@@ -443,7 +443,7 @@ class LoomPipeline(object):
 		Returns:
 			Nothing
 
-		Tables for custom annotations are stored in table "dataset__<transcriptome>" (e.g. "dataset__hg19_sUCSC"), and are named 
+		Tables for custom annotations are stored in table "dataset__<transcriptome>" (e.g. "dataset__hg19_sUCSC"), and are named
 		like so: {Cells|Genes}__<project>__<datatset>. For example, dataset "midbrain_embryo" in
 		project "Midbrain" has annotations in Cells__Midbrain__midbrain_embryo and Genes__Midbrain__midbrain_embryo. Since project
 		names can be used across transcriptome builds, projects can group together multi-species datasets.
@@ -485,7 +485,7 @@ class LoomPipeline(object):
 		print query
 		cursor.execute(query)
 		cursor.close()
-		
+
 		# Upload the data
 		rows = []
 		for ix in xrange(attrs[attrs.keys()[0]].shape[0]):
@@ -501,7 +501,7 @@ class LoomPipeline(object):
 			cursor = connection.cursor()
 			cursor.execute(insert)
 			cursor.close()
-			
+
 	def get_transcript_id_mapping(self, transcriptome):
 		"""
 		Get a dictionary that maps gene names to TranscriptID for the given transcriptome
@@ -519,7 +519,7 @@ class LoomPipeline(object):
 		cursor = connection.cursor()
 		cursor.execute("""
 			SELECT GeneName, jos_aaatranscriptomeid TranscriptID FROM jos_aaatranscript t1
-			JOIN jos_aaatranscriptome t2 ON t1.jos_aaatranscriptomeid = t2.id 
+			JOIN jos_aaatranscriptome t2 ON t1.jos_aaatranscriptomeid = t2.id
 			WHERE t2.name = %s
 		""", transcriptome)
 		rows = cursor.fetchall()
