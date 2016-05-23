@@ -463,16 +463,16 @@ export class CSVFileChooser extends Component {
 			} else if (semiColonsFound) {
 				newState.contentInfo.push('Mix of commas and semicolons found, check if this is a properly formatted CSV');
 				newState.validContent = false;
-			} else if (this.state.fileIsCSV) {
-				newState.validContent = true;
+			} else {
+				// The check found no errors, use file content string as is
+				newState.fileContentString = reader.result;
+				// However, if extension is wrong we warn the user!
+				newState.validContent = this.state.fileIsCSV;
 			}
 
-			if (!(noCommasFound || semiColonsFound)) {
-				// The check found no errors, pass the
-				// file content string as is
-				newState.fileContentString = reader.result;
-				this.setState(newState);
-			} else if (semiColonsFound && noCommasFound) {
+			this.setState(newState);
+
+			if (semiColonsFound && noCommasFound) {
 				// Try replacing semicolons with commas if and only if no other
 				// commas are present, something will certainly break if they are.
 				this.semicolonsToCommas(reader.result);
