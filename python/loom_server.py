@@ -133,7 +133,7 @@ def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	if not col_attrs.has_key("CellID"):
 		return "CellID attribute is missing", 400
-
+	print request.form.keys() 
 	if request.form.has_key("row_attrs"):
 		row_attrs = csv_to_dict(request.form["row_attrs"])
 		if not row_attrs.has_key("TranscriptID"):
@@ -150,6 +150,25 @@ def upload_dataset(transcriptome, project, dataset):
 	pipeline.upload(dsc, col_attrs, row_attrs)
 	return "", 200
 
+@app.route('/loom/upload', methods=['POST'])
+def upload_dataset2():
+	col_attrs = csv_to_dict(request.form["col_attrs"])
+	if not col_attrs.has_key("CellID"):
+		return "CellID attribute is missing", 400
+
+	row_attrs = csv_to_dict(request.form["row_attrs"])
+	if not row_attrs.has_key("TranscriptID"):
+		return "TranscriptID attribute is missing", 400
+
+	configJSON = json.loads(request.form["config"])
+	dsc = loom_cloud.DatasetConfig(configJSON["transcriptome"], configJSON["project"], configJSON["dataset"],
+		status = "willcreate",
+		message = "Waiting for dataset to be generated.",
+		n_features = configJSON["n_features"],
+		cluster_method = configJSON["cluster_method"],
+		regression_label = configJSON["regression_label"])
+	pipeline.upload(dsc, col_attrs, row_attrs)
+	return "", 200
 
 #
 # Tiles

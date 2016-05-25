@@ -236,11 +236,6 @@ class LoomPipeline(object):
 								# Count all standard fields but not including "Data"
 								# NOTE: Data field should always be last!
 
-			if cursor.rowcount <= 0:
-				if nrows == 0:
-					print "No data available for this transcriptome: %d " % transcriptome_id
-				break
-
 			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
 			if nrows == 0:
 				for i in xrange(len(headers)):
@@ -262,6 +257,8 @@ class LoomPipeline(object):
 		# Convert to the appropriate numpy datatype
 		for ix in xrange(len(headers)):
 			col_attrs[headers[ix]] = self._make_std_numpy_type(col_attrs[headers[ix]], cursor.description[ix][1])
+			print headers[ix]
+			print col_attrs[headers[ix]].shape
 		cell_ids = col_attrs["CellID"]
 
 		# Create the loom file
@@ -482,7 +479,6 @@ class LoomPipeline(object):
 			PRIMARY KEY (`%s`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		""" % ("datasets__" + transcriptome, full_tablename,full_tablename,",".join(schema), pk)
-		print query
 		cursor.execute(query)
 		cursor.close()
 

@@ -31,7 +31,7 @@ class CmdStan(object):
 
 		os.chdir(current_dir)
 
-	def fit(self, model_name, data, chains=2, iterations=1000, method="sample", debug=True):
+	def fit(self, model_name, data, init=None, chains=2, iterations=1000, method="sample", debug=True):
 		"""
 		Fit the model using the supplied data and return posterior samples
 		
@@ -51,6 +51,8 @@ class CmdStan(object):
 		with open(data_file_name, "w") as data_file:
 			for key,val in data.items():
 				data_file.write(key + " <- ")
+				if type(val) == list:
+					val = np.array(val)
 				if type(val) == np.ndarray:
 					if len(val.shape) == 1:
 						data_file.write("c(" + ",".join([str(x) for x in val])+ ")")
@@ -61,7 +63,35 @@ class CmdStan(object):
 					data_file.write(str(val))
 				data_file.write("\n")
 		
-		process = subprocess.Popen(["models/" + model_name, method, "data", "file=" + data_file_name, "output", "file=samples/" + model_name + ".csv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		# Save the init values in R dump() format
+		if init != None:
+			init_file_name = "data/" + model_name + ".init.R"
+			with open(init_file_name, "w") as init_file:
+				for key,val in init.items():
+					init_file.write(key + " <- ")
+					if type(val) == list:
+						val = np.array(val)
+					if type(val) == np.ndarray:
+						if len(val.shape) == 1:
+							init_file.write("c(" + ",".join([str(x) for x in val])+ ")")
+						else:
+							temp = val.flatten('F')
+							init_file.write(("structure(c(" + ",".join([str(x) for x in val.flatten('F')])+ "),.Dim=c(%d,%d))") % val.shape)
+					else: # scalar
+						init_file.write(str(val))
+					init_file.write("\n")
+
+		if method == "variational":		
+			if init == None:
+				process = subprocess.Popen(["models/" + model_name, "variational", "algorithm=fullrank", "data", "file=" + data_file_name, "output", "file=samples/" + model_name + ".csv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			else:
+				process = subprocess.Popen(["models/" + model_name, "variational", "algorithm=fullrank", "data", "file=" + data_file_name, "init=" + init_file_name, "output", "file=samples/" + model_name + ".csv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		else:
+			if init == None:
+				process = subprocess.Popen(["models/" + model_name, method, "data", "file=" + data_file_name, "output", "file=samples/" + model_name + ".csv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			else:
+				process = subprocess.Popen(["models/" + model_name, method, "data", "file=" + data_file_name, "init=" + init_file_name, "output", "file=samples/" + model_name + ".csv"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					
 		output = process.communicate()
 		if debug:
 			print "*** Verbose output (call with debug=False to suppress) ***"
