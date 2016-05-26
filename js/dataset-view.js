@@ -232,7 +232,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={ (val) => { this.setState({ n_features: val }); } }
+									onChange={ (e) => { this.setState({ n_features: e.value }); } }
 									id='input_n_features' />
 							</div>
 						</div>
