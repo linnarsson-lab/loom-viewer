@@ -134,13 +134,10 @@ export class CreateDataset extends Component {
 		});
 
 		if (filledForm) {
-			if (this.state.col_attrs) {
-				FD.append('col_attrs', this.state.col_attrs);
-			}
+			FD.append('col_attrs', this.state.col_attrs);
 
 			if (this.state.row_attrs) {
 				FD.append('row_attrs', this.state.row_attrs);
-			} else {
 			}
 
 			let config = JSON.stringify({
@@ -176,33 +173,27 @@ export class CreateDataset extends Component {
 				</div>
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
-						<div className='form-group'>
-							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<LoomTextEntry
-								trimUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ transcriptome: val }); } }
-								id='input_transcriptome' />
-						</div>
-						<div className='form-group'>
-							<label for='input_project' className='col-sm-2 control-label'>Project: </label>
-							<LoomTextEntry
-								trimUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ project: val }); } }
-								id='input_project' />
-						</div>
-						<div className='form-group'>
-							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
-							<LoomTextEntry
-								trimTrailingUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ dataset: val }); } }
-								id='input_dataset' />
-						</div>
+						<LoomTextEntry
+							label='Transcriptome:'
+							trimUnderscores={true}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.setState({ transcriptome: val }); } }
+							id='input_transcriptome'/>
+						<LoomTextEntry
+							label='Project:'
+							trimUnderscores={true}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.setState({ project: val }); } }
+							id='input_project'/>
+						<LoomTextEntry
+							label='Dataset: '
+							trimTrailingUnderscores={true}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.setState({ dataset: val }); } }
+							id='input_dataset' />
 					</form>
 				</div>
 				<div className='panel-heading'>
@@ -248,15 +239,13 @@ export class CreateDataset extends Component {
 								</select>
 							</div>
 						</div>
-						<div className='form-group'>
-							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
-							<LoomTextEntry
-								trimTrailingUnderscores={false}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ regression_label: val }); } }
-								id='input_regression_label' />
-						</div>
+						<LoomTextEntry
+							label='Regression Label: '
+							trimUnderscores={false}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.setState({ regression_label: val }); } }
+							id='input_regression_label' />
 						<div className='form-group pull-right'>
 							<button type='button' className='btn btn-default' onClick={ () => { this.sendData(); } } >Submit request for new dataset</button>
 						</div>
@@ -270,7 +259,7 @@ export class CreateDataset extends Component {
 // Valid entries:
 // - may contain letters, numbers and underscores
 // - may NOT contain double (or more) underscores
-// - may NOT have leading or trailing underscores
+// - (optionally) may NOT have leading or trailing underscores
 // This function attempts to autofix names by replacing all sequences of
 // invalid characters (including whitespace) with single underscores.
 // Note that this is purely for user feedback!
@@ -282,40 +271,52 @@ export class LoomTextEntry extends Component {
 		this.state = {
 			value: this.props.defaultValue,
 			fixedVal: '',
+			corrected: false,
 		};
+
 		// fix errors with a small delay after user stops typing
 		const delayMillis = 1000;
 		this.delayedFixTextInput = _.debounce(this.fixTextInput, delayMillis);
+
 		this.handleChange = this.handleChange.bind(this);
 		this.fixTextInput = this.fixTextInput.bind(this);
+		this.fixString = this.fixString.bind(this);
 	}
 
 	handleChange(event) {
 		// immediately show newly typed characters
-		this.setState({ value: event.target.value });
+		this.setState({ value: event.target.value, corrected: false });
 		// then make a (debounced) call to fixTextInput
 		this.delayedFixTextInput(event.target.value);
 	}
 
 	fixTextInput(txt) {
-		// replace all non-valid characters with underscores, followed by
-		// replacing each sequence of underscores with a single underscore.
-		txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
-			.replace(/_+/g, '_');
-
-		if (this.props.trimTrailingUnderscores || this.props.trimUnderscores) {
-			// strip leading/trailing underscore, if present. Note that the
-			// above procedure has already reduced any leading underscores
-			// to a single character.
-			txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
-		}
-		if (this.props.trimLeadingUnderscores || this.props.trimUnderscores){
-			txt = txt.startsWith('_') ? txt.substr(1) : txt;
-		}
+		const fixedTxt = this.fixString(txt);
 		this.setState({
-			value: txt,
-			fixedVal: txt,
+			value: fixedTxt,
+			fixedVal: fixedTxt,
+			corrected: fixedTxt !== this.state.value,
 		});
+	}
+
+	fixString(txt) {
+		if (typeof txt === 'string') {
+			// replace all non-valid characters with underscores, followed by
+			// replacing each sequence of underscores with a single underscore.
+			txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
+				.replace(/_+/g, '_');
+
+			if (this.props.trimTrailingUnderscores || this.props.trimUnderscores) {
+				// strip leading/trailing underscore, if present. Note that the
+				// above procedure has already reduced any leading underscores
+				// to a single character.
+				txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
+			}
+			if (this.props.trimLeadingUnderscores || this.props.trimUnderscores) {
+				txt = txt.startsWith('_') ? txt.substr(1) : txt;
+			}
+		}
+		return txt;
 	}
 
 	shouldComponentUpdate(nextProps, nextState) {
@@ -327,18 +328,35 @@ export class LoomTextEntry extends Component {
 	}
 
 	render() {
+		let warnStyle = {};
+		if (this.state.value !== '') {
+			if (this.state.value !== this.fixString(this.state.value)) {
+				warnStyle.backgroundColor = '#CC0000';
+				warnStyle.color = '#FFFFFF';
+			} else if (this.state.corrected) {
+				warnStyle.backgroundColor = '#FFA522';
+				warnStyle.color = '#222222';
+			}
+		}
 		return (
-			<div className={this.props.className} >
-				<input
-					type='text'
-					className='form-control'
-					defaultValue={this.props.defaultValue}
-					name={this.props.name}
-					id={this.props.id}
-					value={this.state.value}
-					onChange={ (event) => { this.handleChange(event); } }
-					onBlur={ () => { this.fixTextInput(this.state.value); } }
-					/>
+			<div className={this.props.className} style={warnStyle}>
+				{ this.props.label ?
+					<label for={this.props.id} className='col-sm-2 control-label'>{this.props.label}</label>
+					:
+					null
+				}
+				<div className='col-sm-10' >
+					<input
+						type='text'
+						className='form-control'
+						defaultValue={this.props.defaultValue}
+						name={this.props.name}
+						id={this.props.id}
+						value={this.state.value}
+						onChange={ (event) => { this.handleChange(event); } }
+						onBlur={ () => { this.fixTextInput(this.state.value); } }
+						/>
+				</div>
 			</div>
 		);
 	}
@@ -534,9 +552,9 @@ export class CSVFileChooser extends Component {
 		};
 		let DZactiveStyle = { borderStyle: 'solid', borderColor: '#000', backgroundColor: '#fff' };
 		let DZrejectStyle = { borderStyle: 'solid', borderColor: '#f00', backgroundColor: '#fcc' };
-		let warnIf = (state) => {
+		let warnIf = (x) => {
 			let style = { margin: 5, padding: 5, textAlign: 'left' };
-			if (state === true) {
+			if (x) {
 				style.backgroundColor = '#f66';
 				style.color = '#fff';
 			}
