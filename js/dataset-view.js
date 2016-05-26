@@ -14,9 +14,9 @@ export class DatasetView extends Component {
 			const datasets = dataState.projects[proj].map((d) => {
 				const isCurrent = d.dataset === dataState.currentDataset.dataset;
 				return (
-					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "") }>
-						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset)); } }>{d.dataset}</a>
-						<span>{" " + d.message}</span>
+					<div key={d.dataset} className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
+						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + '__' + proj + '__' + d.dataset)); } }>{d.dataset}</a>
+						<span>{' ' + d.message}</span>
 						<div className='pull-right'>
 							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
 						</div>
@@ -28,7 +28,7 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{dataState.projects[proj].length.toString() + " dataset" + (dataState.projects[proj].length > 1 ? "s" : "") }</span>
+							<span>{dataState.projects[proj].length.toString() + ' dataset' + (dataState.projects[proj].length > 1 ? 's' : '') }</span>
 						</div>
 					</div>
 					<div className='list-group'>
@@ -106,6 +106,7 @@ export class CreateDataset extends Component {
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
+			transcriptome: 'mm10_sUCSC',
 			n_features: 100,
 			cluster_method: 'BackSPIN',
 		};
@@ -153,12 +154,12 @@ export class CreateDataset extends Component {
 			}
 
 			let config = JSON.stringify({
-				"transcriptome": this.state.transcriptome,
-				"project": this.state.project,
-				"dataset": this.state.dataset,
-				"n_features": this.state.n_features,
-				"cluster_method": this.state.cluster_method,
-				"regression_label": this.state.regression_label,
+				transcriptome: this.state.transcriptome,
+				project: this.state.project,
+				dataset: this.state.dataset,
+				n_features: this.state.n_features > 100 ? this.state.n_features : 100,
+				cluster_method: this.state.cluster_method,
+				regression_label: this.state.regression_label,
 			});
 
 			FD.append('config', config);
@@ -178,6 +179,19 @@ export class CreateDataset extends Component {
 	}
 
 	render() {
+		const transcriptomeOptions = [
+			{ value: 'mm10_sUCSC', label: 'mm10_sUCSC' },
+			{ value: 'mm10.2_sUCSC', label: 'mm10.2_sUCSC' },
+			{ value: 'hg19_sUCSC', label: 'hg19_sUCSC' },
+			{ value: 'mm10a_sUCSC', label: 'mm10a_sUCSC' },
+			{ value: 'mm10a_aUCSC', label: 'mm10a_aUCSC' },
+		];
+
+		const clusterMethodOptions = [
+			{ value: 'BackSPIN', label: 'BackSPIN' },
+			{ value: 'AP', label: 'Affinity Propagation' },
+		];
+
 		return (
 			<div className='panel panel-primary'>
 				<div className='panel-heading'>
@@ -185,13 +199,17 @@ export class CreateDataset extends Component {
 				</div>
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
-						<LoomTextEntry
-							label='Transcriptome:'
-							trimUnderscores={true}
-							className='form-group'
-							defaultValue=''
-							onChange={ (val) => { this.handleFormChange('transcriptome', val); } }
-							id='input_transcriptome'/>
+						<div className='form-group'>
+							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
+							<div className='col-sm-10' >
+								<Select
+									options={transcriptomeOptions}
+									value={this.state.transcriptome}
+									id='input_transcriptome'
+									onChange={ (opts) => { this.handleFormChange('transcriptome', opts.value); } }
+									/>
+							</div>
+						</div>
 						<LoomTextEntry
 							label='Project:'
 							trimUnderscores={true}
@@ -200,14 +218,14 @@ export class CreateDataset extends Component {
 							onChange={ (val) => { this.handleFormChange('project', val); } }
 							id='input_project'/>
 						<LoomTextEntry
-							label='Dataset: '
+							label='Dataset:'
 							trimTrailingUnderscores={true}
 							className='form-group'
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('dataset', val); } }
 							id='input_dataset' />
 					</form>
-				</div>
+				</div >
 				<div className='panel-heading'>
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
@@ -235,20 +253,19 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={ (val) => { this.handleFormChange('n_features', val); } }
+									onChange={ (e) => { this.handleFormChange('n_features', e.target.value); } }
 									id='input_n_features' />
 							</div>
 						</div>
 						<div className='form-group'>
 							<label for='input_cluster_method' className='col-sm-2 control-label'>Clustering Method: </label>
 							<div className='col-sm-10'>
-								<select
-									className='form-control'
-									onChange={ (val) => { this.handleFormChange('cluster_method', val); } }
-									id='input_cluster_method'>
-									<option value='BackSPIN' selected>BackSPIN</option>
-									<option value='AP'>Affinity Propagation</option>
-								</select>
+								<Select
+									options={clusterMethodOptions}
+									value={this.state.cluster_method}
+									id='input_cluster_method'
+									onChange={ (opts) => { this.handleFormChange('cluster_method', opts.value); } }
+									/>
 							</div>
 						</div>
 						<LoomTextEntry
@@ -258,13 +275,17 @@ export class CreateDataset extends Component {
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('regression_label', val); } }
 							id='input_regression_label' />
-						<div className='form-group pull-right'>
+						<div className='form-group'>
+							<span className='col-sm-8'>
+								{ !this.formIsFilled() ? 'Please fill in the missing fields' : ''}
+							</span>
 							<button
 								type='button'
-								className='btn btn-default'
+								className='btn btn-default col-sm-4'
 								disabled={ !this.formIsFilled() }
-								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null } >
-								{ this.formIsFilled() ? 'Create New Dataset' : 'Fill in missing fields'}
+								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
+								id='input_submit_create_dataset'>
+								Create New Dataset
 							</button>
 						</div>
 					</form>
@@ -422,7 +443,7 @@ export class CSVFileChooser extends Component {
 		let newState = {
 			droppedFile: file,
 			fileName: file.name,
-			fileIsCSV: file.type === "text/csv",
+			fileIsCSV: file.type === 'text/csv',
 			fileSize: file.size,
 			fileSizeString: this.bytesToString(file.size),
 			filePreview: null,
@@ -542,7 +563,7 @@ export class CSVFileChooser extends Component {
 	bytesToString(bytes) {
 		let displaybytes = bytes;
 		let magnitude = 0;
-		const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+		const scale = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 		while (displaybytes > 512 && magnitude < scale.length) {
 			magnitude++;
 			displaybytes /= 1024;
