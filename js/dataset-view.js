@@ -100,7 +100,6 @@ DatasetView.propTypes = {
 };
 
 
-//TODO: add listeners to forms to update state
 export class CreateDataset extends Component {
 
 	constructor(props, context) {
@@ -178,7 +177,7 @@ export class CreateDataset extends Component {
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
-							<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
+							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
 							<LoomTextEntry
 								trimUnderscores={true}
 								className='col-sm-10'
@@ -198,7 +197,7 @@ export class CreateDataset extends Component {
 						<div className='form-group'>
 							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
 							<LoomTextEntry
-								trimUnderscores={true}
+								trimTrailingUnderscores={true}
 								className='col-sm-10'
 								defaultValue=''
 								onChange={ (val) => { this.setState({ dataset: val }); } }
@@ -252,7 +251,7 @@ export class CreateDataset extends Component {
 						<div className='form-group'>
 							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
 							<LoomTextEntry
-								trimUnderscores={false}
+								trimTrailingUnderscores={false}
 								className='col-sm-10'
 								defaultValue=''
 								onChange={ (val) => { this.setState({ regression_label: val }); } }
@@ -285,8 +284,8 @@ export class LoomTextEntry extends Component {
 			fixedVal: '',
 		};
 		// fix errors with a small delay after user stops typing
-		const delayMillis = 500;
-		this.fixTextInput = _.debounce(this.fixTextInput, delayMillis);
+		const delayMillis = 1000;
+		this.delayedFixTextInput = _.debounce(this.fixTextInput, delayMillis);
 		this.handleChange = this.handleChange.bind(this);
 		this.fixTextInput = this.fixTextInput.bind(this);
 	}
@@ -295,7 +294,7 @@ export class LoomTextEntry extends Component {
 		// immediately show newly typed characters
 		this.setState({ value: event.target.value });
 		// then make a (debounced) call to fixTextInput
-		this.fixTextInput(event.target.value);
+		this.delayedFixTextInput(event.target.value);
 	}
 
 	fixTextInput(txt) {
@@ -304,12 +303,14 @@ export class LoomTextEntry extends Component {
 		txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
 			.replace(/_+/g, '_');
 
-		if (this.props.trimUnderscores) {
+		if (this.props.trimTrailingUnderscores || this.props.trimUnderscores) {
 			// strip leading/trailing underscore, if present. Note that the
 			// above procedure has already reduced any leading underscores
 			// to a single character.
-			txt = txt.startsWith('_') ? txt.substr(1) : txt;
 			txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
+		}
+		if (this.props.trimLeadingUnderscores || this.props.trimUnderscores){
+			txt = txt.startsWith('_') ? txt.substr(1) : txt;
 		}
 		this.setState({
 			value: txt,
@@ -335,7 +336,8 @@ export class LoomTextEntry extends Component {
 					name={this.props.name}
 					id={this.props.id}
 					value={this.state.value}
-					onChange={(event) => { this.handleChange(event); } }
+					onChange={ (event) => { this.handleChange(event); } }
+					onBlur={ () => { this.fixTextInput(this.state.value); } }
 					/>
 			</div>
 		);
@@ -343,7 +345,9 @@ export class LoomTextEntry extends Component {
 }
 
 LoomTextEntry.propTypes = {
-	trimUnderscores: PropTypes.bool.isRequired,
+	trimUnderscores: PropTypes.bool,
+	trimLeadingUnderscores: PropTypes.bool,
+	trimTrailingUnderscores: PropTypes.bool,
 	defaultValue: PropTypes.string.isRequired,
 	onChange: PropTypes.func.isRequired,
 };
