@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
+import Select from 'react-select';
 import Dropzone from 'react-dropzone';
 import * as _ from 'lodash';
 
@@ -109,13 +110,18 @@ export class CreateDataset extends Component {
 			cluster_method: 'BackSPIN',
 		};
 
+		this.handleFormChange = this.handleFormChange.bind(this);
+		this.formIsFilled = this.formIsFilled.bind(this);
 		this.sendDate = this.sendData.bind(this);
 	}
 
-	// See ../docs/loom_server_API.md
-	sendData() {
-		let FD = new FormData();
+	handleFormChange(idx, val) {
+		let newState = {};
+		newState[idx] = val;
+		this.setState(newState);
+	}
 
+	formIsFilled() {
 		let filledForm = true;
 		const formData = [
 			'col_attrs',
@@ -132,8 +138,14 @@ export class CreateDataset extends Component {
 				filledForm = false;
 			}
 		});
+		return filledForm;
+	}
 
-		if (filledForm) {
+	// See ../docs/loom_server_API.md
+	sendData() {
+		let FD = new FormData();
+
+		if (this.formIsFilled()) {
 			FD.append('col_attrs', this.state.col_attrs);
 
 			if (this.state.row_attrs) {
@@ -178,21 +190,21 @@ export class CreateDataset extends Component {
 							trimUnderscores={true}
 							className='form-group'
 							defaultValue=''
-							onChange={ (val) => { this.setState({ transcriptome: val }); } }
+							onChange={ (val) => { this.handleFormChange('transcriptome', val); } }
 							id='input_transcriptome'/>
 						<LoomTextEntry
 							label='Project:'
 							trimUnderscores={true}
 							className='form-group'
 							defaultValue=''
-							onChange={ (val) => { this.setState({ project: val }); } }
+							onChange={ (val) => { this.handleFormChange('project', val); } }
 							id='input_project'/>
 						<LoomTextEntry
 							label='Dataset: '
 							trimTrailingUnderscores={true}
 							className='form-group'
 							defaultValue=''
-							onChange={ (val) => { this.setState({ dataset: val }); } }
+							onChange={ (val) => { this.handleFormChange('dataset', val); } }
 							id='input_dataset' />
 					</form>
 				</div>
@@ -203,12 +215,12 @@ export class CreateDataset extends Component {
 					<CSVFileChooser
 						className='list-group-item'
 						label='Cell attributes:'
-						onChange={ (val) => { this.setState({ col_attrs: val }); } }
+						onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
 						/>
 					<CSVFileChooser
 						className='list-group-item'
 						label='[OPTIONAL] Gene attributes:'
-						onChange={ (val) => { this.setState({ row_attrs: val }); } }
+						onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
 						/>
 				</div>
 				<div className='panel-heading'>
@@ -223,7 +235,7 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={ (e) => { this.setState({ n_features: e.value }); } }
+									onChange={ (val) => { this.handleFormChange('n_features', val); } }
 									id='input_n_features' />
 							</div>
 						</div>
@@ -232,7 +244,7 @@ export class CreateDataset extends Component {
 							<div className='col-sm-10'>
 								<select
 									className='form-control'
-									onChange={ (val) => { this.setState({ cluster_method: val }); } }
+									onChange={ (val) => { this.handleFormChange('cluster_method', val); } }
 									id='input_cluster_method'>
 									<option value='BackSPIN' selected>BackSPIN</option>
 									<option value='AP'>Affinity Propagation</option>
@@ -244,10 +256,16 @@ export class CreateDataset extends Component {
 							trimUnderscores={false}
 							className='form-group'
 							defaultValue=''
-							onChange={ (val) => { this.setState({ regression_label: val }); } }
+							onChange={ (val) => { this.handleFormChange('regression_label', val); } }
 							id='input_regression_label' />
 						<div className='form-group pull-right'>
-							<button type='button' className='btn btn-default' onClick={ () => { this.sendData(); } } >Submit request for new dataset</button>
+							<button
+								type='button'
+								className='btn btn-default'
+								disabled={ !this.formIsFilled() }
+								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null } >
+								{ this.formIsFilled() ? 'Create New Dataset' : 'Fill in missing fields'}
+							</button>
 						</div>
 					</form>
 				</div >
