@@ -41,10 +41,10 @@ export class DatasetView extends Component {
 			<div className='container'>
 				<div className='row'>
 					<div className='view col-md-8'>
-						<h3>&nbsp; </h3>
-						<h3>Linnarsson lab single-cell data repository</h3>
-						<h3>&nbsp; </h3>
-						<h4>Available datasets</h4>
+						<hr />
+						<h1>Linnarsson lab single-cell data repository</h1>
+						<hr />
+						<h2>Available datasets</h2>
 						<div>
 							{ panels.length === 0 ?
 								<div className='panel panel-primary'>
@@ -75,8 +75,8 @@ export class CreateDataset extends Component {
 	render() {
 		return (
 			<div>
-				<h4>Create a new dataset</h4>
-				<h5>Instructions</h5>
+				<h2>Create a new dataset</h2>
+				<h3>Instructions</h3>
 				<p>To generate a dataset, the user must supply the names of: </p>
 				<ul>
 					<li>the dataset to be created</li>
@@ -220,6 +220,7 @@ export class CreateDatasetForm extends Component {
 						</div>
 						<LoomTextEntry
 							label='Project:'
+							placeholder='Enter a project name'
 							trimUnderscores={true}
 							className='form-group'
 							defaultValue=''
@@ -227,6 +228,7 @@ export class CreateDatasetForm extends Component {
 							id='input_project'/>
 						<LoomTextEntry
 							label='Dataset:'
+							placeholder='Enter a dataset'
 							trimTrailingUnderscores={true}
 							className='form-group'
 							defaultValue=''
@@ -276,6 +278,7 @@ export class CreateDatasetForm extends Component {
 						</div>
 						<LoomTextEntry
 							label='Regression Label: '
+							placeholder='Enter a regression label'
 							trimUnderscores={false}
 							className='form-group'
 							defaultValue=''
@@ -406,6 +409,7 @@ export class LoomTextEntry extends Component {
 						type='text'
 						className='form-control'
 						defaultValue={this.props.defaultValue}
+						placeholder={this.props.placeholder}
 						name={this.props.name}
 						id={this.props.id}
 						value={this.state.value}
@@ -692,7 +696,7 @@ export class CSVFileChooser extends Component {
 					</div>
 					<div style={ warnIf(state.validContent === false) } >
 						{ state.validContent ? '☑ ' : '☐ ' }
-						content: (first thousand characters or eight lines, whichevr is shorter)
+						content preview: (first thousand characters or eight lines, whichever is shorter)
 						{ state.filePreview ? <pre>{state.filePreview}</pre> : null }
 						{ state.contentInfo.length ? state.contentInfo.map((info, i) => { return (<p key={i}><b>{info}</b></p>); }) : null }
 					</div>
