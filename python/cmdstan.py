@@ -103,7 +103,12 @@ class CmdStan(object):
 				return {}
 			else:
 				raise RuntimeError("No samples were generated, return code: " + str(process.returncode))
-			
+
+		result = self.parse_result(model_name)
+		os.chdir(current_dir)
+		return result
+		
+	def parse_result(self, model_name):
 		params = []
 		samples = []
 		with open("samples/" + model_name + ".csv","r") as infile:
@@ -118,8 +123,4 @@ class CmdStan(object):
 		result = {}
 		for ix in xrange(len(params)):
 			result[params[ix]] = samples[:,ix]
-
-		os.chdir(current_dir)
-
 		return result	
-	

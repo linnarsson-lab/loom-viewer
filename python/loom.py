@@ -672,7 +672,7 @@ class LoomConnection(object):
 	# REGRESSION #
 	##############
 
-	def glm(self, group_attr):
+	def glm(self, group_attr, method="sample"):
 		"""
 		Calculate bayesian generalized linear regression with 'group_attr' as the grouping of cells.
 
@@ -720,27 +720,28 @@ class LoomConnection(object):
 		c = y.shape[1]
 		g = y.shape[0]
 		k = x.shape[0]
-
 		data = {
 			"C": c,
 			"G": g,
 			"K": k,
-#			"kappa": kappa,
+			"kappa": kappa,
 			"x": x,
 			"y": y
 		}
 		init = {
 			"beta": np.zeros((g,k)) + 0.1,
-			"r": np.ones((g,)) + 0.1
+			"r": np.zeros((g,)) + 0.1,
+			"basal": np.zeros((g,)) + 0.1
 		}
 		stan = CmdStan("/Users/Sten/Dropbox/Code/cmdstan/")
-		result = stan.fit("bregression", data, init, method="variational", debug=True)
+		result = stan.fit("bregression", data, init, method=method, debug=True)
 		means = np.array([result["beta.%d.%d" % (row,col)].mean() for row in xrange(1,g+1) for col in xrange(1,k+1)]).reshape((g,k))
 		stdevs = np.array([result["beta.%d.%d" % (row,col)].std() for row in xrange(1,g+1) for col in xrange(1,k+1)]).reshape((g,k))
 
 		self.file["regression_means"] = means
 		self.file["regression_stdevs"] = stdevs
 		
+		return result
 		# TODO: binarize
 
 	#############

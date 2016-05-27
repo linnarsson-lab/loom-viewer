@@ -413,8 +413,10 @@ class LoomPipeline(object):
 				raise ValueError, "'TranscriptID' attribute is not of type INTEGER or STRING."
 			if gene_attrs["TranscriptID"].dtype.kind == 'S':
 				gene_id_mapping = self.get_transcript_id_mapping(config.transcriptome)
-				gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
-
+				try:
+					gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
+				except KeyError:
+					pass
 		# Send the dataset to MySQL
 		if cell_attrs != None:
 			print "Uploading cell annotations"
