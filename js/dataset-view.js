@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
+import Select from 'react-select';
 import Dropzone from 'react-dropzone';
 import * as _ from 'lodash';
 
@@ -13,9 +14,9 @@ export class DatasetView extends Component {
 			const datasets = dataState.projects[proj].map((d) => {
 				const isCurrent = d.dataset === dataState.currentDataset.dataset;
 				return (
-					<div key={d.dataset} className={"list-group-item" + (isCurrent ? " list-group-item-info" : "") }>
-						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + "__" + proj + "__" + d.dataset)); } }>{d.dataset}</a>
-						<span>{" " + d.message}</span>
+					<div key={d.dataset} className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
+						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + '__' + proj + '__' + d.dataset)); } }>{d.dataset}</a>
+						<span>{' ' + d.message}</span>
 						<div className='pull-right'>
 							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
 						</div>
@@ -27,7 +28,7 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{dataState.projects[proj].length.toString() + " dataset" + (dataState.projects[proj].length > 1 ? "s" : "") }</span>
+							<span>{dataState.projects[proj].length.toString() + ' dataset' + (dataState.projects[proj].length > 1 ? 's' : '') }</span>
 						</div>
 					</div>
 					<div className='list-group'>
@@ -100,23 +101,28 @@ DatasetView.propTypes = {
 };
 
 
-//TODO: add listeners to forms to update state
 export class CreateDataset extends Component {
 
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
+			transcriptome: 'mm10_sUCSC',
 			n_features: 100,
 			cluster_method: 'BackSPIN',
 		};
 
+		this.handleFormChange = this.handleFormChange.bind(this);
+		this.formIsFilled = this.formIsFilled.bind(this);
 		this.sendDate = this.sendData.bind(this);
 	}
 
-	// See ../docs/loom_server_API.md
-	sendData() {
-		let FD = new FormData();
+	handleFormChange(idx, val) {
+		let newState = {};
+		newState[idx] = val;
+		this.setState(newState);
+	}
 
+	formIsFilled() {
 		let filledForm = true;
 		const formData = [
 			'col_attrs',
@@ -133,24 +139,27 @@ export class CreateDataset extends Component {
 				filledForm = false;
 			}
 		});
+		return filledForm;
+	}
 
-		if (filledForm) {
-			if (this.state.col_attrs) {
-				FD.append('col_attrs', this.state.col_attrs);
-			}
+	// See ../docs/loom_server_API.md
+	sendData() {
+		let FD = new FormData();
+
+		if (this.formIsFilled()) {
+			FD.append('col_attrs', this.state.col_attrs);
 
 			if (this.state.row_attrs) {
 				FD.append('row_attrs', this.state.row_attrs);
-			} else {
 			}
 
 			let config = JSON.stringify({
-				"transcriptome": this.state.transcriptome,
-				"project": this.state.project,
-				"dataset": this.state.dataset,
-				"n_features": this.state.n_features,
-				"cluster_method": this.state.cluster_method,
-				"regression_label": this.state.regression_label,
+				transcriptome: this.state.transcriptome,
+				project: this.state.project,
+				dataset: this.state.dataset,
+				n_features: this.state.n_features > 100 ? this.state.n_features : 100,
+				cluster_method: this.state.cluster_method,
+				regression_label: this.state.regression_label,
 			});
 
 			FD.append('config', config);
@@ -170,6 +179,19 @@ export class CreateDataset extends Component {
 	}
 
 	render() {
+		const transcriptomeOptions = [
+			{ value: 'mm10_sUCSC', label: 'mm10_sUCSC' },
+			{ value: 'mm10.2_sUCSC', label: 'mm10.2_sUCSC' },
+			{ value: 'hg19_sUCSC', label: 'hg19_sUCSC' },
+			{ value: 'mm10a_sUCSC', label: 'mm10a_sUCSC' },
+			{ value: 'mm10a_aUCSC', label: 'mm10a_aUCSC' },
+		];
+
+		const clusterMethodOptions = [
+			{ value: 'BackSPIN', label: 'BackSPIN' },
+			{ value: 'AP', label: 'Affinity Propagation' },
+		];
+
 		return (
 			<div className='panel panel-primary'>
 				<div className='panel-heading'>
@@ -178,34 +200,32 @@ export class CreateDataset extends Component {
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
-							<label for='input_transcripome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<LoomTextEntry
-								trimUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ transcriptome: val }); } }
-								id='input_transcriptome' />
+							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
+							<div className='col-sm-10' >
+								<Select
+									options={transcriptomeOptions}
+									value={this.state.transcriptome}
+									id='input_transcriptome'
+									onChange={ (opts) => { this.handleFormChange('transcriptome', opts.value); } }
+									/>
+							</div>
 						</div>
-						<div className='form-group'>
-							<label for='input_project' className='col-sm-2 control-label'>Project: </label>
-							<LoomTextEntry
-								trimUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ project: val }); } }
-								id='input_project' />
-						</div>
-						<div className='form-group'>
-							<label for='input_dataset' className='col-sm-2 control-label'>Dataset: </label>
-							<LoomTextEntry
-								trimUnderscores={true}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ dataset: val }); } }
-								id='input_dataset' />
-						</div>
+						<LoomTextEntry
+							label='Project:'
+							trimUnderscores={true}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.handleFormChange('project', val); } }
+							id='input_project'/>
+						<LoomTextEntry
+							label='Dataset:'
+							trimTrailingUnderscores={true}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.handleFormChange('dataset', val); } }
+							id='input_dataset' />
 					</form>
-				</div>
+				</div >
 				<div className='panel-heading'>
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
@@ -213,12 +233,12 @@ export class CreateDataset extends Component {
 					<CSVFileChooser
 						className='list-group-item'
 						label='Cell attributes:'
-						onChange={ (val) => { this.setState({ col_attrs: val }); } }
+						onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
 						/>
 					<CSVFileChooser
 						className='list-group-item'
 						label='[OPTIONAL] Gene attributes:'
-						onChange={ (val) => { this.setState({ row_attrs: val }); } }
+						onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
 						/>
 				</div>
 				<div className='panel-heading'>
@@ -233,33 +253,40 @@ export class CreateDataset extends Component {
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
-									onChange={ (val) => { this.setState({ n_features: val }); } }
+									onChange={ (e) => { this.handleFormChange('n_features', e.target.value); } }
 									id='input_n_features' />
 							</div>
 						</div>
 						<div className='form-group'>
 							<label for='input_cluster_method' className='col-sm-2 control-label'>Clustering Method: </label>
 							<div className='col-sm-10'>
-								<select
-									className='form-control'
-									onChange={ (val) => { this.setState({ cluster_method: val }); } }
-									id='input_cluster_method'>
-									<option value='BackSPIN' selected>BackSPIN</option>
-									<option value='AP'>Affinity Propagation</option>
-								</select>
+								<Select
+									options={clusterMethodOptions}
+									value={this.state.cluster_method}
+									id='input_cluster_method'
+									onChange={ (opts) => { this.handleFormChange('cluster_method', opts.value); } }
+									/>
 							</div>
 						</div>
+						<LoomTextEntry
+							label='Regression Label: '
+							trimUnderscores={false}
+							className='form-group'
+							defaultValue=''
+							onChange={ (val) => { this.handleFormChange('regression_label', val); } }
+							id='input_regression_label' />
 						<div className='form-group'>
-							<label for='input_regression_label' className='col-sm-2 control-label'>Regression Label: </label>
-							<LoomTextEntry
-								trimUnderscores={false}
-								className='col-sm-10'
-								defaultValue=''
-								onChange={ (val) => { this.setState({ regression_label: val }); } }
-								id='input_regression_label' />
-						</div>
-						<div className='form-group pull-right'>
-							<button type='button' className='btn btn-default' onClick={ () => { this.sendData(); } } >Submit request for new dataset</button>
+							<span className='col-sm-8'>
+								{ !this.formIsFilled() ? 'Please fill in the missing fields' : ''}
+							</span>
+							<button
+								type='button'
+								className='btn btn-default col-sm-4'
+								disabled={ !this.formIsFilled() }
+								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
+								id='input_submit_create_dataset'>
+								Create New Dataset
+							</button>
 						</div>
 					</form>
 				</div >
@@ -271,7 +298,7 @@ export class CreateDataset extends Component {
 // Valid entries:
 // - may contain letters, numbers and underscores
 // - may NOT contain double (or more) underscores
-// - may NOT have leading or trailing underscores
+// - (optionally) may NOT have leading or trailing underscores
 // This function attempts to autofix names by replacing all sequences of
 // invalid characters (including whitespace) with single underscores.
 // Note that this is purely for user feedback!
@@ -283,38 +310,52 @@ export class LoomTextEntry extends Component {
 		this.state = {
 			value: this.props.defaultValue,
 			fixedVal: '',
+			corrected: false,
 		};
+
 		// fix errors with a small delay after user stops typing
-		const delayMillis = 500;
-		this.fixTextInput = _.debounce(this.fixTextInput, delayMillis);
+		const delayMillis = 1000;
+		this.delayedFixTextInput = _.debounce(this.fixTextInput, delayMillis);
+
 		this.handleChange = this.handleChange.bind(this);
 		this.fixTextInput = this.fixTextInput.bind(this);
+		this.fixString = this.fixString.bind(this);
 	}
 
 	handleChange(event) {
 		// immediately show newly typed characters
-		this.setState({ value: event.target.value });
+		this.setState({ value: event.target.value, corrected: false });
 		// then make a (debounced) call to fixTextInput
-		this.fixTextInput(event.target.value);
+		this.delayedFixTextInput(event.target.value);
 	}
 
 	fixTextInput(txt) {
-		// replace all non-valid characters with underscores, followed by
-		// replacing each sequence of underscores with a single underscore.
-		txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
-			.replace(/_+/g, '_');
-
-		if (this.props.trimUnderscores) {
-			// strip leading/trailing underscore, if present. Note that the
-			// above procedure has already reduced any leading underscores
-			// to a single character.
-			txt = txt.startsWith('_') ? txt.substr(1) : txt;
-			txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
-		}
+		const fixedTxt = this.fixString(txt);
 		this.setState({
-			value: txt,
-			fixedVal: txt,
+			value: fixedTxt,
+			fixedVal: fixedTxt,
+			corrected: fixedTxt !== this.state.value,
 		});
+	}
+
+	fixString(txt) {
+		if (typeof txt === 'string') {
+			// replace all non-valid characters with underscores, followed by
+			// replacing each sequence of underscores with a single underscore.
+			txt = txt.replace(/([^A-Za-z0-9_])+/g, '_')
+				.replace(/_+/g, '_');
+
+			if (this.props.trimTrailingUnderscores || this.props.trimUnderscores) {
+				// strip leading/trailing underscore, if present. Note that the
+				// above procedure has already reduced any leading underscores
+				// to a single character.
+				txt = txt.endsWith('_') ? txt.substr(0, txt.length - 1) : txt;
+			}
+			if (this.props.trimLeadingUnderscores || this.props.trimUnderscores) {
+				txt = txt.startsWith('_') ? txt.substr(1) : txt;
+			}
+		}
+		return txt;
 	}
 
 	shouldComponentUpdate(nextProps, nextState) {
@@ -326,24 +367,44 @@ export class LoomTextEntry extends Component {
 	}
 
 	render() {
+		let warnStyle = {};
+		if (this.state.value !== '') {
+			if (this.state.value !== this.fixString(this.state.value)) {
+				warnStyle.backgroundColor = '#CC0000';
+				warnStyle.color = '#FFFFFF';
+			} else if (this.state.corrected) {
+				warnStyle.backgroundColor = '#FFA522';
+				warnStyle.color = '#222222';
+			}
+		}
 		return (
-			<div className={this.props.className} >
-				<input
-					type='text'
-					className='form-control'
-					defaultValue={this.props.defaultValue}
-					name={this.props.name}
-					id={this.props.id}
-					value={this.state.value}
-					onChange={(event) => { this.handleChange(event); } }
-					/>
+			<div className={this.props.className} style={warnStyle}>
+				{ this.props.label ?
+					<label for={this.props.id} className='col-sm-2 control-label'>{this.props.label}</label>
+					:
+					null
+				}
+				<div className='col-sm-10' >
+					<input
+						type='text'
+						className='form-control'
+						defaultValue={this.props.defaultValue}
+						name={this.props.name}
+						id={this.props.id}
+						value={this.state.value}
+						onChange={ (event) => { this.handleChange(event); } }
+						onBlur={ () => { this.fixTextInput(this.state.value); } }
+						/>
+				</div>
 			</div>
 		);
 	}
 }
 
 LoomTextEntry.propTypes = {
-	trimUnderscores: PropTypes.bool.isRequired,
+	trimUnderscores: PropTypes.bool,
+	trimLeadingUnderscores: PropTypes.bool,
+	trimTrailingUnderscores: PropTypes.bool,
 	defaultValue: PropTypes.string.isRequired,
 	onChange: PropTypes.func.isRequired,
 };
@@ -382,7 +443,7 @@ export class CSVFileChooser extends Component {
 		let newState = {
 			droppedFile: file,
 			fileName: file.name,
-			fileIsCSV: file.type === "text/csv",
+			fileIsCSV: file.type === 'text/csv',
 			fileSize: file.size,
 			fileSizeString: this.bytesToString(file.size),
 			filePreview: null,
@@ -502,7 +563,7 @@ export class CSVFileChooser extends Component {
 	bytesToString(bytes) {
 		let displaybytes = bytes;
 		let magnitude = 0;
-		const scale = ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+		const scale = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 		while (displaybytes > 512 && magnitude < scale.length) {
 			magnitude++;
 			displaybytes /= 1024;
@@ -530,9 +591,9 @@ export class CSVFileChooser extends Component {
 		};
 		let DZactiveStyle = { borderStyle: 'solid', borderColor: '#000', backgroundColor: '#fff' };
 		let DZrejectStyle = { borderStyle: 'solid', borderColor: '#f00', backgroundColor: '#fcc' };
-		let warnIf = (state) => {
+		let warnIf = (x) => {
 			let style = { margin: 5, padding: 5, textAlign: 'left' };
-			if (state === true) {
+			if (x) {
 				style.backgroundColor = '#f66';
 				style.color = '#fff';
 			}
