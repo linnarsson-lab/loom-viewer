@@ -106,9 +106,7 @@ export class CreateDataset extends Component {
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
-			transcriptome: 'mm10_sUCSC',
 			n_features: 100,
-			cluster_method: 'BackSPIN',
 		};
 
 		this.handleFormChange = this.handleFormChange.bind(this);
@@ -125,6 +123,9 @@ export class CreateDataset extends Component {
 	formIsFilled() {
 		let filledForm = true;
 		const formData = [
+			'transcriptome',
+			'project',
+			'dataset',
 			'col_attrs',
 			'n_features',
 			'cluster_method',
@@ -206,7 +207,7 @@ export class CreateDataset extends Component {
 									options={transcriptomeOptions}
 									value={this.state.transcriptome}
 									id='input_transcriptome'
-									onChange={ (opts) => { this.handleFormChange('transcriptome', opts.value); } }
+									onChange={ (opts) => { this.handleFormChange('transcriptome', opts ? opts.value : null); } }
 									/>
 							</div>
 						</div>
@@ -254,6 +255,11 @@ export class CreateDataset extends Component {
 									defaultValue='100'
 									value={this.state.n_features}
 									onChange={ (e) => { this.handleFormChange('n_features', e.target.value); } }
+									onBlur={
+										() => {
+											this.state.n_features < 100 ? this.handleFormChange('n_features', 100) : null;
+										}
+									}
 									id='input_n_features' />
 							</div>
 						</div>
@@ -264,7 +270,7 @@ export class CreateDataset extends Component {
 									options={clusterMethodOptions}
 									value={this.state.cluster_method}
 									id='input_cluster_method'
-									onChange={ (opts) => { this.handleFormChange('cluster_method', opts.value); } }
+									onChange={ (opts) => { this.handleFormChange('cluster_method', opts ? opts.value : null); } }
 									/>
 							</div>
 						</div>
@@ -275,18 +281,26 @@ export class CreateDataset extends Component {
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('regression_label', val); } }
 							id='input_regression_label' />
-						<div className='form-group'>
-							<span className='col-sm-8'>
-								{ !this.formIsFilled() ? 'Please fill in the missing fields' : ''}
-							</span>
-							<button
-								type='button'
-								className='btn btn-default col-sm-4'
-								disabled={ !this.formIsFilled() }
-								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
-								id='input_submit_create_dataset'>
-								Create New Dataset
-							</button>
+						<div className='form-group' style={{
+							color: this.formIsFilled() ? undefined : '#FFFFFF',
+							backgroundColor: this.formIsFilled() ? undefined : '#CC0000',
+						}}>
+							<div className='col-sm-7'>
+								<label for='input_submit_create_dataset' className='control-label'>
+									{ this.formIsFilled() ? 'All required fields filled in' : 'Please fill in the required fields' }
+								</label>
+							</div>
+							<div className='col-sm-5' style={{ textAlign: 'end' }}>
+								<button
+									type='button'
+									className='btn btn-default'
+									disabled={ !this.formIsFilled() }
+									onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
+									style={{ width: '100%' }}
+									id='input_submit_create_dataset'>
+									Create New Dataset
+								</button>
+							</div>
 						</div>
 					</form>
 				</div >
@@ -323,8 +337,13 @@ export class LoomTextEntry extends Component {
 	}
 
 	handleChange(event) {
+		const fixedTxt = this.fixString(event.target.value);
 		// immediately show newly typed characters
-		this.setState({ value: event.target.value, corrected: false });
+		this.setState({
+			value: event.target.value,
+			fixedVal: fixedTxt === event.target.value ? fixedTxt : '',
+			corrected: false,
+		});
 		// then make a (debounced) call to fixTextInput
 		this.delayedFixTextInput(event.target.value);
 	}
