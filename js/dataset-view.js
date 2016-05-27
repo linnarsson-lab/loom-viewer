@@ -190,6 +190,7 @@ export class CreateDatasetForm extends Component {
 	}
 
 	render() {
+		//TODO: fetch this from the server instead of relying on manual inlining
 		const transcriptomeOptions = [
 			{ value: 'mm10_sUCSC', label: 'mm10_sUCSC' },
 			{ value: 'mm10.2_sUCSC', label: 'mm10.2_sUCSC' },
@@ -241,6 +242,7 @@ export class CreateDatasetForm extends Component {
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
 				<div className='list-group'>
+					<FileDrop className='list-group-item' />
 					<CSVFileChooser
 						className='list-group-item'
 						label='Cell attributes:'
@@ -438,6 +440,89 @@ LoomTextEntry.propTypes = {
 	onChange: PropTypes.func.isRequired,
 };
 
+
+
+export class FileDrop extends Component {
+	constructor(props, context) {
+		super(props, context);
+		this.state = {
+			draggedOver: false,
+			fileDropped: null,
+		};
+
+		this.handleClick = this.handleClick.bind(this);
+		this.handleDrop = this.handleDrop.bind(this);
+		this.handleDragEnter = this.handleDragEnter.bind(this);
+		this.handleDragOver = this.handleDragOver.bind(this);
+		this.handleDragLeave = this.handleDragLeave.bind(this);
+	}
+
+	componentDidMount() {
+		this.enterCounter = 0;
+	}
+
+	handleClick() {
+		this.open();
+	}
+
+	handleDrop(ev) {
+		ev.preventDefault();
+		const droppedFile = ev.dataTransfer ? ev.dataTransfer.files[0] : ev.target ? ev.target.files[0] : undefined;
+		console.log(ev, droppedFile);
+		if (droppedFile) {
+			this.setState({ fileDropped: droppedFile });
+		}
+	}
+
+	handleDragEnter(ev) {
+		ev.preventDefault();
+		++this.enterCounter;
+		this.setState({ draggedOver: true });
+	}
+	handleDragOver(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		return false;
+	}
+
+	handleDragLeave(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		if (--this.enterCounter > 0) {
+			return;
+		}
+		this.setState({ draggedOver: false });
+	}
+
+	open() {
+		this.fileInputEl.value = null;
+		this.fileInputEl.click();
+	}
+	render() {
+
+		const inputAttributes = {
+			type: 'file',
+			multiple: false,
+			style: { display: 'none' },
+			ref: (el) => { this.fileInputEl = el; },
+			onChange: this.handleDrop,
+		};
+		return (
+			<div
+				onDrop={ (ev) => { this.handleDrop(ev); } }
+				onDragEnter={ (ev) => { this.handleDragEnter(ev); } }
+				onDragOver={ (ev) => { this.handleDragOver(ev); } }
+				onDragLeave={ (ev) => { this.handleDragLeave(ev); } }
+				>
+				<input {...inputAttributes}/>
+				<button onClick={ () => { this.handleClick(); } } >
+					{ this.state.draggedOver ? 'draggedOver' : 'nodrag' }
+				</button>
+				{ this.state.fileDropped ? 'file dropped: ' + this.state.fileDropped.name : 'no file dropped'}
+			</div>
+		);
+	}
+}
 
 // A file chooser for CSV files
 // - rudimentary validation (extension name, commas or semicolons, size)
