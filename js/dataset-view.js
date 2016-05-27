@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
 import Select from 'react-select';
-import Dropzone from 'react-dropzone';
 import * as _ from 'lodash';
 
 export class DatasetView extends Component {
@@ -212,8 +211,8 @@ export class CreateDatasetForm extends Component {
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
-							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<div className='col-sm-10' >
+							<label for='input_transcriptome' className='col-sm-3 control-label'>Transcriptome: </label>
+							<div className='col-sm-9' >
 								<Select
 									options={transcriptomeOptions}
 									value={this.state.transcriptome}
@@ -241,18 +240,24 @@ export class CreateDatasetForm extends Component {
 				<div className='panel-heading'>
 					<h3 className='panel-title'>CSV files</h3>
 				</div>
-				<div className='list-group'>
-					<FileDrop className='list-group-item' />
-					<CSVFileChooser
-						className='list-group-item'
-						label='Cell attributes:'
-						onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
-						/>
-					<CSVFileChooser
-						className='list-group-item'
-						label='[OPTIONAL] Gene attributes:'
-						onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
-						/>
+				<div className='panel-body'>
+					<form className='form-horizontal' role='form'>
+						<div classname='form-group'>
+							<CSVFileChooser
+								className='form-group'
+								label='Cell attributes:'
+								id='input_col_attr'
+								onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
+								/>
+							<hr />
+							<CSVFileChooser
+								className='form-group'
+								label='Gene attributes: [OPTIONAL]'
+								id='input_row_attr'
+								onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
+								/>
+						</div>
+					</form>
 				</div>
 				<div className='panel-heading'>
 					<h3 className='panel-title'>Additional parameters</h3>
@@ -260,8 +265,8 @@ export class CreateDatasetForm extends Component {
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
-							<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
-							<div className='col-sm-10'>
+							<label for='input_n_features' className='col-sm-3 control-label'>Number of features: </label>
+							<div className='col-sm-9'>
 								<input type='number'
 									className='form-control'
 									defaultValue='100'
@@ -276,8 +281,8 @@ export class CreateDatasetForm extends Component {
 							</div>
 						</div>
 						<div className='form-group'>
-							<label for='input_cluster_method' className='col-sm-2 control-label'>Clustering Method: </label>
-							<div className='col-sm-10'>
+							<label for='input_cluster_method' className='col-sm-3 control-label'>Clustering Method: </label>
+							<div className='col-sm-9'>
 								<Select
 									options={clusterMethodOptions}
 									value={this.state.cluster_method}
@@ -411,11 +416,11 @@ export class LoomTextEntry extends Component {
 		return (
 			<div className={this.props.className} style={warnStyle}>
 				{ this.props.label ?
-					<label for={this.props.id} className='col-sm-2 control-label'>{this.props.label}</label>
+					<label for={this.props.id} className='col-sm-3 control-label'>{this.props.label}</label>
 					:
 					null
 				}
-				<div className='col-sm-10' >
+				<div className='col-sm-9' >
 					<input
 						type='text'
 						className='form-control'
@@ -441,13 +446,27 @@ LoomTextEntry.propTypes = {
 };
 
 
-
-export class FileDrop extends Component {
+// A file chooser for CSV files
+// - rudimentary validation (extension name, commas or semicolons, size)
+// - accepts files via drag & drop, for ease of used
+export class CSVFileChooser extends Component {
 	constructor(props, context) {
 		super(props, context);
+
 		this.state = {
+			// NOTE: we distinguish between false and undefined for validation!
 			draggedOver: false,
-			fileDropped: null,
+			droppedFile: undefined,
+			fileName: ' -',
+			fileIsCSV: undefined,
+			fileSize: undefined,
+			fileSizeString: ' -',
+			filePreview: null,
+			validContent: undefined,
+			fileContentString: undefined,
+			contentInfo: [],
+			fileReader: this.CSVFileReader(),
+			dragStyle: undefined,
 		};
 
 		this.handleClick = this.handleClick.bind(this);
@@ -455,6 +474,8 @@ export class FileDrop extends Component {
 		this.handleDragEnter = this.handleDragEnter.bind(this);
 		this.handleDragOver = this.handleDragOver.bind(this);
 		this.handleDragLeave = this.handleDragLeave.bind(this);
+		this.CSVFileReader = this.CSVFileReader.bind(this);
+		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
 	}
 
 	componentDidMount() {
@@ -467,18 +488,36 @@ export class FileDrop extends Component {
 
 	handleDrop(ev) {
 		ev.preventDefault();
-		const droppedFile = ev.dataTransfer ? ev.dataTransfer.files[0] : ev.target ? ev.target.files[0] : undefined;
-		console.log(ev, droppedFile);
-		if (droppedFile) {
-			this.setState({ fileDropped: droppedFile });
+		ev.stopPropagation();
+		const file = ev.dataTransfer ? ev.dataTransfer.files[0] : ev.target ? ev.target.files[0] : undefined;
+		if (file) {
+			let newState = {
+				droppedFile: file,
+				fileName: file.name,
+				fileIsCSV: file.type === 'text/csv',
+				fileSize: file.size,
+				fileSizeString: this.bytesToString(file.size),
+				filePreview: null,
+				validContent: file.size > 0 ? undefined : null,
+				fileContentString: undefined,
+				contentInfo: [],
+				dragStyle: undefined,
+			};
+			this.setState(newState);
+
+			if (file.size > 0) {
+				this.state.fileReader.readAsText(file);
+			}
 		}
 	}
 
 	handleDragEnter(ev) {
 		ev.preventDefault();
+		ev.stopPropagation();
 		++this.enterCounter;
-		this.setState({ draggedOver: true });
+		this.setState({ draggedOver: true, dragStyle: { backgroundColor: '#CCFFCC' } });
 	}
+
 	handleDragOver(ev) {
 		ev.preventDefault();
 		ev.stopPropagation();
@@ -489,87 +528,15 @@ export class FileDrop extends Component {
 		ev.preventDefault();
 		ev.stopPropagation();
 		if (--this.enterCounter > 0) {
-			return;
+			return false;
 		}
-		this.setState({ draggedOver: false });
+		this.setState({ draggedOver: false, dragStyle: undefined });
 	}
 
 	open() {
 		this.fileInputEl.value = null;
 		this.fileInputEl.click();
-	}
-	render() {
-
-		const inputAttributes = {
-			type: 'file',
-			multiple: false,
-			style: { display: 'none' },
-			ref: (el) => { this.fileInputEl = el; },
-			onChange: this.handleDrop,
-		};
-		return (
-			<div
-				onDrop={ (ev) => { this.handleDrop(ev); } }
-				onDragEnter={ (ev) => { this.handleDragEnter(ev); } }
-				onDragOver={ (ev) => { this.handleDragOver(ev); } }
-				onDragLeave={ (ev) => { this.handleDragLeave(ev); } }
-				>
-				<input {...inputAttributes}/>
-				<button onClick={ () => { this.handleClick(); } } >
-					{ this.state.draggedOver ? 'draggedOver' : 'nodrag' }
-				</button>
-				{ this.state.fileDropped ? 'file dropped: ' + this.state.fileDropped.name : 'no file dropped'}
-			</div>
-		);
-	}
-}
-
-// A file chooser for CSV files
-// - rudimentary validation (extension name, commas or semicolons, size)
-// - accepts files via drag & drop, for ease of used
-export class CSVFileChooser extends Component {
-	constructor(props, context) {
-		super(props, context);
-
-		this.onDrop = this.onDrop.bind(this);
-		this.CSVFileReader = this.CSVFileReader.bind(this);
-		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
-
-		this.state = {
-			// NOTE: we distinguish between false and undefined for validation!
-			droppedFile: undefined,
-			fileName: ' -',
-			fileIsCSV: undefined,
-			fileSize: undefined,
-			fileSizeString: ' -',
-			filePreview: null,
-			validContent: undefined,
-			fileContentString: undefined,
-			backgroundColor: '#fff',
-			fontColor: '#111',
-			contentInfo: [],
-			fileReader: this.CSVFileReader(),
-		};
-	}
-
-	onDrop(files) {
-		let file = files[0];
-		let newState = {
-			droppedFile: file,
-			fileName: file.name,
-			fileIsCSV: file.type === 'text/csv',
-			fileSize: file.size,
-			fileSizeString: this.bytesToString(file.size),
-			filePreview: null,
-			validContent: file.size > 0 ? undefined : null,
-			fileContentString: undefined,
-			contentInfo: [],
-		};
-		this.setState(newState);
-
-		if (file.size > 0) {
-			this.state.fileReader.readAsText(file);
-		}
+		return false;
 	}
 
 	// Create a FileReader to re-use, which performs a rudimentary
@@ -602,20 +569,8 @@ export class CSVFileChooser extends Component {
 		// This catches the (hopefully) most common mistakes of selecting
 		// the wrong file, or bad formatting due to regional settings.
 		reader.onload = () => {
-			let subStrIdx = -1;
-			// Display up to the first eight lines to the user
-			for (let i = 0; i < 8; i++) {
-				let nextIdx = reader.result.indexOf('\n', subStrIdx + 1);
-				if (nextIdx === -1) {
-					break;
-				} else {
-					subStrIdx = nextIdx;
-				}
-			}
-			let subString = (subStrIdx !== -1) ? (reader.result.substr(0, subStrIdx)) : reader.result;
-
 			let newState = {
-				filePreview: subString,
+				filePreview: this.makePreviewString(reader.result),
 				contentInfo: this.state.contentInfo,
 			};
 
@@ -658,19 +613,7 @@ export class CSVFileChooser extends Component {
 		const fileContentString = filePreviewString.replace(/\;/gi, ',');
 
 		const commaBlob = new Blob([fileContentString], { type: 'text/csv' });
-		let subStrIdx = -1;
-		// Display up to the first eight lines to the user
-		for (let i = 0; i < 8; i++) {
-			let nextIdx = fileContentString.indexOf('\n', subStrIdx + 1);
-			if (nextIdx === -1) {
-				break;
-			} else {
-				// if the file contains less than 8 newlines,
-				// we'll just show the whole string.
-				subStrIdx = -1;
-			}
-		}
-		let filePreview = (subStrIdx !== -1) ? (fileContentString.substr(0, subStrIdx)) : fileContentString;
+		let filePreview = this.makePreviewString(fileContentString);
 		this.setState({ droppedFile: commaBlob, fileContentString, filePreview });
 	}
 
@@ -685,6 +628,25 @@ export class CSVFileChooser extends Component {
 		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude];
 	}
 
+	makePreviewString(txt) {
+		let subStrIdx = -1;
+		// Display up to the first eight lines to the user
+		for (let i = 0; i < 8; i++) {
+			let nextIdx = txt.indexOf('\n', subStrIdx + 1);
+			if (nextIdx === -1) {
+				break;
+			} else {
+				subStrIdx = nextIdx;
+			}
+		}
+		// subStrIdx === -1 if and only if there were no \n characters,
+		// in which case we look at the whole string.
+		if (subStrIdx === -1) { subStrIdx = txt.length; }
+		// cap at 1000 characters
+		subStrIdx = subStrIdx < 1000 ? subStrIdx : 1000;
+		return txt.substr(0, subStrIdx);
+	}
+
 	shouldComponentUpdate(nextProps, nextState) {
 		// risky: we assume that props never change here
 		return !(_.isEqual(this.state, nextState));
@@ -695,17 +657,17 @@ export class CSVFileChooser extends Component {
 	}
 
 	render() {
-		let state = this.state;
-		let DZstyle = {
-			width: 'auto', height: 'auto',
-			padding: 30, textAlign: 'center',
-			borderWidth: 2, borderColor: '#aaa',
-			borderStyle: 'solid', borderRadius: 5,
-			backgroundColor: '#eee', color: '#333',
+
+		const inputAttributes = {
+			type: 'file',
+			multiple: false,
+			style: { display: 'none' },
+			ref: (el) => { this.fileInputEl = el; },
+			onChange: this.handleDrop,
 		};
-		let DZactiveStyle = { borderStyle: 'solid', borderColor: '#000', backgroundColor: '#fff' };
-		let DZrejectStyle = { borderStyle: 'solid', borderColor: '#f00', backgroundColor: '#fcc' };
-		let warnIf = (x) => {
+
+		const state = this.state;
+		const warnIf = (x) => {
 			let style = { margin: 5, padding: 5, textAlign: 'left' };
 			if (x) {
 				style.backgroundColor = '#f66';
@@ -713,18 +675,34 @@ export class CSVFileChooser extends Component {
 			}
 			return style;
 		};
+
 		return (
-			<div className={this.props.className} style={{ backgroundColor: state.backgroundColor, color: state.fontColor }}>
-				<label>{this.props.label}</label>
-				<Dropzone onDrop={(files) => { this.onDrop(files); } } multiple={false}
-					style={DZstyle} activeStyle={DZactiveStyle} rejectStyle={DZrejectStyle}>
-					<b>Drag and drop a CSV file here, or click to browse</b>
-				</Dropzone>
-				<div>
+			<div
+				className={this.props.className}
+				style={this.state.dragStyle}
+				onDrop={ (ev) => { this.handleDrop(ev); } }
+				onDragEnter={ (ev) => { this.handleDragEnter(ev); } }
+				onDragOver={ (ev) => { this.handleDragOver(ev); } }
+				onDragLeave={ (ev) => { this.handleDragLeave(ev); } }
+				>
+				<label for={this.props.id} className='col-sm-3 control-label'>
+					{this.props.label}
+				</label>
+				<div id={this.props.id} className='col-sm-9'>
+					<button onClick={ (e) => { e.preventDefault(); this.handleClick(); } } >
+						<b>select a CSV file</b>
+					</button> (or drag and drop it on this cell)
 					<div style={ warnIf(state.fileIsCSV === false) } >
 						{ state.fileIsCSV ? '☑ ' : '☐ '}
-						file: <i>{state.fileName}</i>&nbsp;
-						{ state.fileIsCSV === false ? <b>does not have a CSV file extension!</b> : null }
+						file extension:
+						{ state.droppedFile ?
+							state.fileIsCSV ?
+								<i> {state.fileName + ' - '} has CSV extension</i>
+								:
+								<b> {state.fileName + ' - '} does not have a CSV file extension!</b>
+							:
+							null
+						}
 					</div>
 					<div style={ warnIf(state.fileSize === 0) } >
 						{ state.fileSize > 0 ? '☑ ' : '☐ '}
@@ -733,11 +711,12 @@ export class CSVFileChooser extends Component {
 					</div>
 					<div style={ warnIf(state.validContent === false) } >
 						{ state.validContent ? '☑ ' : '☐ ' }
-						content: (first eight lines)
+						content: (first thousand characters or eight lines, whichevr is shorter)
 						{ state.filePreview ? <pre>{state.filePreview}</pre> : null }
 						{ state.contentInfo.length ? state.contentInfo.map((info, i) => { return (<p key={i}><b>{info}</b></p>); }) : null }
 					</div>
 				</div>
+				<input {...inputAttributes}/>
 			</div >
 		);
 	}
