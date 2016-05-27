@@ -205,9 +205,6 @@ export class CreateDatasetForm extends Component {
 
 		return (
 			<div className='panel panel-primary'>
-				<div className='panel-heading'>
-					<h3 className='panel-title'>Required information</h3>
-				</div>
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
@@ -235,35 +232,21 @@ export class CreateDatasetForm extends Component {
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('dataset', val); } }
 							id='input_dataset' />
-					</form>
-				</div >
-				<div className='panel-heading'>
-					<h3 className='panel-title'>CSV files</h3>
-				</div>
-				<div className='panel-body'>
-					<form className='form-horizontal' role='form'>
-						<div classname='form-group'>
-							<CSVFileChooser
-								className='form-group'
-								label='Cell attributes:'
-								id='input_col_attr'
-								onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
-								/>
-							<hr />
-							<CSVFileChooser
-								className='form-group'
-								label='Gene attributes: [OPTIONAL]'
-								id='input_row_attr'
-								onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
-								/>
-						</div>
-					</form>
-				</div>
-				<div className='panel-heading'>
-					<h3 className='panel-title'>Additional parameters</h3>
-				</div>
-				<div className='panel-body'>
-					<form className='form-horizontal' role='form'>
+						<hr />
+						<CSVFileChooser
+							className='form-group'
+							label='Cell attributes:'
+							id='input_col_attr'
+							onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
+							/>
+						<hr />
+						<CSVFileChooser
+							className='form-group'
+							label='Gene attributes: [OPTIONAL]'
+							id='input_row_attr'
+							onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
+							/>
+						<hr />
 						<div className='form-group'>
 							<label for='input_n_features' className='col-sm-3 control-label'>Number of features: </label>
 							<div className='col-sm-9'>
@@ -302,11 +285,9 @@ export class CreateDatasetForm extends Component {
 							color: this.formIsFilled() ? undefined : '#FFFFFF',
 							backgroundColor: this.formIsFilled() ? undefined : '#CC0000',
 						}}>
-							<div className='col-sm-7'>
-								<label for='input_submit_create_dataset' className='control-label'>
-									{ this.formIsFilled() ? 'All required fields filled in' : 'Please fill in the required fields' }
-								</label>
-							</div>
+							<label for='input_submit_create_dataset' className='col-sm-7 control-label'>
+								{ this.formIsFilled() ? 'All required fields filled in' : 'Please fill in the required fields' }
+							</label>
 							<div className='col-sm-5' style={{ textAlign: 'end' }}>
 								<button
 									type='button'
@@ -320,7 +301,7 @@ export class CreateDatasetForm extends Component {
 							</div>
 						</div>
 					</form>
-				</div >
+				</div>
 			</div >
 		);
 	}
