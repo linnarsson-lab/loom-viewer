@@ -294,7 +294,7 @@ export class CreateDatasetForm extends Component {
 							<div className='col-sm-5' style={{ textAlign: 'end' }}>
 								<button
 									type='button'
-									className='btn btn-default'
+									className={ this.formIsFilled() ? 'btn btn-primary' : 'btn btn-default' }
 									disabled={ !this.formIsFilled() }
 									onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
 									style={{ width: '100%' }}
@@ -474,6 +474,7 @@ export class CSVFileChooser extends Component {
 	handleDrop(ev) {
 		ev.preventDefault();
 		ev.stopPropagation();
+		this.enterCounter = 0;
 		const file = ev.dataTransfer ? ev.dataTransfer.files[0] : ev.target ? ev.target.files[0] : undefined;
 		if (file) {
 			let newState = {
@@ -559,20 +560,25 @@ export class CSVFileChooser extends Component {
 				contentInfo: this.state.contentInfo,
 			};
 
+			if (!this.state.fileIsCSV) {
+				newState.contentInfo.push('Incorrect file extension, check if content is a CSV');
+			}
+
+
 			let noCommasFound = reader.result.indexOf(',') === -1;
 			let semiColonsFound = reader.result.indexOf(';') !== -1;
 			if (noCommasFound) {
+				newState.validContent = false;
 				if (semiColonsFound) {
-					newState.contentInfo.push('Only semicolons found, replacing with commas. Please double-check results above');
+					newState.contentInfo.push('Only semicolons found, replacing with commas. Please double-check if results make sense');
 				} else {
-					newState.contentInfo.push('No commas found, check if this is a properly formatted CSV');
+					newState.contentInfo.push('Unlikely to be a properly formatted CSV: no commas found!');
 				}
-				newState.validContent = false;
 			} else if (semiColonsFound) {
-				newState.contentInfo.push('Mix of commas and semicolons found, check if this is a properly formatted CSV');
 				newState.validContent = false;
+				newState.contentInfo.push('Unlikely to be a properly formatted CSV: mix of commas and semicolons found!');
 			} else {
-				// The check found no errors, use file content string as is
+				// The check found no errors in the content, use file content string as is
 				newState.fileContentString = reader.result;
 				// However, if extension is wrong we warn the user!
 				newState.validContent = this.state.fileIsCSV;
@@ -674,7 +680,9 @@ export class CSVFileChooser extends Component {
 					{this.props.label}
 				</label>
 				<div id={this.props.id} className='col-sm-9'>
-					<button onClick={ (e) => { e.preventDefault(); this.handleClick(); } } >
+					<button
+						className={ this.enterCounter > 0 ? 'btn btn-success' : 'btn btn-default'}
+						onClick={ (e) => { e.preventDefault(); this.handleClick(); } } >
 						<b>select a CSV file</b>
 					</button> (or drag and drop it on this cell)
 					<div style={ warnIf(state.fileIsCSV === false) } >
