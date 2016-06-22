@@ -10,16 +10,15 @@ export class DatasetView extends Component {
 		const { dispatch, dataState } = this.props;
 
 		const panels = Object.keys(dataState.projects).map((proj) => {
-			const datasets = dataState.projects[proj].map((d) => {
-				const isCurrent = d.dataset === dataState.currentDataset.dataset;
+			const datasets = dataState.projects[proj].map((state) => {
 				return (
-					<div key={d.dataset} className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
-						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + '__' + proj + '__' + d.dataset)); } }>{d.dataset}</a>
-						<span>{' ' + d.message}</span>
-						<div className='pull-right'>
-							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
-						</div>
-					</div>
+					<DataSetListItem
+						key={state.dataset}
+						isCurrent={state.dataset === dataState.currentDataset.dataset}
+						state={state}
+						proj={proj}
+						dispatch={dispatch}
+						/>
 				);
 			});
 			return (
@@ -27,7 +26,13 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{dataState.projects[proj].length.toString() + ' dataset' + (dataState.projects[proj].length > 1 ? 's' : '') }</span>
+							<span>
+								{
+									dataState.projects[proj].length.toString() +
+									' dataset' +
+									(dataState.projects[proj].length > 1 ? 's' : '')
+								}
+							</span>
 						</div>
 					</div>
 					<div className='list-group'>
@@ -71,7 +76,33 @@ DatasetView.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-export class CreateDataset extends Component {
+
+
+class DataSetListItem extends Component {
+	render() {
+		const { key, isCurrent, state, proj, dispatch } = this.props;
+		return (
+			<div
+				key={key}
+				className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
+				<a onClick={
+					() => {
+						const ds = state.transcriptome + '__' + proj + '__' + state.dataset;
+						dispatch(fetchDataset(ds));
+					}
+				}>
+					{state.dataset}
+				</a>
+				<span>{' ' + state.message}</span>
+				<div className='pull-right'>
+					<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
+				</div>
+			</div>
+		);
+	}
+}
+
+class CreateDataset extends Component {
 	render() {
 		return (
 			<div>
@@ -110,7 +141,7 @@ export class CreateDataset extends Component {
 }
 
 
-export class CreateDatasetForm extends Component {
+class CreateDatasetForm extends Component {
 
 	constructor(props, context) {
 		super(props, context);
@@ -131,6 +162,7 @@ export class CreateDatasetForm extends Component {
 
 	formIsFilled() {
 		let filledForm = true;
+		//row_attrs is optional, the rest is not
 		const formData = [
 			'transcriptome',
 			'project',
@@ -142,10 +174,7 @@ export class CreateDatasetForm extends Component {
 		];
 		formData.forEach((element) => {
 			// if an element is missing, we cannot submit
-			// TODO: instead of this approach,
-			// deactivate submit button until all relevant fields are defined
 			if (!this.state[element]) {
-				//row_attrs is optional, the rest is not
 				filledForm = false;
 			}
 		});
@@ -318,7 +347,7 @@ export class CreateDatasetForm extends Component {
 // invalid characters (including whitespace) with single underscores.
 // Note that this is purely for user feedback!
 // Input should be validated and fixed on the server side too!
-export class LoomTextEntry extends Component {
+class LoomTextEntry extends Component {
 
 	constructor(props, context) {
 		super(props, context);
@@ -434,7 +463,7 @@ LoomTextEntry.propTypes = {
 // A file chooser for CSV files
 // - rudimentary validation (extension name, commas or semicolons, size)
 // - accepts files via drag & drop, for ease of used
-export class CSVFileChooser extends Component {
+class CSVFileChooser extends Component {
 	constructor(props, context) {
 		super(props, context);
 
