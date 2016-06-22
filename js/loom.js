@@ -44,49 +44,48 @@ class App extends Component {
 		let view = <div></div>;
 
 		switch (this.props.viewState.view) {
-			case "Dataset":
-				view = <DatasetView
+		case "Dataset":
+			view = <DatasetView
+					viewState={viewState}
+					dataState={dataState}
+					dispatch={dispatch}
+					/>;
+			break;
+		case "Heatmap":
+			view = <HeatmapView
 					viewState={viewState}
 					dataState={dataState}
 					heatmapState={heatmapState}
 					dispatch={dispatch}
 					/>;
-				break;
-			case "Heatmap":
-				view = <HeatmapView
-					viewState={viewState}
-					dataState={dataState}
-					heatmapState={heatmapState}
-					dispatch={dispatch}
-					/>;
-				break;
-			case "Sparkline":
-				view = <SparklineView
+			break;
+		case "Sparkline":
+			view = <SparklineView
 					viewState={viewState}
 					dataState={dataState}
 					sparklineState={sparklineState}
 					dispatch={dispatch}
 					/>;
-				break;
-			case "Landscape":
-				view = <LandscapeView
+			break;
+		case "Landscape":
+			view = <LandscapeView
 					viewState={viewState}
 					dataState={dataState}
 					landscapeState={landscapeState}
 					dispatch={dispatch}
 					/>;
-				break;
-			case "Genescape":
-				view = <GenescapeView
+			break;
+		case "Genescape":
+			view = <GenescapeView
 					viewState={viewState}
 					dataState={dataState}
 					genescapeState={genescapeState}
 					dispatch={dispatch}
 					/>;
-				break;
-			default:
-				view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
-				break;
+			break;
+		default:
+			view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
+			break;
 		}
 		return (
 			<div>
