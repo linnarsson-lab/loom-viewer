@@ -48,10 +48,10 @@ export class Heatmap extends React.Component {
 			}
 		).addTo(map);
 
-		this.setState({ "map": map });
+		this.setState({ 'map': map });
 		const southWest = map.unproject([0, this.props.fullZoomHeight], map.getMaxZoom());
 		const northEast = map.unproject([this.props.fullZoomWidth, 0], map.getMaxZoom());
-		map.on('move', () => { this.handleViewChanged(map); });
+		map.on('move', () => { return this.handleViewChanged(map); });
 		if (this.props.center.lat === 0 && this.props.center.lng === 0) {
 			map.fitBounds(new L.LatLngBounds(southWest, northEast));
 		} else {
