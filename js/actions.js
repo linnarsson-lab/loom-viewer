@@ -38,7 +38,7 @@ export function fetchProjects() {
 		dispatch(requestProjects());
 		// Second, perform the request (async)
 		return fetch(`/loom`)
-			.then((response) => { response.json(); })
+			.then((response) => { return response.json();})
 			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				// Group by project
@@ -90,7 +90,7 @@ export function fetchDataset(dataset) {
 		dispatch(requestDataset(dataset));
 		// Second, perform the request (async)
 		return fetch(`/loom/${dataset}/fileinfo.json`)
-			.then((response) => { response.json(); })
+			.then((response) => { return response.json(); })
 			.then((ds) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				// Also, dispatch some actions to set required properties on the subviews
@@ -157,7 +157,7 @@ export function fetchGene(dataset, gene, cache) {
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
 		return fetch(`/loom/${dataset.name}/row/${row}`)
-			.then((response) => { response.json(); })
+			.then((response) => { return response.json(); })
 			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				dispatch(receiveGene(gene, json));
