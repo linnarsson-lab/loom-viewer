@@ -30,7 +30,7 @@ Serving from: /Users/gioele/Loom
 
 If you want to contribute to Loom, you need to set up your development environment:
 
-1. Install `node` ([Node.js](https://nodejs.org/en/))
+1. Install `node` ([Node.js](https://nodejs.org/en/) - Debian and Ubuntu users are advised not to install the default package but [follow these instructions](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions))
 2. Start Terminal and `cd` to where you want to work: `cd my-dev-dir`
 3. Clone this repository: `git clone https://github.com/linnarsson-lab/Loom.git`
 4. Go to the main Loom folder (`cd Loom`)
@@ -57,9 +57,4 @@ Run `./build`
 
 This will create a new folder `release`. Run `release/loom` to start the loom server (or `release/loom debug` to run in debug mode).
 
-**Note:** By default, React is built in production mode, with less informative error messages (but good performance). To build in 
-debug mode, edit the build script before building Loom and remove the following line:
-
-```
-export NODE_ENV=production
-```
+**Note:** By default, React is built in production mode, with less informative error messages (but good performance). To build in debug mode, run the build script with `./build debug`

@@ -41,9 +41,9 @@ import pymysql
 import pymysql.cursors
 import csv
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
-import hdbscan
 from gcloud import logging
-
+# import hdbscan
+import logging
 logger = logging.Client().logger("LoomPipeline")
 
 class PipelineError(Exception):
@@ -348,25 +348,26 @@ class LoomPipeline(object):
 			ds.set_attr("_Ordering", ordering, axis = 0)
 			ds.permute(ordering, axis = 0)
 
-		elif config.cluster_method == "HDBSCAN_notimplemented":
-			config.set_status("creating", "Preparing the dataset: Step 3A (HDBSCAN on cells).")
-			# Cells
-			S = -ds.corr_matrix(axis = 1)
-			clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
-			labels = clusterer.fit_predict(S)
-			ds.set_attr("_Cluster", labels, axis = 1)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 1)
-			ds.permute(ordering, axis = 1)
 
-			config.set_status("creating", "Preparing the dataset: Step 3B (HDBSCAN on genes).")
-			# Genes
-			S = -ds.corr_matrix(axis = 0)
-			labels = clusterer.fit_predict(S)
-			ds.set_attr("_Cluster", labels, axis = 0)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 0)
-			ds.permute(ordering, axis = 0)
+		# elif config.cluster_method == "HDBSCAN":
+		# 	config.set_status("creating", "Preparing the dataset: Step 3A (HDBSCAN on cells).")
+		# 	# Cells
+		# 	S = -ds.corr_matrix(axis = 1)
+		# 	clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
+		# 	labels = clusterer.fit_predict(S)
+		# 	ds.set_attr("_Cluster", labels, axis = 1)
+		# 	ordering = np.argsort(labels)
+		# 	ds.set_attr("_Ordering", ordering, axis = 1)
+		# 	ds.permute(ordering, axis = 1)
+
+		# 	config.set_status("creating", "Preparing the dataset: Step 3B (HDBSCAN on genes).")
+		# 	# Genes
+		# 	S = -ds.corr_matrix(axis = 0)
+		# 	labels = clusterer.fit_predict(S)
+		# 	ds.set_attr("_Cluster", labels, axis = 0)
+		# 	ordering = np.argsort(labels)
+		# 	ds.set_attr("_Ordering", ordering, axis = 0)
+		# 	ds.permute(ordering, axis = 0)
 
 		# Regression
 		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")

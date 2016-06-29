@@ -6,9 +6,13 @@ export class HeatmapSidepanel extends Component {
 	render() {
 		const { dispatch, heatmapState, dataState } = this.props;
 
-		const colAttrKeys = Object.keys(dataState.currentDataset.colAttrs).sort().push("(gene)");
-		const rowAttrKeys = Object.keys(dataState.currentDataset.colAttrs).sort().push("(gene positions)");
-		const optionNames = ["Text", "Bars", "Heatmap", "Categorical"];
+		let colAttrKeys = Object.keys(dataState.currentDataset.colAttrs);
+		colAttrKeys.sort();
+		colAttrKeys.push("(gene)");
+		let rowAttrKeys = Object.keys(dataState.currentDataset.rowAttrs);
+		rowAttrKeys.sort();
+		rowAttrKeys.push("(gene positions)");
+		let optionNames = ["Text", "Bars", "Heatmap", "Categorical"];
 
 		return (
 			<div className='panel panel-default'>

@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataset } from './actions.js';
 import Select from 'react-select';
-import Dropzone from 'react-dropzone';
 import * as _ from 'lodash';
 
 export class DatasetView extends Component {
@@ -11,16 +10,15 @@ export class DatasetView extends Component {
 		const { dispatch, dataState } = this.props;
 
 		const panels = Object.keys(dataState.projects).map((proj) => {
-			const datasets = dataState.projects[proj].map((d) => {
-				const isCurrent = d.dataset === dataState.currentDataset.dataset;
+			const datasets = dataState.projects[proj].map((state) => {
 				return (
-					<div key={d.dataset} className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
-						<a onClick={() => { dispatch(fetchDataset(d.transcriptome + '__' + proj + '__' + d.dataset)); } }>{d.dataset}</a>
-						<span>{' ' + d.message}</span>
-						<div className='pull-right'>
-							<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
-						</div>
-					</div>
+					<DataSetListItem
+						key={state.dataset}
+						isCurrent={state.dataset === dataState.currentDataset.dataset}
+						state={state}
+						proj={proj}
+						dispatch={dispatch}
+						/>
 				);
 			});
 			return (
@@ -28,7 +26,13 @@ export class DatasetView extends Component {
 					<div className='panel-heading'>
 						{proj}
 						<div className='pull-right'>
-							<span>{dataState.projects[proj].length.toString() + ' dataset' + (dataState.projects[proj].length > 1 ? 's' : '') }</span>
+							<span>
+								{
+									dataState.projects[proj].length.toString() +
+									' dataset' +
+									(dataState.projects[proj].length > 1 ? 's' : '')
+								}
+							</span>
 						</div>
 					</div>
 					<div className='list-group'>
@@ -42,10 +46,10 @@ export class DatasetView extends Component {
 			<div className='container'>
 				<div className='row'>
 					<div className='view col-md-8'>
-						<h3>&nbsp; </h3>
-						<h3>Linnarsson lab single-cell data repository</h3>
-						<h3>&nbsp; </h3>
-						<h4>Available datasets</h4>
+						<hr />
+						<h1>Linnarsson lab single-cell data repository</h1>
+						<hr />
+						<h2>Available datasets</h2>
 						<div>
 							{ panels.length === 0 ?
 								<div className='panel panel-primary'>
@@ -58,34 +62,6 @@ export class DatasetView extends Component {
 							}
 						</div>
 						<hr />
-						<h4>Create a new dataset</h4>
-						<h5>Instructions</h5>
-						<p>To generate a dataset, the user must supply the names of: </p>
-						<ul>
-							<li>the dataset to be created</li>
-							<li>the user the dataset belongs to</li>
-							<li>the project the dataset belongs to</li>
-						</ul>
-						<p>Furthermore, the pipeline also needs: </p>
-						<ul>
-							<li>a CSV file of cell attributes from which the dataset is generated</li>
-							<li><i>(optionally) </i> a CSV file of gene attributes</li>
-						</ul>
-						<p>Before uploading these CSV files a minimal check will be applied, hopefully catching the most likely
-							scenarios.If the CSV file contains semi-colons instead of commas (most likely the result of regional
-							settings in whatever tool was used to generate the file), they will automatically be replace
-							before submitting.Please double-check if the result is correct in that case.</p>
-						<p><i>Note: </i> you can still submit a file with a wrong file extension or (what appears to be)
-							malformed content, as validation might turn up false positives.We assume you know what you are doing,
-							just be careful!</p>
-						<p>Finally, the pipeline requires the following parameters: </p>
-						<ul>
-							<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
-							<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
-							<li>Regression label - must be one of the column attributes
-							(either from the file supplied by the user or from the standard cell attributes) </li>
-						</ul>
-						<br />
 						<CreateDataset />
 					</div>
 				</div>
@@ -101,14 +77,76 @@ DatasetView.propTypes = {
 };
 
 
-export class CreateDataset extends Component {
+
+class DataSetListItem extends Component {
+	render() {
+		const { key, isCurrent, state, proj, dispatch } = this.props;
+		return (
+			<div
+				key={key}
+				className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
+				<a onClick={
+					() => {
+						const ds = state.transcriptome + '__' + proj + '__' + state.dataset;
+						dispatch(fetchDataset(ds));
+					}
+				}>
+					{state.dataset}
+				</a>
+				<span>{' ' + state.message}</span>
+				<div className='pull-right'>
+					<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
+				</div>
+			</div>
+		);
+	}
+}
+
+class CreateDataset extends Component {
+	render() {
+		return (
+			<div>
+				<h2>Create a new dataset</h2>
+				<h3>Instructions</h3>
+				<p>To generate a dataset, the user must supply the names of: </p>
+				<ul>
+					<li>the dataset to be created</li>
+					<li>the user the dataset belongs to</li>
+					<li>the project the dataset belongs to</li>
+				</ul>
+				<p>Furthermore, the pipeline also needs: </p>
+				<ul>
+					<li>a CSV file of cell attributes from which the dataset is generated</li>
+					<li><i>(optionally) </i> a CSV file of gene attributes</li>
+				</ul>
+				<p>Before uploading these CSV files a minimal check will be applied, hopefully catching the most likely
+					scenarios.If the CSV file contains semi-colons instead of commas (most likely the result of regional
+					settings in whatever tool was used to generate the file), they will automatically be replace
+					before submitting.Please double-check if the result is correct in that case.</p>
+				<p><i>Note: </i> you can still submit a file with a wrong file extension or (what appears to be)
+					malformed content, as validation might turn up false positives.We assume you know what you are doing,
+					just be careful!</p>
+				<p>Finally, the pipeline requires the following parameters: </p>
+				<ul>
+					<li>The number of features - at least 100 and not more than the total number of genes in the transcriptome</li>
+					<li>The clustring method to apply - Affinity Propagation or BackSPIN</li>
+					<li>Regression label - must be one of the column attributes
+					(either from the file supplied by the user or from the standard cell attributes) </li>
+				</ul>
+				<br />
+				<CreateDatasetForm />
+			</div>
+		);
+	}
+}
+
+
+class CreateDatasetForm extends Component {
 
 	constructor(props, context) {
 		super(props, context);
 		this.state = {
-			transcriptome: 'mm10_sUCSC',
 			n_features: 100,
-			cluster_method: 'BackSPIN',
 		};
 
 		this.handleFormChange = this.handleFormChange.bind(this);
@@ -124,7 +162,11 @@ export class CreateDataset extends Component {
 
 	formIsFilled() {
 		let filledForm = true;
+		//row_attrs is optional, the rest is not
 		const formData = [
+			'transcriptome',
+			'project',
+			'dataset',
 			'col_attrs',
 			'n_features',
 			'cluster_method',
@@ -132,10 +174,7 @@ export class CreateDataset extends Component {
 		];
 		formData.forEach((element) => {
 			// if an element is missing, we cannot submit
-			// TODO: instead of this approach,
-			// deactivate submit button until all relevant fields are defined
 			if (!this.state[element]) {
-				//row_attrs is optional, the rest is not
 				filledForm = false;
 			}
 		});
@@ -179,6 +218,7 @@ export class CreateDataset extends Component {
 	}
 
 	render() {
+		//TODO: fetch this from the server instead of relying on manual inlining
 		const transcriptomeOptions = [
 			{ value: 'mm10_sUCSC', label: 'mm10_sUCSC' },
 			{ value: 'mm10.2_sUCSC', label: 'mm10.2_sUCSC' },
@@ -194,24 +234,22 @@ export class CreateDataset extends Component {
 
 		return (
 			<div className='panel panel-primary'>
-				<div className='panel-heading'>
-					<h3 className='panel-title'>Required information</h3>
-				</div>
 				<div className='panel-body'>
 					<form className='form-horizontal' role='form'>
 						<div className='form-group'>
-							<label for='input_transcriptome' className='col-sm-2 control-label'>Transcriptome: </label>
-							<div className='col-sm-10' >
+							<label for='input_transcriptome' className='col-sm-3 control-label'>Transcriptome: </label>
+							<div className='col-sm-9' >
 								<Select
 									options={transcriptomeOptions}
 									value={this.state.transcriptome}
 									id='input_transcriptome'
-									onChange={ (opts) => { this.handleFormChange('transcriptome', opts.value); } }
+									onChange={ (opts) => { this.handleFormChange('transcriptome', opts ? opts.value : null); } }
 									/>
 							</div>
 						</div>
 						<LoomTextEntry
 							label='Project:'
+							placeholder='Enter a project name'
 							trimUnderscores={true}
 							className='form-group'
 							defaultValue=''
@@ -219,77 +257,83 @@ export class CreateDataset extends Component {
 							id='input_project'/>
 						<LoomTextEntry
 							label='Dataset:'
+							placeholder='Enter a dataset'
 							trimTrailingUnderscores={true}
 							className='form-group'
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('dataset', val); } }
 							id='input_dataset' />
-					</form>
-				</div >
-				<div className='panel-heading'>
-					<h3 className='panel-title'>CSV files</h3>
-				</div>
-				<div className='list-group'>
-					<CSVFileChooser
-						className='list-group-item'
-						label='Cell attributes:'
-						onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
-						/>
-					<CSVFileChooser
-						className='list-group-item'
-						label='[OPTIONAL] Gene attributes:'
-						onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
-						/>
-				</div>
-				<div className='panel-heading'>
-					<h3 className='panel-title'>Additional parameters</h3>
-				</div>
-				<div className='panel-body'>
-					<form className='form-horizontal' role='form'>
+						<hr />
+						<CSVFileChooser
+							className='form-group'
+							label='Cell attributes:'
+							id='input_col_attr'
+							onChange={ (val) => { this.handleFormChange('col_attrs', val); } }
+							/>
+						<hr />
+						<CSVFileChooser
+							className='form-group'
+							label='Gene attributes: [OPTIONAL]'
+							id='input_row_attr'
+							onChange={ (val) => { this.handleFormChange('row_attrs', val); } }
+							/>
+						<hr />
 						<div className='form-group'>
-							<label for='input_n_features' className='col-sm-2 control-label'>Number of features: </label>
-							<div className='col-sm-10'>
+							<label for='input_n_features' className='col-sm-3 control-label'>Number of features: </label>
+							<div className='col-sm-9'>
 								<input type='number'
 									className='form-control'
 									defaultValue='100'
 									value={this.state.n_features}
 									onChange={ (e) => { this.handleFormChange('n_features', e.target.value); } }
+									onBlur={
+										() => {
+											this.state.n_features < 100 ? this.handleFormChange('n_features', 100) : null;
+										}
+									}
 									id='input_n_features' />
 							</div>
 						</div>
 						<div className='form-group'>
-							<label for='input_cluster_method' className='col-sm-2 control-label'>Clustering Method: </label>
-							<div className='col-sm-10'>
+							<label for='input_cluster_method' className='col-sm-3 control-label'>Clustering Method: </label>
+							<div className='col-sm-9'>
 								<Select
 									options={clusterMethodOptions}
 									value={this.state.cluster_method}
 									id='input_cluster_method'
-									onChange={ (opts) => { this.handleFormChange('cluster_method', opts.value); } }
+									onChange={ (opts) => { this.handleFormChange('cluster_method', opts ? opts.value : null); } }
 									/>
 							</div>
 						</div>
 						<LoomTextEntry
 							label='Regression Label: '
+							placeholder='Enter a regression label'
 							trimUnderscores={false}
 							className='form-group'
 							defaultValue=''
 							onChange={ (val) => { this.handleFormChange('regression_label', val); } }
 							id='input_regression_label' />
-						<div className='form-group'>
-							<span className='col-sm-8'>
-								{ !this.formIsFilled() ? 'Please fill in the missing fields' : ''}
-							</span>
-							<button
-								type='button'
-								className='btn btn-default col-sm-4'
-								disabled={ !this.formIsFilled() }
-								onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
-								id='input_submit_create_dataset'>
-								Create New Dataset
-							</button>
+						<div className='form-group' style={{
+							color: this.formIsFilled() ? undefined : '#FFFFFF',
+							backgroundColor: this.formIsFilled() ? undefined : '#CC0000',
+						}}>
+							<label for='input_submit_create_dataset' className='col-sm-7 control-label'>
+								{ this.formIsFilled() ? 'All required fields filled in' : 'Please fill in the required fields' }
+							</label>
+							<div className='col-sm-5' style={{ textAlign: 'end' }}>
+								<button
+									type='button'
+									className={ this.formIsFilled() ? 'btn btn-primary' : 'btn btn-default' }
+									disabled={ !this.formIsFilled() }
+									onClick={ this.formIsFilled() ? () => { this.sendData(); } : null }
+									style={{ width: '100%' }}
+									id='input_submit_create_dataset'>
+									Create New Dataset
+								</button>
+							</div>
 						</div>
 					</form>
-				</div >
+				</div>
 			</div >
 		);
 	}
@@ -303,7 +347,7 @@ export class CreateDataset extends Component {
 // invalid characters (including whitespace) with single underscores.
 // Note that this is purely for user feedback!
 // Input should be validated and fixed on the server side too!
-export class LoomTextEntry extends Component {
+class LoomTextEntry extends Component {
 
 	constructor(props, context) {
 		super(props, context);
@@ -323,8 +367,13 @@ export class LoomTextEntry extends Component {
 	}
 
 	handleChange(event) {
+		const fixedTxt = this.fixString(event.target.value);
 		// immediately show newly typed characters
-		this.setState({ value: event.target.value, corrected: false });
+		this.setState({
+			value: event.target.value,
+			fixedVal: fixedTxt === event.target.value ? fixedTxt : '',
+			corrected: false,
+		});
 		// then make a (debounced) call to fixTextInput
 		this.delayedFixTextInput(event.target.value);
 	}
@@ -380,15 +429,16 @@ export class LoomTextEntry extends Component {
 		return (
 			<div className={this.props.className} style={warnStyle}>
 				{ this.props.label ?
-					<label for={this.props.id} className='col-sm-2 control-label'>{this.props.label}</label>
+					<label for={this.props.id} className='col-sm-3 control-label'>{this.props.label}</label>
 					:
 					null
 				}
-				<div className='col-sm-10' >
+				<div className='col-sm-9' >
 					<input
 						type='text'
 						className='form-control'
 						defaultValue={this.props.defaultValue}
+						placeholder={this.props.placeholder}
 						name={this.props.name}
 						id={this.props.id}
 						value={this.state.value}
@@ -413,16 +463,13 @@ LoomTextEntry.propTypes = {
 // A file chooser for CSV files
 // - rudimentary validation (extension name, commas or semicolons, size)
 // - accepts files via drag & drop, for ease of used
-export class CSVFileChooser extends Component {
+class CSVFileChooser extends Component {
 	constructor(props, context) {
 		super(props, context);
 
-		this.onDrop = this.onDrop.bind(this);
-		this.CSVFileReader = this.CSVFileReader.bind(this);
-		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
-
 		this.state = {
 			// NOTE: we distinguish between false and undefined for validation!
+			draggedOver: false,
 			droppedFile: undefined,
 			fileName: ' -',
 			fileIsCSV: undefined,
@@ -431,31 +478,80 @@ export class CSVFileChooser extends Component {
 			filePreview: null,
 			validContent: undefined,
 			fileContentString: undefined,
-			backgroundColor: '#fff',
-			fontColor: '#111',
 			contentInfo: [],
 			fileReader: this.CSVFileReader(),
+			dragStyle: undefined,
 		};
+
+		this.handleClick = this.handleClick.bind(this);
+		this.handleDrop = this.handleDrop.bind(this);
+		this.handleDragEnter = this.handleDragEnter.bind(this);
+		this.handleDragOver = this.handleDragOver.bind(this);
+		this.handleDragLeave = this.handleDragLeave.bind(this);
+		this.CSVFileReader = this.CSVFileReader.bind(this);
+		this.semicolonsToCommas = this.semicolonsToCommas.bind(this);
 	}
 
-	onDrop(files) {
-		let file = files[0];
-		let newState = {
-			droppedFile: file,
-			fileName: file.name,
-			fileIsCSV: file.type === 'text/csv',
-			fileSize: file.size,
-			fileSizeString: this.bytesToString(file.size),
-			filePreview: null,
-			validContent: file.size > 0 ? undefined : null,
-			fileContentString: undefined,
-			contentInfo: [],
-		};
-		this.setState(newState);
+	componentDidMount() {
+		this.enterCounter = 0;
+	}
 
-		if (file.size > 0) {
-			this.state.fileReader.readAsText(file);
+	handleClick() {
+		this.open();
+	}
+
+	handleDrop(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		this.enterCounter = 0;
+		const file = ev.dataTransfer ? ev.dataTransfer.files[0] : ev.target ? ev.target.files[0] : undefined;
+		if (file) {
+			let newState = {
+				droppedFile: file,
+				fileName: file.name,
+				fileIsCSV: file.type === 'text/csv',
+				fileSize: file.size,
+				fileSizeString: this.bytesToString(file.size),
+				filePreview: null,
+				validContent: file.size > 0 ? undefined : null,
+				fileContentString: undefined,
+				contentInfo: [],
+				dragStyle: undefined,
+			};
+			this.setState(newState);
+
+			if (file.size > 0) {
+				this.state.fileReader.readAsText(file);
+			}
 		}
+	}
+
+	handleDragEnter(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		++this.enterCounter;
+		this.setState({ draggedOver: true, dragStyle: { backgroundColor: '#CCFFCC' } });
+	}
+
+	handleDragOver(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		return false;
+	}
+
+	handleDragLeave(ev) {
+		ev.preventDefault();
+		ev.stopPropagation();
+		if (--this.enterCounter > 0) {
+			return false;
+		}
+		this.setState({ draggedOver: false, dragStyle: undefined });
+	}
+
+	open() {
+		this.fileInputEl.value = null;
+		this.fileInputEl.click();
+		return false;
 	}
 
 	// Create a FileReader to re-use, which performs a rudimentary
@@ -488,37 +584,30 @@ export class CSVFileChooser extends Component {
 		// This catches the (hopefully) most common mistakes of selecting
 		// the wrong file, or bad formatting due to regional settings.
 		reader.onload = () => {
-			let subStrIdx = -1;
-			// Display up to the first eight lines to the user
-			for (let i = 0; i < 8; i++) {
-				let nextIdx = reader.result.indexOf('\n', subStrIdx + 1);
-				if (nextIdx === -1) {
-					break;
-				} else {
-					subStrIdx = nextIdx;
-				}
-			}
-			let subString = (subStrIdx !== -1) ? (reader.result.substr(0, subStrIdx)) : reader.result;
-
 			let newState = {
-				filePreview: subString,
+				filePreview: this.makePreviewString(reader.result),
 				contentInfo: this.state.contentInfo,
 			};
+
+			if (!this.state.fileIsCSV) {
+				newState.contentInfo.push('Incorrect file extension, check if content is a CSV');
+			}
+
 
 			let noCommasFound = reader.result.indexOf(',') === -1;
 			let semiColonsFound = reader.result.indexOf(';') !== -1;
 			if (noCommasFound) {
+				newState.validContent = false;
 				if (semiColonsFound) {
-					newState.contentInfo.push('Only semicolons found, replacing with commas. Please double-check results above');
+					newState.contentInfo.push('Only semicolons found, replacing with commas. Please double-check if results make sense');
 				} else {
-					newState.contentInfo.push('No commas found, check if this is a properly formatted CSV');
+					newState.contentInfo.push('Unlikely to be a properly formatted CSV: no commas found!');
 				}
-				newState.validContent = false;
 			} else if (semiColonsFound) {
-				newState.contentInfo.push('Mix of commas and semicolons found, check if this is a properly formatted CSV');
 				newState.validContent = false;
+				newState.contentInfo.push('Unlikely to be a properly formatted CSV: mix of commas and semicolons found!');
 			} else {
-				// The check found no errors, use file content string as is
+				// The check found no errors in the content, use file content string as is
 				newState.fileContentString = reader.result;
 				// However, if extension is wrong we warn the user!
 				newState.validContent = this.state.fileIsCSV;
@@ -544,19 +633,7 @@ export class CSVFileChooser extends Component {
 		const fileContentString = filePreviewString.replace(/\;/gi, ',');
 
 		const commaBlob = new Blob([fileContentString], { type: 'text/csv' });
-		let subStrIdx = -1;
-		// Display up to the first eight lines to the user
-		for (let i = 0; i < 8; i++) {
-			let nextIdx = fileContentString.indexOf('\n', subStrIdx + 1);
-			if (nextIdx === -1) {
-				break;
-			} else {
-				// if the file contains less than 8 newlines,
-				// we'll just show the whole string.
-				subStrIdx = -1;
-			}
-		}
-		let filePreview = (subStrIdx !== -1) ? (fileContentString.substr(0, subStrIdx)) : fileContentString;
+		let filePreview = this.makePreviewString(fileContentString);
 		this.setState({ droppedFile: commaBlob, fileContentString, filePreview });
 	}
 
@@ -571,6 +648,25 @@ export class CSVFileChooser extends Component {
 		return displaybytes.toFixed(magnitude > 0 ? 2 : 0) + ' ' + scale[magnitude];
 	}
 
+	makePreviewString(txt) {
+		let subStrIdx = -1;
+		// Display up to the first eight lines to the user
+		for (let i = 0; i < 8; i++) {
+			let nextIdx = txt.indexOf('\n', subStrIdx + 1);
+			if (nextIdx === -1) {
+				break;
+			} else {
+				subStrIdx = nextIdx;
+			}
+		}
+		// subStrIdx === -1 if and only if there were no \n characters,
+		// in which case we look at the whole string.
+		if (subStrIdx === -1) { subStrIdx = txt.length; }
+		// cap at 1000 characters
+		subStrIdx = subStrIdx < 1000 ? subStrIdx : 1000;
+		return txt.substr(0, subStrIdx);
+	}
+
 	shouldComponentUpdate(nextProps, nextState) {
 		// risky: we assume that props never change here
 		return !(_.isEqual(this.state, nextState));
@@ -581,17 +677,17 @@ export class CSVFileChooser extends Component {
 	}
 
 	render() {
-		let state = this.state;
-		let DZstyle = {
-			width: 'auto', height: 'auto',
-			padding: 30, textAlign: 'center',
-			borderWidth: 2, borderColor: '#aaa',
-			borderStyle: 'solid', borderRadius: 5,
-			backgroundColor: '#eee', color: '#333',
+
+		const inputAttributes = {
+			type: 'file',
+			multiple: false,
+			style: { display: 'none' },
+			ref: (el) => { this.fileInputEl = el; },
+			onChange: this.handleDrop,
 		};
-		let DZactiveStyle = { borderStyle: 'solid', borderColor: '#000', backgroundColor: '#fff' };
-		let DZrejectStyle = { borderStyle: 'solid', borderColor: '#f00', backgroundColor: '#fcc' };
-		let warnIf = (x) => {
+
+		const state = this.state;
+		const warnIf = (x) => {
 			let style = { margin: 5, padding: 5, textAlign: 'left' };
 			if (x) {
 				style.backgroundColor = '#f66';
@@ -599,18 +695,36 @@ export class CSVFileChooser extends Component {
 			}
 			return style;
 		};
+
 		return (
-			<div className={this.props.className} style={{ backgroundColor: state.backgroundColor, color: state.fontColor }}>
-				<label>{this.props.label}</label>
-				<Dropzone onDrop={(files) => { this.onDrop(files); } } multiple={false}
-					style={DZstyle} activeStyle={DZactiveStyle} rejectStyle={DZrejectStyle}>
-					<b>Drag and drop a CSV file here, or click to browse</b>
-				</Dropzone>
-				<div>
+			<div
+				className={this.props.className}
+				style={this.state.dragStyle}
+				onDrop={ (ev) => { this.handleDrop(ev); } }
+				onDragEnter={ (ev) => { this.handleDragEnter(ev); } }
+				onDragOver={ (ev) => { this.handleDragOver(ev); } }
+				onDragLeave={ (ev) => { this.handleDragLeave(ev); } }
+				>
+				<label for={this.props.id} className='col-sm-3 control-label'>
+					{this.props.label}
+				</label>
+				<div id={this.props.id} className='col-sm-9'>
+					<button
+						className={ this.enterCounter > 0 ? 'btn btn-success' : 'btn btn-default'}
+						onClick={ (e) => { e.preventDefault(); this.handleClick(); } } >
+						<b>select a CSV file</b>
+					</button> (or drag and drop it on this cell)
 					<div style={ warnIf(state.fileIsCSV === false) } >
 						{ state.fileIsCSV ? '☑ ' : '☐ '}
-						file: <i>{state.fileName}</i>&nbsp;
-						{ state.fileIsCSV === false ? <b>does not have a CSV file extension!</b> : null }
+						file extension:
+						{ state.droppedFile ?
+							state.fileIsCSV ?
+								<i> {state.fileName + ' - '} has CSV extension</i>
+								:
+								<b> {state.fileName + ' - '} does not have a CSV file extension!</b>
+							:
+							null
+						}
 					</div>
 					<div style={ warnIf(state.fileSize === 0) } >
 						{ state.fileSize > 0 ? '☑ ' : '☐ '}
@@ -619,11 +733,12 @@ export class CSVFileChooser extends Component {
 					</div>
 					<div style={ warnIf(state.validContent === false) } >
 						{ state.validContent ? '☑ ' : '☐ ' }
-						content: (first eight lines)
+						content preview: (first thousand characters or eight lines, whichever is shorter)
 						{ state.filePreview ? <pre>{state.filePreview}</pre> : null }
 						{ state.contentInfo.length ? state.contentInfo.map((info, i) => { return (<p key={i}><b>{info}</b></p>); }) : null }
 					</div>
 				</div>
+				<input {...inputAttributes}/>
 			</div >
 		);
 	}

@@ -49,7 +49,7 @@ export class DropdownMenu extends Component {
 DropdownMenu.propTypes = {
 	buttonLabel: PropTypes.string,
 	buttonName: PropTypes.string.isRequired,
-	attributes: PropTypes.object.isRequired,
+	attributes: PropTypes.array.isRequired,
 	attrType: PropTypes.string.isRequired,
 	attrName: PropTypes.string.isRequired,
 	dispatch: PropTypes.func.isRequired,
