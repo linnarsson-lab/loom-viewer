@@ -535,6 +535,7 @@ class LoomConnection(object):
 		if self.file.__contains__("tiles"):
 			del self.file['tiles']
 
+		ordering = list(np.array(ordering).flatten())	# Flatten the ordering, in case we got a column vector
 		if axis == 0:
 			chunksize = 5000
 			start = 0
@@ -551,9 +552,6 @@ class LoomConnection(object):
 				self.file['matrix'][start:start + chunksize, :] = submatrix[:, ordering]
 				start = start + chunksize
 			self.file.flush()
-
-
-
 
 	#####################
 	# FEATURE SELECTION #
