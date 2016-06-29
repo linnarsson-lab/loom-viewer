@@ -43,8 +43,7 @@ import csv
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
 from gcloud import logging
 # import hdbscan
-import logging
-logger = logging.Client().logger("LoomPipeline")
+logger = logging.Client(project="linnarsson-lab").logger("LoomPipeline")
 
 class PipelineError(Exception):
 	def __init__(self, value):
@@ -569,8 +568,8 @@ class LoomPipeline(object):
 			SELECT jos_aaacell.id as CellID, ChipID, ChipWell
 			FROM joomla.jos_aaacell
 			JOIN joomla.jos_aaachip ON jos_aaachip.id = jos_aaacell.jos_aaachipid
-			JOIN joomla.jos_aaaexprblob ON jos_aaacell.id = jos_aaaexprblob.jos_aaacellid
-			WHERE jos_aaaexprblob.jos_aaatranscriptomeid = %s
+			JOIN cells10k.ExprBlob ON jos_aaacell.id = cells10k.ExprBlob.CellID
+			WHERE cells10k.ExprBlob.TranscriptomeID = %s
 		""", transcriptome_id)
 		rows = cursor.fetchall()
 		cursor.close()
