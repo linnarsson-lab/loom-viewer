@@ -2,6 +2,7 @@ import React, { Component, PropTypes } from 'react';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 import { Scatterplot } from './scatterplot';
 
+
 export class LandscapeView extends Component {
 	makeData(attr, gene) {
 		var data = [];
@@ -11,7 +12,7 @@ export class LandscapeView extends Component {
 			}
 		} else {
 			data = this.props.dataState.currentDataset.colAttrs[attr];
-		}		
+		}
 		return data;
 	}
 	render() {
@@ -26,7 +27,7 @@ export class LandscapeView extends Component {
 		return (
 		<div className="view">
 			<div className="view-sidepanel">
-				<LandscapeSidepanel 
+				<LandscapeSidepanel
 					landscapeState={ls}
 					dataState={ds}
 					dispatch={dispatch}

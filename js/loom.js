@@ -1,4 +1,3 @@
-
 import React, { Component, PropTypes } from 'react';
 import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
@@ -12,6 +11,7 @@ import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
 import { GenescapeView } from './genescape-view';
 import { fetchProjects } from './actions.js';
+
 
 // create a store that has redux-thunk middleware enabled
 let store = applyMiddleware(thunk)(createStore)(loomAppReducer);

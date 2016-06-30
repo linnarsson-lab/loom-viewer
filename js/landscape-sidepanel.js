@@ -2,7 +2,6 @@ import React, { Component, PropTypes } from 'react';
 import { fetchGene } from './actions.js';
 
 
-
 export class LandscapeSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
@@ -13,20 +12,20 @@ export class LandscapeSidepanel extends Component {
 		temp.push("(gene)");
 		var xOptions = temp.map((name)=> {
 			return <li key={name}>
-				<a onClick={(event)=>dispatch({ 
-						type: 'SET_LANDSCAPE_PROPS', 
+				<a onClick={(event)=>dispatch({
+						type: 'SET_LANDSCAPE_PROPS',
 						xCoordinate: name
 					})}>
 					{name}
 				</a>
 			</li>;
 		});
-		
+
 		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var yOptions = temp.map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-						type: 'SET_LANDSCAPE_PROPS', 
+			return <li key={name}><a onClick={(event)=>dispatch({
+						type: 'SET_LANDSCAPE_PROPS',
 						yCoordinate: name
 					})}>{name}</a></li>;
 		});
@@ -34,8 +33,8 @@ export class LandscapeSidepanel extends Component {
 		var temp = Object.keys(ds.currentDataset.colAttrs).sort();
 		temp.push("(gene)");
 		var colorOptions = temp.map((name)=> {
-			return <li key={name}><a onClick={(event)=>dispatch({ 
-						type: 'SET_LANDSCAPE_PROPS', 
+			return <li key={name}><a onClick={(event)=>dispatch({
+						type: 'SET_LANDSCAPE_PROPS',
 						colorAttr: name
 					})}>{name}</a></li>;
 		});
@@ -51,25 +50,25 @@ export class LandscapeSidepanel extends Component {
 					<div className="form-group">
 						<div className="btn-group btn-group-justified" role="group">
 						  <div className="btn-group" role="group">
-						    <button 
-						    	type="button" 
+						    <button
+						    	type="button"
 						    	className={"btn" + (isTSNE ? " btn-success" : " btn-default")}
-						    	onClick={(event)=>dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+						    	onClick={(event)=>dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									xCoordinate: '_tSNE1',
 									yCoordinate: '_tSNE2'
 								})}
 						    >tSNE</button>
 						  </div>
 						  <div className="btn-group" role="group">
-						    <button 
-						    	type="button" 
+						    <button
+						    	type="button"
 						    	className={"btn" + (isPCA ? " btn-success" : " btn-default")}
-						    	onClick={(event)=>dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+						    	onClick={(event)=>dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									xCoordinate: '_PC1',
 									yCoordinate: '_PC2'
-								})}						    	
+								})}
 						    >PCA</button>
 						  </div>
 						</div>
@@ -84,16 +83,16 @@ export class LandscapeSidepanel extends Component {
 							<ul className="dropdown-menu btn-block scrollable-menu">
 								{xOptions}
 							</ul>
-						</div>				
+						</div>
 						<div className="btn-group btn-block">
-						{ls.xCoordinate == "(gene)" ? 
+						{ls.xCoordinate == "(gene)" ?
 							<input className="form-control" placeholder="Gene" value={ls.xGene} onChange={(event)=>{
-								dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									xGene: event.target.value
 								});
 								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
-							}}/> : 
+							}}/> :
 							<span></span>
 						}
 						</div>
@@ -109,16 +108,16 @@ export class LandscapeSidepanel extends Component {
 							<ul className="dropdown-menu btn-block scrollable-menu">
 								{yOptions}
 							</ul>
-						</div>				
+						</div>
 						<div className="btn-group btn-block">
-						{ls.yCoordinate == "(gene)" ? 
+						{ls.yCoordinate == "(gene)" ?
 							<input className="form-control" placeholder="Gene" value={ls.yGene} onChange={(event)=>{
-								dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									yGene: event.target.value
 								});
 								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
-							}}/> : 
+							}}/> :
 							<span></span>
 						}
 						</div>
@@ -139,30 +138,30 @@ export class LandscapeSidepanel extends Component {
 								{ls.colorMode + "  "}<span className="caret"></span>
 							</button>
 							<ul className="dropdown-menu">
-								<li key="Categorical"><a onClick={(event)=>dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+								<li key="Categorical"><a onClick={(event)=>dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									colorMode: 'Categorical'
 								})}>Categorical</a></li>
-								<li key="Heatmap"><a onClick={(event)=>dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+								<li key="Heatmap"><a onClick={(event)=>dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									colorMode: 'Heatmap'
 								})}>Heatmap</a></li>
 							</ul>
 						</div>
 						<div className="btn-group btn-block">
-						{ls.colorAttr == "(gene)" ? 
+						{ls.colorAttr == "(gene)" ?
 							<input className="form-control" placeholder="Gene" value={ls.colorGene} onChange={(event)=>{
-								dispatch({ 
-									type: 'SET_LANDSCAPE_PROPS', 
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
 									colorGene: event.target.value
 								});
 								dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
-							}}/> : 
+							}}/> :
 							<span></span>
 						}
 						</div>
 					</div>
-				</form>            
+				</form>
 			</div>
 		</div>
 	  	);
