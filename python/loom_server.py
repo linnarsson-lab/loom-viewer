@@ -133,7 +133,6 @@ def upload_dataset(transcriptome, project, dataset):
 	col_attrs = csv_to_dict(request.form["col_attrs"])
 	if not col_attrs.has_key("CellID"):
 		return "CellID attribute is missing", 400
-	print request.form.keys() 
 	if request.form.has_key("row_attrs"):
 		row_attrs = csv_to_dict(request.form["row_attrs"])
 		if not row_attrs.has_key("TranscriptID"):

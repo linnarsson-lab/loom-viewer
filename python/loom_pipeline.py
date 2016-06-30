@@ -41,12 +41,15 @@ import pymysql
 import pymysql.cursors
 import csv
 from sklearn.cluster.affinity_propagation_ import affinity_propagation
+from gcloud import logging
 # import hdbscan
-import logging
+logger = logging.Client(project="linnarsson-lab").logger("LoomPipeline")
 
-logger = logging.getLogger("loom")
-
-
+class PipelineError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
 
 class LoomPipeline(object):
 	"""
@@ -107,7 +110,7 @@ class LoomPipeline(object):
 		project = config.project
 		dataset = config.dataset
 		connection = self.mysql_connection
-		logger.info("Processing: " + config.get_json_filename())
+		logger.log_text("Processing: " + config.get_json_filename())
 
 		# Get the transcriptome ID
 		try:
@@ -115,7 +118,8 @@ class LoomPipeline(object):
 			cursor.execute('SELECT ID from jos_aaatranscriptome WHERE name = %s', transcriptome)
 			transcriptome_id = cursor.fetchone()[0]
 		except:
-			raise ValueError, ("Could not find transcriptome ID for '%s'" % transcriptome)
+			config.set_status("error", "Could not find transcriptome ID for '%s'" % transcriptome)
+			raise PipelineError, ("Could not find transcriptome ID for '%s'" % transcriptome)
 		cursor.close()
 		# Download gene annotations
 		cursor = connection.cursor()
@@ -133,7 +137,7 @@ class LoomPipeline(object):
 				Length,
 				Strand,
 				ds.*
-			FROM jos_aaatranscript tr
+			FROM joomla.jos_aaatranscript tr
 			LEFT JOIN datasets__%s.Genes__%s__%s ds
 			ON tr.jos_aaatranscriptomeid = ds.TranscriptID
 			WHERE tr.jos_aaatranscriptomeid = %d
@@ -142,10 +146,11 @@ class LoomPipeline(object):
 		"""
 		try:
 			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
-		except ProgrammingError as pe:
-			logger.error(pe)
+		except pymysql.err.ProgrammingError as e:
+			logger.log_text("Dataset definition not found in database")
+			logger.log_text(e)
 			config.set_status("error","Dataset definition not found in database")
-			return
+			raise PipelineError(e)
 
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
 
@@ -159,13 +164,10 @@ class LoomPipeline(object):
 			row_attrs[hdr] = []
 			for j in xrange(len(rows)):
 				row_attrs[hdr].append(rows[j][i])
+			row_attrs[hdr] = self._make_std_numpy_type(row_attrs[hdr], cursor.description[i][1])
 		cursor.close()
 
-		# Convert to standard numpy types
-		for ix in xrange(len(cursor.description)):
-			row_attrs[cursor.description[ix][0]] = self._make_std_numpy_type(row_attrs[cursor.description[ix][0]], cursor.description[ix][1])
 		gene_ids = row_attrs["TranscriptID"]
-
 		matrix = []
 		col_attrs = {}
 
@@ -175,7 +177,10 @@ class LoomPipeline(object):
 		# Fetch 1000 rows at a time
 		while True:
 			cursor = connection.cursor()
-			cursor.execute("""
+			N_STD_FIELDS = 40	# UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
+								# Count all standard fields but not including "Data"
+								# NOTE: Data field should always be last!
+			query = """
 				SELECT
 					e.CellID,
 					e.TranscriptomeID,
@@ -219,10 +224,10 @@ class LoomPipeline(object):
 					Aligner,
 					ds.*,
 					Data
-				FROM jos_aaacell c
-				LEFT JOIN jos_aaachip h
+				FROM joomla.jos_aaacell c
+				LEFT JOIN joomla.jos_aaachip h
 					ON c.jos_aaachipid=h.id
-				LEFT JOIN jos_aaaproject p
+				LEFT JOIN joomla.jos_aaaproject p
 					ON h.jos_aaaprojectid=p.id
 				JOIN cells10k.ExprBlob e
 					ON e.CellID=c.id
@@ -230,17 +235,21 @@ class LoomPipeline(object):
 					ON ds.CellID = c.id
 				WHERE c.valid=1 AND e.TranscriptomeID = %s
 				LIMIT 1000 OFFSET %s
-			""" % (transcriptome, project, dataset, transcriptome_id, nrows))
+			""" % (transcriptome, project, dataset, transcriptome_id, nrows)
+			cursor.execute(query)
+			if cursor.rowcount == 0:
+				break
 
-			N_STD_FIELDS = 40	# UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
-								# Count all standard fields but not including "Data"
-								# NOTE: Data field should always be last!
-
+			# List the headers
 			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
+			# Rename custom fields to avoid collisions
+			for ix in xrange(len(headers)):
+				if ix >= N_STD_FIELDS:
+					headers[ix] = "(" + dataset + ")_" + headers[ix]
+
+			# Set up empty lists for the column attributes
 			if nrows == 0:
 				for i in xrange(len(headers)):
-					if i >= N_STD_FIELDS:
-						headers[i] = "(" + dataset + ")_" + headers[i]
 					col_attrs[headers[i]] = []
 			dt = np.dtype('int32')  # datatype for unpacking the Data blob
 			dt = dt.newbyteorder('>')
@@ -257,16 +266,13 @@ class LoomPipeline(object):
 		# Convert to the appropriate numpy datatype
 		for ix in xrange(len(headers)):
 			col_attrs[headers[ix]] = self._make_std_numpy_type(col_attrs[headers[ix]], cursor.description[ix][1])
-			print headers[ix]
-			print col_attrs[headers[ix]].shape
 		cell_ids = col_attrs["CellID"]
 
 		# Create the loom file
-		print len(matrix)
-		print col_attrs["CellID"].shape
-		print row_attrs["TranscriptID"].shape
 		counts = np.array(matrix).transpose()
-		print counts.shape
+		if counts.shape == (0,):
+			config.set_status("error", "Dataset is empty")
+			raise PipelineError("Dataset is empty")
 		loom.create(config.get_loom_filename(), counts, row_attrs, col_attrs)
 
 	def prepare_loom(self, config):
@@ -317,12 +323,14 @@ class LoomPipeline(object):
 			result = bsp.backSPIN(ds)
 			result.apply(dataset)
 
-		elif config.cluster_method == "AP":
+		elif config.cluster_method == "AP_notmimplemented":
 			config.set_status("creating", "Preparing the dataset: Step 3A (Affinity propagation on cells).")
 			# Cells
-			S = -ds.corr_matrix(axis = 1)
+			S = np.nan_to_num(-ds.corr_matrix(axis = 1))
+
 			preference = np.median(S) * 10
 			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
+			logger.log_text(str(len(cluster_centers_indices)) + " cell clusters by AP")
 			ds.set_attr("_Cluster", labels, axis = 1)
 			ordering = np.argsort(labels)
 			ds.set_attr("_Ordering", ordering, axis = 1)
@@ -330,13 +338,15 @@ class LoomPipeline(object):
 
 			config.set_status("creating", "Preparing the dataset: Step 3B (Affinity propagation on genes).")
 			# Genes
-			S = -ds.corr_matrix(axis = 0)
+			S = np.nan_to_num(-ds.corr_matrix(axis = 0))
 			preference = np.median(S) * 10
 			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
+			logger.log_text(str(len(cluster_centers_indices)) + " gene clusters by AP")
 			ds.set_attr("_Cluster", labels, axis = 0)
 			ordering = np.argsort(labels)
 			ds.set_attr("_Ordering", ordering, axis = 0)
 			ds.permute(ordering, axis = 0)
+
 
 		# elif config.cluster_method == "HDBSCAN":
 		# 	config.set_status("creating", "Preparing the dataset: Step 3A (HDBSCAN on cells).")
@@ -419,14 +429,14 @@ class LoomPipeline(object):
 					pass
 		# Send the dataset to MySQL
 		if cell_attrs != None:
-			print "Uploading cell annotations"
+			logger.log_text("Uploading cell annotations")
 			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
 		if gene_attrs != None:
-			print "Uploading gene annotations"
+			logger.log_text("Uploading gene annotations")
 			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
 		# Save the config
 		config.put()
-		print "Done."
+		logger.log_text("Done.")
 
 	def _export_attrs_to_mysql(self, attrs, transcriptome, tablename, pk):
 		"""
@@ -550,16 +560,16 @@ class LoomPipeline(object):
 			cursor.execute('SELECT ID from jos_aaatranscriptome WHERE name = %s', transcriptome)
 			transcriptome_id = cursor.fetchone()[0]
 		except:
-			raise ValueError, ("Could not find transcriptome ID for '%s'" % transcriptome)
+			raise PipelineError("Could not find transcriptome ID for '%s'" % transcriptome)
 		cursor.close()
 
 		cursor = connection.cursor()
 		cursor.execute("""
 			SELECT jos_aaacell.id as CellID, ChipID, ChipWell
-			FROM jos_aaacell
-			JOIN jos_aaachip ON jos_aaachip.id = jos_aaacell.jos_aaachipid
-			JOIN jos_aaaexprblob ON jos_aaacell.id = jos_aaaexprblob.jos_aaacellid
-			WHERE jos_aaaexprblob.jos_aaatranscriptomeid = %s
+			FROM joomla.jos_aaacell
+			JOIN joomla.jos_aaachip ON jos_aaachip.id = jos_aaacell.jos_aaachipid
+			JOIN cells10k.ExprBlob ON jos_aaacell.id = cells10k.ExprBlob.CellID
+			WHERE cells10k.ExprBlob.TranscriptomeID = %s
 		""", transcriptome_id)
 		rows = cursor.fetchall()
 		cursor.close()
@@ -589,12 +599,20 @@ class LoomPipeline(object):
 
 
 if __name__ == '__main__':
-	logger.info("Starting the Loom pipeline...")
+	logger.log_text("Starting the Loom pipeline...")
 	lp = LoomPipeline()
 	while True:
 		for ds in list_datasets():
+			logger.log_text(ds.get_loom_filename() + "...")
 			if ds.status == "willcreate":
-				lp.create_loom(ds)
-				lp.prepare_loom(ds)
-				lp.store_loom(ds)
+				try:
+					logger.log_text("Creating " + ds.get_loom_filename())
+					lp.create_loom(ds)
+					logger.log_text("Preparing " + ds.get_loom_filename() + " for browsing")
+					lp.prepare_loom(ds)
+					logger.log_text("Storing " + ds.get_loom_filename())
+					lp.store_loom(ds)
+				except PipelineError as e:
+					logger.log_text(e)
+					logger.info(e)
 		time.sleep(60*10)

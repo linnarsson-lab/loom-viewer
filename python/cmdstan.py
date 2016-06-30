@@ -3,12 +3,12 @@ import os
 import subprocess
 
 class CmdStan(object):
-	def __init__(self, stan_folder):
+	def __init__(self, stan_folder = "/Users/Sten/Dropbox/Code/cmdstan/"):
 		self.stan_folder = stan_folder
 
 	def compile(self, model_name, model_code, debug=True):
 		"""
-		Complie the model and save it for future use
+		Compile the model and save it for future use
 		
 		Args:
 			model_name (string):		Name of the model, without the '.stan' extension
@@ -116,11 +116,46 @@ class CmdStan(object):
 				if line[0:2] == "lp":
 					params = line.strip().split(",")
 					continue
-				if line[0] == "#" or line[0] == "\n":
+				if line[0] == "#" or line.strip() == "":
 					continue
-				samples.append([float(x) for x in line.split(",")])
+				samples.append([float(x) for x in line.strip().split(",")])
 		samples = np.array(samples)
 		result = {}
 		for ix in xrange(len(params)):
 			result[params[ix]] = samples[:,ix]
-		return result	
+		
+		# Now merge all the vectors and matrices
+		parsed = {}
+		roots = set([x.split(".")[0] for x in result.keys()])
+		for root in roots:
+			if result.__contains__(root):
+				parsed[root] = result[root]
+			elif result.__contains__(root + ".1"): # vector
+				ix = 1
+				temp = []
+				while True:
+					if result.__contains__(root + "." + str(ix)):
+						temp.append(result[root + "." + str(ix)])
+						ix += 1
+					else:
+						break
+				parsed[root] = np.array(temp)
+			elif result.__contains__(root + ".1.1"): # matrix
+				ix = 1
+				temp = []
+				while True:
+					if result.__contains__(root + "." + str(ix) + ".1"):
+						jx = 1
+						temp2 = []
+						while True:
+							if result.__contains__(root + "." + str(ix) + "." + str(jx)):
+								temp2.append(result[root + "." + str(ix) + "." + str(jx)])
+								jx += 1
+							else:
+								break
+						temp.append(temp2)
+						ix += 1
+					else:
+						break
+				parsed[root] = np.array(temp)
+		return parsed
