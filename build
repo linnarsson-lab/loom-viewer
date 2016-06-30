@@ -28,12 +28,12 @@ mkdir ./python/static/js
 echo "Building static assets."
 cp img/* ./python/static/img/
 BINPATH=$(npm -g bin)
-$BINPATH/uglifycss css/* > ./python/static/css/bundle-v$v.min.css
-$BINPATH/browserify js/loom.js -o temp.js -t [ babelify ]
+$BINPATH/uglifycss frontend/css/* > ./python/static/css/bundle-v$v.min.css
+$BINPATH/browserify frontend/js/loom.js -o temp.js -t [ babelify ]
 
 echo "Minifying JS bundle"
-$BINPATH/uglifyjs js/jquery.min.js js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
+$BINPATH/uglifyjs frontend/js/jquery.min.js frontend/js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
 rm temp.js
 
-sed -e "s/{VERSION}/$v/g" index.html > ./python/static/index.html
+sed -e "s/{VERSION}/$v/g" frontend/index.html > ./python/static/index.html
 
