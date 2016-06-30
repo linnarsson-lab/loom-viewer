@@ -20,6 +20,7 @@
 		"react": "*",
 		"redux": "*",
 		"react-redux": "*",
+		"redux-thunk": "*",
 		"react-dom": "*",
 		"react-select": "*",
 		"whatwg-fetch": "*",
@@ -31,6 +32,8 @@
 	"devDependencies": {
 		"browserify": "*",
 		"babelify": "*",
+		"babel": "*",
+		"babel-loader": "*",
 		"babel-preset-es2015": "*",
 		"babel-preset-react":  "*",
 		"uglify-js": "*",
