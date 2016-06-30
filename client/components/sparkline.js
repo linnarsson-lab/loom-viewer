@@ -1,8 +1,8 @@
 import React, {PropTypes} from 'react';
 import { render, findDOMNode } from 'react-dom';
-import { nMostFrequent } from './util';
+import { nMostFrequent } from '../js/util';
 import * as _ from 'lodash';
-import * as colors from './colors';
+import * as colors from '../js/colors';
 
 
 class CategoriesPainter {
@@ -55,8 +55,8 @@ class BarPainter {
  		context.save();
 		context.rotate(90*Math.PI/180);
 		context.fillStyle = "blue";
-		context.fillText(Number(min.toPrecision(3)), 0, -2);			
-		context.fillText(Number(max.toPrecision(3)), 0, -width+2+10);			
+		context.fillText(Number(min.toPrecision(3)), 0, -2);
+		context.fillText(Number(max.toPrecision(3)), 0, -width+2+10);
 		context.restore();
 	}
 }
@@ -87,7 +87,7 @@ class QuantitativePainter {
 		for(var ix = 0; ix < means.length; ix++) {
 			context.fillStyle = color[ix];
 			context.fillRect(0, yoffset, width, pixelsPer);
-			yoffset += pixelsPer;			
+			yoffset += pixelsPer;
 		}
 	}
 }
@@ -115,7 +115,7 @@ class TextAlwaysPainter {
 				var fontArgs = context.font.split(' ');
 				var fontSize = 10;
 				context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
-				context.fillText(text, 1, yoffset + pixelsPer/2 + fontSize/2 - 1);				
+				context.fillText(text, 1, yoffset + pixelsPer/2 + fontSize/2 - 1);
 			}
 			yoffset += pixelsPer;
 		});
@@ -129,17 +129,17 @@ export class Sparkline extends React.Component {
 
 	componentDidMount() {
 	    var el = findDOMNode(this);
-	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays		
+	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays
 	    var context = el.getContext('2d');
 	    this.paint(context);
 	}
 
 	componentDidUpdate() {
 	    var el = findDOMNode(this);
-	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays		
+	    this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays
 	    var context = el.getContext('2d');
 	    context.clearRect(0, 0, this.props.width, this.props.height);
-	    this.paint(context);	    
+	    this.paint(context);
 	}
 
 	componentWillUnmount() {
@@ -174,12 +174,12 @@ export class Sparkline extends React.Component {
 		var pixelsPer = (this.props.screenRange[1] - this.props.screenRange[0])/(this.props.dataRange[1] - this.props.dataRange[0]);
 		var yoffset = this.props.screenRange[0] - fractionalPixel*pixelsPer;
 
-		// Group the data 
+		// Group the data
 		var data = [];
 		for(var ix = 0; ix < this.props.dataRange[1] - this.props.dataRange[0]; ix++) {
 			var pixel = Math.round(ix*pixelsPer);
 			if(data[pixel] == undefined) {
-				data[pixel] = []; 
+				data[pixel] = [];
 			}
 			data[pixel].push(this.props.data[Math.floor(ix + this.props.dataRange[0])]);
 		}
@@ -207,7 +207,7 @@ export class Sparkline extends React.Component {
 		if(this.props.orientation == "vertical") {
 			return (
 			  <canvas width={this.props.width} height={this.props.height} className="stack-left-to-right sparkline"></canvas>
-			);			
+			);
 		}
 		return (
 		  <canvas width={this.props.width} height={this.props.height} className="sparkline"></canvas>

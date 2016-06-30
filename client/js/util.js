@@ -1,5 +1,3 @@
-
-
 export function nMostFrequent(array, n) {
 	var frequency = {};
 	array.forEach((value)=>{frequency[value]=0;});

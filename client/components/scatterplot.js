@@ -1,8 +1,8 @@
 import React, {PropTypes} from 'react';
 import { render, findDOMNode } from 'react-dom';
-import * as colors from './colors';
+import * as colors from '../js/colors';
 import * as _ from 'lodash';
-import { nMostFrequent } from './util';
+import { nMostFrequent } from '../js/util';
 
 
 export class Scatterplot extends React.Component {

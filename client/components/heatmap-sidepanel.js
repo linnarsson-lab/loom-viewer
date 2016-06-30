@@ -1,6 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { fetchGene } from './actions.js';
+import { fetchGene } from '../actions/actions.js';
 
 export class HeatmapSidepanel extends Component {
 	render() {

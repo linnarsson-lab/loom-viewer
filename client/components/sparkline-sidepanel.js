@@ -1,18 +1,18 @@
 import React, { Component, PropTypes } from 'react';
 import * as _ from 'lodash';
-import { fetchGene } from './actions.js';
+import { fetchGene } from '../actions/actions.js';
 
 export class SparklineSidepanel extends Component {
 	render() {
 		var dispatch = this.props.dispatch;
-		var ss = this.props.sparklineState;	
+		var ss = this.props.sparklineState;
 		var ds = this.props.dataState;
 
 		var colOptions = Object.keys(ds.currentDataset.colAttrs).sort().map((name)=> {
 			return (
 				<li key={name}>
-					<a onClick={(event)=>dispatch({ 
-						type: 'SET_SPARKLINE_PROPS', 
+					<a onClick={(event)=>dispatch({
+						type: 'SET_SPARKLINE_PROPS',
 						colAttr: name
 					})}>
 					{name}
@@ -27,8 +27,8 @@ export class SparklineSidepanel extends Component {
 		var orderByOptions = temp.map((name)=> {
 			return (
 				<li key={name}>
-					<a onClick={(event)=>dispatch({ 
-						type: 'SET_SPARKLINE_PROPS', 
+					<a onClick={(event)=>dispatch({
+						type: 'SET_SPARKLINE_PROPS',
 						orderByAttr: name
 					})}>
 					{name}
@@ -39,8 +39,8 @@ export class SparklineSidepanel extends Component {
 		var optionsForCols = ["Text", "Bars", "Heatmap", "Categorical"].map((name)=> {
 			return (
 				<li key={name}>
-					<a onClick={(event)=>dispatch({ 
-						type: 'SET_SPARKLINE_PROPS', 
+					<a onClick={(event)=>dispatch({
+						type: 'SET_SPARKLINE_PROPS',
 						colMode: name
 					})}>
 					{name}
@@ -51,8 +51,8 @@ export class SparklineSidepanel extends Component {
 		var optionsForGenes = ["Bars", "Heatmap"].map((name)=> {
 			return (
 				<li key={name}>
-					<a onClick={(event)=>dispatch({ 
-						type: 'SET_SPARKLINE_PROPS', 
+					<a onClick={(event)=>dispatch({
+						type: 'SET_SPARKLINE_PROPS',
 						geneMode: name
 					})}>
 					{name}
@@ -78,14 +78,14 @@ export class SparklineSidepanel extends Component {
 						</ul>
 					</div>
 					<div className="btn-group btn-block">
-					{ss.orderByAttr == "(gene)" ? 
+					{ss.orderByAttr == "(gene)" ?
 						<input className="form-control" placeholder="Gene" value={ss.orderByGene} onChange={(event)=>{
-							dispatch({ 
-								type: 'SET_SPARKLINE_PROPS', 
+							dispatch({
+								type: 'SET_SPARKLINE_PROPS',
 								orderByGene: event.target.value
 							});
 							dispatch(fetchGene(ds.currentDataset, event.target.value, ds.genes));
-						}}/> : 
+						}}/> :
 						<span></span>
 					}
 					</div>
@@ -100,7 +100,7 @@ export class SparklineSidepanel extends Component {
 						<ul className="dropdown-menu btn-block scrollable-menu">
 							{colOptions}
 						</ul>
-					</div>				
+					</div>
 					<div className="btn-group btn-block">
 						<button type="button" className="btn btn-block btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							{ss.colMode + "  "}<span className="caret"></span>
@@ -108,7 +108,7 @@ export class SparklineSidepanel extends Component {
 						<ul className="dropdown-menu btn-block scrollable-menu">
 							{optionsForCols}
 						</ul>
-					</div>		
+					</div>
 				</div>
 
 				<div className="form-group">
@@ -120,7 +120,7 @@ export class SparklineSidepanel extends Component {
 						})
 					}}>
 					</textarea>
-				</div>				
+				</div>
 
 
 				<div className="form-group">
@@ -131,9 +131,9 @@ export class SparklineSidepanel extends Component {
 						<ul className="dropdown-menu btn-block scrollable-menu">
 							{optionsForGenes}
 						</ul>
-					</div>		
+					</div>
 				</div>
-			  </form>            
+			  </form>
 			</div>
 		  </div>
 	  	);

@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { setViewState } from './actions';
+import { setViewState } from '../actions/actions';
 
 export class Navbar extends Component {
 	render() {

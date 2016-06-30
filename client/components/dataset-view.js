@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { fetchDataset } from './actions.js';
+import { fetchDataset } from '../actions/actions.js';
 import Select from 'react-select';
 import * as _ from 'lodash';
 

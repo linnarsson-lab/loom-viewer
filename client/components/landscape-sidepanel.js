@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { fetchGene } from './actions.js';
+import { fetchGene } from '../actions/actions.js';
 
 
 export class LandscapeSidepanel extends Component {
