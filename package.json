@@ -1,7 +1,6 @@
 {
 	"name": "loom",
 	"version": "0.3.0",
-	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
@@ -32,11 +31,14 @@
 	"devDependencies": {
 		"browserify": "*",
 		"babelify": "*",
-		"babel": "*",
+		"babel-core": "*",
 		"babel-loader": "*",
 		"babel-preset-es2015": "*",
 		"babel-preset-react":  "*",
 		"uglify-js": "*",
-		"uglifycss": "*"
+		"uglifycss": "*",
+		"css-loader": "*",
+		"style-loader": "*",
+		"html-loader": "*"
 	}
 }
