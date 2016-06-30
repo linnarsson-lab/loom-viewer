@@ -1,0 +1,39 @@
+{
+	"name": "loom",
+	"version": "0.3.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": ["single-cell", "datavisualisation", "Linnarsson Lab"],
+	"author": "slinnarsson",
+	"license": "",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/linnarsson-lab/Loom.git"
+	},
+	"bugs": {
+		"url": "https://github.com/linnarsson-lab/Loom/issues"
+	},
+	"homepage": "https://github.com/linnarsson-lab/Loom",
+	"dependencies": {
+		"react": "*",
+		"redux": "*",
+		"react-redux": "*",
+		"react-dom": "*",
+		"react-select": "*",
+		"whatwg-fetch": "*",
+		"lodash": "*",
+		"bootstrap": "*",
+		"leaflet": "*",
+		"autoscale-canvas": "*"
+	},
+	"devDependencies": {
+		"browserify": "*",
+		"babelify": "*",
+		"babel-preset-es2015": "*",
+		"babel-preset-react":  "*",
+		"uglify-js": "*",
+		"uglifycss": "*"
+	}
+}
