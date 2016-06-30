@@ -26,7 +26,8 @@
 		"lodash": "*",
 		"bootstrap": "*",
 		"leaflet": "*",
-		"autoscale-canvas": "*"
+		"autoscale-canvas": "*",
+		"jquery": "*"
 	},
 	"devDependencies": {
 		"browserify": "*",
@@ -39,6 +40,7 @@
 		"uglifycss": "*",
 		"css-loader": "*",
 		"style-loader": "*",
-		"html-loader": "*"
+		"html-loader": "*",
+		"webpack": "*"
 	}
 }
