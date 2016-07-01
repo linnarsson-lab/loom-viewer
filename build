@@ -1,39 +1,25 @@
 #! /bin/bash
-if [ -a ./python/static ]; then
-  rm -r ./python/static
+
+# Remove old JS files
+if [ -a ./python/static/js ]; then
+  rm -r ./python/static/js
 fi
+
 set -o nounset
 set -o errexit
 
-DEBUGMODE="$@"
-
-if [ "$DEBUGMODE" = "debug" ] || [ "$DEBUGMODE" = "-d" ]; then
-  echo "Building React in 'debug' mode"
-  export NODE_ENV=debug
-else
-  echo "Building React in 'production' mode. Run \"./build debug\" to build in 'debug' mode"
-  export NODE_ENV=production
-fi
-
-# Current version
-v=1
-
 # Set up the static directory
-mkdir ./python/static
-mkdir ./python/static/img
-mkdir ./python/static/css
 mkdir ./python/static/js
 
-# Build all the static assets
+# Build static assets
 echo "Building static assets."
-cp client/img/* ./python/static/img/
 BINPATH=$(npm -g bin)
-$BINPATH/uglifycss client/css/* > ./python/static/css/bundle-v$v.min.css
-$BINPATH/browserify client/loom.js -o temp.js -t [ babelify ]
+echo "Bundling CSS"
+$BINPATH/uglifycss ./client/css/* > ./python/static/css/bundle.min.css
 
-echo "Minifying JS bundle"
-$BINPATH/uglifyjs client/js/jquery.min.js client/js/bootstrap.min.js temp.js -o ./python/static/js/bundle-v$v.min.js
-rm temp.js
-
-sed -e "s/{VERSION}/$v/g" index.html > ./python/static/index.html
-
+echo "Minifying JS bundle and inserting it into HTML template"
+webpack
+# I can't figure out how to both generate correct paths in the HTML template
+# of webpack, and have the resulting index.html be put in the right folders.
+# Yes, it's an ugly hack, but it works - Job
+mv python/index.html python/static/index.html
