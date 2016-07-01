@@ -13,9 +13,7 @@ mkdir ./python/static/js
 
 # Build static assets
 echo "Building static assets."
-BINPATH=$(npm -g bin)
-echo "Bundling CSS"
-$BINPATH/uglifycss ./client/css/* > ./python/static/css/bundle.min.css
+uglifycss ./client/css/* > ./python/static/css/bundle.min.css
 
 echo "Minifying JS bundle and inserting it into HTML template"
 webpack
