@@ -147,6 +147,8 @@ class CreateDatasetForm extends Component {
 		super(props, context);
 		this.state = {
 			n_features: 100,
+			cluster_method: '',
+			transcriptome: '',
 		};
 
 		this.handleFormChange = this.handleFormChange.bind(this);
@@ -242,8 +244,11 @@ class CreateDatasetForm extends Component {
 								<Select
 									options={transcriptomeOptions}
 									value={this.state.transcriptome}
+									multi={false}
 									id='input_transcriptome'
-									onChange={ (opts) => { this.handleFormChange('transcriptome', opts ? opts.value : null); } }
+									onChange={ (opts) => {
+										opts ? this.handleFormChange('transcriptome', opts) : null;
+									}}
 									/>
 							</div>
 						</div>
@@ -300,8 +305,9 @@ class CreateDatasetForm extends Component {
 								<Select
 									options={clusterMethodOptions}
 									value={this.state.cluster_method}
+									multi={false}
 									id='input_cluster_method'
-									onChange={ (opts) => { this.handleFormChange('cluster_method', opts ? opts.value : null); } }
+									onChange={ (opts) => { opts ? this.handleFormChange('cluster_method', opts) : null; } }
 									/>
 							</div>
 						</div>
