@@ -1,39 +1,40 @@
-var path = require("path");
-var webpack = require("webpack");
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
-var ManifestRevisionPlugin = require("manifest-revision-webpack-plugin");
+
+const path = require("path");
+const webpack = require("webpack");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
+	template: __dirname + '/client/index.html',
+	filename: 'index.html',
+	inject: 'body',
+});
 
 module.exports = {
-	entry: './',
-	output: {
-		path: './python/static/js',
-		filename: 'bundle.min.js',
-		sourceMapFilename: './bundle.map'
+	entry: {
+		'static/js/bundle': './client/loom',
 	},
-	watch: true,
+	output: {
+		path: './python',
+		filename: '[name].[hash].js',
+	},
 	module: {
 		loaders: [
 			{
-				test: /\.js/,
+				test: /\.js$/,
+				exlude: /node_modules/,
 				loader: 'babel',
-				query: {
-					presets: ['react', 'es2015'],
-				}
+				include: path.join(__dirname, 'client'),
 			},
-			{
-				test: /\.css/,
-				loader: 'style!css'
-			},
-			{
-				test: /\.html/,
-				loader: 'html',
-			}
-		]
+		],
 	},
 	plugins: [
 		new webpack.optimize.DedupePlugin(),
 		new webpack.optimize.OccurenceOrderPlugin(),
-		new webpack.optimize.UglifyJsPlugin({ mangle: false, sourcemap: false}),
+		new webpack.DefinePlugin({
+			'process.env': {
+				'NODE_ENV': "'production'",
+			},
+		}),
+		new webpack.optimize.UglifyJsPlugin({ mangle: true, sourcemap: false }),
+		HTMLWebpackPluginConfig,
 	],
-	devtool: '#source-map'
-}
+};

@@ -3,15 +3,20 @@ import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider, connect } from 'react-redux';
 import thunk from 'redux-thunk';
-import loomAppReducer from './reducers/reducers';
+
+// Components
 import { Navbar } from './components/navbar';
 import { DatasetView } from './components/dataset-view';
 import { HeatmapView } from './components/heatmap-view';
 import { SparklineView } from './components/sparkline-view';
 import { LandscapeView } from './components/landscape-view';
 import { GenescapeView } from './components/genescape-view';
-import { fetchProjects } from './actions/actions.js';
 
+// Reducers
+import loomAppReducer from './reducers/reducers';
+
+// Actions
+import { fetchProjects } from './actions/actions.js';
 
 // create a store that has redux-thunk middleware enabled
 let store = applyMiddleware(thunk)(createStore)(loomAppReducer);

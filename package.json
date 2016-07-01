@@ -1,46 +1,51 @@
 {
-	"name": "loom",
-	"version": "0.3.0",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": ["single-cell", "datavisualisation", "Linnarsson Lab"],
-	"author": "slinnarsson",
-	"license": "",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/linnarsson-lab/Loom.git"
-	},
-	"bugs": {
-		"url": "https://github.com/linnarsson-lab/Loom/issues"
-	},
-	"homepage": "https://github.com/linnarsson-lab/Loom",
-	"dependencies": {
-		"react": "*",
-		"redux": "*",
-		"react-redux": "*",
-		"redux-thunk": "*",
-		"react-dom": "*",
-		"react-select": "*",
-		"whatwg-fetch": "*",
-		"lodash": "*",
-		"bootstrap": "*",
-		"leaflet": "*",
-		"autoscale-canvas": "*",
-		"jquery": "*"
-	},
-	"devDependencies": {
-		"browserify": "*",
-		"babelify": "*",
-		"babel-core": "*",
-		"babel-loader": "*",
-		"babel-preset-es2015": "*",
-		"babel-preset-react":  "*",
-		"uglify-js": "*",
-		"uglifycss": "*",
-		"css-loader": "*",
-		"style-loader": "*",
-		"html-loader": "*",
-		"webpack": "*"
-	}
+  "name": "loom",
+  "version": "0.3.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "single-cell",
+    "datavisualisation",
+    "Linnarsson Lab"
+  ],
+  "author": "slinnarsson",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linnarsson-lab/Loom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/linnarsson-lab/Loom/issues"
+  },
+  "homepage": "https://github.com/linnarsson-lab/Loom",
+  "dependencies": {
+    "autoscale-canvas": "*",
+    "bootstrap": "*",
+    "jquery": "*",
+    "leaflet": "*",
+    "lodash": "*",
+    "react": "^15.1.0",
+    "react-dom": "^15.1.0",
+    "react-redux": "*",
+    "react-router": "*",
+    "react-router-redux": "*",
+    "react-select": "^0.9.1",
+    "redux": "*",
+    "redux-thunk": "*",
+    "whatwg-fetch": "*"
+  },
+  "devDependencies": {
+    "babel-core": "*",
+    "babel-loader": "*",
+    "babel-polyfill": "*",
+    "babel-preset-es2015": "*",
+    "babel-preset-react": "*",
+    "babelify": "*",
+    "browserify": "*",
+    "html-webpack-plugin": "*",
+    "uglify-js": "*",
+    "uglifycss": "*",
+    "webpack": "*"
+  }
 }
