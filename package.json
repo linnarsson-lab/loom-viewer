@@ -44,8 +44,8 @@
     "babelify": "*",
     "browserify": "*",
     "html-webpack-plugin": "*",
-    "uglify-js": "*",
-    "uglifycss": "*",
-    "webpack": "*"
+    "uglify-js": "^2.6.4",
+    "uglifycss": "0.0.20",
+    "webpack": "^1.13.1"
   }
 }

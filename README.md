@@ -25,7 +25,7 @@ Serving from: /Users/gioele/Loom
 ```
 ...but you get "404 Not Found" in the browser. Make sure you are running "loom" from the release folder, and not from the root of the repository.
 
- 
+
 ### Building Loom
 
 If you want to contribute to Loom, you need to set up your development environment:
@@ -37,24 +37,12 @@ If you want to contribute to Loom, you need to set up your development environme
 5. Install required node modules using `npm`
 
 ```
-sudo npm install -g browserify
 sudo npm install -g uglify-js
 sudo npm install -g uglifycss
-npm install babelify
-npm install babel-preset-es2015 babel-preset-react
-npm install whatwg-fetch
-npm install lodash
-npm install react
-npm install redux
-npm install react-redux
-npm install redux-thunk
-npm install bootstrap
-npm install leaflet
-npm install autoscale-canvas
+sudo npm install -g webpack
+npm install
 ```
 
-Run `./build` 
+Run `./build`
 
-This will create a new folder `release`. Run `release/loom` to start the loom server (or `release/loom debug` to run in debug mode).
-
-**Note:** By default, React is built in production mode, with less informative error messages (but good performance). To build in debug mode, run the build script with `./build debug`
+This will bundle the app in the `python/static` folder. Run `python ./python/loom_server.py` to start the loom server (or `python ./python/loom_server.py debug` to run the server in debug mode).
