@@ -3,6 +3,8 @@ import { render } from 'react-dom';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider, connect } from 'react-redux';
 import thunk from 'redux-thunk';
+import { Router, Route, browserHistory, IndexRoute } from 'react-router';
+import routes from './components/routes.js';
 
 // Components
 import { Navbar } from './components/navbar';
@@ -46,64 +48,71 @@ class App extends Component {
 		// Injected by connect() call:
 		const { dispatch, dataState, heatmapState, sparklineState, landscapeState, genescapeState, viewState } = this.props;
 
-		let view = <div></div>;
+		// let view = <div></div>;
 
-		switch (this.props.viewState.view) {
-		case "Dataset":
-			view = <DatasetView
-					viewState={viewState}
-					dataState={dataState}
-					dispatch={dispatch}
-					/>;
-			break;
-		case "Heatmap":
-			view = <HeatmapView
-					viewState={viewState}
-					dataState={dataState}
-					heatmapState={heatmapState}
-					dispatch={dispatch}
-					/>;
-			break;
-		case "Sparkline":
-			view = <SparklineView
-					viewState={viewState}
-					dataState={dataState}
-					sparklineState={sparklineState}
-					dispatch={dispatch}
-					/>;
-			break;
-		case "Landscape":
-			view = <LandscapeView
-					viewState={viewState}
-					dataState={dataState}
-					landscapeState={landscapeState}
-					dispatch={dispatch}
-					/>;
-			break;
-		case "Genescape":
-			view = <GenescapeView
-					viewState={viewState}
-					dataState={dataState}
-					genescapeState={genescapeState}
-					dispatch={dispatch}
-					/>;
-			break;
-		default:
-			view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
-			break;
-		}
+		// switch (this.props.viewState.view) {
+		// case "Dataset":
+		// 	view = <DatasetView
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			dispatch={dispatch}
+		// 			/>;
+		// 	break;
+		// case "Heatmap":
+		// 	view = <HeatmapView
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			heatmapState={heatmapState}
+		// 			dispatch={dispatch}
+		// 			/>;
+		// 	break;
+		// case "Sparkline":
+		// 	view = <SparklineView
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			sparklineState={sparklineState}
+		// 			dispatch={dispatch}
+		// 			/>;
+		// 	break;
+		// case "Landscape":
+		// 	view = <LandscapeView
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			landscapeState={landscapeState}
+		// 			dispatch={dispatch}
+		// 			/>;
+		// 	break;
+		// case "Genescape":
+		// 	view = <GenescapeView
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			genescapeState={genescapeState}
+		// 			dispatch={dispatch}
+		// 			/>;
+		// 	break;
+		// default:
+		// 	view = <div>{"Unknown view: " + this.props.viewState.view}</div>;
+		// 	break;
+		// }
+		// return (
+		// 	<div>
+		// 		<Navbar
+		// 			viewState={viewState}
+		// 			dataState={dataState}
+		// 			onSetViewState={
+		// 				(state) => {
+		// 					dataState.hasDataset ? dispatch({ type: 'SET_VIEW_PROPS', view: state }) : undefined;
+		// 				}
+		// 			}/>
+		// 		{view}
+		// 	</div>
+		// );
+
 		return (
-			<div>
-				<Navbar
-					viewState={viewState}
-					dataState={dataState}
-					onSetViewState={
-						(state) => {
-							dataState.hasDataset ? dispatch({ type: 'SET_VIEW_PROPS', view: state }) : undefined;
-						}
-					}/>
-				{view}
-			</div>
+			<div>Loom App</div>
+			// <Router routes={routes} history={browserHistory}>
+			// 	Router element
+			// </Router>
 		);
 	}
 }
@@ -128,6 +137,9 @@ let LoomApp = connect(select)(App);
 render(
 	<Provider store={store}>
 		<LoomApp />
+		<Router routes={routes} history={browserHistory}>
+			Router element
+		</Router>
 	</Provider>
 	, document.getElementById('react-root')
 );
