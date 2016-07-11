@@ -1,5 +1,16 @@
 import 'whatwg-fetch';
 import * as _ from 'lodash';
+import {
+	REQUEST_PROJECTS,
+	REQUEST_PROJECTS_FAILED,
+	RECEIVE_PROJECTS,
+	REQUEST_DATASET,
+	REQUEST_DATASET_FAILED,
+	RECEIVE_DATASET,
+	REQUEST_GENE,
+	REQUEST_GENE_FAILED,
+	RECEIVE_GENE,
+} from './actionTypes';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -11,19 +22,19 @@ import * as _ from 'lodash';
 
 function requestProjects() {
 	return {
-		type: 'REQUEST_PROJECTS',
+		type: REQUEST_PROJECTS,
 	};
 }
 
 function requestProjectsFailed() {
 	return {
-		type: 'REQUEST_PROJECTS_FAILED',
+		type: REQUEST_PROJECTS_FAILED,
 	};
 }
 
 function receiveProjects(projects) {
 	return {
-		type: 'RECEIVE_PROJECTS',
+		type: RECEIVE_PROJECTS,
 		projects: projects,
 	};
 }
@@ -38,7 +49,7 @@ export function fetchProjects() {
 		dispatch(requestProjects());
 		// Second, perform the request (async)
 		return fetch(`/loom`)
-			.then((response) => { return response.json();})
+			.then((response) => { return response.json(); })
 			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
 				// Group by project
@@ -62,20 +73,20 @@ export function fetchProjects() {
 
 function requestDataset(dataset) {
 	return {
-		type: 'REQUEST_DATASET',
+		type: REQUEST_DATASET,
 		dataset: dataset,
 	};
 }
 
 function requestDatasetFailed() {
 	return {
-		type: 'REQUEST_DATASET_FAILED',
+		type: REQUEST_DATASET_FAILED,
 	};
 }
 
 function receiveDataset(dataset) {
 	return {
-		type: 'RECEIVE_DATASET',
+		type: RECEIVE_DATASET,
 		dataset: dataset,
 	};
 }
@@ -119,20 +130,20 @@ export function fetchDataset(dataset) {
 
 function requestGene(gene) {
 	return {
-		type: 'REQUEST_GENE',
+		type: REQUEST_GENE,
 		gene: gene,
 	};
 }
 
 function requestGeneFailed() {
 	return {
-		type: 'REQUEST_GENE_FAILED',
+		type: REQUEST_GENE_FAILED,
 	};
 }
 
 function receiveGene(gene, list) {
 	return {
-		type: 'RECEIVE_GENE',
+		type: RECEIVE_GENE,
 		gene: gene,
 		data: list,
 		receivedAt: Date.now(),

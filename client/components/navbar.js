@@ -1,46 +1,37 @@
 import React, { Component, PropTypes } from 'react';
-import { setViewState } from '../actions/actions';
+import { Link } from 'react-router';
+import { Navbar, Nav, NavItem } from 'react-bootstrap';
+import { LinkContainer } from 'react-router-bootstrap';
 
-export class Navbar extends Component {
+export class NavbarView extends Component {
 	render() {
-		const {viewState, dataState, onSetViewState } = this.props;
-		const view = viewState.view;
-
+		const navbarInstance = (
+			<Navbar>
+				<Navbar.Header>
+					<Navbar.Brand>
+						<Link to='/'>Loom</Link>
+					</Navbar.Brand>
+					<Navbar.Toggle />
+				</Navbar.Header>
+				<Navbar.Collapse>
+					<Nav>
+						<LinkContainer to='/dataset'><NavItem eventKey={1}>
+							Dataset
+						</NavItem></LinkContainer>
+						<LinkContainer to='/upload'><NavItem eventKey={2}>
+							Upload
+						</NavItem></LinkContainer>
+					</Nav>
+				</Navbar.Collapse>
+			</Navbar>
+		);
 		return (
-			<nav className='navbar navbar-default navbar-fixed-top'>
-				<div className='container'>
-					<div className='navbar-header'>
-						<button
-							type='button'
-							className='navbar-toggle collapsed'
-							data-toggle='collapse'
-							data-target='#navbar'
-							aria-expanded='false'
-							aria-controls='navbar' >
-							<span className='sr-only'>Toggle navigation</span>
-							<span className='icon-bar'></span>
-							<span className='icon-bar'></span>
-							<span className='icon-bar'></span>
-						</button>
-						<span className='navbar-brand'>{dataState.currentDataset.name}</span>
-					</div>
-					<div id='navbar' className='collapse navbar-collapse'>
-						<ul className='nav navbar-nav'>
-							<li className={ view === 'Dataset' ? 'active' : ''}><a href='#' onClick={ () => { onSetViewState('Dataset'); } }>Dataset</a></li>
-							<li className={ view === 'Heatmap' ? 'active' : ''}><a href='#' onClick={ () => { onSetViewState('Heatmap'); } }>Heatmap</a></li>
-							<li className={ view === 'Landscape' ? 'active' : ''}><a href='#' onClick={ () => { onSetViewState('Landscape'); } }>Landscape</a></li>
-							<li className={ view === 'Sparkline' ? 'active' : ''}><a href='#' onClick={ () => { onSetViewState('Sparkline'); } }>Sparkline</a></li>
-							<li className={ view === 'Genescape' ? 'active' : ''}><a href='#' onClick={ () => { onSetViewState('Genescape'); } }>Genescape</a></li>
-						</ul>
-					</div>
-				</div>
-			</nav>
+			<div>
+				{navbarInstance}
+				{this.props.children}
+			</div>
 		);
 	}
 }
 
-Navbar.propTypes = {
-	viewState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
-	onSetViewState: PropTypes.func.isRequired,
-}
+Navbar.propTypes = {};

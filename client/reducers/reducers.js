@@ -1,6 +1,7 @@
 // See http://rackt.org/redux/docs/basics/Reducers.html
 import L from "leaflet";
 import { combineReducers } from 'redux';
+import { routerReducer } from 'react-router-redux';
 
 const initialViewState = {
 	type: "SET_VIEW_PROPS",	// This will be set to the last action type
@@ -157,6 +158,7 @@ const loomAppReducer = combineReducers({
 	genescapeState,
 	sparklineState,
 	dataState,
+	routing: routerReducer,
 });
 
 export default loomAppReducer;

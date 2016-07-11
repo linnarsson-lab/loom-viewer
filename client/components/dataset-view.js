@@ -6,8 +6,8 @@ import { CreateDataset } from './dataset-upload.js';
 export class DatasetView extends Component {
 
 	render() {
-		// unused at the moment: this.props.viewState
-		const { dispatch, dataState } = this.props;
+		// // unused at the moment: this.props.viewState
+		// const { dispatch, dataState } = this.props;
 
 		const panels = Object.keys(dataState.projects).map((proj) => {
 			const datasets = dataState.projects[proj].map((state) => {
