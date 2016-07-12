@@ -1,104 +1,110 @@
 import React, { Component, PropTypes } from 'react';
-import { fetchDataset } from '../actions/actions.js';
-import * as _ from 'lodash';
-import { CreateDataset } from './dataset-upload.js';
-
-export class DatasetView extends Component {
-
-	render() {
-		// // unused at the moment: this.props.viewState
-		// const { dispatch, dataState } = this.props;
-
-		const panels = Object.keys(dataState.projects).map((proj) => {
-			const datasets = dataState.projects[proj].map((state) => {
-				return (
-					<DataSetListItem
-						key={state.dataset}
-						isCurrent={state.dataset === dataState.currentDataset.dataset}
-						state={state}
-						proj={proj}
-						dispatch={dispatch}
-						/>
-				);
-			});
-			return (
-				<div key={proj} className='panel panel-primary'>
-					<div className='panel-heading'>
-						{proj}
-						<div className='pull-right'>
-							<span>
-								{
-									dataState.projects[proj].length.toString() +
-									' dataset' +
-									(dataState.projects[proj].length > 1 ? 's' : '')
-								}
-							</span>
-						</div>
-					</div>
-					<div className='list-group'>
-						{datasets}
-					</div>
-				</div>
-			);
-		});
-
-		return (
-			<div className='container'>
-				<div className='row'>
-					<div className='view col-md-8'>
-						<hr />
-						<h1>Linnarsson lab single-cell data repository</h1>
-						<hr />
-						<h2>Available datasets</h2>
-						<div>
-							{ panels.length === 0 ?
-								<div className='panel panel-primary'>
-									<div className='panel-heading'>
-										Downloading list of available datasets...
-									</div>
-								</div>
-								:
-								panels
-							}
-						</div>
-						<hr />
-						<CreateDataset />
-					</div>
-				</div>
-			</div>
-		);
-	}
-}
-
-DatasetView.propTypes = {
-	viewState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-};
-
-
+import { ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
+import { LinkContainer } from 'react-router-bootstrap';
 
 class DataSetListItem extends Component {
 	render() {
-		const { key, isCurrent, state, proj, dispatch } = this.props;
+		const { key, isCurrent, project, state } = this.props;
+
+		const datasetpath = '/dataset/' +
+			state.transcriptome + '/' +
+			project + '/' +
+			state.dataset;
+
 		return (
-			<div
-				key={key}
-				className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
-				<a onClick={
-					() => {
-						const ds = state.transcriptome + '__' + proj + '__' + state.dataset;
-						dispatch(fetchDataset(ds));
-					}
-				}>
+			<ListGroupItem active={isCurrent} key={key}>
+				<LinkContainer to={datasetpath}>
 					{state.dataset}
-				</a>
-				<span>{' ' + state.message}</span>
+				</LinkContainer>
+			</ListGroupItem>
+		);
+
+		// Fetch logic from this needs to move to Router, commented
+		// out for reference for now.
+		// <div
+		// 	key={key}
+		// 	className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
+		// 	<a onClick={
+		// 		() => {
+		// 			const ds = state.transcriptome + '__' + state.proj + '__' + state.dataset;
+		// 			dispatch(fetchDataset(ds));
+		// 		}
+		// 	}>
+		// 		{state.dataset}
+		// 	</a>
+		// 	<span>{' ' + state.message}</span>
+		// </div>
+	}
+}
+
+class DataSetList extends Component {
+	createListItem(state) {
+		return (
+			<DataSetListItem
+				key={state.dataset}
+				isCurrent={state.dataset === this.props.dataState.currentDataset.dataset}
+				state={state}
+				project={this.props.project}
+				/>
+		);
+	}
+
+	render() {
+		const { dataState, project } = this.props;
+		const projectState = dataState.projects[project];
+		const datasets = projectState.map(this.createListItem);
+		const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length > 1 ? 's' : '');
+		return (
+			<Panel key={project} header={project} bsStyle='primary'>
 				<div className='pull-right'>
-					<a>Delete</a> / <a>Duplicate</a> / <a>Edit</a>
+					<span>
+						{ totalDatasets }
+					</span>
 				</div>
-			</div>
+				{datasets}
+			</Panel>
 		);
 	}
 }
 
+export class DataSetView extends Component {
+
+	render() {
+		// 	const { dataState } = this.props;
+
+		// 	const panels = dataState.projects ? Object.keys(dataState.projects).map(
+		// 		(project) => {
+		// 			return (
+		// 				<DataSetList
+		// 					dataState={dataState}
+		// 					project={project}
+		// 					/>
+		// 			);
+		// 		}
+		// 	) : [];
+		// 	const datasets = panels.length > 0 ? panels : (
+		// 		<Panel
+		// 			header={'Downloading list of available datasets...'}
+		// 			bsStyle='primary'
+		// 			/>
+		// 	);
+		const datasets = "Placeholder until redux is connected again"
+
+		return (
+			<div>
+				<hr />
+				<h1>Linnarsson Lab single-cell data repository</h1>
+				<br />
+				<h2>Available datasets</h2>
+				<div>
+					{ datasets }
+				</div>
+				<hr />
+			</div >
+		);
+	}
+}
+
+DataSetView.propTypes = {
+	//dataState: PropTypes.object.isRequired,
+};

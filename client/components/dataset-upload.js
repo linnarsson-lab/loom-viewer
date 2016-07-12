@@ -1,9 +1,20 @@
 import React, { Component, PropTypes } from 'react';
-import { fetchDataset } from '../actions/actions.js';
 import Select from 'react-select';
 import * as _ from 'lodash';
 
-export class CreateDataset extends Component {
+export class CreateDataSet extends Component {
+	render() {
+		return (
+			<div>
+				<CreateDataSetInstructions />
+				<br />
+				<CreateDataSetForm />
+			</div>
+		);
+	}
+}
+
+class CreateDataSetInstructions extends Component {
 	render() {
 		return (
 			<div>
@@ -34,15 +45,13 @@ export class CreateDataset extends Component {
 					<li>Regression label - must be one of the column attributes
 					(either from the file supplied by the user or from the standard cell attributes) </li>
 				</ul>
-				<br />
-				<CreateDatasetForm />
 			</div>
 		);
 	}
 }
 
 
-class CreateDatasetForm extends Component {
+class CreateDataSetForm extends Component {
 
 	constructor(props, context) {
 		super(props, context);
@@ -149,7 +158,7 @@ class CreateDatasetForm extends Component {
 									id='input_transcriptome'
 									onChange={ (opts) => {
 										opts ? this.handleFormChange('transcriptome', opts) : null;
-									}}
+									} }
 									/>
 							</div>
 						</div>

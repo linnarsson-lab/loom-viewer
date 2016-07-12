@@ -1,5 +1,4 @@
 import React, { Component, PropTypes } from 'react';
-import { Link } from 'react-router';
 import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 
@@ -8,9 +7,11 @@ export class NavbarView extends Component {
 		const navbarInstance = (
 			<Navbar>
 				<Navbar.Header>
-					<Navbar.Brand>
-						<Link to='/'>Loom</Link>
-					</Navbar.Brand>
+					<LinkContainer to='/'>
+						<Navbar.Brand>
+							Loom
+						</Navbar.Brand>
+					</LinkContainer>
 					<Navbar.Toggle />
 				</Navbar.Header>
 				<Navbar.Collapse>
