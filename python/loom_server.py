@@ -63,9 +63,13 @@ def send_css(path):
 def send_img(path):
 	return flask.send_from_directory('/img', path)
 
+# /dataset and /upload are handled by react-router in the front-end
 @app.route('/')
+@app.route('/dataset')
+@app.route('/upload')
 def send_indexjs():
 	return app.send_static_file('index.html')
+
 
 #
 # Loom datasets
