@@ -63,10 +63,19 @@ def send_css(path):
 def send_img(path):
 	return flask.send_from_directory('/img', path)
 
-# /dataset and /upload are handled by react-router in the front-end
+# all of these routes are handled by react-router in the front-end
 @app.route('/')
-@app.route('/dataset')
 @app.route('/upload')
+@app.route('/dataset')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap/<viewsettings>')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline/<viewsettings>')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape/<viewsettings>')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape/<viewsettings>')
 def send_indexjs():
 	return app.send_static_file('index.html')
 
