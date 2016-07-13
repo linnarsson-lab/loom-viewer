@@ -10,6 +10,7 @@ import StringIO
 import json
 import numpy as np
 from flask import make_response
+from flask import redirect, url_for
 from functools import wraps, update_wrapper
 from datetime import datetime
 from pandas import DataFrame
@@ -65,19 +66,30 @@ def send_img(path):
 
 # all of these routes are handled by react-router in the front-end
 @app.route('/')
-@app.route('/upload')
-@app.route('/dataset')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap/<viewsettings>')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline/<viewsettings>')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape/<viewsettings>')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape')
-@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape/<viewsettings>')
 def send_indexjs():
 	return app.send_static_file('index.html')
+
+# temp solution. TODO: figure out how to combine webpack with flask templates
+@app.route('/dataset/')
+@app.route('/upload/')
+def send_mockindex():
+	return redirect(url_for('send_indexjs'))
+
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape/')
+def send_mockdataset(transcriptome, project, dataset):
+	return redirect(url_for('send_indexjs'))
+
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/heatmap/<viewsettings>/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/sparkline/<viewsettings>/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/landscape/<viewsettings>/')
+@app.route('/dataset/<transcriptome>/<project>/<dataset>/genescape/<viewsettings>/')
+def send_mockdatasetview(transcriptome, project, dataset, viewsettings):
+	return redirect(url_for('send_indexjs'))
+
 
 
 #
@@ -200,5 +212,3 @@ def send_tile(transcriptome, project, dataset, z,x,y):
 
 if __name__ == '__main__':
 	app.run(debug=DEBUG, host="0.0.0.0", port=80)
-
-
