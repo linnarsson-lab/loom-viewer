@@ -27,14 +27,14 @@ module.exports = {
 		],
 	},
 	plugins: [
-		new webpack.optimize.DedupePlugin(),
-		new webpack.optimize.OccurenceOrderPlugin(),
 		new webpack.DefinePlugin({
 			'process.env': {
-				'NODE_ENV': "'production'",
+				'NODE_ENV': "'debug'",
 			},
 		}),
-		new webpack.optimize.UglifyJsPlugin({ mangle: true, sourcemap: false }),
+		//new webpack.optimize.DedupePlugin(),
+		//new webpack.optimize.OccurenceOrderPlugin(),
+		//new webpack.optimize.UglifyJsPlugin({ mangle: true, sourcemap: false }),
 		HTMLWebpackPluginConfig,
 	],
 };
