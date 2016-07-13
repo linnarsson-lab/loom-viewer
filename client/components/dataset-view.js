@@ -1,110 +1,150 @@
 import React, { Component, PropTypes } from 'react';
-import { ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
+import { groupBy } from 'lodash';
+
+//import { fetchProjects } from '../actions/actions.js';
+// import connect from 'react-redux';
+// import * as actionCreators from '../actions/actions.js';
+
 
 class DataSetListItem extends Component {
 	render() {
-		const { key, isCurrent, project, state } = this.props;
-
-		const datasetpath = '/dataset/' +
-			state.transcriptome + '/' +
-			project + '/' +
-			state.dataset;
+		const { dataSet, message, dataSetPath } = this.props;
 
 		return (
-			<ListGroupItem active={isCurrent} key={key}>
-				<LinkContainer to={datasetpath}>
-					{state.dataset}
-				</LinkContainer>
-			</ListGroupItem>
+			<LinkContainer to={dataSetPath}>
+				<ListGroupItem key={dataSet}>
+					{dataSet}
+					<div className='pull-right'>
+						{message}
+					</div>
+				</ListGroupItem>
+			</LinkContainer>
 		);
-
-		// Fetch logic from this needs to move to Router, commented
-		// out for reference for now.
-		// <div
-		// 	key={key}
-		// 	className={'list-group-item' + (isCurrent ? ' list-group-item-info' : '') }>
-		// 	<a onClick={
-		// 		() => {
-		// 			const ds = state.transcriptome + '__' + state.proj + '__' + state.dataset;
-		// 			dispatch(fetchDataset(ds));
-		// 		}
-		// 	}>
-		// 		{state.dataset}
-		// 	</a>
-		// 	<span>{' ' + state.message}</span>
-		// </div>
 	}
 }
 
 class DataSetList extends Component {
-	createListItem(state) {
+
+	// Takes the metadata of the dataset
+	// and returns a DataSetListItem
+	createListItem(dataSetMetaData) {
+		const { transcriptome, project, dataset, status, message} = dataSetMetaData;
+		const dataSetPath = '/dataset/' +
+			transcriptome + '/' +
+			project + '/' +
+			dataset;
+
 		return (
 			<DataSetListItem
-				key={state.dataset}
-				isCurrent={state.dataset === this.props.dataState.currentDataset.dataset}
-				state={state}
-				project={this.props.project}
+				dataSetPath={dataSetPath}
+				dataSet={dataset}
+				message={message}
 				/>
 		);
 	}
 
 	render() {
-		const { dataState, project } = this.props;
-		const projectState = dataState.projects[project];
+		const { project, projectState } = this.props;
+		const totalDatasets = ', ' + projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
 		const datasets = projectState.map(this.createListItem);
-		const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length > 1 ? 's' : '');
 		return (
-			<Panel key={project} header={project} bsStyle='primary'>
-				<div className='pull-right'>
-					<span>
-						{ totalDatasets }
-					</span>
-				</div>
-				{datasets}
+			<Panel key={project} header={project + totalDatasets} bsStyle='primary'>
+				<ListGroup fill>
+					{datasets}
+				</ListGroup>
 			</Panel>
+		);
+	}
+}
+
+// Generates a list of projects, each with a list
+// of datasets associated with the project.
+class ProjectList extends Component {
+	render() {
+		const { projects } = this.props;
+
+		const panels = Object.keys(projects).map(
+			(project) => {
+				return (
+					<DataSetList
+						project={project}
+						projectState={projects[project]}
+						/>
+				);
+			}
+		);
+
+		return panels.length > 0 ? <div>{panels}</div> : (
+			<Panel
+				header={'Downloading list of available datasets...'}
+				bsStyle='primary'
+				/>
 		);
 	}
 }
 
 export class DataSetView extends Component {
 
+	// componentDidMount() {
+	// 	this.props.dispatch(fetchProjects());
+	// }
+
 	render() {
-		// 	const { dataState } = this.props;
 
-		// 	const panels = dataState.projects ? Object.keys(dataState.projects).map(
-		// 		(project) => {
-		// 			return (
-		// 				<DataSetList
-		// 					dataState={dataState}
-		// 					project={project}
-		// 					/>
-		// 			);
-		// 		}
-		// 	) : [];
-		// 	const datasets = panels.length > 0 ? panels : (
-		// 		<Panel
-		// 			header={'Downloading list of available datasets...'}
-		// 			bsStyle='primary'
-		// 			/>
-		// 	);
-		const datasets = "Placeholder until redux is connected again"
-
+		// Manually inserted data for debuggin while the connect call doesn't work
+		// .. and I suspect it doesn't work BECAUSE the components are broken atm
+		// data that would be returned by ./loom/
+		const dataSets = [
+			{
+				"project": "midbrain",
+				"status": "created",
+				"cluster_method": "AP",
+				"transcriptome": "hg19_sUCSC",
+				"message": "Ready to browse.",
+				"regression_label": "_Cluster",
+				"n_features": 1000,
+				"dataset": "human_sten_May29",
+			},
+			{
+				"project": "Published",
+				"status": "willcreate",
+				"cluster_method": "AP",
+				"transcriptome": "mm10_sUCSC",
+				"message": "Waiting for dataset to be generated.",
+				"regression_label": "CellType",
+				"n_features": 1000,
+				"dataset": "Oligodendrocytes_Science_2016",
+			}];
+		// TODO: change fetchProjects() to reflect the change from
+		// { projects: { projectA: [...], projectB: [...] }} to
+		// { projectA: [...], projectB: [...] }
+		const projects = groupBy(dataSets, (item) => { return item.project; });
 		return (
-			<div>
-				<hr />
-				<h1>Linnarsson Lab single-cell data repository</h1>
-				<br />
-				<h2>Available datasets</h2>
-				<div>
-					{ datasets }
-				</div>
-				<hr />
-			</div >
+			<Grid>
+				<Row>
+					<Col xs={12} md={8}>
+						<hr />
+						<h1>Linnarsson Lab single-cell data repository</h1>
+						<br />
+						<h2>Available datasets</h2>
+						<div>
+							<ProjectList projects={projects} />
+						</div>
+					</Col>
+				</Row>
+			</Grid>
 		);
 	}
 }
 
-DataSetView.propTypes = {
-	//dataState: PropTypes.object.isRequired,
-};
+// DataSetViewComponent.propTypes = {
+// 	dataState: PropTypes.object.isRequired,
+// };
+
+// function mapStateToProps(state) {
+// 	return { dataState: state.dataState };
+// }
+
+//export const DataSetView = DataSetViewComponent;//connect(mapStateToProps)(DataSetViewComponent);
