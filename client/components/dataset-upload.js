@@ -1,15 +1,20 @@
 import React, { Component, PropTypes } from 'react';
 import Select from 'react-select';
+import { Grid, Col, Row } from 'react-bootstrap';
 import * as _ from 'lodash';
 
 export class CreateDataSet extends Component {
 	render() {
 		return (
-			<div>
-				<CreateDataSetInstructions />
-				<br />
-				<CreateDataSetForm />
-			</div>
+			<Grid>
+				<Row>
+					<Col xs={12} md={8}>
+						<CreateDataSetInstructions />
+						<br />
+						<CreateDataSetForm />
+					</Col>
+				</Row>
+			</Grid>
 		);
 	}
 }
@@ -33,7 +38,7 @@ class CreateDataSetInstructions extends Component {
 				</ul>
 				<p>Before uploading these CSV files a minimal check will be applied, hopefully catching the most likely
 					scenarios.If the CSV file contains semi-colons instead of commas (most likely the result of regional
-					settings in whatever tool was used to generate the file), they will automatically be replace
+					settings in whatever software was used to generate the file), they will automatically be replaced
 					before submitting.Please double-check if the result is correct in that case.</p>
 				<p><i>Note: </i> you can still submit a file with a wrong file extension or (what appears to be)
 					malformed content, as validation might turn up false positives.We assume you know what you are doing,
