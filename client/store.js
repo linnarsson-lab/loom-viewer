@@ -6,9 +6,6 @@ import { browserHistory } from 'react-router';
 // import the root reducer
 import loomAppReducer from './reducers/reducers';
 
-// // create a store that has redux-thunk middleware enabled
-// export const store = applyMiddleware(thunk)(createStore)(loomAppReducer);
-
 export const store = createStore(
 	loomAppReducer,
 	compose(
