@@ -96,7 +96,7 @@ function receiveDataSet(result) {
 	return {
 		type: RECEIVE_DATASET,
 		dataSet: result.dataSet,
-		dataSetName: restul.dataSetName,
+		dataSetName: result.dataSetName,
 	};
 }
 
