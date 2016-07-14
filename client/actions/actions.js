@@ -13,7 +13,7 @@ import {
 } from './actionTypes';
 
 // we need access to the store to check if projects, dataSets
-// or have already been fetched.
+// or genes have already been fetched.
 import store from '../store';
 
 
@@ -92,11 +92,11 @@ function requestDataSetFailed() {
 	};
 }
 
-function receiveDataSet(dataSet, dataSetName) {
+function receiveDataSet(result) {
 	return {
 		type: RECEIVE_DATASET,
-		dataSet,
-		dataSetName,
+		dataSet: result.dataSet,
+		dataSetName: restul.dataSetName,
 	};
 }
 
@@ -117,12 +117,17 @@ export function fetchDataSet(dataSetName) {
 				.then((ds) => {
 					// Once the response comes in, dispatch an action to provide the data
 					// Also, dispatch some actions to set required properties on the subviews
-					// TODO: move to react-router state/inject react-router logic
+					// TODO: move to react-router state and
+					// replace with necessary router.push() logic
 					// const ra = ds.rowAttrs[0];
 					// const ca = ds.colAttrs[0];
 					// dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
 					// dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
-					dispatch(receiveDataSet(ds, dataSetName)); // This goes last, to ensure the above defaults are set when the views are rendered
+
+					// This goes last, to ensure the above defaults are set when the views are rendered
+					dispatch(receiveDataSet(
+						{ dataSet: ds, dataSetName: dataSetName }
+					));
 					//dispatch({ type: "SET_VIEW_PROPS", view: "Landscape" });
 				})
 				// Or, if it failed, dispatch an action to set the error flag
@@ -130,7 +135,9 @@ export function fetchDataSet(dataSetName) {
 					console.log(err);
 					dispatch(requestDataSetFailed(dataSetName));
 				})
-		) : dispatch(receiveDataSet(dataSets[dataSetName], dataSetName));
+		) : dispatch(receiveDataSet(
+			{ dataSet: dataSets[dataSetName], dataSetName: dataSetName }
+		));
 	};
 }
 
