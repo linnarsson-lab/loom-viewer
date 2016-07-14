@@ -12,15 +12,17 @@ import { SparklineView } from './components/sparkline-view';
 import { LandscapeView } from './components/landscape-view';
 import { GenescapeView } from './components/genescape-view';
 
-// import Redux deps
-import { Provider } from 'react-redux';
-import store, { history } from './store';
+
 
 // import Bootstrap Grid components
 import { Grid, Row, Col } from 'react-bootstrap';
 
 // import Router dependencies
 import { Router, Route, IndexRoute } from 'react-router';
+
+// import Redux deps
+import { Provider } from 'react-redux';
+import store, { history } from './store';
 
 
 // layout of the routes
@@ -45,7 +47,7 @@ const router = (
 render(router, document.getElementById('react-root'));
 
 
-// Fetch logic from this needs to move to Router & Redux, commented
+// Fetch logic from opening a dataset needs to move to Router & Redux, commented
 // out for later reference for now.
 // <div
 // 	key={key}

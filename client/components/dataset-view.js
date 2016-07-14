@@ -2,12 +2,8 @@ import React, { Component, PropTypes } from 'react';
 import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 
+import { connect } from 'react-redux';
 import { fetchProjects } from '../actions/actions.js';
-import connect from 'react-redux';
-
-export const DataSetView = connect(
-	(state) => { return { projects: state.projects }; }
-)(DataSetViewComponent);
 
 // // Manually inserted data for debuggin while the connect call doesn't work
 // // .. and I suspect it doesn't work BECAUSE the components are broken atm
@@ -34,6 +30,9 @@ export const DataSetView = connect(
 // 		"dataset": "Oligodendrocytes_Science_2016",
 // 	}];
 // const projects = groupBy(dataSets, (item) => { return item.project; });
+
+//connect view components
+export const DataSetView = connect( (state) => { return { projects: state.projects }; })(DataSetViewComponent);
 
 class DataSetViewComponent extends Component {
 
@@ -63,7 +62,6 @@ class DataSetViewComponent extends Component {
 DataSetViewComponent.propTypes = {
 	projects: PropTypes.object.isRequired,
 };
-
 
 
 // Generates a list of projects, each with a list
