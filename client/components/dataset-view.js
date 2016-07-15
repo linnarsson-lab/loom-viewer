@@ -3,32 +3,6 @@ import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup } from 'rea
 import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
-// // Manually inserted data for debuggin while the connect call doesn't work
-// // .. and I suspect it doesn't work BECAUSE the components are broken atm
-// // data that would be returned by ./loom/
-// const dataSets = [
-// 	{
-// 		"project": "midbrain",
-// 		"status": "created",
-// 		"cluster_method": "AP",
-// 		"transcriptome": "hg19_sUCSC",
-// 		"message": "Ready to browse.",
-// 		"regression_label": "_Cluster",
-// 		"n_features": 1000,
-// 		"dataset": "human_sten_May29",
-// 	},
-// 	{
-// 		"project": "Published",
-// 		"status": "willcreate",
-// 		"cluster_method": "AP",
-// 		"transcriptome": "mm10_sUCSC",
-// 		"message": "Waiting for dataset to be generated.",
-// 		"regression_label": "CellType",
-// 		"n_features": 1000,
-// 		"dataset": "Oligodendrocytes_Science_2016",
-// 	}];
-// const projects = groupBy(dataSets, (item) => { return item.project; });
-
 
 class DataSetViewComponent extends Component {
 
