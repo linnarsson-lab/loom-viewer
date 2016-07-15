@@ -20,9 +20,6 @@ import {
 	// SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
-import { groupBy } from 'lodash';
-
-
 /* Migrating these to react-router */
 
 // const initialViewState = {
@@ -133,7 +130,7 @@ const initialData = {
 	//	}
 	projects: undefined,
 	// replaced by dataSets object that stores all fetched datasets.
-	//hasDataset: false,
+	// hasDataset: false,
 	dataSets: {},
 
 	currentDataset: undefined,	// rowAttrs, colAttrs and such things, when loaded; replaces 'window.fileinfo'
@@ -147,8 +144,7 @@ function data(state = initialData, action) {
 			return Object.assign({}, state, { isFetchingData: true, errorFetchingData: false });
 
 		case RECEIVE_PROJECTS:
-			// Perform the grouping by project in the reducer
-			const projects = groupBy(action.projects, (item) => { return item.project; });
+			const projects = action.projects;
 			return Object.assign({}, state, {
 				isFetchingData: false,
 				projects,

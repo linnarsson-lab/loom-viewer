@@ -12,6 +12,9 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
+import { groupBy } from 'lodash';
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
 // Fetch the list of projects
@@ -54,7 +57,11 @@ export function fetchProjects(projects) {
 				fetch(`/loom`)
 					.then((response) => { return response.json(); })
 					.then((json) => {
-						dispatch(receiveProjects(json));
+						// Grouping by project must be done here, instead of in
+						// the reducer, because if it is already in the store we
+						// want to pass it back unmodified (see else branch below)
+						const fetchedProjects = groupBy(json, (item) => { return item.project; });
+						dispatch(receiveProjects(fetchedProjects));
 					})
 					// Or, if it failed, dispatch an action to set the error flag
 					.catch((err) => {
@@ -101,13 +108,13 @@ function receiveDataSet(result) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchDataSet(dataSetName) {
+export function fetchDataSet(data) {
+	const { dataSetName, dataSets } = data;
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestDataSet(dataSetName));
 		// Second, see if the dataset already exists in the store
 		// If not, perform the request (async)
-		const dataSets = store.getState().dataSets;
 		return dataSets[dataSetName] === undefined ? (
 			fetch(`/loom/${dataSetName}/fileinfo.json`)
 				.then((response) => { return response.json(); })
