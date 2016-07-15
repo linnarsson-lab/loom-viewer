@@ -46,7 +46,6 @@ function receiveProjects(projects) {
 // store.dispatch(fetchgene(...))
 
 export function fetchProjects(projects) {
-	console.log('fetchProjects dispatched!');
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestProjects());
@@ -70,7 +69,6 @@ export function fetchProjects(projects) {
 					})
 			);
 		} else {
-			console.log("project list already fetched!");
 			return dispatch(receiveProjects(projects));
 		}
 	};
