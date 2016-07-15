@@ -1,9 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
-
-import { connect } from 'react-redux';
-import { fetchProjects } from '../actions/actions.js';
+import { fetchProjects } from '../actions/actions';
 
 // // Manually inserted data for debuggin while the connect call doesn't work
 // // .. and I suspect it doesn't work BECAUSE the components are broken atm
@@ -31,8 +29,6 @@ import { fetchProjects } from '../actions/actions.js';
 // 	}];
 // const projects = groupBy(dataSets, (item) => { return item.project; });
 
-//connect view components
-export const DataSetView = connect( (state) => { return { projects: state.projects }; })(DataSetViewComponent);
 
 class DataSetViewComponent extends Component {
 
@@ -63,30 +59,41 @@ DataSetViewComponent.propTypes = {
 	projects: PropTypes.object.isRequired,
 };
 
+// //connect view components
+import { connect } from 'react-redux';
+
+const mapStateToProps = (state) => {
+	return { projects: state.projects };
+};
+export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
+
 
 // Generates a list of projects, each with a list
 // of datasets associated with the project.
 class ProjectList extends Component {
 	render() {
 		const { projects } = this.props;
+		if (projects) {
+			const panels = Object.keys(projects).map(
+				(project) => {
+					return (
+						<DataSetList
+							project={project}
+							projectState={projects[project]}
+							/>
+					);
+				}
+			);
 
-		const panels = Object.keys(projects).map(
-			(project) => {
-				return (
-					<DataSetList
-						project={project}
-						projectState={projects[project]}
-						/>
-				);
-			}
-		);
-
-		return panels.length > 0 ? <div>{panels}</div> : (
-			<Panel
-				header={'Downloading list of available datasets...'}
-				bsStyle='primary'
-				/>
-		);
+			return <div>{panels}</div>
+		} else {
+			return (
+				<Panel
+					header={'Downloading list of available datasets...'}
+					bsStyle='primary'
+					/>
+			);
+		}
 	}
 }
 
