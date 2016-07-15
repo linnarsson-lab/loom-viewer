@@ -122,7 +122,7 @@ import { groupBy } from 'lodash';
 // }
 
 // Keeps track of projects and datasets, including managing asynchronous fetching
-const initialDataState = {
+const initialData = {
 	isFetchingData: false,
 	errorFetchingData: false,
 
@@ -140,7 +140,7 @@ const initialDataState = {
 	genes: undefined,				// contains row data by gene, i.e. {"Actb": [1,2,1,3,42,4,...]}
 };
 
-function dataState(state = initialDataState, action) {
+function data(state = initialData, action) {
 	switch (action.type) {
 		//===PROJECT ACTIONS===
 		case REQUEST_PROJECTS:
@@ -201,7 +201,7 @@ const loomAppReducer = combineReducers({
 	// landscapeState,
 	// genescapeState,
 	// sparklineState,
-	dataState,
+	data,
 	routing: routerReducer,
 });
 

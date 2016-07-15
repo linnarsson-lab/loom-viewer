@@ -64,7 +64,7 @@ DataSetViewComponent.propTypes = {
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	return { projects: state.dataState.projects };
+	return { projects: state.data.projects };
 };
 export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
 
