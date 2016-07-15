@@ -147,8 +147,8 @@ function dataState(state = initialDataState, action) {
 			return Object.assign({}, state, { isFetchingData: true, errorFetchingData: false });
 
 		case RECEIVE_PROJECTS:
-		// Perform the grouping by project in the reducer
-		const projects = groupBy(action.projects, (item) => { return item.project; });
+			// Perform the grouping by project in the reducer
+			const projects = groupBy(action.projects, (item) => { return item.project; });
 			return Object.assign({}, state, {
 				isFetchingData: false,
 				projects,

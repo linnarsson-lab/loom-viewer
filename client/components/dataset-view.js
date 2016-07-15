@@ -33,7 +33,8 @@ import { fetchProjects } from '../actions/actions';
 class DataSetViewComponent extends Component {
 
 	componentDidMount() {
-		this.props.dispatch(fetchProjects());
+		const { dispatch, projects } = this.props;
+		dispatch(fetchProjects(projects));
 	}
 
 	render() {
@@ -59,11 +60,11 @@ DataSetViewComponent.propTypes = {
 	projects: PropTypes.object.isRequired,
 };
 
-// //connect view components
+//connect DataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	return { projects: state.projects };
+	return { projects: state.dataState.projects };
 };
 export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
 

@@ -1,5 +1,5 @@
 import 'whatwg-fetch';
-import * as _ from 'lodash';
+
 import {
 	REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FAILED,
@@ -11,11 +11,6 @@ import {
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 } from './actionTypes';
-
-// we need access to the store to check if projects, dataSets
-// or genes have already been fetched.
-import store from '../store';
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -47,28 +42,30 @@ function receiveProjects(projects) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchProjects() {
+export function fetchProjects(projects) {
+	console.log('fetchProjects dispatched!');
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestProjects());
 		// Second, check if projects already exists in the store.
 		// If not, perform a fetch request (async)
-		const projects = store.getState().projects;
-		return (projects === undefined) ? (
-			fetch(`/loom`)
-				.then((response) => { return response.json(); })
-				.then((json) => {
-					// Once the response comes in, dispatch an action to provide the data
-					// Group by project
-					const projs = _.groupBy(json, (item) => { return item.project; });
-					dispatch(receiveProjects(projs));
-				})
-				// Or, if it failed, dispatch an action to set the error flag
-				.catch((err) => {
-					console.log(err);
-					dispatch(requestProjectsFailed());
-				})
-		) : dispatch(receiveProjects(projects));
+		if (projects === undefined) {
+			return (
+				fetch(`/loom`)
+					.then((response) => { return response.json(); })
+					.then((json) => {
+						dispatch(receiveProjects(json));
+					})
+					// Or, if it failed, dispatch an action to set the error flag
+					.catch((err) => {
+						console.log(err);
+						dispatch(requestProjectsFailed());
+					})
+			);
+		} else {
+			console.log("project list already fetched!");
+			return dispatch(receiveProjects(projects));
+		}
 	};
 }
 
