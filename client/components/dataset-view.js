@@ -1,5 +1,10 @@
 import React, { Component, PropTypes } from 'react';
-import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup, Button, ButtonToolbar } from 'react-bootstrap';
+import {
+	Grid, Col, Row,
+	ListGroup, ListGroupItem,
+	Panel, PanelGroup,
+	ButtonGroup, DropdownButton, MenuItem
+} from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
@@ -114,64 +119,48 @@ class DataSetListItem extends Component {
 
 		this.state = { open: false };
 
-		this.renderViewLinks = this.renderViewLinks.bind(this);
+		this.renderDowpdownLink = this.renderDowpdownLink.bind(this);
+		this.renderDropdown = this.renderDropdown.bind(this);
 	}
 
-	renderViewLinks() {
-		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
-		const links = views.map((view) => {
-			const path = this.props.dataSetPath + '/' + view;
-			const disabled = this.props.dataSetMetaData.status !== 'created';
-			return (
-				<LinkContainer to={path} >
-					<Button
-						key={path}
-						bsStyle='primary'
-						disabled={disabled}
-						>
-						{view}
-					</Button>
-				</LinkContainer>
-			);
-		});
+	renderDowpdownLink(view) {
+		const path = this.props.dataSetPath + '/' + view;
 		return (
-			<ButtonToolbar>
-				{links}
-			</ButtonToolbar>
+			<LinkContainer to={path} key={path}>
+				<MenuItem
+					eventKey={path}>
+					{view}
+				</MenuItem>
+			</LinkContainer>
+		);
+	}
+
+	renderDropdown() {
+		const { dataset, status, message } = this.props.dataSetMetaData;
+		const disabled = status !== 'created';
+		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
+		const links = views.map(this.renderDowpdownLink);
+		return (
+			<ButtonGroup key={dataset} >
+				<DropdownButton
+					title={dataset + '. ' + message}
+					bsStyle='link'
+					disabled={disabled}>
+					{links}
+				</DropdownButton>
+			</ButtonGroup>
 		);
 	}
 
 	render() {
 		const { dataSetMetaData } = this.props;
-		const {
-			cluster_method,
-			transcriptome,
-			regression_label,
-			n_features,
-			message,
-			dataset,
-		} = dataSetMetaData;
+		const { dataset } = dataSetMetaData;
 
-		const showLinks = this.state.open ? this.renderViewLinks() : undefined;
-		const metadata = !this.state.open ? (<div className='pull-right'>{message}</div>) : (
-			<div className='pull-right'>
-				{message}<br />
-				Transcriptome: {transcriptome}<br />
-				Regression Label: {regression_label}<br />
-				Cluster Method: {cluster_method}<br />
-				# features: {n_features}<br />
-			</div>
-		);
-
+		const viewLinksDropdown = this.renderDropdown();
 		return (
 			<div>
-				<ListGroupItem
-					key={dataset}
-					onClick={ () => { this.setState({ open: !this.state.open }); } }
-					>
-					{dataset}
-					{metadata}
-					{showLinks}
+				<ListGroupItem key={dataset}>
+					{viewLinksDropdown}
 				</ListGroupItem>
 			</div>
 		);
