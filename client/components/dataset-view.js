@@ -121,9 +121,14 @@ class DataSetListItem extends Component {
 		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
 		const links = views.map((view) => {
 			const path = this.props.dataSetPath + '/' + view;
+			const disabled = this.props.dataSetMetaData.status !== 'created';
 			return (
-				<LinkContainer to={path}>
-					<Button key={path} bsStyle='primary'>
+				<LinkContainer to={path} >
+					<Button
+						key={path}
+						bsStyle='primary'
+						disabled={disabled}
+						>
 						{view}
 					</Button>
 				</LinkContainer>
@@ -145,17 +150,8 @@ class DataSetListItem extends Component {
 			n_features,
 			message,
 			dataset,
-		} = dataSetMetaData;		/*
-		example:
-		project:"midbrain"
-		status:"created"
-		cluster_method:"AP"
-		transcriptome:"hg19_sUCSC"
-		message:"Ready to browse."
-		regression_label:"_Cluster"
-		n_features:1000
-		dataset:"human_sten_May29"
-		*/
+		} = dataSetMetaData;
+
 		const showLinks = this.state.open ? this.renderViewLinks() : undefined;
 		const metadata = !this.state.open ? (<div className='pull-right'>{message}</div>) : (
 			<div className='pull-right'>
