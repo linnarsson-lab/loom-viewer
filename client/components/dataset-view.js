@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem, Panel, PanelGroup, Button, ButtonToolbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
@@ -20,9 +20,9 @@ class DataSetViewComponent extends Component {
 						<h1>Linnarsson Lab single-cell data repository</h1>
 						<br />
 						<h2>Available datasets</h2>
-						<div>
+						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
-						</div>
+						</PanelGroup>
 					</Col>
 				</Row>
 			</Grid>
@@ -31,7 +31,7 @@ class DataSetViewComponent extends Component {
 }
 
 DataSetViewComponent.propTypes = {
-	projects: PropTypes.object.isRequired,
+	projects: PropTypes.object,
 };
 
 //connect DataSetViewComponent to store
@@ -53,6 +53,7 @@ class ProjectList extends Component {
 				(project) => {
 					return (
 						<DataSetList
+							key={project}
 							project={project}
 							projectState={projects[project]}
 							/>
@@ -77,7 +78,7 @@ class DataSetList extends Component {
 	// Takes the metadata of the dataset
 	// and returns a DataSetListItem
 	createListItem(dataSetMetaData) {
-		const { transcriptome, project, dataset, status, message} = dataSetMetaData;
+		const { transcriptome, project, dataset} = dataSetMetaData;
 		const dataSetPath = '/dataset/' +
 			transcriptome + '/' +
 			project + '/' +
@@ -85,19 +86,19 @@ class DataSetList extends Component {
 
 		return (
 			<DataSetListItem
+				key={dataSetPath}
 				dataSetPath={dataSetPath}
-				dataSet={dataset}
-				message={message}
+				dataSetMetaData={dataSetMetaData}
 				/>
 		);
 	}
 
 	render() {
 		const { project, projectState } = this.props;
-		const totalDatasets = ', ' + projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
+		const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
 		const datasets = projectState.map(this.createListItem);
 		return (
-			<Panel key={project} header={project + totalDatasets} bsStyle='primary'>
+			<Panel key={project} header={`${project}, ${totalDatasets}`} bsStyle='primary'>
 				<ListGroup fill>
 					{datasets}
 				</ListGroup>
@@ -107,18 +108,76 @@ class DataSetList extends Component {
 }
 
 class DataSetListItem extends Component {
+
+	constructor(props, context) {
+		super(props, context);
+
+		this.state = { open: false };
+
+		this.renderViewLinks = this.renderViewLinks.bind(this);
+	}
+
+	renderViewLinks() {
+		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
+		const links = views.map((view) => {
+			const path = this.props.dataSetPath + '/' + view;
+			return (
+				<LinkContainer to={path}>
+					<Button key={path} bsStyle='primary'>
+						{view}
+					</Button>
+				</LinkContainer>
+			);
+		});
+		return (
+			<ButtonToolbar>
+				{links}
+			</ButtonToolbar>
+		);
+	}
+
 	render() {
-		const { dataSet, message, dataSetPath } = this.props;
+		const { dataSetMetaData } = this.props;
+		const {
+			cluster_method,
+			transcriptome,
+			regression_label,
+			n_features,
+			message,
+			dataset,
+		} = dataSetMetaData;		/*
+		example:
+		project:"midbrain"
+		status:"created"
+		cluster_method:"AP"
+		transcriptome:"hg19_sUCSC"
+		message:"Ready to browse."
+		regression_label:"_Cluster"
+		n_features:1000
+		dataset:"human_sten_May29"
+		*/
+		const showLinks = this.state.open ? this.renderViewLinks() : undefined;
+		const metadata = !this.state.open ? (<div className='pull-right'>{message}</div>) : (
+			<div className='pull-right'>
+				{message}<br />
+				Transcriptome: {transcriptome}<br />
+				Regression Label: {regression_label}<br />
+				Cluster Method: {cluster_method}<br />
+				# features: {n_features}<br />
+			</div>
+		);
 
 		return (
-			<LinkContainer to={dataSetPath}>
-				<ListGroupItem key={dataSet}>
-					{dataSet}
-					<div className='pull-right'>
-						{message}
-					</div>
+			<div>
+				<ListGroupItem
+					key={dataset}
+					onClick={ () => { this.setState({ open: !this.state.open }); } }
+					>
+					{dataset}
+					{metadata}
+					{showLinks}
 				</ListGroupItem>
-			</LinkContainer>
+			</div>
 		);
 	}
 }
