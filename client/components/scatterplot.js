@@ -93,7 +93,7 @@ export class Scatterplot extends React.Component {
 					context.strokeStyle = "black";
 					context.stroke();
 					context.fillStyle = "black";
-					if (i == -1) {
+					if (i === -1) {
 						context.fillText("(all other categories)", width + 30, (i + 2) * 15 + 3);
 					} else {
 						context.fillText(cats[i], width + 30, (i + 2) * 15 + 3);
@@ -104,12 +104,12 @@ export class Scatterplot extends React.Component {
 				let original_cmax = Math.max(...color);
 				// Log transform if requested
 				if (this.props.logScaleColor) {
-					color = color.map( (x) => { return Math.log2(x + 1); });
+					color = color.map((x) => { return Math.log2(x + 1); });
 				}
 				// Map to the range of colors
 				const cmin = Math.min(...color);
 				const cmax = Math.max(...color);
-				color = color.map( (x) => {return palette[Math.round((x - cmin) / (cmax - cmin) * palette.length)]; });
+				color = color.map((x) => { return palette[Math.round((x - cmin) / (cmax - cmin) * palette.length)]; });
 
 				// Draw the color legend
 				for (let i = 0; i < palette.length; i++) {
@@ -137,12 +137,12 @@ export class Scatterplot extends React.Component {
 		context.lineWidth = 0.25;
 		// Trick to draw by color, which is a lot faster on the HTML canvas element
 		palette.forEach((current_color) => {
-			for (var i = 0; i < x.length; i++) {
-				if (color[i] != current_color) {
+			for (let i = 0; i < x.length; i++) {
+				if (color[i] !== current_color) {
 					continue;
 				}
-				var xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-				var yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;	// "1-" because Y needs to be flipped
+				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;	// "1-" because Y needs to be flipped
 
 				context.beginPath();
 				context.arc(xi, yi, radius, 0, 2 * Math.PI, false);
