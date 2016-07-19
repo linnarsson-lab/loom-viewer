@@ -29,7 +29,7 @@ const Routes = (
 					<Route name='data-set-landscape' path='/dataset/:transcriptome/:project/:dataset/landscape(/:viewsettings)' component={LandscapeView}></Route>
 					<Route name='data-set-genescape' path='/dataset/:transcriptome/:project/:dataset/genescape(/:viewsettings)' component={GenescapeView}></Route>
 				</Route>
-				<Route path='/upload' component={CreateDataSet}/>
+				<Route path='/upload' component={CreateDataSet} />
 			</Route>
 		</Router>
 	</Provider>

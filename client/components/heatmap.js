@@ -74,7 +74,11 @@ export class Heatmap extends React.Component {
 			height: this.props.height + "px",
 		};
 		return (
-			<div ref='map' style={heatmapStyle} className='stack-left-to-right'></div>
+			<div
+				ref='map'
+				style={heatmapStyle}
+				className='stack-left-to-right'
+				/>
 		);
 	}
 }
