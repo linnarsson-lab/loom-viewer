@@ -3,7 +3,7 @@ import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
-	ButtonGroup, DropdownButton, MenuItem
+	ButtonGroup, DropdownButton, MenuItem,
 } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
@@ -36,6 +36,7 @@ class DataSetViewComponent extends Component {
 }
 
 DataSetViewComponent.propTypes = {
+	dispatch: PropTypes.func.isRequired,
 	projects: PropTypes.object,
 };
 
@@ -47,36 +48,37 @@ const mapStateToProps = (state) => {
 };
 export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
 
-
 // Generates a list of projects, each with a list
 // of datasets associated with the project.
-class ProjectList extends Component {
-	render() {
-		const { projects } = this.props;
-		if (projects) {
-			const panels = Object.keys(projects).map(
-				(project) => {
-					return (
-						<DataSetList
-							key={project}
-							project={project}
-							projectState={projects[project]}
-							/>
-					);
-				}
-			);
+const  ProjectList = function(props) {
+	const { projects } = props;
+	if (projects) {
+		const panels = Object.keys(projects).map(
+			(project) => {
+				return (
+					<DataSetList
+						key={project}
+						project={project}
+						projectState={projects[project]}
+						/>
+				);
+			}
+		);
 
-			return <div>{panels}</div>
-		} else {
-			return (
-				<Panel
-					header={'Downloading list of available datasets...'}
-					bsStyle='primary'
-					/>
-			);
-		}
+		return <div>{panels}</div>;
+	} else {
+		return (
+			<Panel
+				header={'Downloading list of available datasets...'}
+				bsStyle='primary'
+				/>
+		);
 	}
-}
+};
+
+ProjectList.propTypes = {
+	projects: PropTypes.object,
+};
 
 class DataSetList extends Component {
 
@@ -103,7 +105,10 @@ class DataSetList extends Component {
 		const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
 		const datasets = projectState.map(this.createListItem);
 		return (
-			<Panel key={project} header={`${project}, ${totalDatasets}`} bsStyle='primary'>
+			<Panel
+				key={project}
+				header={`${project}, ${totalDatasets}`}
+				bsStyle='primary'>
 				<ListGroup fill>
 					{datasets}
 				</ListGroup>
@@ -112,13 +117,17 @@ class DataSetList extends Component {
 	}
 }
 
+DataSetList.propTypes = {
+	key: PropTypes.string.isRequired,
+	project: PropTypes.string.isRequired,
+	projectState: PropTypes.object.isRequired,
+};
+
+
 class DataSetListItem extends Component {
 
 	constructor(props, context) {
 		super(props, context);
-
-		this.state = { open: false };
-
 		this.renderDowpdownLink = this.renderDowpdownLink.bind(this);
 		this.renderDropdown = this.renderDropdown.bind(this);
 	}
@@ -166,3 +175,9 @@ class DataSetListItem extends Component {
 		);
 	}
 }
+
+DataSetListItem.propTypes = {
+	key: PropTypes.string.isRequired,
+	dataSetPath: PropTypes.string.isRequired,
+	dataSetMetaData: PropTypes.object.isRequired,
+};
