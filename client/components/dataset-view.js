@@ -9,76 +9,63 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
 
-class DataSetViewComponent extends Component {
+class DataSetListItem extends Component {
 
-	componentDidMount() {
-		const { dispatch, projects } = this.props;
-		dispatch(fetchProjects(projects));
+	constructor(props, context) {
+		super(props, context);
+		this.renderDropdownLink = this.renderDropdownLink.bind(this);
+		this.renderDropdown = this.renderDropdown.bind(this);
+	}
+
+	renderDropdownLink(view) {
+		const path = this.props.dataSetPath + '/' + view;
+		return (
+			<LinkContainer to={path} key={path}>
+				<MenuItem
+					eventKey={path}>
+					{view}
+				</MenuItem>
+			</LinkContainer>
+		);
+	}
+
+	renderDropdown() {
+		const { dataset, status, message } = this.props.dataSetMetaData;
+		const disabled = status !== 'created';
+		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
+		const links = views.map(this.renderDropdownLink);
+		return (
+			<ButtonGroup key={dataset} >
+				<DropdownButton
+					title={dataset + '. ' + message}
+					bsStyle='link'
+					disabled={disabled}>
+					{links}
+				</DropdownButton>
+			</ButtonGroup>
+		);
 	}
 
 	render() {
+		const { dataSetMetaData } = this.props;
+		const { dataset } = dataSetMetaData;
+
+		const viewLinksDropdown = this.renderDropdown();
 		return (
-			<Grid>
-				<Row>
-					<Col xs={12} md={8}>
-						<hr />
-						<h1>Linnarsson Lab single-cell data repository</h1>
-						<br />
-						<h2>Available datasets</h2>
-						<PanelGroup>
-							<ProjectList projects={this.props.projects} />
-						</PanelGroup>
-					</Col>
-				</Row>
-			</Grid>
+			<div>
+				<ListGroupItem key={dataset}>
+					{viewLinksDropdown}
+				</ListGroupItem>
+			</div>
 		);
 	}
 }
 
-DataSetViewComponent.propTypes = {
-	dispatch: PropTypes.func.isRequired,
-	projects: PropTypes.object,
+DataSetListItem.propTypes = {
+	dataSetPath: PropTypes.string.isRequired,
+	dataSetMetaData: PropTypes.object.isRequired,
 };
 
-//connect DataSetViewComponent to store
-import { connect } from 'react-redux';
-
-const mapStateToProps = (state) => {
-	return { projects: state.data.projects };
-};
-export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
-
-// Generates a list of projects, each with a list
-// of datasets associated with the project.
-const  ProjectList = function(props) {
-	const { projects } = props;
-	if (projects) {
-		const panels = Object.keys(projects).map(
-			(project) => {
-				return (
-					<DataSetList
-						key={project}
-						project={project}
-						projectState={projects[project]}
-						/>
-				);
-			}
-		);
-
-		return <div>{panels}</div>;
-	} else {
-		return (
-			<Panel
-				header={'Downloading list of available datasets...'}
-				bsStyle='primary'
-				/>
-		);
-	}
-};
-
-ProjectList.propTypes = {
-	projects: PropTypes.object,
-};
 
 class DataSetList extends Component {
 
@@ -118,66 +105,78 @@ class DataSetList extends Component {
 }
 
 DataSetList.propTypes = {
-	key: PropTypes.string.isRequired,
 	project: PropTypes.string.isRequired,
-	projectState: PropTypes.object.isRequired,
+	projectState: PropTypes.array.isRequired,
 };
 
 
-class DataSetListItem extends Component {
+// Generates a list of projects, each with a list
+// of datasets associated with the project.
+const  ProjectList = function(props) {
+	const { projects } = props;
+	if (projects) {
+		const panels = Object.keys(projects).map(
+			(project) => {
+				return (
+					<DataSetList
+						key={project}
+						project={project}
+						projectState={projects[project]}
+						/>
+				);
+			}
+		);
 
-	constructor(props, context) {
-		super(props, context);
-		this.renderDropdownLink = this.renderDropdownLink.bind(this);
-		this.renderDropdown = this.renderDropdown.bind(this);
-	}
-
-	renderDropdownLink(view) {
-		const path = this.props.dataSetPath + '/' + view;
+		return <div>{panels}</div>;
+	} else {
 		return (
-			<LinkContainer to={path} key={path}>
-				<MenuItem
-					eventKey={path}>
-					{view}
-				</MenuItem>
-			</LinkContainer>
+			<Panel
+				header={'Downloading list of available datasets...'}
+				bsStyle='primary'
+				/>
 		);
 	}
+};
 
-	renderDropdown() {
-		const { dataset, status, message } = this.props.dataSetMetaData;
-		const disabled = status !== 'created';
-		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
-		const links = views.map(this.renderDowpdownLink);
-		return (
-			<ButtonGroup key={dataset} >
-				<DropdownButton
-					title={dataset + '. ' + message}
-					bsStyle='link'
-					disabled={disabled}>
-					{links}
-				</DropdownButton>
-			</ButtonGroup>
-		);
+ProjectList.propTypes = {
+	projects: PropTypes.object,
+};
+
+class DataSetViewComponent extends Component {
+
+	componentDidMount() {
+		const { dispatch, projects } = this.props;
+		dispatch(fetchProjects(projects));
 	}
 
 	render() {
-		const { dataSetMetaData } = this.props;
-		const { dataset } = dataSetMetaData;
-
-		const viewLinksDropdown = this.renderDropdown();
 		return (
-			<div>
-				<ListGroupItem key={dataset}>
-					{viewLinksDropdown}
-				</ListGroupItem>
-			</div>
+			<Grid>
+				<Row>
+					<Col xs={12} md={8}>
+						<hr />
+						<h1>Linnarsson Lab single-cell data repository</h1>
+						<br />
+						<h2>Available datasets</h2>
+						<PanelGroup>
+							<ProjectList projects={this.props.projects} />
+						</PanelGroup>
+					</Col>
+				</Row>
+			</Grid>
 		);
 	}
 }
 
-DataSetListItem.propTypes = {
-	key: PropTypes.string.isRequired,
-	dataSetPath: PropTypes.string.isRequired,
-	dataSetMetaData: PropTypes.object.isRequired,
+DataSetViewComponent.propTypes = {
+	dispatch: PropTypes.func.isRequired,
+	projects: PropTypes.object,
 };
+
+//connect DataSetViewComponent to store
+import { connect } from 'react-redux';
+
+const mapStateToProps = (state) => {
+	return { projects: state.data.projects };
+};
+export const DataSetView = connect(mapStateToProps)(DataSetViewComponent);
