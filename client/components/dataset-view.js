@@ -128,11 +128,11 @@ class DataSetListItem extends Component {
 
 	constructor(props, context) {
 		super(props, context);
-		this.renderDowpdownLink = this.renderDowpdownLink.bind(this);
+		this.renderDropdownLink = this.renderDropdownLink.bind(this);
 		this.renderDropdown = this.renderDropdown.bind(this);
 	}
 
-	renderDowpdownLink(view) {
+	renderDropdownLink(view) {
 		const path = this.props.dataSetPath + '/' + view;
 		return (
 			<LinkContainer to={path} key={path}>
