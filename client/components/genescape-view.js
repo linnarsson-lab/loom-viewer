@@ -1,22 +1,21 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 import { Scatterplot } from './scatterplot';
 
-export class GenescapeView extends Component {
-	render() {
-		const { dispatch, genescapeState, dataState, viewState } = this.props;
+export const GenescapeView = function (props) {
+	const { dispatch, genescapeState, dataState, viewState } = props;
 
-		const color =  dataState.currentDataset.rowAttrs[genescapeState.colorAttr];
-		const x = dataState.currentDataset.rowAttrs[genescapeState.xCoordinate];
-		const y = dataState.currentDataset.rowAttrs[genescapeState.yCoordinate];
-		return (
+	const color = dataState.currentDataset.rowAttrs[genescapeState.colorAttr];
+	const x = dataState.currentDataset.rowAttrs[genescapeState.xCoordinate];
+	const y = dataState.currentDataset.rowAttrs[genescapeState.yCoordinate];
+	return (
 		<div className='view'>
 			<div className='view-sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
 					dataState={dataState}
 					dispatch={dispatch}
-				/>
+					/>
 			</div>
 			<div className='view-main'>
 				<Scatterplot
@@ -29,12 +28,11 @@ export class GenescapeView extends Component {
 					logScaleColor={false}
 					logScaleX={false}
 					logScaleY={false}
-				/>
+					/>
 			</div>
 		</div>
-		);
-	}
-}
+	);
+};
 
 GenescapeView.propTypes = {
 	viewState: PropTypes.object.isRequired,
