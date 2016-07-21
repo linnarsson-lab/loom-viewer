@@ -23,6 +23,7 @@
     "autoscale-canvas": "0.0.3",
     "bootstrap": "^3.3.6",
     "jquery": "^3.1.0",
+    "jsurl": "^0.1.4",
     "leaflet": "^0.7.7",
     "lodash": "^4.13.1",
     "react": "^15.2.1",
