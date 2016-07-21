@@ -20,7 +20,10 @@ export class HeatmapView extends Component {
 		let rowData = dataState.currentDataset.rowAttrs[heatmapState.rowAttr];
 		if (heatmapState.rowAttr === '(gene positions)') {
 			const genes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
-			rowData = _.map(dataState.currentDataset.rowAttrs["Gene"], (x) => { return _.indexOf(genes, x) !== -1 ? x : ''; });
+			rowData = _.map(
+				dataState.currentDataset.rowAttrs["Gene"],
+				(x) => { return _.indexOf(genes, x) !== -1 ? x : ''; }
+			);
 		}
 
 		// Calculate the layout of everything

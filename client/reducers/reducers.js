@@ -129,11 +129,13 @@ const initialData = {
 	// 	"Cortex": ...
 	//	}
 	projects: undefined,
-	// replaced by dataSets object that stores all fetched datasets.
-	// hasDataset: false,
+	// dataSets object will store fetched datasets for caching purposes.
 	dataSets: {},
 
+	// Is this still necessary? We cache all datasets and store the
+	// name of the current dataset in the URL.
 	currentDataset: undefined,	// rowAttrs, colAttrs and such things, when loaded; replaces 'window.fileinfo'
+
 	genes: undefined,				// contains row data by gene, i.e. {"Actb": [1,2,1,3,42,4,...]}
 };
 
