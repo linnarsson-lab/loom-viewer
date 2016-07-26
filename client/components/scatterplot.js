@@ -10,6 +10,8 @@ import { Canvas } from './canvas';
 export class Scatterplot extends React.Component {
 	constructor(props) {
 		super(props);
+
+		this.paint = this.paint.bind(this);
 	}
 
 	paint(context) {
