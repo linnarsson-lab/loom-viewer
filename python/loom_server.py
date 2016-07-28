@@ -41,10 +41,8 @@ if not DEBUG:
 
 
 class LoomServer(flask.Flask):
-	# Disable cacheing
-    def get_send_file_max_age(self, name):
-        return 0
-
+	pass
+	
 app = LoomServer(__name__)
 
 #

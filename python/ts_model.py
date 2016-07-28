@@ -1,11 +1,10 @@
-
+# -*- coding: utf-8 -*-
 import loom
 import scipy
 import scipy.misc
 import scipy.ndimage
 from scipy.optimize import minimize
 from scipy import sparse
-import scipy.csgraph
 from sklearn.decomposition import IncrementalPCA
 from sklearn.manifold import TSNE
 from sklearn.metrics.pairwise import pairwise_distances
@@ -16,54 +15,53 @@ import loom
 from annoy import AnnoyIndex
 
 bnnmf = """
-	# Factorize a gene expression matrix into the product of gene and cell vectors
+# Model of a single regulon
 
-	data {
-		int <lower=0> G;                    # number of genes
-		int <lower=0> C;                    # number of cells
-		int <lower=0> y[G, C];              # observed molecule counts
-	}
+data {
+    int <lower=0> G;                    # number of genes
+    int <lower=0> C;                    # number of cells
+    int <lower=0> y[G, C];              # observed molecule counts
+}
 
-	parameters {
-		vector <lower=0,upper=1> [C] alpha;         # coefficient for each cell
-		row_vector <lower=1> [G] beta;      # coefficient for each gene
-		real <lower=0> r;                   # overdispersion
-	}
+parameters {
+    vector <lower=0,upper=1> [C] alpha;         # coefficient for each cell
+    row_vector <lower=1> [G] beta;      # coefficient for each gene
+    real <lower=0> r;                   # overdispersion
+}
 
-	model {
-		row_vector [C] mu[G];
-		real rsq;
+model {
+    row_vector [C] mu[G];
+    real rsq;
 
-		# Noise model
-		r ~ cauchy(0,1);
-		rsq <- square(r + 1) - 1;
+    # Noise model
+    r ~ cauchy(0,1);
+    rsq <- square(r + 1) - 1;
 
-		# Matrix factorization
-		beta ~ cauchy(1, 5);
-		alpha ~ beta(0.5,1.5); #cauchy(0, 5);
+    # Matrix factorization
+     beta ~ cauchy(1, 5);
+    alpha ~ beta(0.5,1.5); #cauchy(0, 5);
 
-		for (g in 1:G) {
-			# compute hidden expression level
-			mu[g] <- (alpha * beta[g])';
+    for (g in 1:G) {
+        # compute hidden expression level
+        mu[g] <- (alpha * beta[g])';
 
-			# observations are NB-distributed with noise
-			y[g] ~ neg_binomial(mu[g] / rsq, 1 / rsq);
-		}
-	}
+        # observations are NB-distributed with noise
+        y[g] ~ neg_binomial(mu[g] / rsq, 1 / rsq);
+    }
+}
 """
-
 
 class TsModel(object):
 
 	def __init__(self, loom_file, recompile=False):
-	"""
-		Create a new TsModel using the given .loom file as input
+		"""
+			Create a new TsModel using the given .loom file as input
+			
+			Args:
+				loom_file (string):		Full path to .loom file
+				recompile (bool):		If true, recompile the Stan model
 		
-		Args:
-			loom_file (string):		Full path to .loom file
-			recompile (bool):		If true, recompile the Stan model
-	
-	"""
+		"""
 		self.data = loom.connect(loom_file)
 		self.regulon_labels = np.zeros((self.data.shape[0],))
 		self.MkNN =  None
@@ -110,7 +108,7 @@ class TsModel(object):
 		# Shape of Xtransformed will be (n_genes, pca_components) i.e. about 25k by 500 
 
 		# Then, perform tSNE based on the top components
-		# Precumpute the distance matrix
+		# Precompute the distance matrix
 		# This is necessary to work around a bug in sklearn TSNE 0.17
 		# (caused because pairwise_distances may give very slightly negative distances)
 		dists = pairwise_distances(Xtransformed, metric="correlation")
@@ -123,10 +121,7 @@ class TsModel(object):
 		self.regulon_labels = hdb.fit_predict(tsne)
 
 	def factorize_regulons(self):
-		temp = []
-		for r in set(self.regulon_labels):
-			temp.append(self._factorize_regulon(r).mean(axis=1))
-		self.regulon_factors = np.array(temp)
+		return np.array([self._factorize_regulon(r).mean(axis=1) for r in self.regulon_labels])
 
 	def _factorize_regulon(self, label):
 		"""
@@ -153,9 +148,9 @@ class TsModel(object):
 		result = stan.fit("bnnmf", data, method="sample", debug=False)
 		return result["alpha"]
 
-	def state_space(self, genes, k):
+	def MkNN_cells(self, genes, k):
 		"""
-		Compute a state-space graph based on the given set of genes
+		Compute a MkNN graph based on the given set of genes
 		
 		Args:
 			genes (numpy array of bool):		The gene selection
@@ -165,7 +160,7 @@ class TsModel(object):
 		if len(genes) == 0:
 			raise ValueError("No genes were selected")
 		
-		annoy = AnnoyIndex(genes.sum(), metric = "angular")
+		annoy = AnnoyIndex(genes.sum(), metric = 'angular')
 		for i in xrange(self.data.shape[1]):
 			vector = self.data[genes, i]
 			annoy.add(i, vector)
@@ -180,7 +175,7 @@ class TsModel(object):
 		J = np.empty(d*k)
 		V = np.empty(d*k)
 		for i in xrange(d):	
-			(nn, w) = annoy.get_nns_by_item(i, k), include_distances = True)
+			(nn, w) = annoy.get_nns_by_item(i, k, include_distances = True)
 			I[i*k:i*(k+1)] = [i]*k
 			J[i*k:i*(k+1)] = nn
 			V[i*k:i*(k+1)] = w
@@ -192,9 +187,41 @@ class TsModel(object):
 		t = kNN.transpose(copy=True)
 		self.MkNN = 1 - (kNN * t) # This removes all edges that are not reciprocal, and converts distances to similarities
 
-	def tda(self):
-		# Compute the connected components of the MkNN graph
-		(n, labels) = csgraph.connected_components(self.MkNN)
-
-
+	def nested_blocks_on_genes(self, k):
+		"""
+		Compute a MkNN graph based on the given set of genes
 		
+		Args:
+			genes (numpy array of bool):		The gene selection
+			k (int):							Number of nearest neighbours to consider
+		"""
+
+		if len(genes) == 0:
+			raise ValueError("No genes were selected")
+		
+		annoy = AnnoyIndex(genes.sum(), metric = 'angular')
+		for i in xrange(self.data.shape[1]):
+			vector = self.data[genes, i]
+			annoy.add(i, vector)
+		
+		annoy.build(10)
+
+		# TODO: save the index, then use multiple cores to search it 
+
+		# Compute kNN and distances for each cell, in sparse matrix IJV format
+		d = self.data.shape[i]
+		I = np.empty(d*k)
+		J = np.empty(d*k)
+		V = np.empty(d*k)
+		for i in xrange(d):	
+			(nn, w) = annoy.get_nns_by_item(i, k, include_distances = True)
+			I[i*k:i*(k+1)] = [i]*k
+			J[i*k:i*(k+1)] = nn
+			V[i*k:i*(k+1)] = w
+
+		kNN = sparse.coo_matrix((V,(I,J)),shape=(d,d))
+
+		# Compute Mutual kNN
+		kNN = kNN.tocsr()
+		t = kNN.transpose(copy=True)
+		self.MkNN = 1 - (kNN * t) # This removes all edges that are not reciprocal, and converts distances to similarities

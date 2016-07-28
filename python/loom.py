@@ -39,7 +39,10 @@ import scipy.ndimage
 from scipy.optimize import minimize
 from sklearn.decomposition import IncrementalPCA
 from sklearn.manifold import TSNE
-from sklearn.metrics.pairwise import pairwise_distances
+#from sklearn.metrics.pairwise import pairwise_distances
+#from graph_tool.all import *
+#from annoy import AnnoyIndex
+#from scipy import sparse
 import __builtin__
 
 def create(filename, matrix, row_attrs, col_attrs):
@@ -493,20 +496,17 @@ class LoomConnection(object):
 		Compute correlation matrix without casting to float64.
 
 		Args:
-			axis (int):	The axis along which to compute the correlation matrix.
-			log (bool):	If true, compute correlation on log(x+1) values
-
+			axis (int):			The axis along which to compute the correlation matrix.
+			log (bool):			If true, compute correlation on log(x+1) values
 		Returns:
 			numpy.ndarray of float32 correlation coefficents
 
 		This function avoids casting intermediate values to double (float64), to reduce memory footprint.
-		If row attribute _Excluded exists, those rows will be excluded from the calculation when axis = 1.
+		If row attribute _Excluded exists, those rows will be excluded.
 		"""
-		if axis == 1 and self.row_attrs.__contains__("_Excluded"):
+		if self.row_attrs.__contains__("_Excluded"):
 			selection = (1-self.row_attrs["_Excluded"]).astype('bool')
 			data = self[selection,:]
-		else:
-			data = self[:,:]
 
 		if axis == 1:
 		    data = data.T
@@ -665,6 +665,13 @@ class LoomConnection(object):
 		tsne2 = tsne[:,1]	
 		self.set_attr("_tSNE1", tsne1, axis = 1)
 		self.set_attr("_tSNE2", tsne2, axis = 1)
+
+
+	############
+	# REGULONS #
+	############
+
+	## Removed - find it in the git history
 
 	##############
 	# REGRESSION #

@@ -31,7 +31,6 @@ import os
 import __builtin__
 import time
 import loom
-from loom_backspin import BackSPIN
 from loom_cloud import DatasetConfig
 from loom_cloud import list_datasets
 import tempfile
@@ -40,9 +39,8 @@ from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
-from sklearn.cluster.affinity_propagation_ import affinity_propagation
 from gcloud import logging
-# import hdbscan
+
 logger = logging.Client(project="linnarsson-lab").logger("LoomPipeline")
 
 class PipelineError(Exception):
@@ -274,107 +272,6 @@ class LoomPipeline(object):
 			config.set_status("error", "Dataset is empty")
 			raise PipelineError("Dataset is empty")
 		loom.create(config.get_loom_filename(), counts, row_attrs, col_attrs)
-
-	def prepare_loom(self, config):
-		"""
-		Prepare a loom file for browsing: clustering, projection, regression
-
-		Args:
-			config (DatasetConfig):	Configuration object for the dataset
-
-		Returns:
-			Nothing, but modifies the .loom file to add the following attributes:
-
-			For cells:
-
-				_PC1, _PC2			First and second principal component
-				_tSNE1, _tSNE2		tSNE coordinates 1 and 2
-				_Ordering			Ordering based on clustering
-				_Cluster 			Cluster label
-				_TotalRNA			Total number of RNA molecules (across included genes only)
-
-			For genes:
-
-				_Ordering			Ordering based on clustering
-				_Cluster 			Cluster label
-				_LogMean			Log of mean expression level
-				_LogCV				Log of CV
-				_Excluded			1 if the gene was excluded by feature selection, 0 otherwise
-				_Noise				Excess noise above the noise model
-
-		"""
-
-		# Connect
-		config.set_status("creating", "Preparing the dataset: Step 0 (connecting).")
-		ds = loom.connect(config.get_loom_filename())
-
-		# feature selection
-		config.set_status("creating", "Preparing the dataset: Step 1 (feature selection).")
-		ds.feature_selection(config.n_features)
-
-		# Projection
-		config.set_status("creating", "Preparing the dataset: Step 2 (projection to 2D).")
-		ds.project_to_2d()
-
-		# Clustering
-		if config.cluster_method == "BackSPIN_notimplemented":
-			config.set_status("creating", "Preparing the dataset: Step 3 (BackSPIN clustering).")
-			bsp = BackSPIN()
-			result = bsp.backSPIN(ds)
-			result.apply(dataset)
-
-		elif config.cluster_method == "AP_notmimplemented":
-			config.set_status("creating", "Preparing the dataset: Step 3A (Affinity propagation on cells).")
-			# Cells
-			S = np.nan_to_num(-ds.corr_matrix(axis = 1))
-
-			preference = np.median(S) * 10
-			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
-			logger.log_text(str(len(cluster_centers_indices)) + " cell clusters by AP")
-			ds.set_attr("_Cluster", labels, axis = 1)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 1)
-			ds.permute(ordering, axis = 1)
-
-			config.set_status("creating", "Preparing the dataset: Step 3B (Affinity propagation on genes).")
-			# Genes
-			S = np.nan_to_num(-ds.corr_matrix(axis = 0))
-			preference = np.median(S) * 10
-			cluster_centers_indices, labels = affinity_propagation(S, preference=preference)
-			logger.log_text(str(len(cluster_centers_indices)) + " gene clusters by AP")
-			ds.set_attr("_Cluster", labels, axis = 0)
-			ordering = np.argsort(labels)
-			ds.set_attr("_Ordering", ordering, axis = 0)
-			ds.permute(ordering, axis = 0)
-
-
-		# elif config.cluster_method == "HDBSCAN":
-		# 	config.set_status("creating", "Preparing the dataset: Step 3A (HDBSCAN on cells).")
-		# 	# Cells
-		# 	S = -ds.corr_matrix(axis = 1)
-		# 	clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
-		# 	labels = clusterer.fit_predict(S)
-		# 	ds.set_attr("_Cluster", labels, axis = 1)
-		# 	ordering = np.argsort(labels)
-		# 	ds.set_attr("_Ordering", ordering, axis = 1)
-		# 	ds.permute(ordering, axis = 1)
-
-		# 	config.set_status("creating", "Preparing the dataset: Step 3B (HDBSCAN on genes).")
-		# 	# Genes
-		# 	S = -ds.corr_matrix(axis = 0)
-		# 	labels = clusterer.fit_predict(S)
-		# 	ds.set_attr("_Cluster", labels, axis = 0)
-		# 	ordering = np.argsort(labels)
-		# 	ds.set_attr("_Ordering", ordering, axis = 0)
-		# 	ds.permute(ordering, axis = 0)
-
-		# Regression
-		config.set_status("creating", "Preparing the dataset: Step 4 (bayesian regression).")
-		#ds.bayesian_regression(config.regression_label)
-
-		# Heatmap tiles
-		config.set_status("creating", "Preparing the dataset: Step 5 (preparing heatmap tiles).")
-		ds.prepare_heatmap()
 
 	def store_loom(self, config):
 		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
@@ -608,8 +505,6 @@ if __name__ == '__main__':
 				try:
 					logger.log_text("Creating " + ds.get_loom_filename())
 					lp.create_loom(ds)
-					logger.log_text("Preparing " + ds.get_loom_filename() + " for browsing")
-					lp.prepare_loom(ds)
 					logger.log_text("Storing " + ds.get_loom_filename())
 					lp.store_loom(ds)
 				except PipelineError as e:
