@@ -1,11 +1,11 @@
 import React, { Component, PropTypes } from 'react';
+import { LinkContainer } from 'react-router-bootstrap';
 import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
 	ButtonGroup, DropdownButton, MenuItem,
 } from 'react-bootstrap';
-import { LinkContainer } from 'react-router-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
 
@@ -18,7 +18,7 @@ class DataSetListItem extends Component {
 	}
 
 	renderDropdownLink(view) {
-		const path = this.props.dataSetPath + '/' + view;
+		const path = 'view/' + view + '/' + this.props.dataSetPath;
 		return (
 			<LinkContainer to={path} key={path}>
 				<MenuItem
@@ -32,7 +32,7 @@ class DataSetListItem extends Component {
 	renderDropdown() {
 		const { dataset, status, message } = this.props.dataSetMetaData;
 		const disabled = status !== 'created';
-		const views = ['heatmap', 'sparkline', 'landscape', 'geneset'];
+		const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
 		const links = views.map(this.renderDropdownLink);
 		return (
 			<ButtonGroup key={dataset} >
@@ -73,8 +73,7 @@ class DataSetList extends Component {
 	// and returns a DataSetListItem
 	createListItem(dataSetMetaData) {
 		const { transcriptome, project, dataset} = dataSetMetaData;
-		const dataSetPath = '/dataset/' +
-			transcriptome + '/' +
+		const dataSetPath =  transcriptome + '/' +
 			project + '/' +
 			dataset;
 
