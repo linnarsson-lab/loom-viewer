@@ -1,5 +1,4 @@
 import React, {PropTypes} from 'react';
-import { render, findDOMNode } from 'react-dom';
 import * as colors from '../js/colors';
 import * as _ from 'lodash';
 import { nMostFrequent } from '../js/util';
@@ -8,13 +7,16 @@ import { Canvas } from './canvas';
 
 
 export class Scatterplot extends React.Component {
+
 	constructor(props) {
 		super(props);
 
+		// Required to let us pass `paint` to a
+		// Canvas component without `this` errors
 		this.paint = this.paint.bind(this);
 	}
 
-	paint(context) {
+	paint(context, width, height) {
 		if (this.props.x === undefined) {
 			return;
 		}
@@ -25,11 +27,10 @@ export class Scatterplot extends React.Component {
 		// Erase previous paint
 		context.save();
 		context.fillStyle = "white";
-		context.fillRect(0, 0, this.props.width, this.props.height);
+		context.fillRect(0, 0, width, height);
 
 		// Calculate some general properties
-		const width = (this.props.width - 200);	// Make room for color legend on right
-		const height = this.props.height;
+		width = (width - 200);	// Make room for color legend on right
 		let x = this.props.x;
 		// Log transform if requested
 		if (this.props.logScaleX) {
@@ -134,18 +135,12 @@ export class Scatterplot extends React.Component {
 
 	render() {
 		return (
-			<Canvas
-				width={this.props.width}
-				height={this.props.height}
-				paint={this.paint}
-				/>
+			<Canvas paint={this.paint} />
 		);
 	}
 }
 
 Scatterplot.propTypes = {
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
 	x: PropTypes.arrayOf(PropTypes.number).isRequired,
 	y: PropTypes.arrayOf(PropTypes.number).isRequired,
 	color: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired,

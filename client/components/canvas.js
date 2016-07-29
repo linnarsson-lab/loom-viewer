@@ -1,5 +1,4 @@
 import React, {PropTypes} from 'react';
-import { findDOMNode } from 'react-dom';
 
 // A simple helper component, wrapping retina logic for Canvas.
 // Expects a "painter" function that takes a "context" to draw on.
@@ -7,15 +6,16 @@ import { findDOMNode } from 'react-dom';
 export class Canvas extends React.Component {
 	constructor(props) {
 		super(props);
+
+		this.retina_scale = this.retina_scale.bind(this);
+		this.draw = this.draw.bind(this);
 	}
 
 	// Make sure we get a sharp canvas on Retina displays
 	retina_scale(el, context) {
 		const ratio = window.devicePixelRatio || 1;
-		el.style.width = this.props.width + "px";
-		el.style.height = this.props.height + "px";
-		el.width = this.props.width * ratio;
-		el.height = this.props.height * ratio;
+		el.width = el.offsetWidth * ratio;
+		el.height = el.offsetHeight * ratio;
 		context.mozImageSmoothingEnabled = false;
 		context.webkitImageSmoothingEnabled = false;
 		context.msImageSmoothingEnabled = false;
@@ -23,29 +23,29 @@ export class Canvas extends React.Component {
 		context.scale(ratio, ratio);
 	}
 
-	componentDidMount() {
-		// although using setState in componentDidMount is dirty,
-		// we have to ensure that the canvas node has already
-		// been rendered by the time we try to get it
-		const el = findDOMNode(this);
-		const context = el.getContext('2d');
+	draw(){
+		let el = this.refs.canvas;
+		let context = el.getContext('2d');
 		this.retina_scale(el, context);
-		this.setState({ context });
+		this.props.paint(context);
+	}
+
+	componentDidMount() {
+		window.addEventListener("resize", this.draw);
+		this.draw();
 	}
 
 	componentDidUpdate() {
-		this.props.paint(this.state.context);
+		this.draw();
 	}
 
 	render() {
 		return (
-			<canvas width={this.props.width} height={this.props.height}></canvas>
+			<canvas ref='canvas' style={{ width: '100%', height: '100%' }}></canvas>
 		);
 	}
 }
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
 };
