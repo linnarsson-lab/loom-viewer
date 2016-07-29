@@ -94,11 +94,10 @@ function requestDataSetFailed() {
 	};
 }
 
-function receiveDataSet(result) {
+function receiveDataSet(receivedDataSet) {
 	return {
 		type: RECEIVE_DATASET,
-		dataSet: result.dataSet,
-		dataSetName: result.dataSetName,
+		receivedDataSet,
 	};
 }
 
@@ -121,15 +120,15 @@ export function fetchDataSet(data) {
 					// Also, dispatch some actions to set required properties on the subviews
 					// TODO: move to react-router state and
 					// replace with necessary router.push() logic
-					// const ra = ds.rowAttrs[0];
-					// const ca = ds.colAttrs[0];
-					// dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
-					// dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
+					const ra = ds.rowAttrs[0];
+					const ca = ds.colAttrs[0];
+					dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
+					dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
 
 					// This goes last, to ensure the above defaults are set when the views are rendered
-					dispatch(receiveDataSet(
-						{ dataSet: ds, dataSetName: dataSetName }
-					));
+					let receivedDataSet = {};
+					receivedDataSet[dataSetName] = ds;
+					dispatch(receiveDataSet(receivedDataSet));
 					//dispatch({ type: "SET_VIEW_PROPS", view: "Landscape" });
 				})
 				// Or, if it failed, dispatch an action to set the error flag
