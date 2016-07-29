@@ -11,7 +11,7 @@ export const MainView = function () {
 						<h1>Loom</h1>
 						<h2>Tool for browsing and visualizing single-cell data</h2>
 						<ButtonToolbar>
-							<LinkContainer to='/dataset'>
+							<LinkContainer to='/datasets'>
 								<Button bsStyle='primary'>
 									View Datasets
 								</Button>

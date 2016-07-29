@@ -2,8 +2,10 @@ import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 
 export const GenescapeSidepanel = function (props) {
-	const { dispatch, genescapeState, dataState } = props;
-	const rowAttrKeys = Object.keys(dataState.currentDataset.rowAttrs).sort();
+	const { dispatch, genescapeState, dataSet } = props;
+	const rowAttrKeys = Object.keys(dataSet.rowAttrs).sort();
+	// console.log(dataSet);
+	// console.log(rowAttrKeys);
 
 	// TODO: If dropdown menu works here, refactor into heatmap-sidepanel.js
 	return (
@@ -51,6 +53,6 @@ export const GenescapeSidepanel = function (props) {
 
 GenescapeSidepanel.propTypes = {
 	genescapeState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

@@ -15,8 +15,8 @@ export const NavbarView = function (props) {
 			</Navbar.Header>
 			<Navbar.Collapse>
 				<Nav>
-					<LinkContainer to='/dataset'><NavItem eventKey={1}>
-						Dataset
+					<LinkContainer to='/datasets'><NavItem eventKey={1}>
+						Datasets
 					</NavItem></LinkContainer>
 					<LinkContainer to='/upload'><NavItem eventKey={2}>
 						Upload
