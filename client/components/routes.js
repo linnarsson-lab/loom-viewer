@@ -21,15 +21,21 @@ import { GenescapeView } from './genescape-view';
 const Routes = (
 	<Provider store={store}>
 		<Router history={history}>
-			<Route name='main' path='/' component={NavbarView}>
+			<Route name='home' component={NavbarView}
+				path='/'>
 				<IndexRoute component={MainView} />
-				<Route name='data-set-list' path='/dataset(/:transcriptome/:project/:dataset)' component={DataSetView}>
-					<Route name='data-set-heatmap' path='/dataset/:transcriptome/:project/:dataset/heatmap(/:viewsettings)' component={HeatmapView}></Route>
-					<Route name='data-set-sparkline' path='/dataset/:transcriptome/:project/:dataset/sparkline(/:viewsettings)' component={SparklineView}></Route>
-					<Route name='data-set-landscape' path='/dataset/:transcriptome/:project/:dataset/landscape(/:viewsettings)' component={LandscapeView}></Route>
-					<Route name='data-set-genescape' path='/dataset/:transcriptome/:project/:dataset/genescape(/:viewsettings)' component={GenescapeView}></Route>
-				</Route>
-				<Route path='/upload' component={CreateDataSet} />
+				<Route name='data-set-list' component={DataSetView}
+					path='/datasets' />
+				<Route name='upload' component={CreateDataSet}
+					path='/upload' />
+				<Route name='data-set-heatmap' component={HeatmapView}
+					path='/view/heatmap/:transcriptome/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-sparkline' component={SparklineView}
+					path='/view/sparkline/:transcriptome/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-landscape' component={LandscapeView}
+					path='/view/landscape/:transcriptome/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-genescape' component={GenescapeView}
+					path='/view/genescape/:transcriptome/:project/:dataset(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>
