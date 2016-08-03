@@ -10,40 +10,46 @@ import StringIO
 import json
 import numpy as np
 from flask import make_response
+from flask.ext.compress import Compress
 from functools import wraps, update_wrapper
 from datetime import datetime
 from pandas import DataFrame
 import subprocess
-import logging
-
-logger = logging.getLogger("loom")
 
 DEBUG = False
-if len(sys.argv) > 1:
-	if sys.argv[1] == "debug":
+if len(sys.argv) > 2:
+	if sys.argv[2] == "debug":
 		DEBUG = True
 	else:
-		print "Invalid flag: " + sys.argv[1]
+		print "Invalid flag: " + sys.argv[2]
 		print "(only valid flag is 'debug')"
 		sys.exit(1)
 
+if len(sys.argv) < 2:
+	print "Missing required argument (path to datasets directory)"
+	sys.exit(1)
+
+if not os.path.exists(sys.argv[1]):
+	print "Invalid required argument (datasets directory '%s' doesn't exist')" % sys.argv[1]
+	sys.exit(1)
+	
 #os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 #print "\nServing from: " + os.getcwd()
 #os.chdir(os.path.dirname(os.path.realpath(__file__)))
-logger.info("Serving from: " + os.getcwd())
+print "Serving from: " + os.getcwd()
 
-pipeline = LoomPipeline()
-cache = loom_cloud.LoomCache()
-
-# And start the loom cache refresher in the background
-if not DEBUG:
-	subprocess.Popen(["python","python/loom_cloud.py"])
+pipeline = LoomPipeline(sys.argv[1])
+cache = loom_cloud.LoomCache(sys.argv[1])
 
 
 class LoomServer(flask.Flask):
 	pass
 	
 app = LoomServer(__name__)
+
+# enable GZIP compression
+compress = Compress()
+compress.init_app(app)
 
 #
 # Static assets

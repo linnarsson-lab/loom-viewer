@@ -28,6 +28,7 @@ from __future__ import division
 import numpy as np
 import os.path
 import os
+import sys
 import __builtin__
 import time
 import loom
@@ -39,9 +40,6 @@ from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
-from gcloud import logging
-
-logger = logging.Client(project="linnarsson-lab").logger("LoomPipeline")
 
 class PipelineError(Exception):
 	def __init__(self, value):
@@ -53,8 +51,9 @@ class LoomPipeline(object):
 	"""
 	Pipeline to collect datasets from MySQL, create .loom files and perform standard analyses.
 	"""
-	def __init__(self, host = '104.197.219.40',	port = 3306, username = 'cloud_user', password = 'cloud_user'):
+	def __init__(self, dataset_path, host = '104.197.219.40',	port = 3306, username = 'cloud_user', password = 'cloud_user'):
 		self.mysql_connection = pymysql.connect(host=host, port=port, user=username, password=password, db='joomla', charset='utf8mb4')
+		self.dataset_path = dataset_path
 
 	def _make_std_numpy_type(self, array, sql_type):
 		field_type = {
@@ -108,7 +107,7 @@ class LoomPipeline(object):
 		project = config.project
 		dataset = config.dataset
 		connection = self.mysql_connection
-		logger.log_text("Processing: " + config.get_json_filename())
+		print "Processing: " + config.get_json_filename()
 
 		# Get the transcriptome ID
 		try:
@@ -145,8 +144,8 @@ class LoomPipeline(object):
 		try:
 			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
 		except pymysql.err.ProgrammingError as e:
-			logger.log_text("Dataset definition not found in database")
-			logger.log_text(e)
+			print "Dataset definition not found in database"
+			print e
 			config.set_status("error","Dataset definition not found in database")
 			raise PipelineError(e)
 
@@ -271,7 +270,8 @@ class LoomPipeline(object):
 		if counts.shape == (0,):
 			config.set_status("error", "Dataset is empty")
 			raise PipelineError("Dataset is empty")
-		loom.create(config.get_loom_filename(), counts, row_attrs, col_attrs)
+		absolute_path = os.path.join(self.dataset_path, config.get_loom_filename())
+		loom.create(absolute_path, counts, row_attrs, col_attrs)
 
 	def store_loom(self, config):
 		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
@@ -326,14 +326,14 @@ class LoomPipeline(object):
 					pass
 		# Send the dataset to MySQL
 		if cell_attrs != None:
-			logger.log_text("Uploading cell annotations")
+			print "Uploading cell annotations"
 			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
 		if gene_attrs != None:
-			logger.log_text("Uploading gene annotations")
+			print "Uploading gene annotations"
 			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
 		# Save the config
 		config.put()
-		logger.log_text("Done.")
+		print "Done."
 
 	def _export_attrs_to_mysql(self, attrs, transcriptome, tablename, pk):
 		"""
@@ -496,18 +496,30 @@ class LoomPipeline(object):
 
 
 if __name__ == '__main__':
-	logger.log_text("Starting the Loom pipeline...")
-	lp = LoomPipeline()
+	if len(sys.argv) < 2:
+		print "Missing required argument (path to datasets directory)"
+		sys.exit(1)
+	if not os.path.exists(sys.argv[1]):
+		print "Invalid required argument (datasets directory '%s'' doesn't exist')" % sys.argv[1]
+		sys.exit(1)
+	print "Starting the Loom pipeline. Datasets stored at " + sys.argv[1]
+	lp = LoomPipeline(sys.argv[1])
+	client = storage.Client(project="linnarsson-lab")
 	while True:
 		for ds in list_datasets():
-			logger.log_text(ds.get_loom_filename() + "...")
+			absolute_path = os.path.join(sys.argv[1], ds.get_loom_filename())
+			if ds.status == "created" and not os.path.isfile(absolute_path):
+				print "Fetching %s to %s" % (ds.get_loom_filename(), absolute_path)
+				bucket = client.get_bucket("linnarsson-lab-loom")
+				blob = bucket.blob(ds.get_loom_filename())
+				with open(absolute_path, 'wb') as outfile:
+					blob.download_to_file(outfile)
 			if ds.status == "willcreate":
 				try:
-					logger.log_text("Creating " + ds.get_loom_filename())
+					print "Creating " + ds.get_loom_filename()
 					lp.create_loom(ds)
-					logger.log_text("Storing " + ds.get_loom_filename())
+					print "Storing " + ds.get_loom_filename()
 					lp.store_loom(ds)
 				except PipelineError as e:
-					logger.log_text(e)
-					logger.info(e)
+					print e
 		time.sleep(60*10)

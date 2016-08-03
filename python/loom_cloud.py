@@ -138,19 +138,19 @@ class LoomCache(object):
 	"""
 	Represents loom files in Cloud Storage, cached locally.
 	"""
-	def __init__(self):
+	def __init__(self, dataset_path):
 		"""
 		Create a LoomCache object that will cache loom files (on demand)
 
 		Returns:
 			The LoomCache object.
 		"""
-		if not os.path.exists("cache"):
-			os.makedirs("cache")
+		if not os.path.exists(dataset_path):
+			os.makedirs(dataset_path)
 		self.remote_root = "linnarsson-lab-loom"
 		self.client = storage.Client(project="linnarsson-lab")
+		self.dataset_path = dataset_path
 		self.looms = {}
-
 
 	def connect_dataset_locally(self, transcriptome, project, dataset):
 		"""
@@ -171,23 +171,9 @@ class LoomCache(object):
 		if self.looms.__contains__(config.get_loom_filename()):
 			return self.looms[name]
 
-		absolute_path = os.path.join("cache", name)
+		absolute_path = os.path.join(self.dataset_path, name)
 		if not os.path.isfile(absolute_path):
 			return None
 		result = loom.connect(absolute_path)
 		self.looms[name] = result
 		return result
-
-# Keep downloading datasets to the local cache
-if __name__ == '__main__':
-	client = storage.Client(project="linnarsson-lab")
-	while True:
-		for ds in list_datasets():
-			absolute_path = os.path.join("cache", ds.get_loom_filename())
-			if ds.status == "created" and not os.path.isfile(absolute_path):
-				logger.info("Fetching %s for cache." % absolute_path)
-				bucket = client.get_bucket("linnarsson-lab-loom")
-				blob = bucket.blob(ds.get_loom_filename())
-				with open(absolute_path, 'wb') as outfile:
-					blob.download_to_file(outfile)
-		time.sleep(60*5)		# Sleep 5 minutes

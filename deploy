@@ -2,15 +2,25 @@
 # Build and deploy the containers
 
 # Current version
-v=1
+#v=1
+#
+#echo "Building docker containers."
+#docker build --no-cache -t gcr.io/linnarsson-lab/loom-server:v$v -f docker/loom-server.dockerfile .
+#docker build --no-cache -t gcr.io/linnarsson-lab/loom-pipeline:v$v -f docker/loom-pipeline.dockerfile .
+#echo "Pushing containers to cloud."
+#gcloud docker push gcr.io/linnarsson-lab/loom-server:v$v
+#gcloud docker push gcr.io/linnarsson-lab/loom-pipeline:v$v
+#kubectl delete pods -l run=loom-server
+#echo "Server pods have been restarted. To restart loom pipeline, issue this command (only if not currently processing a dataset):"
+#echo "kubectl delete pods -l run=loom-pipeline"
+#echo "Done."
 
-echo "Building docker containers."
-docker build --no-cache -t gcr.io/linnarsson-lab/loom-server:v$v -f docker/loom-server.dockerfile .
-docker build --no-cache -t gcr.io/linnarsson-lab/loom-pipeline:v$v -f docker/loom-pipeline.dockerfile .
-echo "Pushing containers to cloud."
-gcloud docker push gcr.io/linnarsson-lab/loom-server:v$v
-gcloud docker push gcr.io/linnarsson-lab/loom-pipeline:v$v
-kubectl delete pods -l run=loom-server
-echo "Server pods have been restarted. To restart loom pipeline, issue this command (only if not currently processing a dataset):"
-echo "kubectl delete pods -l run=loom-pipeline"
-echo "Done."
+
+echo "DEPLOY: Stopping the server and pipeline"
+gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl stop all"
+echo "DEPLOY: Copying local build to the server"
+rm ./python/*.pyc  # Needed to prevent access denied errors
+gcloud compute copy-files python/ loom:/srv/loom/
+echo "DEPLOY: Starting the server and pipeline"
+gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl start all"
+
