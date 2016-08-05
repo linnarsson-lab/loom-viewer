@@ -23,11 +23,11 @@ export class Canvas extends React.Component {
 		context.scale(ratio, ratio);
 	}
 
-	draw(){
+	draw() {
 		let el = this.refs.canvas;
 		let context = el.getContext('2d');
 		this.retina_scale(el, context);
-		this.props.paint(context);
+		this.props.paint(context, el.width, el.height);
 	}
 
 	componentDidMount() {
@@ -41,7 +41,9 @@ export class Canvas extends React.Component {
 
 	render() {
 		return (
-			<canvas ref='canvas' style={{ width: '100%', height: '100%' }}></canvas>
+			<div style={{ width: '100%', height: '100%' }}>
+				<canvas ref='canvas' style={{ width: '100%', height: '100vh' }}></canvas>
+			</div>
 		);
 	}
 }

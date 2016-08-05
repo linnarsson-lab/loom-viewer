@@ -28,7 +28,9 @@ export const NavbarView = function (props) {
 	return (
 		<div>
 			{navbarInstance}
-			{props.children}
+			<div style={{height: '100%'} /* Ensure the rest of the screen is filled */}>
+				{props.children}
+			</div>
 		</div>
 	);
 };

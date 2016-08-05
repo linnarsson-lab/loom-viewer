@@ -5,15 +5,12 @@ import { fetchDataSet } from '../actions/actions';
 
 const GenescapeViewComponent = function (props) {
 	const { dispatch, genescapeState, dataSet, viewState } = props;
-	// console.log('viewState ', viewState);
-	// console.log('genescapeState ', genescapeState);
-	// console.log('datSet ', dataSet);
 	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0 ];
 	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0 ];
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0 ];
 
 	return (
-		<div className='view'>
+		<div className='view' style={{height: '100%'}}>
 			<div className='view-sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
@@ -21,14 +18,12 @@ const GenescapeViewComponent = function (props) {
 					dispatch={dispatch}
 					/>
 			</div>
-			<div className='view-main'>
+			<div className='view-main' style={{height: '100%'}}>
 				<Scatterplot
 					x={x}
 					y={y}
 					color={color}
 					colorMode={genescapeState.colorMode}
-					width={viewState.width - 350}
-					height={viewState.height - 40}
 					logScaleColor={false}
 					logScaleX={false}
 					logScaleY={false}
