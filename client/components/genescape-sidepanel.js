@@ -1,18 +1,20 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
+import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, genescapeState, dataSet } = props;
 	const rowAttrKeys = Object.keys(dataSet.rowAttrs).sort();
-	// console.log(dataSet);
-	// console.log(rowAttrKeys);
 
-	// TODO: If dropdown menu works here, refactor into heatmap-sidepanel.js
 	return (
-		<div className='panel panel-default'>
-			<div className='panel-heading'><h3 className='panel-title'>Settings</h3></div>
-			<div className='panel-body'>
-				<form>
+
+
+		<Panel
+			key='genescape-settings'
+			header='Settings'
+			bsStyle='default'>
+			<ListGroup fill>
+				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'X Coordinate'}
 						buttonName={genescapeState.xCoordinate}
@@ -21,6 +23,8 @@ export const GenescapeSidepanel = function (props) {
 						attrName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
+				</ListGroupItem>
+				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Y Coordinate'}
 						buttonName={genescapeState.yCoordinate}
@@ -29,6 +33,8 @@ export const GenescapeSidepanel = function (props) {
 						attrName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
+				</ListGroupItem>
+				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Color'}
 						buttonName={genescapeState.colorAttr}
@@ -37,6 +43,8 @@ export const GenescapeSidepanel = function (props) {
 						attrName={'colorAttr'}
 						dispatch={dispatch}
 						/>
+				</ListGroupItem>
+				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={undefined}
 						buttonName={genescapeState.colorMode}
@@ -45,9 +53,9 @@ export const GenescapeSidepanel = function (props) {
 						attrName={'colorMode'}
 						dispatch={dispatch}
 						/>
-				</form>
-			</div>
-		</div>
+				</ListGroupItem>
+			</ListGroup>
+		</Panel>
 	);
 };
 
