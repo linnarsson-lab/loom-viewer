@@ -26,9 +26,9 @@ export const NavbarView = function (props) {
 		</Navbar>
 	);
 	return (
-		<div>
+		<div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', margin: '0'}}>
 			{navbarInstance}
-			<div style={{height: '100%'} /* Ensure the rest of the screen is filled */}>
+			<div style={{ display: 'flex', flex: '1 1 auto'} /* Ensure the rest of the screen is filled */}>
 				{props.children}
 			</div>
 		</div>

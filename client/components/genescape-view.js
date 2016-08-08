@@ -5,12 +5,12 @@ import { fetchDataSet } from '../actions/actions';
 
 const GenescapeViewComponent = function (props) {
 	const { dispatch, genescapeState, dataSet, viewState } = props;
-	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0 ];
-	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0 ];
-	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0 ];
+	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
+	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
+	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
 
 	return (
-		<div className='view' style={{height: '100%'}}>
+		<div style={{ display: 'flex', flex: '1 1 auto' }}>
 			<div className='view-sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
@@ -18,7 +18,7 @@ const GenescapeViewComponent = function (props) {
 					dispatch={dispatch}
 					/>
 			</div>
-			<div className='view-main' style={{height: '100%'}}>
+			<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
 				<Scatterplot
 					x={x}
 					y={y}
@@ -41,25 +41,25 @@ GenescapeViewComponent.propTypes = {
 };
 
 class GenescapeViewContainer extends Component {
-	componentDidMount(){
+	componentDidMount() {
 		const { dispatch, data, params } = this.props;
 		const { transcriptome, project, dataset } = params;
 		const dataSetName = transcriptome + '__' + project + '__' + dataset;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName}));
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName }));
 	}
 
-	render(){
+	render() {
 		const { dispatch, data, genescapeState, viewState, params } = this.props;
 		const { transcriptome, project, dataset } = params;
 		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
 		const dataSet = data.dataSets[fetchDatasetString];
-		return ( dataSet ?
+		return (dataSet ?
 			<GenescapeViewComponent
 				dispatch={dispatch}
 				genescapeState={genescapeState}
 				dataSet={dataSet}
 				viewState={viewState} />
-		:
+			:
 			<div>Fetching dataset...</div>
 		);
 	}

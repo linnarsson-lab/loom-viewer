@@ -153,7 +153,6 @@ class DataSetViewComponent extends Component {
 			<Grid>
 				<Row>
 					<Col xs={12} md={8}>
-						<hr />
 						<h1>Linnarsson Lab single-cell data repository</h1>
 						<br />
 						<h2>Available datasets</h2>

@@ -14,8 +14,8 @@ export class Canvas extends React.Component {
 	// Make sure we get a sharp canvas on Retina displays
 	retina_scale(el, context) {
 		const ratio = window.devicePixelRatio || 1;
-		el.width = el.offsetWidth * ratio;
-		el.height = el.offsetHeight * ratio;
+		el.width = el.clientWidth * ratio;
+		el.height = el.clientHeight * ratio;
 		context.mozImageSmoothingEnabled = false;
 		context.webkitImageSmoothingEnabled = false;
 		context.msImageSmoothingEnabled = false;
@@ -41,9 +41,7 @@ export class Canvas extends React.Component {
 
 	render() {
 		return (
-			<div style={{ width: '100%', height: '100%' }}>
-				<canvas ref='canvas' style={{ width: '100%', height: '100vh' }}></canvas>
-			</div>
+			<canvas ref='canvas' style={{ flex: '1 1 auto', margin: 0, border: 0, padding: 0 }}></canvas>
 		);
 	}
 }
