@@ -16,10 +16,10 @@ export const DropdownMenu = function (props) {
 		let dispatchParam = { type: attrType };
 		dispatchParam[attrName] = name;
 		return (
-			<MenuItem key={name}>
-				<a onClick={ () => { dispatch(dispatchParam); } }>
-					{name}
-				</a>
+			<MenuItem
+				key={name}
+				onClick={ () => { dispatch(dispatchParam); } }>
+				{name}
 			</MenuItem>
 		);
 	});
@@ -33,21 +33,6 @@ export const DropdownMenu = function (props) {
 				</DropdownButton>
 			</ButtonGroup>
 		</FormGroup>
-		// <div className='form-group'>
-		// 	{ buttonLabel ? <label>{buttonLabel}</label> : null }
-		// 	<div className='btn-group btn-block'>
-		// 		<button
-		// 			type='button'
-		// 			className='btn btn-block btn-default dropdown-toggle'
-		// 			data-toggle='dropdown'
-		// 			aria-haspopup='true'
-		// 			aria-expanded='false' >
-		// 			{ buttonName + '  '}
-		// 			<span className='caret' />
-		// 		</button>
-		// 		{ options }
-		// 	</div>
-		// </div>
 	);
 };
 
