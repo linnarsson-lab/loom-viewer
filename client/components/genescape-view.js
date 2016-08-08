@@ -4,7 +4,7 @@ import { Scatterplot } from './scatterplot';
 import { fetchDataSet } from '../actions/actions';
 
 const GenescapeViewComponent = function (props) {
-	const { dispatch, genescapeState, dataSet, viewState } = props;
+	const { dispatch, genescapeState, dataSet } = props;
 	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
 	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
@@ -34,7 +34,6 @@ const GenescapeViewComponent = function (props) {
 };
 
 GenescapeViewComponent.propTypes = {
-	viewState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
@@ -49,7 +48,7 @@ class GenescapeViewContainer extends Component {
 	}
 
 	render() {
-		const { dispatch, data, genescapeState, viewState, params } = this.props;
+		const { dispatch, data, genescapeState, params } = this.props;
 		const { transcriptome, project, dataset } = params;
 		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
 		const dataSet = data.dataSets[fetchDatasetString];
@@ -57,10 +56,9 @@ class GenescapeViewContainer extends Component {
 			<GenescapeViewComponent
 				dispatch={dispatch}
 				genescapeState={genescapeState}
-				dataSet={dataSet}
-				viewState={viewState} />
+				dataSet={dataSet} />
 			:
-			<div>Fetching dataset...</div>
+			<div className='container' >Fetching dataset...</div>
 		);
 	}
 }
@@ -69,7 +67,6 @@ GenescapeViewContainer.propTypes = {
 	// Passed down by react-router-redux
 	params: PropTypes.object.isRequired,
 	// Passed down by react-redux
-	viewState: PropTypes.object.isRequired,
 	data: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
@@ -86,7 +83,6 @@ const mapStateToProps = (state, ownProps) => {
 		params: ownProps.params,
 		genescapeState: state.genescapeState,
 		data: state.data,
-		viewState: state.viewState,
 	};
 };
 
