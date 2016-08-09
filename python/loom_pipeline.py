@@ -33,13 +33,110 @@ import __builtin__
 import time
 import loom
 from loom_cloud import DatasetConfig
-from loom_cloud import list_datasets
 import tempfile
 import re
 from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
+
+def list_datasets():
+	"""
+	Return a list of DatasetConfig objects for loom files stored remotely.
+	"""
+	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
+	bucket = client.get_bucket("linnarsson-lab-loom")
+	result = []
+	for blob in bucket.list_blobs():
+		if blob.name.endswith(".json"):
+			parts = blob.name.split("__")
+			config = get_dataset_config(parts[0], parts[1], parts[2][:-5])
+			result.append(config)
+	return result
+
+
+def get_dataset_config(transcriptome, project, dataset):
+	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
+	bucket = client.get_bucket("linnarsson-lab-loom")
+	config = DatasetConfig(transcriptome, project, dataset)
+	blob = bucket.get_blob(config.get_json_filename()).download_as_string()
+	temp = json.loads(blob)
+
+	return DatasetConfig(
+		transcriptome,
+		project,
+		dataset,
+		status = temp["status"],
+		message=temp["message"],
+		n_features=temp["n_features"],
+		cluster_method=temp["cluster_method"],
+		regression_label=temp["regression_label"]
+		)
+
+class DatasetConfig(object):
+	"""
+	Configuration and status for a .loom file in Cloud Storage.
+
+	This object is stored as a JSON string under they same key as the corresponding dataset, but with
+	extension .json instead of .loom.
+	"""
+	def __init__(self, transcriptome, project, dataset, status = "unknown", message = "", n_features = 1000, cluster_method = "AP", regression_label = "_Cluster"):
+		"""
+		Create a config object for a dataset.
+
+		Args:
+			transcriptome (string): 	Name of the transcriptome (e.g. "hg19_sUCSC")
+			project (string): 			Name of the project (e.g. "Midbrain")
+			dataset (string): 			Short name of the dataset (e.g. "human")
+			status (string):			"willcreate", "creating", "created", "unknown", or "error"
+			message (string):			A user-friendly message describing the current status (default: "").
+			n_features (int):			Number of genes to select for clustering (default: 1000)
+			cluster_method (string):	"AP" (affinity propagation; default) or "BackSPIN"
+			regression_label (strign):	The name of the attribute that will be used to group cells for regression (default: "_Cluster")
+
+		Returns:
+			A DatasetConfig object.s
+		"""
+		self.transcriptome = transcriptome
+		self.project = project
+		self.dataset = dataset
+		self.status = status
+		self.message = message
+		self.n_features = 1000
+		self.cluster_method = cluster_method
+		self.regression_label = regression_label
+
+	def as_dict(self):
+		return {
+			"transcriptome": self.transcriptome,
+			"project": self.project,
+			"dataset": self.dataset,
+			"status": self.status,
+			"message": self.message,
+			"n_features": self.n_features,
+			"cluster_method": self.cluster_method,
+			"regression_label": self.regression_label
+		}
+
+	def put(self):
+		client = storage.Client(project="linnarsson-lab")
+		bucket = client.get_bucket("linnarsson-lab-loom")
+		blobName = self.get_json_filename()
+		blob = bucket.get_blob(blobName)
+		if blob is None:
+			blob = bucket.blob(blobName)
+		blob.upload_from_string(json.dumps(self.as_dict()))
+
+	def set_status(self, status, message=""):
+		self.status = status
+		self.message = message
+		self.put()
+
+	def get_loom_filename(self):	# Haha, those strings below look like grumpy cats!
+		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".loom"
+
+	def get_json_filename(self):
+		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".json"
 
 class PipelineError(Exception):
 	def __init__(self, value):
@@ -287,7 +384,7 @@ class LoomPipeline(object):
 
 		Args:
 			config (DatasetConfig):	Configuration for the dataset
-			cell_attrs (dict):		Optional dictionary of cell annotations (numpy arrays)
+			cell_attrs (dict):		Dictionary of cell annotations (numpy arrays)
 			gene_attrs (dict): 		Optional dictionary of gene annotations (numpy arrays)
 
 		Returns:

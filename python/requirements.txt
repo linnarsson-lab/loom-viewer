@@ -1,3 +1,4 @@
 gcloud
 PyMySQL
 flask-compress
+loompy
