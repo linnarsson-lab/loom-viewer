@@ -65,6 +65,11 @@ If the dataset is not found, or is not available based on auth headers, the call
 returns 404 Not Found.
 <hr/>
 
+##### ```GET /clone/{project}/{filename}``` (download the loom file)
+
+Returns the .loom file in binary form.
+</hr>
+
 ##### ```GET /loom/{project}/{filename}/row/{row}``` (a single row)
 
 Returns a JSON list of `float32` values for the requested row.

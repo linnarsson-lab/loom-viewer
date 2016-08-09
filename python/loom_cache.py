@@ -22,10 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-
 import os.path
-from gcloud import storage
 import csv
 import loom
 import re
@@ -57,8 +54,8 @@ class LoomCache(object):
 		else:
 			try:
 				with open(os.path.join(proj, "auth.txt")) as f:
-					users = {x[0]: x[1] for x in f.read().splitlines().split(",")
-			except:
+					users = {x[0]: x[1] for x in f.read().splitlines().split(",")}
+			except IndexError:
 				return False
 		return users.has_key(username) and users[username] == password
 
@@ -66,14 +63,14 @@ class LoomCache(object):
 		"""
 		Return a list of (project, filename) tuples for loom files cached locally.
 		"""
-		projects = [x[0] for x in os.walk(self.dataset_path)]
+		projects = [x[0] for x in os.walk(self.dataset_path)]
 		result = []
 		for projpath in projects:
 			proj = os.path.basename(os.path.normpath(projpath))
 			if self._authorize(proj, username, password):
 				for f in os.listdir(projpath):
 					if f.endswith(".loom"):
-						result.append(proj,f))
+						result.append((proj,f))
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):
@@ -90,17 +87,38 @@ class LoomCache(object):
 			A loom file connection, or None if not authorized or file does not exist.	
 		"""
 
-		if not self._authorize(proj, username, password):
+		# Authorize and get path
+		absolute_path = self.get_absolute_path(project, filename, username, password)
+		if absolute_path == None:
 			return None
 
 		key = project + "/" + filename
 		if self.looms.has_key(key):
 			return self.looms[key]
 
+		result = loom.connect(absolute_path)
+		self.looms[key] = result
+		return result
+
+	def get_absolute_path(self, project, filename, username=None, password=None):
+		"""
+		Return the absolute path to the dataset, if authorized.
+
+		Args:
+			project (string): 		Name of the project (e.g. "Midbrain")
+			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
+			username (string):		Username or None
+			password (string):		Password or None
+
+		Returns:
+			An absolute path string, or None if not authorized or file does not exist.	
+		"""
+
+		if not self._authorize(proj, username, password):
+			return None
+
 		absolute_path = os.path.join(self.dataset_path, project, filename)
 		if os.path.exists(absolute_path):
-			result = loom.connect(absolute_path)
-			self.looms[key] = result
-			return result
+			return absolute_path
 		else:
 			return None

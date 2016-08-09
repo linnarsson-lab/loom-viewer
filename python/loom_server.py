@@ -1,7 +1,7 @@
 import flask
 from flask import request
 from flask import make_response
-from flask.ext.compress import Compress
+from flask_compress import Compress
 from functools import wraps, update_wrapper
 import os
 import os.path
@@ -10,28 +10,30 @@ import StringIO
 import json
 from datetime import datetime
 import loom
-import loom_cache
-
-DEBUG = False
-if len(sys.argv) > 2:
-	if sys.argv[2] == "debug":
-		DEBUG = True
-	else:
-		print "Invalid flag: " + sys.argv[2]
-		print "(only valid flag is 'debug')"
-		sys.exit(1)
-
-if len(sys.argv) < 2:
-	print "Usage: python loom_server.py <dataset-path> [debug]"
-	sys.exit(1)
-
-if not os.path.exists(sys.argv[1]):
-	print "Invalid required argument (datasets directory '%s' doesn't exist')" % sys.argv[1]
-	sys.exit(1)
+from loom_cache import LoomCache
+import argparse
+import errno
+from socket import error as socket_error
+import webbrowser
+import subprocess
+from multiprocessing import Process
+import shutil
+from urllib2 import urlopen # Python 2
 
 
+parser = argparse.ArgumentParser(description='Launch the loom browser.')
+def_dir = os.path.join(os.path.expanduser("~"),"loom-datasets")
+parser.add_argument("--dataset-path", help="Full path to the datasets directory (default: %s)" % def_dir , default=def_dir)
+parser.add_argument("-d", "--debug", action="store_true")
+parser.add_argument("-p", "--port", help="Port to use for the server (default: 8003)", type=int, default=8003)
+parser.add_argument("--no-browser", help="Do not launch a browser window", action="store_true")
+args = parser.parse_args()
 
-cache = loom_cloud.LoomCache(sys.argv[1])
+if not os.path.exists(args.dataset_path):
+	print "Datasets directory '%s' not found, creating it." % args.dataset_path
+	os.mkdir(args.dataset_path)
+
+cache = LoomCache(sys.argv[1])
 
 
 class LoomServer(flask.Flask):
@@ -90,7 +92,7 @@ def send_dataset_list():
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
-@app.route('/loom/<string:project>/<string:filename>')
+@app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
 def send_fileinfo(project, filename):
 	(u,p) = get_auth(request)
 	ds = cache.connect_dataset_locally(project, filename, u, p)
@@ -110,6 +112,14 @@ def send_fileinfo(project, filename):
 	}
 	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
 
+# Download a dataset to the client
+@app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
+def get_clone(project, filename):
+	(u,p) = get_auth(request)
+	path = cache.get_absolute_path(project, filename, u, p)
+	if path == None:
+		return "", 404	
+	return flask.send_file(path, mimetype='application/octet-stream')
 
 # Get one row of data (i.e. all the expression values for a single gene)
 @app.route('/loom/<string:project>/<string:filename>/row/<int:row>')
@@ -150,6 +160,18 @@ def send_tile(project, filename, z,x,y):
 	return serve_image(img)
 
 if __name__ == '__main__':
-	app.run(debug=DEBUG, host="0.0.0.0", port=80)
 
 
+
+	if not args.no_browser:
+		url = "http://localhost:" + str(args.port)
+		if sys.platform == "darwin":
+			subprocess.Popen(['open', url])
+		else:
+			webbrowser.open(url)	
+	try:
+		app.run(debug=args.debug, host="0.0.0.0", port=args.port)
+	except socket_error as serr:
+		print serr
+		if args.port < 1024:
+			print "You may need to invoke the server with sudo: sudo python loom_server.py ..."
