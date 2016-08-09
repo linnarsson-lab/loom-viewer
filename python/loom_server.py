@@ -33,7 +33,7 @@ if not os.path.exists(args.dataset_path):
 	print "Datasets directory '%s' not found, creating it." % args.dataset_path
 	os.mkdir(args.dataset_path)
 
-cache = LoomCache(sys.argv[1])
+cache = LoomCache(args.dataset_path)
 
 
 class LoomServer(flask.Flask):
