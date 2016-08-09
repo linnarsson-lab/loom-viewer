@@ -90,6 +90,7 @@ returns 404 Not Found.
 
 Returns a PNG image of 256x256 pixels for the given x, y and zoom level.
 
-If the dataset is not found, or is not available based on auth headers, the call
+If the dataset is not found, or is not available based on auth headers, 
+or the dataset does not have a prerendered image pyramid, the call
 returns 404 Not Found.
 <hr/>

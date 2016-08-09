@@ -155,6 +155,8 @@ def send_tile(project, filename, z,x,y):
 	if ds == None:
 		return "", 404
 	img = ds.dz_get_zoom_image(x,y,z)
+	if img == None:
+		return "", 404
 	return serve_image(img)
 
 if __name__ == '__main__':
