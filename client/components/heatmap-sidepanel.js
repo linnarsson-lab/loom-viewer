@@ -3,12 +3,12 @@ import { DropdownMenu } from './dropdown';
 import { fetchGene } from '../actions/actions.js';
 
 export const HeatmapSidepanel = function (props) {
-	const { dispatch, heatmapState, dataState } = props;
+	const { dispatch, heatmapState, dataSet, genes } = props;
 
-	let colAttrKeys = Object.keys(dataState.currentDataset.colAttrs);
+	let colAttrKeys = Object.keys(dataSet.colAttrs);
 	colAttrKeys.sort();
 	colAttrKeys.push("(gene)");
-	let rowAttrKeys = Object.keys(dataState.currentDataset.rowAttrs);
+	let rowAttrKeys = Object.keys(dataSet.rowAttrs);
 	rowAttrKeys.sort();
 	rowAttrKeys.push("(gene positions)");
 	let optionNames = ["Text", "Bars", "Heatmap", "Categorical"];
@@ -47,7 +47,7 @@ export const HeatmapSidepanel = function (props) {
 									onChange={
 										(event) => {
 											dispatch({ type: 'SET_HEATMAP_PROPS', colGene: event.target.value });
-											dispatch(fetchGene(dataState.currentDataset, event.target.value, dataState.genes));
+											dispatch(fetchGene(dataSet, event.target.value, genes));
 										}
 									} />
 								:
@@ -93,6 +93,7 @@ export const HeatmapSidepanel = function (props) {
 
 HeatmapSidepanel.propTypes = {
 	heatmapState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+	dataSet: PropTypes.object.isRequired,
+	genes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

@@ -3,25 +3,26 @@ import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
 import { Sparkline } from './sparkline';
 import * as _ from 'lodash';
+import { fetchDataSet } from '../actions/actions';
 
-export class HeatmapView extends Component {
+class HeatmapViewComponent extends Component {
 	render() {
-		const { dispatch, dataState, heatmapState, viewState } = this.props;
+		const { dispatch, dataSet, genes, heatmapState, viewState } = this.props;
 
 		let colData = [];
 		if (heatmapState.colAttr === "(gene)") {
-			if (dataState.genes.hasOwnProperty(heatmapState.colGene)) {
-				colData = dataState.genes[heatmapState.colGene];
+			if (genes.hasOwnProperty(heatmapState.colGene)) {
+				colData = genes[heatmapState.colGene];
 			}
 		} else {
-			colData = dataState.currentDataset.colAttrs[heatmapState.colAttr];
+			colData = dataSet.colAttrs[heatmapState.colAttr];
 		}
 
-		let rowData = dataState.currentDataset.rowAttrs[heatmapState.rowAttr];
+		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
 		if (heatmapState.rowAttr === '(gene positions)') {
 			const genes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
 			rowData = _.map(
-				dataState.currentDataset.rowAttrs["Gene"],
+				dataSet.rowAttrs["Gene"],
 				(x) => { return _.indexOf(genes, x) !== -1 ? x : ''; }
 			);
 		}
@@ -44,7 +45,8 @@ export class HeatmapView extends Component {
 				<div className='view-sidepanel'>
 					<HeatmapSidepanel
 						heatmapState={heatmapState}
-						dataState={dataState}
+						dataSet={dataSet}
+						genes={genes}
 						dispatch={dispatch}
 						/>
 				</div>
@@ -59,17 +61,17 @@ export class HeatmapView extends Component {
 						mode={heatmapState.colMode}
 						/>
 					<Heatmap
-						transcriptome={dataState.currentDataset.transcriptome}
-						project={dataState.currentDataset.project}
-						dataset={dataState.currentDataset.dataset}
+						transcriptome={dataSet.transcriptome}
+						project={dataSet.project}
+						dataset={dataSet.dataset}
 						width={heatmapWidth}
 						height={heatmapHeight}
 						zoom={heatmapState.zoom}
 						center={heatmapState.center}
-						shape={dataState.currentDataset.shape}
-						zoomRange={dataState.currentDataset.zoomRange}
-						fullZoomWidth={dataState.currentDataset.fullZoomWidth}
-						fullZoomHeight={dataState.currentDataset.fullZoomHeight}
+						shape={dataSet.shape}
+						zoomRange={dataSet.zoomRange}
+						fullZoomWidth={dataSet.fullZoomWidth}
+						fullZoomHeight={dataSet.fullZoomHeight}
 						onViewChanged={
 							(bounds) => {
 								dispatch({
@@ -95,9 +97,63 @@ export class HeatmapView extends Component {
 		);
 	}
 }
-HeatmapView.propTypes = {
+
+HeatmapViewComponent.propTypes = {
 	viewState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+	dataSet: PropTypes.object.isRequired,
+	genes: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
+
+class HeatmapViewContainer extends Component {
+
+	componentDidMount() {
+		const { dispatch, data, params } = this.props;
+		const { transcriptome, project, dataset } = params;
+		const dataSetName = transcriptome + '__' + project + '__' + dataset;
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName }));
+	}
+
+	render() {
+		const { dispatch, data, heatmapState, params } = this.props;
+		const { transcriptome, project, dataset } = params;
+		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
+		const dataSet = data.dataSets[fetchDatasetString];
+		return (dataSet ?
+			<HeatmapViewComponent
+				dispatch={dispatch}
+				heatmapState={heatmapState}
+				dataSet={dataSet}
+				genes={data.genes} />
+			:
+			<div className='container' >Fetching dataset...</div>
+		);
+	}
+}
+
+HeatmapViewContainer.propTypes = {
+	// Passed down by react-router-redux
+	params: PropTypes.object.isRequired,
+	// Passed down by react-redux
+	data: PropTypes.object.isRequired,
+	heatmapState: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+//connect HeatmapViewContainer to store
+import { connect } from 'react-redux';
+
+// react-router-redux passes URL parameters
+// through ownProps.params. See also:
+// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-component
+const mapStateToProps = (state, ownProps) => {
+	return {
+		params: ownProps.params,
+		heatmapState: state.heatmapState,
+		data: state.data,
+	};
+};
+
+export const HeatmapView = connect(mapStateToProps)(HeatmapViewContainer);
+
