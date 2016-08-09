@@ -129,7 +129,6 @@ export function fetchDataSet(data) {
 					let receivedDataSet = {};
 					receivedDataSet[dataSetName] = ds;
 					dispatch(receiveDataSet(receivedDataSet));
-					//dispatch({ type: "SET_VIEW_PROPS", view: "Landscape" });
 				})
 				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {

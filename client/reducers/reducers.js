@@ -17,26 +17,25 @@ import {
 	SET_GENESCAPE_PROPS,
 	SET_LANDSCAPE_PROPS,
 	SET_SPARKLINE_PROPS,
-	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
-/* Migrating these to react-router */
+// /* Migrating these to react-router */
 
-const initialViewState = {
-	type: SET_VIEW_PROPS,	// This will be set to the last action type
-	view: 'Dataset',
-	width: document.getElementById("react-root").clientWidth,
-	height: window.innerHeight - document.getElementById("react-root").offsetTop - 50, // For some reason, at launch the height is 50px off (=navbar height)
-};
+// const initialViewState = {
+// 	type: SET_VIEW_PROPS,	// This will be set to the last action type
+// 	view: 'Dataset',
+// 	width: document.getElementById("react-root").clientWidth,
+// 	height: window.innerHeight - document.getElementById("react-root").offsetTop - 50, // For some reason, at launch the height is 50px off (=navbar height)
+// };
 
-function viewState(state = initialViewState, action) {
-	switch (action.type) {
-	case SET_VIEW_PROPS:
-		return Object.assign({}, state, action);	// NOTE: must start with an empty object {} to ensure we don't mutate state
-	default:
-		return state;
-	}
-}
+// function viewState(state = initialViewState, action) {
+// 	switch (action.type) {
+// 	case SET_VIEW_PROPS:
+// 		return Object.assign({}, state, action);	// NOTE: must start with an empty object {} to ensure we don't mutate state
+// 	default:
+// 		return state;
+// 	}
+// }
 
 const initialSparklineState = {
 	type: SET_SPARKLINE_PROPS,	// This will be set to the last action type
@@ -190,7 +189,6 @@ function data(state = initialData, action) {
 }
 
 const loomAppReducer = combineReducers({
-	viewState,
 	heatmapState,
 	landscapeState,
 	genescapeState,
