@@ -18,7 +18,6 @@ export class Canvas extends React.Component {
 		if (el) {
 			let context = el.getContext('2d');
 			const ratio = window.devicePixelRatio || 1;
-			console.log("ratio: ", ratio);
 			el.width = el.parentNode.clientWidth * ratio;
 			el.height = el.parentNode.clientHeight * ratio;
 			context.mozImageSmoothingEnabled = false;
@@ -54,11 +53,11 @@ export class Canvas extends React.Component {
 				flex: '1 1 auto',
 				margin: 0,
 				padding: 0,
-				border: 'none',
+				border: 0,
 			}}>
 				<canvas
 					ref='canvas'
-					style={{ width: '100%', height: '100%' }}
+					style={{ display: 'block', width: '100%', height: '100%' }}
 					/>
 			</div>
 		);
