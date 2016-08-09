@@ -38,7 +38,7 @@ class LandscapeViewComponent extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<div  style={{ display: 'flex', flex: '1 1 auto', padding: '0px', overflow: 'hidden' }}>
+				<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
 					<Scatterplot
 						x={x}
 						y={y}
