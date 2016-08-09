@@ -7,13 +7,13 @@ export class Canvas extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.scaleAndDraw = this.scaleAndDraw.bind(this);
+		this.fitToZoomAndPixelRatio = this.fitToZoomAndPixelRatio.bind(this);
 		this.draw = this.draw.bind(this);
 	}
 
-	// TODO: One day, make this not-broken with browser-zoom
 	// Make sure we get a sharp canvas on Retina displays
-	scaleAndDraw() {
+	// as well as adjust the canvas on zoomed browsers
+	fitToZoomAndPixelRatio() {
 		let el = this.refs.canvas;
 		let context = el.getContext('2d');
 		const ratio = window.devicePixelRatio || 1;
@@ -25,10 +25,10 @@ export class Canvas extends React.Component {
 		context.msImageSmoothingEnabled = false;
 		context.imageSmoothingEnabled = false;
 		context.scale(ratio, ratio);
-		this.draw();
 	}
 
 	draw() {
+		this.fitToZoomAndPixelRatio();
 		let el = this.refs.canvas;
 		let context = el.getContext('2d');
 		context.clearRect(0, 0, el.width, el.height);
@@ -36,8 +36,8 @@ export class Canvas extends React.Component {
 	}
 
 	componentDidMount() {
-		this.scaleAndDraw();
-		window.addEventListener("resize", this.scaleAndDraw);
+		this.draw();
+		window.addEventListener("resize", this.draw);
 	}
 
 	componentDidUpdate() {
