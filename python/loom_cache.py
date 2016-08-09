@@ -70,7 +70,7 @@ class LoomCache(object):
 			if self._authorize(proj, username, password):
 				for f in os.listdir(projpath):
 					if f.endswith(".loom"):
-						result.append((proj,f))
+						result.append({"project": proj, "filename": f})
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):

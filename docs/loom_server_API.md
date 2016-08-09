@@ -6,7 +6,7 @@ these endpoints are defined and handled in ```loom_server.py```.
 
 ##### Authorization
 
-Requests can be accompanied by Basic Auth headers (username and password), which
+Requests can be accompanied by a Basic Auth header (username and password), which
 will determine access to some resources (e.g. projects and datasets). If no auth
 headers are provided, only public projects and datasets will be returned.
 
@@ -27,15 +27,16 @@ Static CSS, Javascript and image files, linked from the main ```index.html``` pa
 
 ##### ```GET /loom``` (list all datasets)
 
-Returns a list of available datasets in JSON format, each a list of two strings,
-*project* and *filename*. 
+Returns a list of available datasets in JSON format, each a dictionary with two keys,
+`project` and `filename`. 
 
 Example:
 
 ```json
 [
-    ["Midbrain", "StemCellDiff_20160601.loom"],
-    ["Cortex", "Cortex_Science2015.loom"]
+   {"project": "Midbrain", "filename": "midbrain_20160801.loom"},
+   {"project": "Cortex", "filename": "astrocytes_final.loom"},
+   {"project": "Cortex", "filename": "oligos_final.loom"}
 ]
 ```
 
