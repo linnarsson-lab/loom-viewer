@@ -18,7 +18,7 @@ const GenescapeViewComponent = function (props) {
 					dispatch={dispatch}
 					/>
 			</div>
-			<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
+			<div  style={{ display: 'flex', flex: '1 1 auto', padding: '0px', overflow: 'hidden' }}>
 				<Scatterplot
 					x={x}
 					y={y}
@@ -40,6 +40,7 @@ GenescapeViewComponent.propTypes = {
 };
 
 class GenescapeViewContainer extends Component {
+
 	componentDidMount() {
 		const { dispatch, data, params } = this.props;
 		const { transcriptome, project, dataset } = params;

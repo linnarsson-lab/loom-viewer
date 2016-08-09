@@ -23,15 +23,13 @@ class LandscapeViewComponent extends Component {
 	}
 
 	render() {
-		const { dispatch, landscapeState, dataSet, genes, viewState } = this.props;
-		console.log(landscapeState);
-		console.log(dataSet);
-		const color = this.makeData(landscapeState.colorAttr, landscapeState.colorGene);
-		const x = this.makeData(landscapeState.xCoordinate, landscapeState.xGene);
-		const y = this.makeData(landscapeState.yCoordinate, landscapeState.yGene);
-
+		const { dispatch, landscapeState, dataSet, genes } = this.props;
+		const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
+		const color = this.makeData(colorAttr, colorGene);
+		const x = this.makeData(xCoordinate, xGene);
+		const y = this.makeData(yCoordinate, yGene);
 		return (
-			<div className='view'>
+			<div style={{ display: 'flex', flex: '1 1 auto' }}>
 				<div className='view-sidepanel'>
 					<LandscapeSidepanel
 						landscapeState={landscapeState}
@@ -40,14 +38,12 @@ class LandscapeViewComponent extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<div className='view-main'>
+				<div  style={{ display: 'flex', flex: '1 1 auto', padding: '0px', overflow: 'hidden' }}>
 					<Scatterplot
 						x={x}
 						y={y}
 						color={color}
 						colorMode={landscapeState.colorMode}
-						width={viewState.width - 350}
-						height={viewState.height - 40}
 						logScaleColor={landscapeState.colorAttr === "(gene)"}
 						logScaleX={landscapeState.xCoordinate === "(gene)"}
 						logScaleY={landscapeState.yCoordinate === "(gene)"}
@@ -59,7 +55,6 @@ class LandscapeViewComponent extends Component {
 }
 
 LandscapeViewComponent.propTypes = {
-	viewState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	genes: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
@@ -68,15 +63,17 @@ LandscapeViewComponent.propTypes = {
 
 
 class LandscapeViewContainer extends Component {
+
 	componentDidMount(){
 		const { dispatch, data, params } = this.props;
 		const { transcriptome, project, dataset } = params;
 		const dataSetName = transcriptome + '__' + project + '__' + dataset;
 		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName}));
 	}
+
 	render(){
 
-		const { dispatch, data, landscapeState, viewState, params } = this.props;
+		const { dispatch, data, landscapeState, params } = this.props;
 		const { transcriptome, project, dataset } = params;
 		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
 		const dataSet = data.dataSets[fetchDatasetString];
@@ -86,10 +83,9 @@ class LandscapeViewContainer extends Component {
 				dispatch={dispatch}
 				landscapeState={landscapeState}
 				dataSet={dataSet}
-				genes={genes}
-				viewState={viewState} />
+				genes={genes} />
 		:
-			<div>Fetching dataset...</div>
+			<div className='container' >Fetching dataset...</div>
 		);
 	}
 
@@ -99,7 +95,6 @@ LandscapeViewContainer.propTypes = {
 	// Passed down by react-router-redux
 	params: PropTypes.object.isRequired,
 	// Passed down by react-redux
-	viewState: PropTypes.object.isRequired,
 	data: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
@@ -116,7 +111,6 @@ const mapStateToProps = (state, ownProps) => {
 		params: ownProps.params,
 		landscapeState: state.landscapeState,
 		data: state.data,
-		viewState: state.viewState,
 	};
 };
 

@@ -1,241 +1,148 @@
 import React, { PropTypes } from 'react';
+import { DropdownMenu } from './dropdown';
 import { fetchGene } from '../actions/actions.js';
+import { Panel, ListGroup, ListGroupItem,
+	Button, ButtonGroup } from 'react-bootstrap';
 
 
 export const LandscapeSidepanel = function (props) {
-	const { dispatch, dataSet, genes } = props.dispatch;
+	const { dispatch, dataSet, genes } = props;
 	const landscapeState = props.landscapeState;
+	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
 
 	const temp = Object.keys(dataSet.colAttrs).sort();
 	temp.push("(gene)");
-	const xOptions = temp.map((name) => {
-		return (<li key={name}>
-			<a onClick={ () => {
-				dispatch({
-					type: 'SET_LANDSCAPE_PROPS',
-					xCoordinate: name,
-				});
-			} }>
-				{name}
-			</a>
-		</li>);
-	});
 
-	const yOptions = temp.map((name) => {
-		return (
-			<li key={name}>
-				<a onClick={ () => {
-					dispatch({
-						type: 'SET_LANDSCAPE_PROPS',
-						yCoordinate: name,
-					});
-				} }>
-					{name}
-				</a>
-			</li>
-		);
-	});
-
-	const colorOptions = temp.map((name) => {
-		return (
-			<li key={name}>
-				<a onClick={ () => {
-					dispatch({
-						type: 'SET_LANDSCAPE_PROPS',
-						colorAttr: name,
-					});
-				} }>
-					{name}
-				</a>
-			</li>
-		);
-	});
-
-	const isTSNE = (landscapeState.xCoordinate === '_tSNE1') && (landscapeState.yCoordinate === '_tSNE2');
-	const isPCA = (landscapeState.xCoordinate === '_PC1') && (landscapeState.yCoordinate === '_PC2');
+	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
+	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
 
 	return (
-		<div className='panel panel-default'>
-			<div className='panel-heading'><h3 className='panel-title'>Settings</h3></div>
-			<div className='panel-body'>
-				<form>
-					<div className='form-group'>
-						<div className='btn-group btn-group-justified' role='group'>
-							<div className='btn-group' role='group'>
-								<button
-									type='button'
-									className={"btn" + (isTSNE ? " btn-success" : " btn-default") }
-									onClick={ () => {
-										dispatch({
-											type: 'SET_LANDSCAPE_PROPS',
-											xCoordinate: '_tSNE1',
-											yCoordinate: '_tSNE2',
-										});
-									} }>
-									tSNE
-								</button>
-							</div>
-							<div className='btn-group' role='group'>
-								<button
-									type='button'
-									className={"btn" + (isPCA ? " btn-success" : " btn-default") }
-									onClick={ () => {
-										dispatch({
-											type: 'SET_LANDSCAPE_PROPS',
-											xCoordinate: '_PC1',
-											yCoordinate: '_PC2',
-										});
-									} }>
-									PCA
-								</button>
-							</div>
-						</div>
-					</div>
+		<Panel
+			key='landscape-settings'
+			header='Settings'
+			bsStyle='default'>
 
-					<div className='form-group'>
-						<label>X Coordinate</label>
-						<div className='btn-group btn-block'>
-							<button
-								type='button'
-								className='btn btn-block btn-default dropdown-toggle'
-								data-toggle='dropdown'
-								aria-haspopup='true'
-								aria-expanded='false'>
-								{landscapeState.xCoordinate + "  "}<span className='caret'></span>
-							</button>
-							<ul className='dropdown-menu btn-block scrollable-menu'>
-								{xOptions}
-							</ul>
-						</div>
-						<div className='btn-group btn-block'>
-							{landscapeState.xCoordinate === "(gene)" ?
-								<input
-									className='form-control'
-									placeholder='Gene'
-									value={landscapeState.xGene}
-									onChange={() => {
-										dispatch({
-											type: 'SET_LANDSCAPE_PROPS',
-											xGene: event.target.value,
-										});
-										dispatch(fetchGene(dataSet, event.target.value, genes));
-									} } /> :
-								<span></span>
-							}
-						</div>
-					</div>
-
-
-					<div className='form-group'>
-						<label>Y Coordinate</label>
-						<div className='btn-group btn-block'>
-							<button
-								type='button'
-								className='btn btn-block btn-default dropdown-toggle'
-								data-toggle='dropdown'
-								aria-haspopup='true'
-								aria-expanded='false'>
-								{landscapeState.yCoordinate + "  "}<span className='caret'></span>
-							</button>
-							<ul className='dropdown-menu btn-block scrollable-menu'>
-								{yOptions}
-							</ul>
-						</div>
-						<div className='btn-group btn-block'>
-							{
-								landscapeState.yCoordinate === "(gene)" ?
-									<input
-										className='form-control'
-										placeholder='Gene'
-										value={landscapeState.yGene}
-										onChange={(event) => {
-											dispatch({
-												type: 'SET_LANDSCAPE_PROPS',
-												yGene: event.target.value,
-											});
-											dispatch(fetchGene(dataSet, event.target.value, genes));
-										} } />
-									:
-									<span></span>
-							}
-						</div>
-					</div>
-
-					<div className='form-group'>
-						<label>Color</label>
-						<div className='btn-group btn-block'>
-							<button
-								type='button'
-								className='btn btn-block btn-default dropdown-toggle'
-								data-toggle='dropdown'
-								aria-haspopup='true'
-								aria-expanded='false'>
-								{landscapeState.colorAttr + "  "}<span className='caret'></span>
-							</button>
-							<ul className='dropdown-menu btn-block scrollable-menu'>
-								{colorOptions}
-							</ul>
-						</div>
-						<div className='btn-group btn-block'>
-							<button
-								type='button'
-								className='btn btn-block btn-default dropdown-toggle'
-								data-toggle='dropdown'
-								aria-haspopup='true'
-								aria-expanded='false'>
-								{landscapeState.colorMode + "  "}<span className='caret'></span>
-							</button>
-							<ul className='dropdown-menu'>
-								<li key='Categorical'>
-									<a onClick={ () => {
-										dispatch({
-											type: 'SET_LANDSCAPE_PROPS',
-											colorMode: 'Categorical',
-										});
-									} }>
-										Categorical
-									</a>
-								</li>
-								<li key='Heatmap'>
-									<a onClick={ () => {
-										dispatch({
-											type: 'SET_LANDSCAPE_PROPS',
-											colorMode: 'Heatmap',
-										});
-									} }>
-										Heatmap
-									</a>
-								</li>
-							</ul>
-						</div>
-						<div className='btn-group btn-block'>
-							{
-								landscapeState.colorAttr === "(gene)" ?
-									<input
-										className='form-control'
-										placeholder='Gene'
-										value={landscapeState.colorGene}
-										onChange={ () => {
-											dispatch({
-												type: 'SET_LANDSCAPE_PROPS',
-												colorGene: event.target.value,
-											});
-											dispatch(fetchGene(dataSet, event.target.value, genes));
-										} } />
-									:
-									<span></span>
-							}
-						</div>
-					</div>
-				</form>
-			</div>
-		</div>
+			<ListGroup fill>
+				<ListGroupItem>
+					<ButtonGroup>
+						<Button
+							bsStyle={ isTSNE ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
+									xCoordinate: '_tSNE1',
+									yCoordinate: '_tSNE2',
+								});
+							} }>
+							tSNE
+						</Button>
+						<Button
+							bsStyle={ isPCA ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
+									xCoordinate: '_PC1',
+									yCoordinate: '_PC2',
+								});
+							} }>
+							PCA
+						</Button>
+					</ButtonGroup>
+				</ListGroupItem>
+				<ListGroupItem>
+					<DropdownMenu
+						buttonLabel={'X Coordinate'}
+						buttonName={xCoordinate}
+						attributes={temp}
+						attrType={'SET_LANDSCAPE_PROPS'}
+						attrName={xCoordinate}
+						dispatch={dispatch}
+						/>
+					{xCoordinate === "(gene)" ?
+						<input
+							className='form-control'
+							placeholder='Gene'
+							value={xGene}
+							onChange={(event) => {
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
+									xGene: event.target.value,
+								});
+								dispatch(fetchGene(dataSet, event.target.value, genes));
+							} } /> :
+						null
+					}
+				</ListGroupItem>
+				<ListGroupItem>
+					<DropdownMenu
+						buttonLabel={'Y Coordinate'}
+						buttonName={yCoordinate}
+						attributes={temp}
+						attrType={'SET_LANDSCAPE_PROPS'}
+						attrName={yCoordinate}
+						dispatch={dispatch}
+						/>
+					{
+						yCoordinate === "(gene)" ?
+							<input
+								className='form-control'
+								placeholder='Gene'
+								value={yGene}
+								onChange={(event) => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										yGene: event.target.value,
+									});
+									dispatch(fetchGene(dataSet, event.target.value, genes));
+								} } />
+							:
+							null
+					}
+				</ListGroupItem>
+				<ListGroupItem>
+					<DropdownMenu
+						buttonLabel={'Color'}
+						buttonName={colorAttr}
+						attributes={temp}
+						attrType={'SET_LANDSCAPE_PROPS'}
+						attrName={'colorAttr'}
+						dispatch={dispatch}
+						/>
+					{
+						colorAttr === "(gene)" ?
+							<input
+								className='form-control'
+								placeholder='Gene'
+								value={colorGene}
+								onChange={ () => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										colorGene: event.target.value,
+									});
+									dispatch(fetchGene(dataSet, event.target.value, genes));
+								} } />
+							:
+							null
+					}
+				</ListGroupItem>
+				<ListGroupItem>
+					<DropdownMenu
+						buttonLabel={undefined}
+						buttonName={colorMode}
+						attributes={['Categorical', 'Heatmap']}
+						attrType={'SET_LANDSCAPE_PROPS'}
+						attrName={'colorMode'}
+						dispatch={dispatch}
+						/>
+				</ListGroupItem>
+			</ListGroup>
+		</Panel>
 	);
 };
 
 LandscapeSidepanel.propTypes = {
 	landscapeState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+	dataSet: PropTypes.object.isRequired,
 	genes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
