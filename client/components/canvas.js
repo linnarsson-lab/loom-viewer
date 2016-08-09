@@ -15,24 +15,28 @@ export class Canvas extends React.Component {
 	// as well as adjust the canvas on zoomed browsers
 	fitToZoomAndPixelRatio() {
 		let el = this.refs.canvas;
-		let context = el.getContext('2d');
-		const ratio = window.devicePixelRatio || 1;
-		console.log("ratio: ", ratio);
-		el.width = el.parentNode.clientWidth * ratio;
-		el.height = el.parentNode.clientHeight * ratio;
-		context.mozImageSmoothingEnabled = false;
-		context.webkitImageSmoothingEnabled = false;
-		context.msImageSmoothingEnabled = false;
-		context.imageSmoothingEnabled = false;
-		context.scale(ratio, ratio);
+		if (el) {
+			let context = el.getContext('2d');
+			const ratio = window.devicePixelRatio || 1;
+			console.log("ratio: ", ratio);
+			el.width = el.parentNode.clientWidth * ratio;
+			el.height = el.parentNode.clientHeight * ratio;
+			context.mozImageSmoothingEnabled = false;
+			context.webkitImageSmoothingEnabled = false;
+			context.msImageSmoothingEnabled = false;
+			context.imageSmoothingEnabled = false;
+			context.scale(ratio, ratio);
+			context.clearRect(0, 0, el.width, el.height);
+		}
 	}
 
 	draw() {
-		this.fitToZoomAndPixelRatio();
 		let el = this.refs.canvas;
-		let context = el.getContext('2d');
-		context.clearRect(0, 0, el.width, el.height);
-		this.props.paint(context, el.clientWidth, el.clientHeight);
+		if (el) {
+			this.fitToZoomAndPixelRatio();
+			let context = el.getContext('2d');
+			this.props.paint(context, el.clientWidth, el.clientHeight);
+		}
 	}
 
 	componentDidMount() {
