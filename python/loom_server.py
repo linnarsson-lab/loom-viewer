@@ -158,9 +158,6 @@ def send_tile(project, filename, z,x,y):
 	return serve_image(img)
 
 if __name__ == '__main__':
-
-
-
 	if not args.no_browser:
 		url = "http://localhost:" + str(args.port)
 		if sys.platform == "darwin":

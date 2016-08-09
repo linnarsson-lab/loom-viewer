@@ -39,6 +39,8 @@ from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def list_datasets():
 	"""
@@ -204,7 +206,7 @@ class LoomPipeline(object):
 		project = config.project
 		dataset = config.dataset
 		connection = self.mysql_connection
-		print "Processing: " + config.get_json_filename()
+		logging.info("Processing: " + config.get_json_filename())
 
 		# Get the transcriptome ID
 		try:
@@ -241,8 +243,7 @@ class LoomPipeline(object):
 		try:
 			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
 		except pymysql.err.ProgrammingError as e:
-			print "Dataset definition not found in database"
-			print e
+			logging.warn("Dataset definition not found in database")
 			config.set_status("error","Dataset definition not found in database")
 			raise PipelineError(e)
 
@@ -423,14 +424,14 @@ class LoomPipeline(object):
 					pass
 		# Send the dataset to MySQL
 		if cell_attrs != None:
-			print "Uploading cell annotations"
+			logging.info("Uploading cell annotations")
 			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
 		if gene_attrs != None:
-			print "Uploading gene annotations"
+			logging.info("Uploading gene annotations")
 			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
 		# Save the config
 		config.put()
-		print "Done."
+		logging.info("Done.")
 
 	def _export_attrs_to_mysql(self, attrs, transcriptome, tablename, pk):
 		"""
@@ -606,17 +607,17 @@ if __name__ == '__main__':
 		for ds in list_datasets():
 			absolute_path = os.path.join(sys.argv[1], ds.get_loom_filename())
 			if ds.status == "created" and not os.path.isfile(absolute_path):
-				print "Fetching %s to %s" % (ds.get_loom_filename(), absolute_path)
+				logging.info("Fetching %s to %s" % (ds.get_loom_filename(), absolute_path))
 				bucket = client.get_bucket("linnarsson-lab-loom")
 				blob = bucket.blob(ds.get_loom_filename())
 				with open(absolute_path, 'wb') as outfile:
 					blob.download_to_file(outfile)
 			if ds.status == "willcreate":
 				try:
-					print "Creating " + ds.get_loom_filename()
+					logging.info("Creating " + ds.get_loom_filename())
 					lp.create_loom(ds)
-					print "Storing " + ds.get_loom_filename()
+					logging.info("Storing " + ds.get_loom_filename())
 					lp.store_loom(ds)
 				except PipelineError as e:
-					print e
+					logging.warn(e)
 		time.sleep(60*10)
