@@ -13,8 +13,7 @@ headers are provided, only public projects and datasets will be returned.
 ### Endpoints
 
 ##### ```GET /```
-##### ```GET /datasets/*```
-##### ```GET /view/*```
+##### ```GET /dataset/*```
 
 Returns the ```index.html``` file that loads all static assets and launches React client-side. Routing
 is handled on the client based on the specific URL.
