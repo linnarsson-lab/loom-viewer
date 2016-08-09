@@ -10,7 +10,7 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 
 module.exports = {
 	entry: {
-		'static/js/bundle': './client/loom',
+		'/static/js/bundle': './client/loom',
 	},
 	output: {
 		path: './python',

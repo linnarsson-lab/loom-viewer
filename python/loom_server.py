@@ -66,10 +66,8 @@ def send_img(path):
 #
 
 @app.route('/')
-@app.route('/datasets/')
-@app.route('/datasets/<path:path>')
-@app.route('/view/')
-@app.route('/view/<path:path>')
+@app.route('/dataset/')
+@app.route('/dataset/<path:path>')
 def send_indexjs():
 	return app.send_static_file('index.html')
 
