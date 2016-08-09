@@ -187,9 +187,6 @@ def send_tile(transcriptome, project, dataset, z,x,y):
 	img = ds.dz_get_zoom_image(x,y,z)
 	return serve_image(img)
 
-if __name__ == '__main__':
-	app.run(debug=DEBUG, host="0.0.0.0", port=80)
-
 
 # temp solution. TODO: figure out how to combine webpack with flask templates
 @app.route('/datasets')
@@ -197,16 +194,19 @@ if __name__ == '__main__':
 def send_mockindex():
 	return redirect(url_for('send_indexjs'))
 
-@app.route('/view/heatmap/<transcriptome>/<project>/<dataset>')
-@app.route('/view/sparkline/<transcriptome>/<project>/<dataset>')
-@app.route('/view/landscape/<transcriptome>/<project>/<dataset>')
-@app.route('/view/genescape/<transcriptome>/<project>/<dataset>')
+@app.route('/view/heatmap/<string:transcriptome>/<string:project>/<string:dataset>')
+@app.route('/view/sparkline/<string:transcriptome>/<string:project>/<string:dataset>')
+@app.route('/view/landscape/<string:transcriptome>/<string:project>/<string:dataset>')
+@app.route('/view/genescape/<string:transcriptome>/<string:project>/<string:dataset>')
 def send_mockdataset(transcriptome, project, dataset):
 	return redirect(url_for('send_indexjs'))
 
-@app.route('/view/heatmap/<transcriptome>/<project>/<dataset>/<viewsettings>')
-@app.route('/view/sparkline/<transcriptome>/<project>/<dataset>/<viewsettings>')
-@app.route('/view/landscape/<transcriptome>/<project>/<dataset>/<viewsettings>')
-@app.route('/view/genescape/<transcriptome>/<project>/<dataset>/<viewsettings>')
+@app.route('/view/heatmap/<string:transcriptome>/<string:project>/<string:dataset>/<string:viewsettings>')
+@app.route('/view/sparkline/<string:transcriptome>/<string:project>/<string:dataset>/<string:viewsettings>')
+@app.route('/view/landscape/<string:transcriptome>/<string:project>/<string:dataset>/<string:viewsettings>')
+@app.route('/view/genescape/<string:transcriptome>/<string:project>/<string:dataset>/<string:viewsettings>')
 def send_mockdatasetview(transcriptome, project, dataset, viewsettings):
 	return redirect(url_for('send_indexjs'))
+
+if __name__ == '__main__':
+	app.run(debug=DEBUG, host="0.0.0.0", port=80)
