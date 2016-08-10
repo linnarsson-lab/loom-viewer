@@ -1,8 +1,8 @@
 import React, {PropTypes} from 'react';
-import { render, findDOMNode } from 'react-dom';
 import { nMostFrequent } from '../js/util';
 import * as _ from 'lodash';
 import * as colors from '../js/colors';
+import { Canvas } from './canvas';
 
 
 class CategoriesPainter {
@@ -130,7 +130,6 @@ export class Sparkline extends React.Component {
 	constructor(props) {
 		super(props);
 
-		this.retina_scale = this.retina_scale.bind(this);
 		this.paint = this.paint.bind(this);
 	}
 
@@ -142,42 +141,23 @@ export class Sparkline extends React.Component {
 		this.paint();
 	}
 
-	componentWillUnmount() {
-	}
-
-
-	retina_scale(el, context) {
-		const ratio = window.devicePixelRatio || 1;
-		el.style.width = this.props.width + "px";
-		el.style.height = this.props.height + "px";
-		el.width = this.props.width * ratio;
-		el.height = this.props.height * ratio;
-		context.scale(ratio, ratio);
-	}
-
-	paint() {
-		const el = findDOMNode(this);
-		const context = el.getContext('2d');
-		this.retina_scale(el, context);	// Make sure we get a sharp canvas on Retina displays
-		context.clearRect(0, 0, this.props.width, this.props.height);
-
-		// Width is the narrow dimension even if rotated
-		let width = this.props.width;
-		let height = this.props.height;
-		if (this.props.orientation === 'horizontal') {
-			context.translate(0, this.props.height);
-			context.rotate(-90 * Math.PI / 180);
-			width = this.props.height;
-			height = this.props.width;
-		}
-
+	paint(context, width, height) {
 		if (this.props.data === undefined) {
 			return;
 		}
+
+		if (this.props.orientation === 'horizontal') {
+			context.translate(0, this.props.height);
+			context.rotate(-90 * Math.PI / 180);
+			let t = width;
+			width = height;
+			height = t;
+		}
+
 		context.save();
 		const fractionalPixel = this.props.dataRange[0] % 1;
-		const pixelsPer = (this.props.screenRange[1] - this.props.screenRange[0]) / (this.props.dataRange[1] - this.props.dataRange[0]);
-		const yoffset = this.props.screenRange[0] - fractionalPixel * pixelsPer;
+		const pixelsPer = width / (this.props.dataRange[1] - this.props.dataRange[0]);
+		const yoffset =- fractionalPixel * pixelsPer;
 
 		// Group the data
 		const data = [];
@@ -192,40 +172,39 @@ export class Sparkline extends React.Component {
 		// Which painter should we use?
 		let painter = null;
 		switch (this.props.mode) {
-		case 'TextAlways':
-			painter = new TextAlwaysPainter();
-			break;
-		case 'Categorical':
-			painter = new CategoriesPainter(this.props.data);
-			break;
-		case 'Bars':
-			painter = new BarPainter();
-			break;
-		case 'Heatmap':
-			painter = new QuantitativePainter();
-			break;
-		default:
-			painter = new TextPainter;
+			case 'TextAlways':
+				painter = new TextAlwaysPainter();
+				break;
+			case 'Categorical':
+				painter = new CategoriesPainter(this.props.data);
+				break;
+			case 'Bars':
+				painter = new BarPainter();
+				break;
+			case 'Heatmap':
+				painter = new QuantitativePainter();
+				break;
+			default:
+				painter = new TextPainter();
 		}
-		painter(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
+		if (painter){
+			painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
+		}
 
 		context.restore();
 	}
 
 	render() {
-		if (this.props.orientation === "vertical") {
-			return (
-				<canvas
-					width={this.props.width}
-					height={this.props.height}
-					className='stack-left-to-right sparkline'></canvas>
-			);
-		}
 		return (
-			<canvas
-				width={this.props.width}
-				height={this.props.height}
-				className='sparkline'></canvas>
+			<div
+				className='sparkline'
+				style={{
+					display: 'flex',
+					width: this.props.width ? this.props.width : '100%',
+					height: this.props.height ? this.props.height : '100%',
+				}} >
+				<Canvas paint={this.paint} />
+			</div>
 		);
 	}
 }
@@ -233,9 +212,9 @@ export class Sparkline extends React.Component {
 Sparkline.propTypes = {
 	orientation: PropTypes.string.isRequired,
 	mode: PropTypes.string.isRequired,
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
+	width: PropTypes.number,
+	height: PropTypes.number,
 	data: PropTypes.array,
 	dataRange: PropTypes.arrayOf(PropTypes.number).isRequired,
-	screenRange: PropTypes.arrayOf(PropTypes.number).isRequired,
+	//screenRange: PropTypes.arrayOf(PropTypes.number).isRequired,
 };
