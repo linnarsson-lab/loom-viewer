@@ -125,14 +125,28 @@ export const LandscapeSidepanel = function (props) {
 					}
 				</ListGroupItem>
 				<ListGroupItem>
-					<DropdownMenu
-						buttonLabel={undefined}
-						buttonName={colorMode}
-						attributes={['Categorical', 'Heatmap']}
-						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={'colorMode'}
-						dispatch={dispatch}
-						/>
+					<ButtonGroup>
+						<Button
+							bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
+									colorMode: 'Heatmap',
+								});
+							} }>
+							Heatmap
+						</Button>
+						<Button
+							bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_LANDSCAPE_PROPS',
+									colorMode: 'Categorical',
+								});
+							} }>
+							Categorical
+						</Button>
+					</ButtonGroup>
 				</ListGroupItem>
 			</ListGroup>
 		</Panel>

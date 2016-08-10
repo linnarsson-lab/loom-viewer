@@ -1,9 +1,11 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Panel, ListGroup, ListGroupItem,
+	ButtonGroup, Button } from 'react-bootstrap';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, genescapeState, dataSet } = props;
+	const {xCoordinate, yCoordinate, colorAttr, colorMode} = genescapeState;
 	const rowAttrKeys = Object.keys(dataSet.rowAttrs).sort();
 
 	return (
@@ -17,7 +19,7 @@ export const GenescapeSidepanel = function (props) {
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'X Coordinate'}
-						buttonName={genescapeState.xCoordinate}
+						buttonName={xCoordinate}
 						attributes={rowAttrKeys}
 						attrType={'SET_GENESCAPE_PROPS'}
 						attrName={'xCoordinate'}
@@ -27,7 +29,7 @@ export const GenescapeSidepanel = function (props) {
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Y Coordinate'}
-						buttonName={genescapeState.yCoordinate}
+						buttonName={yCoordinate}
 						attributes={rowAttrKeys}
 						attrType={'SET_GENESCAPE_PROPS'}
 						attrName={'yCoordinate'}
@@ -37,7 +39,7 @@ export const GenescapeSidepanel = function (props) {
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Color'}
-						buttonName={genescapeState.colorAttr}
+						buttonName={colorAttr}
 						attributes={rowAttrKeys}
 						attrType={'SET_GENESCAPE_PROPS'}
 						attrName={'colorAttr'}
@@ -45,14 +47,28 @@ export const GenescapeSidepanel = function (props) {
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
-					<DropdownMenu
-						buttonLabel={undefined}
-						buttonName={genescapeState.colorMode}
-						attributes={['Categorical', 'Heatmap']}
-						attrType={'SET_GENESCAPE_PROPS'}
-						attrName={'colorMode'}
-						dispatch={dispatch}
-						/>
+					<ButtonGroup>
+						<Button
+							bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_GENESCAPE_PROPS',
+									colorMode: 'Heatmap',
+								});
+							} }>
+							Heatmap
+						</Button>
+						<Button
+							bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
+							onClick={ () => {
+								dispatch({
+									type: 'SET_GENESCAPE_PROPS',
+									colorMode: 'Categorical',
+								});
+							} }>
+							Categorical
+						</Button>
+					</ButtonGroup>
 				</ListGroupItem>
 			</ListGroup>
 		</Panel>
