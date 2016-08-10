@@ -9,7 +9,6 @@ export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet, genes } = props;
 	const landscapeState = props.landscapeState;
 	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
-
 	const temp = Object.keys(dataSet.colAttrs).sort();
 	temp.push("(gene)");
 
@@ -55,7 +54,7 @@ export const LandscapeSidepanel = function (props) {
 						buttonName={xCoordinate}
 						attributes={temp}
 						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={xCoordinate}
+						attrName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
 					{xCoordinate === "(gene)" ?
@@ -79,7 +78,7 @@ export const LandscapeSidepanel = function (props) {
 						buttonName={yCoordinate}
 						attributes={temp}
 						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={yCoordinate}
+						attrName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
 					{
