@@ -7,8 +7,9 @@ export const DropdownMenu = function (props) {
 	const {
 		buttonLabel, buttonName,
 		attributes, attrType, attrName,
-		dispatch,
+		dispatch, clearable,
 	} = props;
+
 	let options = new Array(attributes.length);
 	for (let i = 0; i < attributes.length; i++) {
 		options[i] = { value: i, label: attributes[i] };
@@ -27,6 +28,11 @@ export const DropdownMenu = function (props) {
 				value={buttonName}
 				options={options}
 				onChange={dispatchOnChange}
+				clearable={
+					/* required because 'undefined'
+						isn't "falsey" enough */
+					clearable === true
+				}
 				/>
 		</FormGroup>
 	);
@@ -39,4 +45,5 @@ DropdownMenu.propTypes = {
 	attrType: PropTypes.string.isRequired,
 	attrName: PropTypes.string.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	clearable: PropTypes.bool,
 };
