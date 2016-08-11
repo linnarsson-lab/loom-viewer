@@ -7,7 +7,7 @@ import { fetchDataSet } from '../actions/actions';
 
 class HeatmapViewComponent extends Component {
 	render() {
-		const { dispatch, dataSet, genes, heatmapState, viewState } = this.props;
+		const { dispatch, dataSet, genes, heatmapState } = this.props;
 
 		let colData = [];
 		if (heatmapState.colAttr === "(gene)") {
@@ -28,29 +28,23 @@ class HeatmapViewComponent extends Component {
 		}
 
 		// Calculate the layout of everything
-		let heatmapWidth = viewState.width - 350;
-		let heatmapHeight = viewState.height - 40;
-		let verticalSparklineWidth = 20;
-		if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
-			heatmapWidth = viewState.width - 450;
-			verticalSparklineWidth = 120;
-		}
-		let horizontalSparklineHeight = 20;
-		if (heatmapState.colMode === 'Text') {
-			horizontalSparklineHeight = 120;
-			heatmapHeight = viewState.height - 140;
-		}
-		return (
-			<div className='view'>
-				<div className='view-sidepanel'>
-					<HeatmapSidepanel
-						heatmapState={heatmapState}
-						dataSet={dataSet}
-						genes={genes}
-						dispatch={dispatch}
-						/>
-				</div>
-				<div className='view-main'>
+		let el = this.refs.heatmapContainer;
+		let heatmap = null;
+		if (el) {
+			let heatmapWidth = el.parentNode.clientWidth; //viewState.width - 350;
+			let heatmapHeight = el.parentNode.clientHeight; //viewState.height - 40;
+			let verticalSparklineWidth = 20;
+			if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
+				heatmapWidth -= 100;
+				verticalSparklineWidth = 120;
+			}
+			let horizontalSparklineHeight = 20;
+			if (heatmapState.colMode === 'Text') {
+				horizontalSparklineHeight = 120;
+				heatmapHeight -= 100;
+			}
+			heatmap = (
+				<div style={{ width: '100%', height: '100%' }}>
 					<Sparkline
 						orientation='horizontal'
 						width={heatmapWidth}
@@ -93,13 +87,27 @@ class HeatmapViewComponent extends Component {
 						mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
 						/>
 				</div>
+			);
+		}
+		return (
+			<div style={{ display: 'flex', flex: '1 1 auto' }}>
+				<div className='view-sidepanel'>
+					<HeatmapSidepanel
+						heatmapState={heatmapState}
+						dataSet={dataSet}
+						genes={genes}
+						dispatch={dispatch}
+						/>
+				</div>
+				<div className='view-main' ref='heatmapContainer'>
+					{heatmap}
+				</div>
 			</div>
 		);
 	}
 }
 
 HeatmapViewComponent.propTypes = {
-	viewState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	genes: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
