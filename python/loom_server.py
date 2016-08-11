@@ -9,35 +9,20 @@ import sys
 import StringIO
 import json
 from datetime import datetime
-import loom
 from loom_cache import LoomCache
 import argparse
 import errno
 from socket import error as socket_error
 import webbrowser
 import subprocess
-from multiprocessing import Process
-import shutil
-from urllib2 import urlopen # Python 2
-
-
-parser = argparse.ArgumentParser(description='Launch the loom browser.')
-def_dir = os.path.join(os.path.expanduser("~"),"loom-datasets")
-parser.add_argument("--dataset-path", help="Full path to the datasets directory (default: %s)" % def_dir , default=def_dir)
-parser.add_argument("-d", "--debug", action="store_true")
-parser.add_argument("-p", "--port", help="Port to use for the server (default: 8003)", type=int, default=8003)
-parser.add_argument("--no-browser", help="Do not launch a browser window", action="store_true")
-args = parser.parse_args()
-
-if not os.path.exists(args.dataset_path):
-	print "Datasets directory '%s' not found, creating it." % args.dataset_path
-	os.mkdir(args.dataset_path)
-
-cache = LoomCache(args.dataset_path)
-
+import logging
+import signal
+import sys
 
 class LoomServer(flask.Flask):
-	pass
+	def __init__(self, name):
+		super(LoomServer, self).__init__(name)
+		self.cache = None
 	
 app = LoomServer(__name__)
 
@@ -86,14 +71,14 @@ def get_auth(request):
 @app.route('/loom', methods=['GET'])
 def send_dataset_list():
 	(u,p) = get_auth(request)
-	result = json.dumps(cache.list_datasets(u,p))
+	result = json.dumps(app.cache.list_datasets(u,p))
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
 @app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
 def send_fileinfo(project, filename):
 	(u,p) = get_auth(request)
-	ds = cache.connect_dataset_locally(project, filename, u, p)
+	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
 	dims = ds.dz_dimensions()
@@ -114,7 +99,7 @@ def send_fileinfo(project, filename):
 @app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
 def get_clone(project, filename):
 	(u,p) = get_auth(request)
-	path = cache.get_absolute_path(project, filename, u, p)
+	path = app.cache.get_absolute_path(project, filename, u, p)
 	if path == None:
 		return "", 404	
 	return flask.send_file(path, mimetype='application/octet-stream')
@@ -123,7 +108,7 @@ def get_clone(project, filename):
 @app.route('/loom/<string:project>/<string:filename>/row/<int:row>')
 def send_row(project, filename, row):
 	(u,p) = get_auth(request)
-	ds = cache.connect_dataset_locally(project, filename, u, p)
+	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
 	return flask.Response(json.dumps(ds[row,:].tolist()), mimetype="application/json")
@@ -132,7 +117,7 @@ def send_row(project, filename, row):
 @app.route('/loom/<string:project>/<string:filename>/col/<int:col>')
 def send_col(project, filename, col):
 	(u,p) = get_auth(request)
-	ds = cache.connect_dataset_locally(project, filename, u, p)
+	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
 	return flask.Response(json.dumps(ds[:,col].tolist()), mimetype="application/json")
@@ -151,7 +136,7 @@ def serve_image(img):
 @app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
 def send_tile(project, filename, z,x,y):
 	(u,p) = get_auth(request)
-	ds = cache.connect_dataset_locally(project, filename, u, p)
+	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
 	img = ds.dz_get_zoom_image(x,y,z)
@@ -159,16 +144,25 @@ def send_tile(project, filename, z,x,y):
 		return "", 404
 	return serve_image(img)
 
-if __name__ == '__main__':
-	if not args.no_browser:
-		url = "http://localhost:" + str(args.port)
+def signal_handler(signal, frame):
+	print('\nShutting down.')
+	app.cache.close()
+	sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
+def start_server(dataset_path, show_browser, port, debug):
+	app.cache = LoomCache(dataset_path)
+
+	if show_browser:
+		url = "http://localhost:" + str(port)
 		if sys.platform == "darwin":
 			subprocess.Popen(['open', url])
 		else:
 			webbrowser.open(url)	
 	try:
-		app.run(debug=args.debug, host="0.0.0.0", port=args.port)
+		app.run(debug=debug, host="0.0.0.0", port=port)
 	except socket_error as serr:
-		print serr
+		logging.error(serr)
 		if args.port < 1024:
 			print "You may need to invoke the server with sudo: sudo python loom_server.py ..."

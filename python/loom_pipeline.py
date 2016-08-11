@@ -42,103 +42,7 @@ import csv
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def list_datasets():
-	"""
-	Return a list of DatasetConfig objects for loom files stored remotely.
-	"""
-	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
-	bucket = client.get_bucket("linnarsson-lab-loom")
-	result = []
-	for blob in bucket.list_blobs():
-		if blob.name.endswith(".json"):
-			parts = blob.name.split("__")
-			config = get_dataset_config(parts[0], parts[1], parts[2][:-5])
-			result.append(config)
-	return result
 
-
-def get_dataset_config(transcriptome, project, dataset):
-	client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
-	bucket = client.get_bucket("linnarsson-lab-loom")
-	config = DatasetConfig(transcriptome, project, dataset)
-	blob = bucket.get_blob(config.get_json_filename()).download_as_string()
-	temp = json.loads(blob)
-
-	return DatasetConfig(
-		transcriptome,
-		project,
-		dataset,
-		status = temp["status"],
-		message=temp["message"],
-		n_features=temp["n_features"],
-		cluster_method=temp["cluster_method"],
-		regression_label=temp["regression_label"]
-		)
-
-class DatasetConfig(object):
-	"""
-	Configuration and status for a .loom file in Cloud Storage.
-
-	This object is stored as a JSON string under they same key as the corresponding dataset, but with
-	extension .json instead of .loom.
-	"""
-	def __init__(self, transcriptome, project, dataset, status = "unknown", message = "", n_features = 1000, cluster_method = "AP", regression_label = "_Cluster"):
-		"""
-		Create a config object for a dataset.
-
-		Args:
-			transcriptome (string): 	Name of the transcriptome (e.g. "hg19_sUCSC")
-			project (string): 			Name of the project (e.g. "Midbrain")
-			dataset (string): 			Short name of the dataset (e.g. "human")
-			status (string):			"willcreate", "creating", "created", "unknown", or "error"
-			message (string):			A user-friendly message describing the current status (default: "").
-			n_features (int):			Number of genes to select for clustering (default: 1000)
-			cluster_method (string):	"AP" (affinity propagation; default) or "BackSPIN"
-			regression_label (strign):	The name of the attribute that will be used to group cells for regression (default: "_Cluster")
-
-		Returns:
-			A DatasetConfig object.s
-		"""
-		self.transcriptome = transcriptome
-		self.project = project
-		self.dataset = dataset
-		self.status = status
-		self.message = message
-		self.n_features = 1000
-		self.cluster_method = cluster_method
-		self.regression_label = regression_label
-
-	def as_dict(self):
-		return {
-			"transcriptome": self.transcriptome,
-			"project": self.project,
-			"dataset": self.dataset,
-			"status": self.status,
-			"message": self.message,
-			"n_features": self.n_features,
-			"cluster_method": self.cluster_method,
-			"regression_label": self.regression_label
-		}
-
-	def put(self):
-		client = storage.Client(project="linnarsson-lab")
-		bucket = client.get_bucket("linnarsson-lab-loom")
-		blobName = self.get_json_filename()
-		blob = bucket.get_blob(blobName)
-		if blob is None:
-			blob = bucket.blob(blobName)
-		blob.upload_from_string(json.dumps(self.as_dict()))
-
-	def set_status(self, status, message=""):
-		self.status = status
-		self.message = message
-		self.put()
-
-	def get_loom_filename(self):	# Haha, those strings below look like grumpy cats!
-		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".loom"
-
-	def get_json_filename(self):
-		return self.transcriptome + "__" + self.project + "__" + self.dataset + ".json"
 
 class PipelineError(Exception):
 	def __init__(self, value):
@@ -150,9 +54,8 @@ class LoomPipeline(object):
 	"""
 	Pipeline to collect datasets from MySQL, create .loom files and perform standard analyses.
 	"""
-	def __init__(self, dataset_path, host = '104.197.219.40',	port = 3306, username = 'cloud_user', password = 'cloud_user'):
+	def __init__(self, host = '104.197.219.40',	port = 3306, username = 'cloud_user', password = 'cloud_user'):
 		self.mysql_connection = pymysql.connect(host=host, port=port, user=username, password=password, db='joomla', charset='utf8mb4')
-		self.dataset_path = dataset_path
 
 	def _make_std_numpy_type(self, array, sql_type):
 		field_type = {
@@ -192,21 +95,21 @@ class LoomPipeline(object):
 			temp[temp == np.array(None)] = 0
 			return temp.astype(field_type[sql_type])
 
-	def create_loom(self, config):
+	def create_loom(self, dataset_path, project, filename, transcriptome):
 		"""
 		Create a loom file by collecting cells from MySQL
 
 		Args:
-			config (DatasetConfig):	Configuration object for the dataset
+			dataset_path (string):	Path to datasets folder
+			project (string):		Project name
+			filename (string):		Filename
+			transcriptome (string):	Transcriptome
 
 		Returns:
 			Nothing, but creates a .loom file
 		"""
-		transcriptome = config.transcriptome
-		project = config.project
-		dataset = config.dataset
 		connection = self.mysql_connection
-		logging.info("Processing: " + config.get_json_filename())
+		logging.info("Processing: " + project + "/" + filename + "(" + transcriptome + ")")
 
 		# Get the transcriptome ID
 		try:
@@ -214,7 +117,6 @@ class LoomPipeline(object):
 			cursor.execute('SELECT ID from jos_aaatranscriptome WHERE name = %s', transcriptome)
 			transcriptome_id = cursor.fetchone()[0]
 		except:
-			config.set_status("error", "Could not find transcriptome ID for '%s'" % transcriptome)
 			raise PipelineError, ("Could not find transcriptome ID for '%s'" % transcriptome)
 		cursor.close()
 		# Download gene annotations
@@ -241,10 +143,9 @@ class LoomPipeline(object):
 			ORDER BY tr.ExprBlobIdx
 		"""
 		try:
-			cursor.execute(query % (transcriptome, project, dataset, transcriptome_id))
+			cursor.execute(query % (transcriptome, project, filename, transcriptome_id))
 		except pymysql.err.ProgrammingError as e:
 			logging.warn("Dataset definition not found in database")
-			config.set_status("error","Dataset definition not found in database")
 			raise PipelineError(e)
 
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
@@ -330,7 +231,7 @@ class LoomPipeline(object):
 					ON ds.CellID = c.id
 				WHERE c.valid=1 AND e.TranscriptomeID = %s
 				LIMIT 1000 OFFSET %s
-			""" % (transcriptome, project, dataset, transcriptome_id, nrows)
+			""" % (transcriptome, project, filename, transcriptome_id, nrows)
 			cursor.execute(query)
 			if cursor.rowcount == 0:
 				break
@@ -366,25 +267,18 @@ class LoomPipeline(object):
 		# Create the loom file
 		counts = np.array(matrix).transpose()
 		if counts.shape == (0,):
-			config.set_status("error", "Dataset is empty")
 			raise PipelineError("Dataset is empty")
-		absolute_path = os.path.join(self.dataset_path, config.get_loom_filename())
+		absolute_path = os.path.join(self.dataset_path, project, filename)
 		loom.create(absolute_path, counts, row_attrs, col_attrs)
 
-	def store_loom(self, config):
-		client = storage.Client(project="linnarsson-lab")	# This is the Google Cloud "project", not same as our "project"
-		bucket = client.get_bucket("linnarsson-lab-loom")
-		config = DatasetConfig(config.transcriptome, config.project, config.dataset)
-		blob = bucket.blob(config.get_loom_filename())
-		blob.upload_from_filename(config.get_loom_filename())
-		config.set_status("created", "Ready to browse.")
-
-	def upload(self, config, cell_attrs, gene_attrs = None):
+	def upload(self, project, filename, transcriptome, cell_attrs, gene_attrs = None):
 		"""
 		Upload a custom dataset annotation to MySQL.
 
 		Args:
-			config (DatasetConfig):	Configuration for the dataset
+			project (string):		Project name
+			filename (string):		Filename
+			transcriptome (string):	Transcriptome
 			cell_attrs (dict):		Dictionary of cell annotations (numpy arrays)
 			gene_attrs (dict): 		Optional dictionary of gene annotations (numpy arrays)
 
@@ -406,7 +300,7 @@ class LoomPipeline(object):
 		if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
 			raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
 		if cell_attrs["CellID"].dtype.kind == 'S':
-			cell_id_mapping = self.get_cell_id_mapping(config.transcriptome)
+			cell_id_mapping = self.get_cell_id_mapping(transcriptome)
 			cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
 
 		if gene_attrs == None:
@@ -417,7 +311,7 @@ class LoomPipeline(object):
 			if gene_attrs["TranscriptID"].dtype.kind != 'i' and gene_attrs["TranscriptID"].dtype.kind != 'S':
 				raise ValueError, "'TranscriptID' attribute is not of type INTEGER or STRING."
 			if gene_attrs["TranscriptID"].dtype.kind == 'S':
-				gene_id_mapping = self.get_transcript_id_mapping(config.transcriptome)
+				gene_id_mapping = self.get_transcript_id_mapping(transcriptome)
 				try:
 					gene_attrs["TranscriptID"] = np.array([gene_id_mapping[gene] for gene in gene_attrs["TranscriptID"]])
 				except KeyError:
@@ -425,13 +319,10 @@ class LoomPipeline(object):
 		# Send the dataset to MySQL
 		if cell_attrs != None:
 			logging.info("Uploading cell annotations")
-			self._export_attrs_to_mysql(cell_attrs, config.transcriptome, "Cells__" + config.project + "__" + config.dataset, "CellID")
+			self._export_attrs_to_mysql(cell_attrs, transcriptome, "Cells__" + project + "__" + filename, "CellID")
 		if gene_attrs != None:
 			logging.info("Uploading gene annotations")
-			self._export_attrs_to_mysql(gene_attrs, config.transcriptome, "Genes__" + config.project + "__" + config.dataset, "TranscriptID")
-		# Save the config
-		config.put()
-		logging.info("Done.")
+			self._export_attrs_to_mysql(gene_attrs, transcriptome, "Genes__" + project + "__" + filename, "TranscriptID")
 
 	def _export_attrs_to_mysql(self, attrs, transcriptome, tablename, pk):
 		"""
@@ -591,33 +482,3 @@ class LoomPipeline(object):
 		rows = cursor.fetchall()
 		return [r[0] for r in rows]
 
-
-
-if __name__ == '__main__':
-	if len(sys.argv) < 2:
-		print "Missing required argument (path to datasets directory)"
-		sys.exit(1)
-	if not os.path.exists(sys.argv[1]):
-		print "Invalid required argument (datasets directory '%s'' doesn't exist')" % sys.argv[1]
-		sys.exit(1)
-	print "Starting the Loom pipeline. Datasets stored at " + sys.argv[1]
-	lp = LoomPipeline(sys.argv[1])
-	client = storage.Client(project="linnarsson-lab")
-	while True:
-		for ds in list_datasets():
-			absolute_path = os.path.join(sys.argv[1], ds.get_loom_filename())
-			if ds.status == "created" and not os.path.isfile(absolute_path):
-				logging.info("Fetching %s to %s" % (ds.get_loom_filename(), absolute_path))
-				bucket = client.get_bucket("linnarsson-lab-loom")
-				blob = bucket.blob(ds.get_loom_filename())
-				with open(absolute_path, 'wb') as outfile:
-					blob.download_to_file(outfile)
-			if ds.status == "willcreate":
-				try:
-					logging.info("Creating " + ds.get_loom_filename())
-					lp.create_loom(ds)
-					logging.info("Storing " + ds.get_loom_filename())
-					lp.store_loom(ds)
-				except PipelineError as e:
-					logging.warn(e)
-		time.sleep(60*10)
