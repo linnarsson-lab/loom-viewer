@@ -4,62 +4,39 @@ import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
-	ButtonGroup, DropdownButton, MenuItem,
+	ButtonGroup, Button,
 } from 'react-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
 
-class DataSetListItem extends Component {
+const DataSetListItem = function (props) {
+	const { dataset, message } = props.dataSetMetaData;
+	const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
 
-	constructor(props, context) {
-		super(props, context);
-		this.renderDropdownLink = this.renderDropdownLink.bind(this);
-		this.renderDropdown = this.renderDropdown.bind(this);
-	}
-
-	renderDropdownLink(view) {
-		const path = 'view/' + view + '/' + this.props.dataSetPath;
+	const links = views.map((view) => {
+		const path = 'view/' + view + '/' + props.dataSetPath;
+		const disabled = props.dataSetMetaData.status !== 'created';
 		return (
 			<LinkContainer to={path} key={path}>
-				<MenuItem
-					eventKey={path}>
+				<Button
+					eventKey={path}
+					disabled={disabled}>
 					{view}
-				</MenuItem>
+				</Button>
 			</LinkContainer>
 		);
-	}
+	});
 
-	renderDropdown() {
-		const { dataset, status, message } = this.props.dataSetMetaData;
-		const disabled = status !== 'created';
-		const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
-		const links = views.map(this.renderDropdownLink);
-		return (
-			<ButtonGroup key={dataset} >
-				<DropdownButton
-					title={dataset + '. ' + message}
-					bsStyle='link'
-					disabled={disabled}>
-					{links}
-				</DropdownButton>
+	return (
+		<ListGroupItem key={dataset + '_buttons'}>
+			<p>{dataset + '. ' + message}</p>
+			<ButtonGroup key={dataset} justified >
+				{links}
 			</ButtonGroup>
-		);
-	}
+		</ListGroupItem>
+	);
+};
 
-	render() {
-		const { dataSetMetaData } = this.props;
-		const { dataset } = dataSetMetaData;
-
-		const viewLinksDropdown = this.renderDropdown();
-		return (
-			<div>
-				<ListGroupItem key={dataset}>
-					{viewLinksDropdown}
-				</ListGroupItem>
-			</div>
-		);
-	}
-}
 
 DataSetListItem.propTypes = {
 	dataSetPath: PropTypes.string.isRequired,
@@ -67,13 +44,15 @@ DataSetListItem.propTypes = {
 };
 
 
-class DataSetList extends Component {
+const DataSetList = function (props) {
 
-	// Takes the metadata of the dataset
-	// and returns a DataSetListItem
-	createListItem(dataSetMetaData) {
+	const { project, projectState } = props;
+	const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
+	const datasets = projectState.map((dataSetMetaData) => {
+		// Takes the metadata of the dataset
+		// and returns a DataSetListItem
 		const { transcriptome, project, dataset} = dataSetMetaData;
-		const dataSetPath =  transcriptome + '/' +
+		const dataSetPath = transcriptome + '/' +
 			project + '/' +
 			dataset;
 
@@ -84,24 +63,19 @@ class DataSetList extends Component {
 				dataSetMetaData={dataSetMetaData}
 				/>
 		);
-	}
+	});
+	return (
+		<Panel
+			key={project}
+			header={`${project}, ${totalDatasets}`}
+			bsStyle='primary'>
+			<ListGroup fill>
+				{datasets}
+			</ListGroup>
+		</Panel>
+	);
+};
 
-	render() {
-		const { project, projectState } = this.props;
-		const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
-		const datasets = projectState.map(this.createListItem);
-		return (
-			<Panel
-				key={project}
-				header={`${project}, ${totalDatasets}`}
-				bsStyle='primary'>
-				<ListGroup fill>
-					{datasets}
-				</ListGroup>
-			</Panel>
-		);
-	}
-}
 
 DataSetList.propTypes = {
 	project: PropTypes.string.isRequired,
@@ -111,7 +85,7 @@ DataSetList.propTypes = {
 
 // Generates a list of projects, each with a list
 // of datasets associated with the project.
-const  ProjectList = function(props) {
+const ProjectList = function (props) {
 	const { projects } = props;
 	if (projects) {
 		const panels = Object.keys(projects).map(

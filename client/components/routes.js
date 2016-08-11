@@ -8,10 +8,8 @@ import { Provider } from 'react-redux';
 import { store, history } from '../store';
 
 // Components
-import { MainView } from './main-view';
 import { NavbarView } from './navbar';
 import { DataSetView } from './dataset-view';
-import { CreateDataSet } from './dataset-upload';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
@@ -23,11 +21,9 @@ const Routes = (
 		<Router history={history}>
 			<Route name='home' component={NavbarView}
 				path='/'>
-				<IndexRoute component={MainView} />
+				<IndexRoute component={DataSetView} />
 				<Route name='data-set-list' component={DataSetView}
 					path='/datasets' />
-				<Route name='upload' component={CreateDataSet}
-					path='/upload' />
 				<Route name='data-set-heatmap' component={HeatmapView}
 					path='/view/heatmap/:transcriptome/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparkline' component={SparklineView}
