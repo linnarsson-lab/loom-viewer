@@ -9,7 +9,7 @@ Loom is
 
 ## Installation
 
-1. Install a scientific Python v2.7 distribution such as [Anaconda](https://www.continuum.io/downloads).
+1. Install [Anaconda](https://www.continuum.io/downloads).
 2. Install Loom 
 
 ```bash
@@ -46,21 +46,16 @@ To learn more about the `loom` command-line tool, read the [Documentation](docs/
 
 ### The `loompy` Python package
 
-Start a Jupyter Notebook, in your terminal:
+Start a [Jupyter Notebook](http://jupyter.readthedocs.io/en/latest/index.html), in your terminal:
 
 ```python
 jupyter notebook
 ```
 
-Import `loompy`
+Import `loompy` and connect to a dataset:
 
 ```python
 import loompy
-```
-
-Connect to a dataset
-
-```python
 ds = loompy.connect("filename.loom")
 ```
 
