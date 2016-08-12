@@ -3,7 +3,7 @@ import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
 import { Sparkline } from './sparkline';
 import * as _ from 'lodash';
-import { fetchDataSet } from '../actions/actions';
+import { FetchDatasetComponent } from './fetch-dataset';
 
 class HeatmapViewComponent extends Component {
 	render() {
@@ -114,29 +114,24 @@ HeatmapViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-class HeatmapViewContainer extends Component {
-
-	componentDidMount() {
-		const { dispatch, data, params } = this.props;
-		const { dataset } = params;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset }));
-	}
-
-	render() {
-		const { dispatch, data, heatmapState, params } = this.props;
-		const { dataset } = params;
-		const dataSet = data.dataSets[dataset];
-		return (dataSet ?
-			<HeatmapViewComponent
-				dispatch={dispatch}
-				heatmapState={heatmapState}
-				dataSet={dataSet}
-				genes={data.genes} />
-			:
-			<div className='container' >Fetching dataset...</div>
-		);
-	}
-}
+const HeatmapViewContainer = function (props) {
+	const { dispatch, data, heatmapState, params } = props;
+	const { project, dataset } = params;
+	const dataSet = data.dataSets[dataset];
+	return (dataSet === undefined ?
+		<FetchDatasetComponent
+			dispatch={dispatch}
+			dataSets={data.dataSets}
+			dataset={dataset}
+			project={project} />
+		:
+		<HeatmapViewComponent
+			dispatch={dispatch}
+			heatmapState={heatmapState}
+			dataSet={dataSet}
+			genes={data.genes} />
+	);
+};
 
 HeatmapViewContainer.propTypes = {
 	// Passed down by react-router-redux

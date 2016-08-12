@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 import { Scatterplot } from './scatterplot';
-import { fetchDataSet } from '../actions/actions';
+import { FetchDatasetComponent } from './fetch-dataset';
 
 
 class LandscapeViewComponent extends Component {
@@ -62,32 +62,26 @@ LandscapeViewComponent.propTypes = {
 };
 
 
-class LandscapeViewContainer extends Component {
+const LandscapeViewContainer = function (props) {
 
-	componentDidMount(){
-		const { dispatch, data, params } = this.props;
-		const { dataset } = params;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset}));
-	}
-
-	render(){
-
-		const { dispatch, data, landscapeState, params } = this.props;
-		const { dataset } = params;
-		const dataSet = data.dataSets[dataset];
-		const genes = data.genes;
-		return ( dataSet ?
-			<LandscapeViewComponent
-				dispatch={dispatch}
-				landscapeState={landscapeState}
-				dataSet={dataSet}
-				genes={genes} />
+	const { dispatch, data, landscapeState, params } = props;
+	const { project, dataset } = params;
+	const dataSet = data.dataSets[dataset];
+	const genes = data.genes;
+	return (dataSet === undefined ?
+		<FetchDatasetComponent
+			dispatch={dispatch}
+			dataSets={data.dataSets}
+			dataset={dataset}
+			project={project} />
 		:
-			<div className='container' >Fetching dataset {dataset}...</div>
-		);
-	}
-
-}
+		<LandscapeViewComponent
+			dispatch={dispatch}
+			landscapeState={landscapeState}
+			dataSet={dataSet}
+			genes={genes} />
+	);
+};
 
 LandscapeViewContainer.propTypes = {
 	// Passed down by react-router-redux

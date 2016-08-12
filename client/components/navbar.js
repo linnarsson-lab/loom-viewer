@@ -3,14 +3,13 @@ import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 
 export const NavbarView = function (props) {
-	const { dataset, viewsettings } = props.params;
+	const { project, dataset, viewsettings } = props.params;
 	let viewLinks = null;
+	let viewSettingsURL = (viewsettings ? ('/' + viewsettings) : '');
 	if (dataset) {
-		let projectURL = '/' + dataset +
-			(viewsettings ? ('/' + viewsettings) : '');
 		viewLinks = [ 'heatmap', 'sparkline', 'landscape', 'genescape'].map(
 			(view) => {
-				const link = '/dataset/' + view + '/' +  projectURL;
+				const link = `/dataset/${view}/${project}/${dataset}${viewSettingsURL}`;
 				return(
 					<LinkContainer to={link}>
 						<NavItem eventKey={view}>

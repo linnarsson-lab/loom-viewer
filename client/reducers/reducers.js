@@ -19,24 +19,6 @@ import {
 	SET_SPARKLINE_PROPS,
 } from '../actions/actionTypes';
 
-// /* Migrating these to react-router */
-
-// const initialViewState = {
-// 	type: SET_VIEW_PROPS,	// This will be set to the last action type
-// 	view: 'Dataset',
-// 	width: document.getElementById("react-root").clientWidth,
-// 	height: window.innerHeight - document.getElementById("react-root").offsetTop - 50, // For some reason, at launch the height is 50px off (=navbar height)
-// };
-
-// function viewState(state = initialViewState, action) {
-// 	switch (action.type) {
-// 	case SET_VIEW_PROPS:
-// 		return Object.assign({}, state, action);	// NOTE: must start with an empty object {} to ensure we don't mutate state
-// 	default:
-// 		return state;
-// 	}
-// }
-
 const initialSparklineState = {
 	type: SET_SPARKLINE_PROPS,	// This will be set to the last action type
 	colAttr: "CellID",
@@ -128,14 +110,12 @@ const initialData = {
 	// 	"Cortex": ...
 	//	}
 	projects: undefined,
+
 	// dataSets object will store fetched datasets for caching purposes.
 	dataSets: {},
 
-	// Is this still necessary? We cache all datasets and store the
-	// name of the current dataset in the URL.
-	currentDataset: undefined,	// rowAttrs, colAttrs and such things, when loaded; replaces 'window.fileinfo'
-
-	genes: undefined,				// contains row data by gene, i.e. {"Actb": [1,2,1,3,42,4,...]}
+	// contains row data by gene, i.e. {"Actb": [1,2,1,3,42,4,...]}
+	genes: undefined,
 };
 
 function data(state = initialData, action) {
@@ -162,8 +142,7 @@ function data(state = initialData, action) {
 			isFetchingData: false,
 			hasDataset: true,
 			genes: {},
-			currentDataset: action.dataSet,
-			dataSets: Object.assign({}, state.dataSets, action.receivedDataSet),
+			dataSets: Object.assign({}, state.dataSets, action.dataset),
 		});
 
 	case REQUEST_DATASET_FAILED:

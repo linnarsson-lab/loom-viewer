@@ -1,13 +1,12 @@
 import React, { Component, PropTypes } from 'react';
-import { Heatmap } from './heatmap';
 import { SparklineSidepanel } from './sparkline-sidepanel';
 import { Sparkline } from './sparkline';
+import { FetchDatasetComponent } from './fetch-dataset';
 import * as _ from 'lodash';
-import { fetchDataSet } from '../actions/actions';
 
 const SparklineViewComponent = function (props) {
-	const { sparklineState, dataSet, genes, viewState, dispatch } = props;
-
+	const { sparklineState, dataSet, genes, dispatch } = props;
+	console.log('SparklineViewComponent.dataSet: ', dataSet);
 	let colData = dataSet.colAttrs[sparklineState.colAttr];
 	// Figure out the ordering
 	let indices = new Array(colData.length);
@@ -46,11 +45,11 @@ const SparklineViewComponent = function (props) {
 					<div key={gene}>
 						<Sparkline
 							orientation='horizontal'
-							width={viewState.width - 450}
+							width={500}
 							height={20}
 							data={geneData}
 							dataRange={[0, colData.length]}
-							screenRange={[0, viewState.width - 450]}
+							screenRange={[0, 500]}
 							mode={sparklineState.geneMode}
 							/>
 						<span className='sparkline-label'>{gene}</span>
@@ -109,37 +108,32 @@ const SparklineViewComponent = function (props) {
 };
 
 SparklineViewComponent.propTypes = {
-	viewState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	genes: PropTypes.object.isRequired,
 	sparklineState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-class SparklineViewContainer extends Component {
-	componentDidMount() {
-		const { dispatch, data, params } = this.props;
-		const { dataset } = params;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset }));
-	}
-
-	render() {
-		const { dispatch, data, sparklineState, viewState, params } = this.props;
-		const { dataset } = params;
-		const dataSet = data.dataSets[dataset];
-		const genes = data.genes;
-		return (dataSet ?
-			<SparklineViewComponent
-				dispatch={dispatch}
-				sparklineState={sparklineState}
-				dataSet={dataSet}
-				viewState={viewState}
-				genes={genes} />
-			:
-			<div className='container' >Fetching dataset...</div>
-		);
-	}
-}
+const SparklineViewContainer = function (props) {
+	const { dispatch, data, sparklineState, params } = props;
+	const { project, dataset } = params;
+	const dataSet = data.dataSets[dataset];
+	const genes = data.genes;
+	console.log(data);
+	return (dataSet === undefined ?
+		<FetchDatasetComponent
+			dispatch={dispatch}
+			dataSets={data.dataSets}
+			dataset={dataset}
+			project={project} />
+		:
+		<SparklineViewComponent
+			dispatch={dispatch}
+			sparklineState={sparklineState}
+			dataSet={dataSet}
+			genes={genes} />
+	);
+};
 
 SparklineViewContainer.propTypes = {
 	// Passed down by react-router-redux
@@ -147,7 +141,6 @@ SparklineViewContainer.propTypes = {
 	// Passed down by react-redux
 	data: PropTypes.object.isRequired,
 	sparklineState: PropTypes.object.isRequired,
-	viewState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -161,7 +154,6 @@ const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
 		sparklineState: state.sparklineState,
-		viewState: state.viewState,
 		data: state.data,
 	};
 };

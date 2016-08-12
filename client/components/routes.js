@@ -25,13 +25,13 @@ const Routes = (
 				<Route name='data-set-list' component={DataSetView}
 					path='/dataset' />
 				<Route name='data-set-heatmap' component={HeatmapView}
-					path='/dataset/heatmap/:dataset(/:viewsettings)' />
+					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparkline' component={SparklineView}
-					path='/dataset/sparkline/:dataset(/:viewsettings)' />
+					path='/dataset/sparkline/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-landscape' component={LandscapeView}
-					path='/dataset/landscape/:dataset(/:viewsettings)' />
+					path='/dataset/landscape/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
-					path='/dataset/genescape/:dataset(/:viewsettings)' />
+					path='/dataset/genescape/:project/:dataset(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>
