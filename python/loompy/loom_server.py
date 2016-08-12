@@ -18,6 +18,7 @@ import subprocess
 import logging
 import signal
 import sys
+import inspect
 
 class LoomServer(flask.Flask):
 	def __init__(self, name):
@@ -155,6 +156,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def start_server(dataset_path, show_browser, port, debug):
 	app.cache = LoomCache(dataset_path)
+	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 	if show_browser:
 		url = "http://localhost:" + str(port)

@@ -1,0 +1,2 @@
+include loompy/index.html
+recursive-include loompy/static *

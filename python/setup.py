@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "loom",
+    name = "loompy",
     version = "0.8.1",
     packages = find_packages(),
     install_requires = [
@@ -11,14 +11,18 @@ setup(
         'scipy',
         'numpy', 
         'progressbar',
-        'requests'
+        'requests',
+        'flask-compress'
     ],
     
     # loom command
     scripts=['loompy/loom'],
     
+    # static files from MANIFEST.in
+    include_package_data = True,
+
     # metadata for upload to PyPI
-    author = "Gioele La Manno, Job van der Zwan and Sten Linnarsson",
+    author = "Linnarsson Lab",
     author_email = "sten.linnarsson@ki.se",
     description = "Create, browse and manipulate .loom files",
     license = "BSD",

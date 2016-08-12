@@ -1,5 +1,0 @@
-PyMySQL
-flask-compress
-loompy
-requests
-progressbar
