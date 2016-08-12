@@ -405,17 +405,20 @@ dataset into memory:
 
 ```python
 def map(self, f, axis = 0, chunksize = 100000000):
-    """
-    Apply a function along an axis without loading the entire dataset in memory.
+	"""
+	Apply a function along an axis without loading the entire dataset in memory.
 
-    Args:
-        f (func):		Function that takes a numpy ndarray as argument
-        axis (int):		Axis along which to apply the function (0 = rows, 1 = columns)
-        chunksize (int): Number of values to load per chunk
+	Args:
+		f (func or list of func):	Function(s) that takes a numpy ndarray as argument
+		axis (int):			Axis along which to apply the function (0 = rows, 1 = columns)
+		chunksize (int): 		Number of rows (columns) to load per chunk
 
-    Returns:
-        numpy.ndarray result of function application
-    """
+	Returns:
+		numpy.ndarray result of function application
+
+	If you supply a list of functions, the result will be a list of numpy arrays. This is more
+	efficient than repeatedly calling map() one function at a time.
+	"""
 ```
 
 The function will receive an array (of floats) as its only argument, and should return a single float value.
@@ -534,18 +537,18 @@ def permute(self, ordering, axis):
 Select genes (rows) based on a CV vs mean fit:
 
 ```python
-def feature_selection(self, n_genes):
+def feature_selection(self, n_genes, method="SVR"):
     """
     Fits a noise model (CV vs mean)
     
     Args:
         n_genes (int):	number of genes to include
-
+	method (str): 	method ("SVR" or None for least squares)
+	
     Returns:
         Nothing.
     
-    This method creates new row attributes _LogMean, _LogCV, _Noise (CV relative to predicted CV), _Excluded (1/0) 
-    and now column attribute _TotalRNA
+	This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
     """
 ```
 
@@ -554,20 +557,21 @@ def feature_selection(self, n_genes):
 To perform a projection of the columns onto the 2D plane:
 
 ```python
-def project_to_2d(self, perplexity = 20):
-    """
-    Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
+def project_to_2d(self, axis = 1, perplexity = 20):
+	"""
+	Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
 
-    Args:
-        perplexity (int): 	Perplexity to use for tSNE
+	Args:
+		axis (int):		Axis to project (0 for rows, 1 for columns, 2 for both)
+		perplexity (int): 	Perplexity to use for tSNE
 
-    Returns:
-        Nothing.
+	Returns:
+		Nothing.
 
-    This method first computes a PCA using scikit-learn IncrementalPCA (which doesn't load the whole
-    dataset in RAM), then uses the top principal components to compute a tSNE projection. If row 
-    attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
-    """
+	This method first computes a PCA using scikit-learn IncrementalPCA (which doesn't load the whole
+	dataset in RAM), then uses the top principal components to compute a tSNE projection. If row 
+	attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
+	"""
 ```
 
 The method will always perform both t-SNE and PCA and store the resulting coordinates as new column
@@ -575,3 +579,38 @@ attributes _tSNE1, _tSNE2, _PCA1 and _PCA2.
 
 PCA will be performed incrementally (i.e. without loading the entire matrix), and t-SNE will be 
 performed on the top principal components. Thus the full dataset is never loaded into memory.
+
+#### BackSPIN clustering
+
+```python
+def backspin(self,
+	numLevels=2, 
+	first_run_iters=10, 
+	first_run_step=0.1,
+	runs_iters=8,
+	runs_step=0.3,
+	split_limit_g=2,
+	split_limit_c=2,
+	stop_const = 1.15,
+	low_thrs=0.2):
+	"""
+	Perform BackSPIN clustering
+
+	Args:
+		numLevels (int): 	Number of levels (default 2) 
+		first_run_iters (int):	Number of iterations at first cycle (default 10)
+		first_run_step (float): Step size for first cycle (default 0.1)
+		runs_iters (int):	Number of iterations per cycle (default 8)
+		runs_step (float): 	Step size (default 0.3)
+		split_limit_g (int): 	Minimum genes per cluster (default 2)
+		split_limit_c (int):	Minimum cells per cluster (default 2)
+		stop_const (float):	Stopping constant (default 1.15)
+		low_thrs (float):	Low threshold (default 0.2)
+
+	Returns:
+		Nothing, but creates attributes BackSPIN_level_{n}_group.
+	"""
+```
+
+Performs BackSPIN clustering and stores the results as row and column attributes `BackSPIN_level_{n}_group`, one per level.
+
