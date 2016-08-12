@@ -32,10 +32,8 @@ import sys
 import __builtin__
 import time
 import loom
-from loom_cloud import DatasetConfig
 import tempfile
 import re
-from gcloud import storage
 import pymysql
 import pymysql.cursors
 import csv
