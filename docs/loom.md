@@ -143,3 +143,34 @@ optional arguments:
   -p PASSWORD, --password PASSWORD
                         Password
 ```
+
+### `loom clone`
+
+```
+usage: loom clone [-h] [--project PROJECT] [-u USERNAME] [-p PASSWORD] url
+
+positional arguments:
+  url                   URL of the loom file to clone
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --project PROJECT     Project name
+  -u USERNAME, --username USERNAME
+                        Username
+  -p PASSWORD, --password PASSWORD
+                        Password
+```
+
+Clone a dataset from a remote server to the local dataset folder. Useful e.g. for offline browsing, and for
+performing additional computational analyses on published datasets.
+
+If the URL of the remote dataset is of the form `http://{hostname.org}/clone/{project}/{filename}.loom`, then
+it will be automatically cloned into a local project named `{project}@{hostname.org}`. For example:
+
+```
+loom clone http://loom.linnarssonlab.org/cortex-zeisel-2015/cortex.loom
+```
+
+...would be cloned into project `cortex-zeisel-2015@loom.linnarssonlab.org/cortex.loom`. To override this
+(and for URLs that do not conform to this pattern), use the `--project` flag to give a project name.
+ 
