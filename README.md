@@ -42,7 +42,7 @@ Open your terminal, and type:
 loom --help
 ```
 
-To learn more about the `loom` command-line tool, read the [Documentation](docs/loom_cmd.md).
+To learn more about the `loom` command-line tool, read the [Documentation](docs/loom.md).
 
 ### The `loompy` Python package
 
