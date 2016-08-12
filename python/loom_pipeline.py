@@ -31,8 +31,8 @@ import os
 import sys
 import __builtin__
 import time
-import loom
-from loom_cloud import DatasetConfig
+import loompy
+#from loom_cloud import DatasetConfig
 import tempfile
 import re
 from gcloud import storage
