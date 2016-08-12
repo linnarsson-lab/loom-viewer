@@ -64,5 +64,5 @@ Connect to a dataset
 ds = loompy.connect("filename.loom")
 ```
 
-To learn more about the `loompy` package, , read the [Documentation](docs/loompy.md).
+To learn more about the `loompy` package, read the [Documentation](docs/loompy.md).
 
