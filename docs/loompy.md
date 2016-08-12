@@ -1,7 +1,5 @@
 # loompy
 
-★ loompy is under development. Be patient. ★
-
 `.loom` is an efficient file format for very large omics datasets, 
 consisting of a main matrix and a variable number of row and column 
 annotations. We use loom files to store single-cell gene expression 
@@ -15,18 +13,6 @@ supports an internal collection of numerical multidimensional datasets.
 HDF5 is supported by many computer languages, including Java, MATLAB, 
 Mathematica, Python, R, and Julia. `.loom` files are accessible from 
 any language that supports HDF5.
-
-## Installation
-
-Use [pip](https://pip.pypa.io/en/stable/) from your terminal:
-
-```bash
-pip install loompy
-```
-
-**Note:** there are some prerequisites, which will be installed along with loompy. If you 
-use the popular [Anaconda](https://www.continuum.io/why-anaconda) Python distribution, all prerequisites will have
-already been installed. 
 
 ## Getting started
 
