@@ -1,5 +1,18 @@
 import 'whatwg-fetch';
-import * as _ from 'lodash';
+
+import {
+	REQUEST_PROJECTS,
+	REQUEST_PROJECTS_FAILED,
+	RECEIVE_PROJECTS,
+	REQUEST_DATASET,
+	REQUEST_DATASET_FAILED,
+	RECEIVE_DATASET,
+	REQUEST_GENE,
+	REQUEST_GENE_FAILED,
+	RECEIVE_GENE,
+} from './actionTypes';
+
+import { groupBy } from 'lodash';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -11,19 +24,19 @@ import * as _ from 'lodash';
 
 function requestProjects() {
 	return {
-		type: 'REQUEST_PROJECTS',
+		type: REQUEST_PROJECTS,
 	};
 }
 
 function requestProjectsFailed() {
 	return {
-		type: 'REQUEST_PROJECTS_FAILED',
+		type: REQUEST_PROJECTS_FAILED,
 	};
 }
 
 function receiveProjects(projects) {
 	return {
-		type: 'RECEIVE_PROJECTS',
+		type: RECEIVE_PROJECTS,
 		projects: projects,
 	};
 }
@@ -32,51 +45,59 @@ function receiveProjects(projects) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchProjects() {
+export function fetchProjects(projects) {
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
 		dispatch(requestProjects());
-		// Second, perform the request (async)
-		return fetch(`/loom`)
-			.then((response) => { return response.json();})
-			.then((json) => {
-				// Third, once the response comes in, dispatch an action to provide the data
-				// Group by project
-				const projs = _.groupBy(json, (item) => { return item.project; });
-				dispatch(receiveProjects(projs));
-			})
-			// Or, if it failed, dispatch an action to set the error flag
-			.catch((err) => {
-				console.log(err);
-				dispatch(requestProjectsFailed());
-			});
+		// Second, check if projects already exists in the store.
+		// If not, perform a fetch request (async)
+		if (projects === undefined) {
+			return (
+				fetch(`/loom`)
+					.then((response) => { return response.json(); })
+					.then((json) => {
+						// Grouping by project must be done here, instead of in
+						// the reducer, because if it is already in the store we
+						// want to pass it back unmodified (see else branch below)
+						const fetchedProjects = groupBy(json, (item) => { return item.project; });
+						dispatch(receiveProjects(fetchedProjects));
+					})
+					// Or, if it failed, dispatch an action to set the error flag
+					.catch((err) => {
+						console.log(err);
+						dispatch(requestProjectsFailed());
+					})
+			);
+		} else {
+			return dispatch(receiveProjects(projects));
+		}
 	};
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
-// Fetch metadata for a dataset
+// Fetch metadata for a dataSet
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestDataset(dataset) {
+function requestDataSet(dataSet) {
 	return {
-		type: 'REQUEST_DATASET',
-		dataset: dataset,
+		type: REQUEST_DATASET,
+		dataSet: dataSet,
 	};
 }
 
-function requestDatasetFailed() {
+function requestDataSetFailed() {
 	return {
-		type: 'REQUEST_DATASET_FAILED',
+		type: REQUEST_DATASET_FAILED,
 	};
 }
 
-function receiveDataset(dataset) {
+function receiveDataSet(receivedDataSet) {
 	return {
-		type: 'RECEIVE_DATASET',
-		dataset: dataset,
+		type: RECEIVE_DATASET,
+		receivedDataSet,
 	};
 }
 
@@ -84,28 +105,41 @@ function receiveDataset(dataset) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchDataset(dataset) {
+export function fetchDataSet(data) {
+	const { dataSetName, dataSets } = data;
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
-		dispatch(requestDataset(dataset));
-		// Second, perform the request (async)
-		return fetch(`/loom/${dataset}/fileinfo.json`)
-			.then((response) => { return response.json(); })
-			.then((ds) => {
-				// Third, once the response comes in, dispatch an action to provide the data
-				// Also, dispatch some actions to set required properties on the subviews
-				const ra = ds.rowAttrs[0];
-				const ca = ds.colAttrs[0];
-				dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
-				dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
-				dispatch(receiveDataset(ds)); // This goes last, to ensure the above defaults are set when the views are rendered
-				dispatch({ type: "SET_VIEW_PROPS", view: "Landscape" });
-			})
-			// Or, if it failed, dispatch an action to set the error flag
-			.catch((err) => {
-				console.log(err);
-				dispatch(requestDatasetFailed(dataset));
-			});
+		dispatch(requestDataSet(dataSetName));
+		// Second, see if the dataset already exists in the store
+		// If so, return it. If not, perform the request (async)
+		if (dataSets[dataSetName] !== undefined) {
+			return dispatch(receiveDataSet(
+				{ dataSet: dataSets[dataSetName], dataSetName: dataSetName }
+			));
+		} else {
+			return (fetch(`/loom/${dataSetName}/fileinfo.json`)
+				.then((response) => { return response.json(); })
+				.then((ds) => {
+					// Once the response comes in, dispatch an action to provide the data
+					// Also, dispatch some actions to set required properties on the subviews
+					// TODO: move to react-router state and
+					// replace with necessary router.push() logic
+					const ra = ds.rowAttrs[0];
+					const ca = ds.colAttrs[0];
+					dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
+					dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
+
+					// This goes last, to ensure the above defaults are set when the views are rendered
+					let receivedDataSet = {};
+					receivedDataSet[dataSetName] = ds;
+					dispatch(receiveDataSet(receivedDataSet));
+				})
+				.catch((err) => {
+					// Or, if it failed, dispatch an action to set the error flag
+					console.log(err);
+					dispatch(requestDataSetFailed(dataSetName));
+				}));
+		}
 	};
 }
 
@@ -119,20 +153,20 @@ export function fetchDataset(dataset) {
 
 function requestGene(gene) {
 	return {
-		type: 'REQUEST_GENE',
+		type: REQUEST_GENE,
 		gene: gene,
 	};
 }
 
 function requestGeneFailed() {
 	return {
-		type: 'REQUEST_GENE_FAILED',
+		type: REQUEST_GENE_FAILED,
 	};
 }
 
 function receiveGene(gene, list) {
 	return {
-		type: 'RECEIVE_GENE',
+		type: RECEIVE_GENE,
 		gene: gene,
 		data: list,
 		receivedAt: Date.now(),
@@ -143,8 +177,8 @@ function receiveGene(gene, list) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchGene(dataset, gene, cache) {
-	const rowAttrs = dataset.rowAttrs;
+export function fetchGene(dataSet, gene, cache) {
+	const rowAttrs = dataSet.rowAttrs;
 	return (dispatch) => {
 		if (!rowAttrs.hasOwnProperty("GeneName")) {
 			return;
@@ -156,7 +190,7 @@ export function fetchGene(dataset, gene, cache) {
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
-		return fetch(`/loom/${dataset.name}/row/${row}`)
+		return fetch(`/loom/${dataSet.name}/row/${row}`)
 			.then((response) => { return response.json(); })
 			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data

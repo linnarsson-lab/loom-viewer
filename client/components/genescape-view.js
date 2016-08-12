@@ -1,44 +1,89 @@
 import React, { Component, PropTypes } from 'react';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 import { Scatterplot } from './scatterplot';
+import { fetchDataSet } from '../actions/actions';
 
-export class GenescapeView extends Component {
-	render() {
-		const { dispatch, genescapeState, dataState, viewState } = this.props;
+const GenescapeViewComponent = function (props) {
+	const { dispatch, genescapeState, dataSet } = props;
+	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
+	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
+	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
 
-		const color =  dataState.currentDataset.rowAttrs[genescapeState.colorAttr];
-		const x = dataState.currentDataset.rowAttrs[genescapeState.xCoordinate];
-		const y = dataState.currentDataset.rowAttrs[genescapeState.yCoordinate];
-		return (
-		<div className='view'>
+	return (
+		<div style={{ display: 'flex', flex: '1 1 auto' }}>
 			<div className='view-sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
-					dataState={dataState}
+					dataSet={dataSet}
 					dispatch={dispatch}
-				/>
+					/>
 			</div>
-			<div className='view-main'>
+			<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
 				<Scatterplot
 					x={x}
 					y={y}
 					color={color}
 					colorMode={genescapeState.colorMode}
-					width={viewState.width - 350}
-					height={viewState.height - 40}
 					logScaleColor={false}
 					logScaleX={false}
 					logScaleY={false}
-				/>
+					/>
 			</div>
 		</div>
+	);
+};
+
+GenescapeViewComponent.propTypes = {
+	dataSet: PropTypes.object.isRequired,
+	genescapeState: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+class GenescapeViewContainer extends Component {
+
+	componentDidMount() {
+		const { dispatch, data, params } = this.props;
+		const { dataset } = params;
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset }));
+	}
+
+	render() {
+		const { dispatch, data, genescapeState, params } = this.props;
+		const { dataset } = params;
+		const dataSet = data.dataSets[dataset];
+		return (dataSet ?
+			<GenescapeViewComponent
+				dispatch={dispatch}
+				genescapeState={genescapeState}
+				dataSet={dataSet} />
+			:
+			<div className='container' >Fetching dataset...</div>
 		);
 	}
 }
 
-GenescapeView.propTypes = {
-	viewState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+GenescapeViewContainer.propTypes = {
+	// Passed down by react-router-redux
+	params: PropTypes.object.isRequired,
+	// Passed down by react-redux
+	data: PropTypes.object.isRequired,
 	genescapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
+
+//connect GenescapeViewContainer to store
+import { connect } from 'react-redux';
+
+// react-router-redux passes URL parameters
+// through ownProps.params. See also:
+// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-component
+const mapStateToProps = (state, ownProps) => {
+	return {
+		params: ownProps.params,
+		genescapeState: state.genescapeState,
+		data: state.data,
+	};
+};
+
+export const GenescapeView = connect(mapStateToProps)(GenescapeViewContainer);
+

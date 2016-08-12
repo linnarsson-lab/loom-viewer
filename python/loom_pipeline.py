@@ -31,7 +31,7 @@ import os
 import sys
 import __builtin__
 import time
-import loom
+import loompy
 import tempfile
 import re
 import pymysql

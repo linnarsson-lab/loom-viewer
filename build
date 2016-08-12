@@ -12,12 +12,12 @@ set -o errexit
 mkdir ./python/static/js
 
 # Build static assets
-echo "Building static assets."
-uglifycss ./client/css/* > ./python/static/css/bundle.min.css
 
 echo "Minifying JS bundle and inserting it into HTML template"
 webpack
+echo "Building static assets."
+uglifycss ./client/css/* > ./python/static/css/bundle.min.css
 # I can't figure out how to both generate correct paths in the HTML template
 # of webpack, and have the resulting index.html be put in the right folders.
 # Yes, it's an ugly hack, but it works - Job
-mv python/index.html python/static/index.html
+mv ./python/index.html ./python/static/index.html

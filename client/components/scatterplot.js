@@ -1,43 +1,22 @@
 import React, {PropTypes} from 'react';
-import { render, findDOMNode } from 'react-dom';
 import * as colors from '../js/colors';
 import * as _ from 'lodash';
 import { nMostFrequent } from '../js/util';
 
+import { Canvas } from './canvas';
+
 
 export class Scatterplot extends React.Component {
+
 	constructor(props) {
 		super(props);
+
+		// Required to let us pass `paint` to a
+		// Canvas component without `this` errors
+		this.paint = this.paint.bind(this);
 	}
 
-	retina_scale(el) {
-		const context = el.getContext('2d');
-		const ratio = window.devicePixelRatio || 1;
-		el.style.width = this.props.width + "px";
-		el.style.height = this.props.height + "px";
-		el.width = this.props.width * ratio;
-		el.height = this.props.height * ratio;
-		context.scale(ratio, ratio);
-	}
-
-	componentDidMount() {
-		const el = findDOMNode(this);
-		this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays
-		const context = el.getContext('2d');
-		this.paint(context);
-	}
-
-	componentDidUpdate() {
-		const el = findDOMNode(this);
-		this.retina_scale(el);	// Make sure we get a sharp canvas on Retina displays
-		const context = el.getContext('2d');
-		this.paint(context);
-	}
-
-	componentWillUnmount() {
-	}
-
-	paint(context) {
+	paint(context, width, height) {
 		if (this.props.x === undefined) {
 			return;
 		}
@@ -48,11 +27,10 @@ export class Scatterplot extends React.Component {
 		// Erase previous paint
 		context.save();
 		context.fillStyle = "white";
-		context.fillRect(0, 0, this.props.width, this.props.height);
+		context.fillRect(0, 0, width, height);
 
 		// Calculate some general properties
-		const width = (this.props.width - 200);	// Make room for color legend on right
-		const height = this.props.height;
+		width = (width - 200);	// Make room for color legend on right
 		let x = this.props.x;
 		// Log transform if requested
 		if (this.props.logScaleX) {
@@ -93,7 +71,7 @@ export class Scatterplot extends React.Component {
 					context.strokeStyle = "black";
 					context.stroke();
 					context.fillStyle = "black";
-					if (i == -1) {
+					if (i === -1) {
 						context.fillText("(all other categories)", width + 30, (i + 2) * 15 + 3);
 					} else {
 						context.fillText(cats[i], width + 30, (i + 2) * 15 + 3);
@@ -104,12 +82,12 @@ export class Scatterplot extends React.Component {
 				let original_cmax = Math.max(...color);
 				// Log transform if requested
 				if (this.props.logScaleColor) {
-					color = color.map( (x) => { return Math.log2(x + 1); });
+					color = color.map((x) => { return Math.log2(x + 1); });
 				}
 				// Map to the range of colors
 				const cmin = Math.min(...color);
 				const cmax = Math.max(...color);
-				color = color.map( (x) => {return palette[Math.round((x - cmin) / (cmax - cmin) * palette.length)]; });
+				color = color.map((x) => { return palette[Math.round((x - cmin) / (cmax - cmin) * palette.length)]; });
 
 				// Draw the color legend
 				for (let i = 0; i < palette.length; i++) {
@@ -137,12 +115,12 @@ export class Scatterplot extends React.Component {
 		context.lineWidth = 0.25;
 		// Trick to draw by color, which is a lot faster on the HTML canvas element
 		palette.forEach((current_color) => {
-			for (var i = 0; i < x.length; i++) {
-				if (color[i] != current_color) {
+			for (let i = 0; i < x.length; i++) {
+				if (color[i] !== current_color) {
 					continue;
 				}
-				var xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-				var yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;	// "1-" because Y needs to be flipped
+				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;	// "1-" because Y needs to be flipped
 
 				context.beginPath();
 				context.arc(xi, yi, radius, 0, 2 * Math.PI, false);
@@ -157,14 +135,12 @@ export class Scatterplot extends React.Component {
 
 	render() {
 		return (
-			<canvas width={this.props.width} height={this.props.height}></canvas>
+			<Canvas paint={this.paint} />
 		);
 	}
 }
 
 Scatterplot.propTypes = {
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
 	x: PropTypes.arrayOf(PropTypes.number).isRequired,
 	y: PropTypes.arrayOf(PropTypes.number).isRequired,
 	color: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired,

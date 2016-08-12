@@ -11,6 +11,9 @@
     "env": {
         "browser": true
     },
+    "plugins": [
+        "react"
+    ],
     "rules": {
         "no-console": 0,
         "semi": 2,
@@ -72,6 +75,30 @@
             {
                 "max": 4
             }
-        ] // max depth of nesting in general
+        ], // max depth of nesting in general
+        // React rules
+        "react/jsx-uses-react": 2,
+        "react/react-in-jsx-scope": 2,
+        "react/require-render-return": 2,
+        "react/no-unknown-property": 2,
+        "react/prefer-stateless-function": 1,
+        "react/wrap-multilines": 2,
+        "react/no-danger": 2,
+        "react/jsx-uses-vars": 2,
+        "react/jsx-no-undef": 2,
+        "react/jsx-no-duplicate-props": 2,
+        "react/no-direct-mutation-state": 2,
+        "react/no-did-update-set-state": 2, // use componentWillUpdate instead
+        "react/no-did-mount-set-state": 2, // use componentWillMount instead
+        "react/no-deprecated": 2,
+        "react/prop-types": 2,
+        "react/jsx-no-bind": 1, // refactoring to prototype functions is more efficient
+        "react/jsx-indent": [2, "tab"],
+        "react/jsx-indent-props": [2, "tab"],
+        "react/jsx-max-props-per-line": [2, { "maximum": 2 }],
+        "react/jsx-equals-spacing": [2, "never"],
+        "react/jsx-space-before-closing": 2,
+        "react/jsx-boolean-value": [2, "never"],
+        "react/no-comment-textnodes": 2
     }
 }

@@ -99,7 +99,7 @@ def clone_command(dataset_path, project, url, username, password):
 	logging.debug("Cloning to " + fpath)
 	try:
 		response = requests.get(url, stream=True, auth=(username, password))
-	
+
 		if not response.ok:
 			if response.status_code == 404:
 				logging.warn("File not found")
@@ -115,7 +115,7 @@ def clone_command(dataset_path, project, url, username, password):
 		with open(fpath, 'wb') as f:
 			for block in response.iter_content(1024):
 				pbar.update(min(i, total_bytes))
-				i += 1024			
+				i += 1024
 				f.write(block)
 		pbar.finish()
 
@@ -146,7 +146,7 @@ def csv_to_dict(s):
 	data = pd.DataFrame.from_csv(stringFile, sep=",", parse_dates=False, index_col=None)
 	dataDict = data.to_dict(orient="list")
 	return {key: np.array(dataDict[key]) for key in dataDict}
- 
+
 def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, txid):
 	if project != None:
 		outfile = os.path.join(dataset_path, project, outfile)
@@ -154,7 +154,7 @@ def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, t
 
 	with open(row_csv, 'r') as rf:
 		row_attrs = csv_to_dict(rf.read())
-	
+
 	with open(col_csv, 'r') as cf:
 		col_attrs = csv_to_dict(cf.read())
 
@@ -164,7 +164,7 @@ def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, t
 	logging("Creating loom file from SQL")
 	pipeline.create_loom(dataset_path, project, filename, transcriptome)
 	logging("Done")
-	
+
 class Empty(object):
 	pass
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
 		parser = VerboseArgParser(description='Loom command-line tool.')
 		parser.add_argument('--debug', action="store_true")
 		parser.add_argument('--dataset-path', help="Path to datasets directory (default: %s)" % def_dir , default=def_dir)
-		subparsers = parser.add_subparsers(title="subcommands", dest="command")   
+		subparsers = parser.add_subparsers(title="subcommands", dest="command")
 
 		# loom server
 		server_parser = subparsers.add_parser('server', help="Launch loom server (default command)")
@@ -194,17 +194,17 @@ if __name__ == '__main__':
 
 		# loom list
 		list_parser = subparsers.add_parser('list', help="List datasets")
-		list_parser.add_argument('--server', help="Remote server hostname")	
-		list_parser.add_argument('-u','--username', help="Username")	
-		list_parser.add_argument('-p','--password', help="Password")	
+		list_parser.add_argument('--server', help="Remote server hostname")
+		list_parser.add_argument('-u','--username', help="Username")
+		list_parser.add_argument('-p','--password', help="Password")
 
 		# loom put
 		put_parser = subparsers.add_parser('put', help="Submit dataset to remote server")
 		put_parser.add_argument("file", help="Loom file to upload")
 		put_parser.add_argument('--project', help="Project name", required=True)
 		put_parser.add_argument('--server', help="Remote server hostname", required=True)
-		put_parser.add_argument('-u','--username', help="Username")	
-		put_parser.add_argument('-p','--password', help="Password")	
+		put_parser.add_argument('-u','--username', help="Username")
+		put_parser.add_argument('-p','--password', help="Password")
 
 		# loom clone
 		clone_parser = subparsers.add_parser('clone', help="Clone a remote dataset")
@@ -258,10 +258,10 @@ if __name__ == '__main__':
 		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 	else:
 		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-	
+
 	if not os.path.exists(args.dataset_path):
 		logging.info("Creating dataset directory: " + args.dataset_path)
-		os.mkidr(args.dataset_path)
+		os.mkdir(args.dataset_path)
 
 	if args.command == "list":
 		list_command(args.dataset_path, args.server, args.username, args.password)

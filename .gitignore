@@ -5,6 +5,7 @@
 python/static/
 python/cache/
 cache/
+datasets/
 
 # Visual Studio Code
 .vscode/

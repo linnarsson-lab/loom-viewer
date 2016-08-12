@@ -1,50 +1,42 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
+import { FormGroup, ControlLabel } from 'react-bootstrap';
+import Select from 'react-select';
 
-export class DropdownMenu extends Component {
+export const DropdownMenu = function (props) {
 
-	render() {
+	const {
+		buttonLabel, buttonName,
+		attributes, attrType, attrName,
+		dispatch, clearable,
+	} = props;
 
-		const {
-			buttonLabel, buttonName,
-			attributes, attrType, attrName,
-			dispatch,
-		} = this.props;
-
-		const options = attributes.map((name) => {
-			let dispatchParam = { type: attrType };
-			dispatchParam[attrName] = name;
-			return (
-				<ul className='dropdown-menu btn-block scrollable-menu'>
-					<li key={name}>
-						<a onClick={
-							() => { dispatch(dispatchParam); }
-						}>
-							{name}
-						</a>
-					</li>
-				</ul>
-			);
-		});
-
-		return (
-			<div className='form-group'>
-				{ buttonLabel ? <label>{buttonLabel}</label> : null }
-				<div className='btn-group btn-block'>
-					<button
-						type='button'
-						className='btn btn-block btn-default dropdown-toggle'
-						data-toggle='dropdown'
-						aria-haspopup='true'
-						aria-expanded='false' >
-						{ buttonName + '  '}
-						<span className='caret' />
-					</button>
-					{ options }
-				</div>
-			</div>
-		);
+	let options = new Array(attributes.length);
+	for (let i = 0; i < attributes.length; i++) {
+		options[i] = { value: i, label: attributes[i] };
 	}
-}
+	const dispatchOnChange = (val) => {
+		let dispatchParam = { type: attrType };
+		dispatchParam[attrName] = attributes[val];
+		dispatch(dispatchParam);
+	};
+
+	return (
+		<FormGroup>
+			{ buttonLabel ? <ControlLabel>{buttonLabel}</ControlLabel> : null }
+			<Select
+				name={buttonName}
+				value={buttonName}
+				options={options}
+				onChange={dispatchOnChange}
+				clearable={
+					/* required because 'undefined'
+						isn't "falsey" enough */
+					clearable === true
+				}
+				/>
+		</FormGroup>
+	);
+};
 
 DropdownMenu.propTypes = {
 	buttonLabel: PropTypes.string,
@@ -53,4 +45,5 @@ DropdownMenu.propTypes = {
 	attrType: PropTypes.string.isRequired,
 	attrName: PropTypes.string.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	clearable: PropTypes.bool,
 };

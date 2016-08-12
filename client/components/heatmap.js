@@ -13,10 +13,26 @@ export class Heatmap extends React.Component {
 		const dse = map.project(bounds.getSouthEast(), this.props.zoomRange[1]);
 		const dnw = map.project(bounds.getNorthWest(), this.props.zoomRange[1]);
 
-		const screenOrigin = { x: Math.max(0, -sb.min.x), y: Math.max(0, -sb.min.y) };
-		const dataBounds = [Math.max(0, dnw.x), Math.max(0, dnw.y), Math.min(dse.x, this.props.shape[1]), Math.min(dse.y, this.props.shape[0])];
+		const screenOrigin = {
+			x: Math.max(0, -sb.min.x),
+			y: Math.max(0, -sb.min.y),
+		};
+
+		const dataBounds = [
+			Math.max(0, dnw.x),
+			Math.max(0, dnw.y),
+			Math.min(dse.x, this.props.shape[1]),
+			Math.min(dse.y, this.props.shape[0]),
+		];
+
 		const units = dnw.x / sb.min.x;
-		const screenBounds = [screenOrigin.x, screenOrigin.y, Math.round((dataBounds[2] - dataBounds[0]) / units) + screenOrigin.x, Math.round((dataBounds[3] - dataBounds[1]) / units) + screenOrigin.y];
+		const screenBounds = [
+			screenOrigin.x,
+			screenOrigin.y,
+			Math.round((dataBounds[2] - dataBounds[0]) / units) + screenOrigin.x,
+			Math.round((dataBounds[3] - dataBounds[1]) / units) + screenOrigin.y,
+		];
+
 		bounds = {
 			screenBounds: screenBounds,
 			dataBounds: dataBounds,
@@ -25,6 +41,7 @@ export class Heatmap extends React.Component {
 		};
 		this.props.onViewChanged(bounds);
 	}
+
 	componentDidMount() {
 		L.Icon.Default.imagePath = '/static/img';
 		const map = L.map(
@@ -74,7 +91,11 @@ export class Heatmap extends React.Component {
 			height: this.props.height + "px",
 		};
 		return (
-			<div ref='map' style={heatmapStyle} className='stack-left-to-right'></div>
+			<div
+				ref='map'
+				style={heatmapStyle}
+				className='stack-left-to-right'
+				/>
 		);
 	}
 }
