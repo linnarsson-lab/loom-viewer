@@ -10,7 +10,7 @@ import { fetchProjects } from '../actions/actions';
 
 
 const DataSetListItem = function (props) {
-	const { dataset, message } = props.dataSetMetaData;
+	const { dataset } = props.dataSetMetaData;
 	const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
 
 	const links = views.map((view) => {
@@ -27,7 +27,7 @@ const DataSetListItem = function (props) {
 
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<p>{dataset + '. ' + message}</p>
+			<p>{dataset}</p>
 			<ButtonGroup key={dataset} justified >
 				{links}
 			</ButtonGroup>
@@ -53,7 +53,7 @@ const DataSetList = function (props) {
 		return (
 			<DataSetListItem
 				key={dataset}
-				dataSetPath={dataset}
+				dataSetPath={project + '/' + dataset}
 				dataSetMetaData={dataSetMetaData}
 				/>
 		);

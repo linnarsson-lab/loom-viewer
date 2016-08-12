@@ -94,10 +94,10 @@ function requestDataSetFailed() {
 	};
 }
 
-function receiveDataSet(receivedDataSet) {
+function receiveDataSet(dataset) {
 	return {
 		type: RECEIVE_DATASET,
-		receivedDataSet,
+		dataset,
 	};
 }
 
@@ -106,18 +106,18 @@ function receiveDataSet(receivedDataSet) {
 // store.dispatch(fetchgene(...))
 
 export function fetchDataSet(data) {
-	const { dataSetName, dataSets } = data;
+	const { project, dataset, dataSets } = data;
 	return (dispatch) => {
 		// First, make known the fact that the request has been started
-		dispatch(requestDataSet(dataSetName));
+		dispatch(requestDataSet(dataset));
 		// Second, see if the dataset already exists in the store
 		// If so, return it. If not, perform the request (async)
-		if (dataSets[dataSetName] !== undefined) {
-			return dispatch(receiveDataSet(
-				{ dataSet: dataSets[dataSetName], dataSetName: dataSetName }
-			));
+		let requestedDataSet = {};
+		requestedDataSet[dataset] = dataSets[dataset];
+		if (requestedDataSet[dataset] !== undefined) {
+			return dispatch(receiveDataSet(requestedDataSet));
 		} else {
-			return (fetch(`/loom/${dataSetName}/fileinfo.json`)
+			return (fetch(`/loom/${project}/${dataset}`)
 				.then((response) => { return response.json(); })
 				.then((ds) => {
 					// Once the response comes in, dispatch an action to provide the data
@@ -130,14 +130,13 @@ export function fetchDataSet(data) {
 					dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
 
 					// This goes last, to ensure the above defaults are set when the views are rendered
-					let receivedDataSet = {};
-					receivedDataSet[dataSetName] = ds;
-					dispatch(receiveDataSet(receivedDataSet));
+					requestedDataSet[dataset] = ds;
+					dispatch(receiveDataSet(requestedDataSet));
 				})
 				.catch((err) => {
 					// Or, if it failed, dispatch an action to set the error flag
 					console.log(err);
-					dispatch(requestDataSetFailed(dataSetName));
+					dispatch(requestDataSetFailed(dataset));
 				}));
 		}
 	};
