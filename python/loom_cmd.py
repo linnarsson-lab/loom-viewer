@@ -51,6 +51,13 @@ def reduce_command(dataset_path, filename, perplexity):
 	logging.info("Reducing to 2D")
 	ds.project_to_2d(perplexity)
 
+def backspin_command(dataset_path, filename, n_genes):
+	ds = connect_loom(dataset_path, filename)
+	if ds == None:
+		logging.error("File not found")
+		sys.exit(1)
+	ds.cluster(n_genes)
+
 def list_command(dataset_path, server, username, password):
 	cache = LoomCache(dataset_path)
 	datasets = {}
@@ -181,7 +188,7 @@ if __name__ == '__main__':
 		# loom server
 		server_parser = subparsers.add_parser('server', help="Launch loom server (default command)")
 		server_parser.add_argument('--show-browser', help="Automatically launch browser", action="store_true")
-		server_parser.add_argument('-p','--port', help="Port")
+		server_parser.add_argument('-p','--port', help="Port", type=int, default=80)
 
 		# loom list
 		list_parser = subparsers.add_parser('list', help="List datasets")
@@ -216,6 +223,11 @@ if __name__ == '__main__':
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
 		stats_parser.add_argument("file", help="Loom input file")
+
+		# loom backspin
+		backspin_parser = subparsers.add_parser('backspin', help="Perform clustering using BackSPIN")
+		backspin_parser.add_argument("file", help="Loom input file")
+		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=1000)
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
@@ -263,6 +275,8 @@ if __name__ == '__main__':
 		stats_command(args.dataset_path, args.filename, args.perplexity)
 	elif args.command == "tile":
 		stats_command(args.dataset_path, args.filename)
+	elif args.command == "backspin":
+		stats_command(args.dataset_path, args.filename, args.n_genes)
 	elif args.command == "from_cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
 	elif args.command == "from_cellranger":
