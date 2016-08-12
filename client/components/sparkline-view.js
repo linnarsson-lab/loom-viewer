@@ -119,16 +119,14 @@ SparklineViewComponent.propTypes = {
 class SparklineViewContainer extends Component {
 	componentDidMount() {
 		const { dispatch, data, params } = this.props;
-		const { transcriptome, project, dataset } = params;
-		const dataSetName = transcriptome + '__' + project + '__' + dataset;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName }));
+		const { dataset } = params;
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset }));
 	}
 
 	render() {
 		const { dispatch, data, sparklineState, viewState, params } = this.props;
-		const { transcriptome, project, dataset } = params;
-		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
-		const dataSet = data.dataSets[fetchDatasetString];
+		const { dataset } = params;
+		const dataSet = data.dataSets[dataset];
 		const genes = data.genes;
 		return (dataSet ?
 			<SparklineViewComponent
