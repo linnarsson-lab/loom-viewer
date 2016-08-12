@@ -61,10 +61,10 @@ When working with a remote server, some operations require authorization using `
 
 #### Debugging
 
-The `--debug` flag causes `loom` to print more verbose status information using processing. This can be useful
+The `--debug` flag causes `loom` to print more verbose status information during processing. This can be useful
 to understand what is happening when things go wrong.  
 
-### Default command: launch browser
+### `loom`
 
 Invoking `loom` without arguments is equivalent to:
 
@@ -74,7 +74,7 @@ loom server --show-browser --port 8803
 
 This starts the server listening on port 8003, launches the standard web browser and loads the Loom browser. 
 
-### `server`
+### `loom server`
 
 Launch a Loom web server and start listening for incoming connections.
 
@@ -89,7 +89,7 @@ optional arguments:
 
 Note: if you want to bind to a privileged port (<1024), you may need to invoke `loom` as root or using `sudo`.
 
-### `list`
+### `loom list`
 
 List all datasets available locally, or on a remote server. If you do not provide authorization (`--username` and 
 `--password`), only public projects will be shown.
@@ -106,3 +106,38 @@ optional arguments:
                         Password
 ```
 
+Example:
+
+```bash
+$ loom list --server myserver.org
+cortex-zeisel-science-2015:
+   cortex.loom
+midbrain-lamanno:
+   Midbrain_ES_differentiation.loom
+   Midbrain_Human_embryo.loom
+   Midbrain_iPSC.loom
+   Midbrain_Mouse_embryo.loom
+```
+
+### `loom put` (**not yet implemented**)
+
+Submit a dataset to a remote server. This requires authorization for the specific project on
+the remote server.
+
+```
+usage: loom put [-h] --project PROJECT --server SERVER [-u USERNAME]
+                [-p PASSWORD]
+                file
+
+positional arguments:
+  file                  Loom file to upload
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --project PROJECT     Project name
+  --server SERVER       Remote server hostname
+  -u USERNAME, --username USERNAME
+                        Username
+  -p PASSWORD, --password PASSWORD
+                        Password
+```
