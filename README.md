@@ -2,8 +2,8 @@
 
 Loom is 
 
-* `.loom`, an efficient file format for large omics datasets
 * Loom, a web app for browsing large single-cell RNA-seq datasets
+* `.loom`, an efficient file format for large omics datasets
 * `loom`, a command-line tool for manipulating `.loom` files. 
 * `loompy`, a Python library for creating and working with data in `.loom` format.
 
@@ -62,3 +62,7 @@ ds = loompy.connect("filename.loom")
 
 To learn more about the `loompy` package, read the [Documentation](docs/loompy.md).
 
+
+### The `.loom` file format
+
+For a detailed information, read the [Specification](docs/loom_spec.md)

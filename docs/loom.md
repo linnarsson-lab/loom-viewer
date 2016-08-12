@@ -171,6 +171,6 @@ it will be automatically cloned into a local project named `{project}@{hostname.
 loom clone http://loom.linnarssonlab.org/cortex-zeisel-2015/cortex.loom
 ```
 
-...would be cloned into project `cortex-zeisel-2015@loom.linnarssonlab.org/cortex.loom`. To override this
+...would be cloned into `cortex-zeisel-2015@loom.linnarssonlab.org/cortex.loom`. To override this
 (and for URLs that do not conform to this pattern), use the `--project` flag to give a project name.
- 
+
