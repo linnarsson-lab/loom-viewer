@@ -71,7 +71,7 @@ to understand what is happening when things go wrong.
 Invoking `loom` without arguments is equivalent to:
 
 ```
-loom server --show-browser --port 8803
+loom server --show-browser --port 8003
 ``` 
 
 This starts the server listening on port 8003, launches the standard web browser and loads the Loom browser. 
