@@ -17,10 +17,10 @@
 
 
 echo "DEPLOY: Stopping the server and pipeline"
-gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl stop all"
+gcloud compute ssh --zone "us-central1-a" loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl stop all"
 echo "DEPLOY: Copying local build to the server"
 rm ./python/*.pyc  # Needed to prevent access denied errors
-gcloud compute copy-files python/ loom:/srv/loom/
+gcloud compute copy-files --zone "us-central1-a" python/ root@loom:/srv/loom/
 echo "DEPLOY: Starting the server and pipeline"
-gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl start all"
+gcloud compute ssh --zone "us-central1-a" loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl start all"
 
