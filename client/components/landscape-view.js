@@ -66,17 +66,15 @@ class LandscapeViewContainer extends Component {
 
 	componentDidMount(){
 		const { dispatch, data, params } = this.props;
-		const { transcriptome, project, dataset } = params;
-		const dataSetName = transcriptome + '__' + project + '__' + dataset;
-		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName}));
+		const { dataset } = params;
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataset}));
 	}
 
 	render(){
 
 		const { dispatch, data, landscapeState, params } = this.props;
-		const { transcriptome, project, dataset } = params;
-		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
-		const dataSet = data.dataSets[fetchDatasetString];
+		const { dataset } = params;
+		const dataSet = data.dataSets[dataset];
 		const genes = data.genes;
 		return ( dataSet ?
 			<LandscapeViewComponent
@@ -85,7 +83,7 @@ class LandscapeViewContainer extends Component {
 				dataSet={dataSet}
 				genes={genes} />
 		:
-			<div className='container' >Fetching dataset...</div>
+			<div className='container' >Fetching dataset {dataset}...</div>
 		);
 	}
 

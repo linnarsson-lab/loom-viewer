@@ -111,9 +111,13 @@ export function fetchDataSet(data) {
 		// First, make known the fact that the request has been started
 		dispatch(requestDataSet(dataSetName));
 		// Second, see if the dataset already exists in the store
-		// If not, perform the request (async)
-		return dataSets[dataSetName] === undefined ? (
-			fetch(`/loom/${dataSetName}/fileinfo.json`)
+		// If so, return it. If not, perform the request (async)
+		if (dataSets[dataSetName] !== undefined) {
+			return dispatch(receiveDataSet(
+				{ dataSet: dataSets[dataSetName], dataSetName: dataSetName }
+			));
+		} else {
+			return (fetch(`/loom/${dataSetName}/fileinfo.json`)
 				.then((response) => { return response.json(); })
 				.then((ds) => {
 					// Once the response comes in, dispatch an action to provide the data
@@ -130,14 +134,12 @@ export function fetchDataSet(data) {
 					receivedDataSet[dataSetName] = ds;
 					dispatch(receiveDataSet(receivedDataSet));
 				})
-				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {
+					// Or, if it failed, dispatch an action to set the error flag
 					console.log(err);
 					dispatch(requestDataSetFailed(dataSetName));
-				})
-		) : dispatch(receiveDataSet(
-			{ dataSet: dataSets[dataSetName], dataSetName: dataSetName }
-		));
+				}));
+		}
 	};
 }
 

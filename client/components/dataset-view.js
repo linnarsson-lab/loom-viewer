@@ -15,12 +15,10 @@ const DataSetListItem = function (props) {
 
 	const links = views.map((view) => {
 		const path = 'dataset/' + view + '/' + props.dataSetPath;
-		const disabled = props.dataSetMetaData.status !== 'created';
+		//const disabled = props.dataSetMetaData.status !== 'created';
 		return (
 			<LinkContainer to={path} key={path}>
-				<Button
-					eventKey={path}
-					disabled={disabled}>
+				<Button eventKey={path}>
 					{view}
 				</Button>
 			</LinkContainer>
@@ -51,15 +49,11 @@ const DataSetList = function (props) {
 	const datasets = projectState.map((dataSetMetaData) => {
 		// Takes the metadata of the dataset
 		// and returns a DataSetListItem
-		const { transcriptome, project, dataset} = dataSetMetaData;
-		const dataSetPath = transcriptome + '/' +
-			project + '/' +
-			dataset;
-
+		const { dataset } = dataSetMetaData;
 		return (
 			<DataSetListItem
-				key={dataSetPath}
-				dataSetPath={dataSetPath}
+				key={dataset}
+				dataSetPath={dataset}
 				dataSetMetaData={dataSetMetaData}
 				/>
 		);
