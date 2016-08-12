@@ -22,9 +22,9 @@ Tip: Loom is updated often. To ensure you have the latest version, do this:
 pip install -U loompy
 ```
 
-## Getting started
+## Next steps: I want to...
 
-### Get started with the Loom browser
+### The Loom browser
 
 Open your terminal, and type
 
@@ -34,7 +34,7 @@ loom
 
 To learn more about the Loom browser, read the [Documentation](docs/loom_browser.md).
 
-### Get started with the `loom` command-line tool
+### The `loom` command-line tool
 
 Open your terminal, and type:
 
@@ -44,7 +44,7 @@ loom --help
 
 To learn more about the `loom` command-line tool, read the [Documentation](docs/loom_cmd.md).
 
-### Get started with the `loompy` Python package
+### The `loompy` Python package
 
 Start a Jupyter Notebook, in your terminal:
 
