@@ -51,12 +51,17 @@ def project_command(dataset_path, filename, perplexity):
 	logging.info("Projecting to 2D")
 	ds.project_to_2d(axis=2, perplexity=perplexity)
 
-def backspin_command(dataset_path, filename, n_genes):
+def backspin_command(dataset_path, filename, n_genes, levels):
 	ds = connect_loom(dataset_path, filename)
 	if ds == None:
 		logging.error("File not found")
 		sys.exit(1)
-	ds.cluster(n_genes)
+	ds.feature_selection(n_genes)
+	ds.backspin(numLevels=levels)
+	logging.info("Permuting rows")
+	ds.permute(np.argsort(ds.row_attrs['BackSPIN_level_%i_group' % levels]),axis=0)
+	logging.info("Permuting columns")
+	ds.permute(np.argsort(ds.col_attrs['BackSPIN_level_%i_group' % levels]),axis=1)
 
 def list_command(dataset_path, server, username, password):
 	if server != None:
@@ -254,6 +259,7 @@ if __name__ == '__main__':
 		backspin_parser = subparsers.add_parser('backspin', help="Perform clustering using BackSPIN")
 		backspin_parser.add_argument("file", help="Loom input file")
 		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=1000)
+		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
@@ -300,7 +306,7 @@ if __name__ == '__main__':
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "backspin":
-		backspin_command(args.dataset_path, args.file, args.n_genes)
+		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from_cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
 	elif args.command == "from_cellranger":

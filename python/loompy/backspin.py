@@ -533,16 +533,18 @@ def _divide_to_2and_resort(sorted_data, wid, iters_spin=8, stop_const = 1.15, lo
 		return False
 
 	
-def loom_backspin(ds):
-	numLevels=2 # -d
-	first_run_iters=10 # -t
-	first_run_step=0.1 # -s
-	runs_iters=8 # -T
-	runs_step=0.3 # -S
-	split_limit_g=2 # -g
-	split_limit_c=2 # -c
-	stop_const = 1.15 # -k
-	low_thrs=0.2 # -r
+def loom_backspin(ds, 
+	numLevels=2, 
+	first_run_iters=10, 
+	first_run_step=0.1,
+	runs_iters=8,
+	runs_step=0.3,
+	split_limit_g=2,
+	split_limit_c=2,
+	stop_const = 1.15,
+	low_thrs=0.2):
+
+	logging.info("BackSPIN starting")
 
 	logging.debug("  numLevels: " + str(numLevels))
 	logging.debug("  first_run_iters: " + str(first_run_iters))
@@ -568,10 +570,10 @@ def loom_backspin(ds):
 
 	for level, groups in enumerate( results.genes_gr_level.T ):
 		temp = zeros((ds.shape[0],))
-		temp[where(ds._Excluded == 0)] = array([int(el) for el in groups])
-		ds.set_attr('BackSPIN_level_%i_group' % level, temp, axis=0)
+		temp[where(ds._Excluded == 0)] = array([int(el+1) for el in groups])
+		ds.set_attr('BackSPIN_level_%i_group' % level+1, temp, axis=0)
 	for level, groups in enumerate( results.cells_gr_level.T ):
-		ds.set_attr('BackSPIN_level_%i_group' % level, array([int(el) for el in groups]), axis=1)
+		ds.set_attr('BackSPIN_level_%i_group' % level+1, array([int(el+1) for el in groups]), axis=1)
 
 	logging.info("BackSPIN all done")
 

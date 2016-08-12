@@ -24,5 +24,5 @@ mv ./python/loompy/index.html ./python/loompy/static/index.html
 
 cd python
 echo "Installing loom python package"
-python setup.py install
+python setup.py install --force
 cd ..

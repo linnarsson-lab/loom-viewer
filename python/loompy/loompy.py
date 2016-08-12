@@ -691,8 +691,8 @@ class LoomConnection(object):
 		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
 
-
 		if method == "SVR":
+			logging.info("Fitting CV vs mean using SVR")
 			svr_gamma = 1000./len(mu)
 			clf = SVR(gamma=svr_gamma)
 			clf.fit(log2_m[:,np.newaxis], log2_cv)
@@ -701,6 +701,7 @@ class LoomConnection(object):
 			score = np.log2(cv) - fitted_fun(log2_m[:,np.newaxis])
 			score = np.nan_to_num(score)
 		else:
+			logging.info("Fitting CV vs mean using least squares")
 			#Define the objective function to fit (least squares)
 			fun = lambda x, log2_m, log2_cv: sum(abs( np.log2( (2.**log2_m)**(-x[0])+x[1]) - log2_cv ))
 			#Fit using Nelder-Mead algorythm
@@ -720,11 +721,35 @@ class LoomConnection(object):
 		self.set_attr("_Noise", score, axis = 0)
 		self.set_attr("_Excluded", excluded, axis = 0)		
 
-	def cluster(self, n_genes=500, method="backspin"):
-		logging.info("Selecting %i genes" % n_genes)
-		self.feature_selection(n_genes)
-		logging.info("Starting BackSPIN")
-		loom_backspin(self)
+	def backspin(self,
+		numLevels=2, 
+		first_run_iters=10, 
+		first_run_step=0.1,
+		runs_iters=8,
+		runs_step=0.3,
+		split_limit_g=2,
+		split_limit_c=2,
+		stop_const = 1.15,
+		low_thrs=0.2):
+		"""
+		Perform BackSPIN clustering
+
+		Args:
+			numLevels (int): 		Number of levels (default 2) 
+			first_run_iters (int):	Number of iterations at first cycle (default 10)
+			first_run_step (float): Step size for first cycle (default 0.1)
+			runs_iters (int):		Number of iterations per cycle (default 8)
+			runs_step (float): 		Step size (default 0.3)
+			split_limit_g (int): 	Minimum genes per cluster (default 2)
+			split_limit_c (int):	Minimum cells per cluster (default 2)
+			stop_const (float):		Stopping constant (default 1.15)
+			low_thrs (float):		Low threshold (default 0.2)
+
+		Returns:
+			Nothing, but creates attributes BackSPIN_level_{n}_group.
+		"""
+		loom_backspin(self,numLevels,first_run_iters,first_run_step,runs_iters,runs_step,split_limit_g,split_limit_c,stop_const,low_thrs)
+
 
 	def compute_stats(self):
 		"""
