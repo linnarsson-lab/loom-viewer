@@ -4,7 +4,7 @@ import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
-	ButtonGroup, Button,
+	ButtonGroup, Button, Glyphicon,
 } from 'react-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
@@ -13,12 +13,24 @@ const DataSetListItem = function (props) {
 	const { dataset } = props.dataSetMetaData;
 	const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
 
+	const downloadURL = '/clone/' + props.dataSetPath;
+	const downloadButton = (
+		<a href={downloadURL} key={downloadURL}>
+			<Button
+				className='pull-right'
+				bsSize='xsmall'
+				bsStyle='link'>
+				<Glyphicon glyph='cloud-download' />
+			</Button>
+		</a>
+	);
+
 	const links = views.map((view) => {
 		const path = 'dataset/' + view + '/' + props.dataSetPath;
 		//const disabled = props.dataSetMetaData.status !== 'created';
 		return (
 			<LinkContainer to={path} key={path}>
-				<Button eventKey={path}>
+				<Button key={path} bsStyle="primary" bsSize="small">
 					{view}
 				</Button>
 			</LinkContainer>
@@ -27,7 +39,7 @@ const DataSetListItem = function (props) {
 
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<p>{dataset}</p>
+			<p>{downloadButton} {dataset}</p>
 			<ButtonGroup key={dataset} justified >
 				{links}
 			</ButtonGroup>
