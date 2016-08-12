@@ -2,7 +2,7 @@
 
 Loom is 
 
-* A web app for browsing large single-cell RNA-seq datasets
+* Loom, a web app for browsing large single-cell RNA-seq datasets
 * `loom`, a command-line tool for manipulating `.loom` files. 
 * `loompy`, a Python library for creating and working with data in `.loom` format.
 
