@@ -1,6 +1,2 @@
 #! /bin/bash
-if [[ $1 ]]; then
-  $1 ./python/loom_cmd.py
-else
-  python ./python/loom_cmd.py
-fi
+echo "Use 'loom' command instead (available after you run 'build')"
