@@ -166,5 +166,5 @@ def start_server(dataset_path, show_browser, port, debug):
 		app.run(debug=debug, host="0.0.0.0", port=port)
 	except socket_error as serr:
 		logging.error(serr)
-		if args.port < 1024:
+		if port < 1024:
 			print "You may need to invoke the server with sudo: sudo python loom_server.py ..."
