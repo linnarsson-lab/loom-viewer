@@ -61,9 +61,35 @@ def backspin_command(dataset_path, filename, n_genes):
 	ds.cluster(n_genes)
 
 def list_command(dataset_path, server, username, password):
-	cache = LoomCache(dataset_path)
+	if server != None:
+		try:
+			if server.startswith("http://"):
+				url = server + "/loom"
+			else:
+				url = "http://" + server + "/loom"
+
+			logging.debug(url)
+			response = requests.get(url , stream=True, auth=(username, password))
+
+			if not response.ok:
+				logging.error("Server error: " + str(response.status_code))
+				sys.exit(1)
+			ds_list = response.json()
+		except requests.ConnectionError:
+			logging.error("Connection with the server could not be established")
+			sys.exit(1)
+		except requests.Timeout:
+			logging.error("Connection timed out")
+			sys.exit(1)
+		except requests.TooManyRedirects:
+			logging.error("Too many redirects")
+			sys.exit(1)
+	else:
+		cache = LoomCache(dataset_path)
+		ds_list = cache.list_datasets(username, password)
+
 	datasets = {}
-	for ds in cache.list_datasets(username, password):
+	for ds in ds_list:
 		if not datasets.has_key(ds["project"]):
 			datasets[ds["project"]] = [ds["filename"]]
 		else:
