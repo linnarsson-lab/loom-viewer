@@ -1,4 +1,4 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 import * as _ from 'lodash';
 import { fetchGene } from '../actions/actions.js';
 

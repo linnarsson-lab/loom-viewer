@@ -1,4 +1,4 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 import { SparklineSidepanel } from './sparkline-sidepanel';
 import { Sparkline } from './sparkline';
 import { FetchDatasetComponent } from './fetch-dataset';
@@ -6,7 +6,6 @@ import * as _ from 'lodash';
 
 const SparklineViewComponent = function (props) {
 	const { sparklineState, dataSet, genes, dispatch } = props;
-	console.log('SparklineViewComponent.dataSet: ', dataSet);
 	let colData = dataSet.colAttrs[sparklineState.colAttr];
 	// Figure out the ordering
 	let indices = new Array(colData.length);
@@ -119,7 +118,6 @@ const SparklineViewContainer = function (props) {
 	const { project, dataset } = params;
 	const dataSet = data.dataSets[dataset];
 	const genes = data.genes;
-	console.log(data);
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
 			dispatch={dispatch}

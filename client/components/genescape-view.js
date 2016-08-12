@@ -1,4 +1,4 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 import { Scatterplot } from './scatterplot';
 import { FetchDatasetComponent } from './fetch-dataset';
@@ -43,7 +43,6 @@ const GenescapeViewContainer = function (props) {
 	const { dispatch, data, genescapeState, params } = props;
 	const { project, dataset } = params;
 	const dataSet = data.dataSets[dataset];
-	console.log(params);
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
 			dispatch={dispatch}
