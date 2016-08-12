@@ -2,9 +2,9 @@
 
 Loom is 
 
-* A browser for working with large-scale single-cell RNA-seq datasets
-* A command-line tool for manipulating `.loom` files. 
-* A Python library for creating and working with data in `.loom` format.
+* A web app for browsing with large single-cell RNA-seq datasets
+* `loom`, a command-line tool for manipulating `.loom` files. 
+* `loompy`, a Python library for creating and working with data in `.loom` format.
 
 
 ## Installation
@@ -16,6 +16,11 @@ Loom is
 pip install loompy
 ```
 
+Tip: Loom is updated often. To ensure you have the latest version, do this:
+
+```bash
+pip install -U loompy
+```
 
 ## Getting started
 
