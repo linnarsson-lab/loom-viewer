@@ -24,7 +24,7 @@ pip install -U loompy
 
 ## Getting started
 
-### Using the Loom browser
+### Get started with the Loom browser
 
 Open your terminal, and type
 
@@ -34,7 +34,7 @@ loom
 
 To learn more about the Loom browser, read the [Documentation](docs/loom_browser.md).
 
-### Using the `loom` command-line tool
+### Get started with the `loom` command-line tool
 
 Open your terminal, and type:
 
@@ -44,21 +44,21 @@ loom --help
 
 To learn more about the `loom` command-line tool, read the [Documentation](docs/loom_cmd.md).
 
-### Using the `loompy` Python package
+### Get started with the `loompy` Python package
 
-1. Start a Jupyter Notebook, in your terminal:
+Start a Jupyter Notebook, in your terminal:
 
 ```python
 jupyter notebook
 ```
 
-2. Import `loompy`
+Import `loompy`
 
 ```python
 import loompy
 ```
 
-3. Connect to a dataset
+Connect to a dataset
 
 ```python
 ds = loompy.connect("filename.loom")
