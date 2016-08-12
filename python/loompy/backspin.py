@@ -571,9 +571,9 @@ def loom_backspin(ds,
 	for level, groups in enumerate( results.genes_gr_level.T ):
 		temp = zeros((ds.shape[0],))
 		temp[where(ds._Excluded == 0)] = array([int(el)+1 for el in groups])
-		ds.set_attr('BackSPIN_level_%i_group' % int(level)+1, temp, axis=0)
+		ds.set_attr('BackSPIN_level_%i_group' % (level+1), temp, axis=0)
 	for level, groups in enumerate( results.cells_gr_level.T ):
-		ds.set_attr('BackSPIN_level_%i_group' % int(level)+1, array([int(el)+1 for el in groups]), axis=1)
+		ds.set_attr('BackSPIN_level_%i_group' % (level+1), array([int(el)+1 for el in groups]), axis=1)
 
 	logging.info("BackSPIN all done")
 
