@@ -21,8 +21,10 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
+	logging.debug("Looking for " + filename)
 	if os.path.exists(filename):
 		return loompy.connect(filename)
+	logging.debug("Looking for " + os.path.join(dataset_path, filename))
 	if os.path.exists(os.path.join(dataset_path, filename)):
 		return loompy.connect(os.path.join(dataset_path, filename))
 	return None
@@ -43,13 +45,20 @@ def stats_command(dataset_path, filename):
 	logging.info("Computing statistics")
 	ds.compute_stats()
 
-def reduce_command(dataset_path, filename, perplexity):
+def project_command(dataset_path, filename, perplexity):
 	ds = connect_loom(dataset_path, filename)
 	if ds == None:
 		logging.error("File not found")
 		sys.exit(1)
-	logging.info("Reducing to 2D")
-	ds.project_to_2d(perplexity)
+	logging.info("Projecting to 2D")
+	ds.project_to_2d(axis=2, perplexity=perplexity)
+
+def backspin_command(dataset_path, filename, n_genes):
+	ds = connect_loom(dataset_path, filename)
+	if ds == None:
+		logging.error("File not found")
+		sys.exit(1)
+	ds.cluster(n_genes)
 
 def list_command(dataset_path, server, username, password):
 	cache = LoomCache(dataset_path)
@@ -181,7 +190,7 @@ if __name__ == '__main__':
 		# loom server
 		server_parser = subparsers.add_parser('server', help="Launch loom server (default command)")
 		server_parser.add_argument('--show-browser', help="Automatically launch browser", action="store_true")
-		server_parser.add_argument('-p','--port', help="Port")
+		server_parser.add_argument('-p','--port', help="Port", type=int, default=80)
 
 		# loom list
 		list_parser = subparsers.add_parser('list', help="List datasets")
@@ -201,13 +210,13 @@ if __name__ == '__main__':
 		clone_parser = subparsers.add_parser('clone', help="Clone a remote dataset")
 		clone_parser.add_argument("url", help="URL of the loom file to clone")
 		clone_parser.add_argument('--project', help="Project name")
-		clone_parser.add_argument('-u','--username', help="Username")
-		clone_parser.add_argument('-p','--password', help="Password")
-
-		# loom reduce
-		reduce_parser = subparsers.add_parser('reduce', help="Compute reduced dimensionality 2D coordinates")
-		reduce_parser.add_argument("file", help="Loom input file")
-		clone_parser.add_argument('--perplexity', help="Perplexity", type=int, default=20)
+		clone_parser.add_argument('-u','--username', help="Username")	
+		clone_parser.add_argument('-p','--password', help="Password")	
+		
+		# loom project
+		project_parser = subparsers.add_parser('project', help="Compute non-linear projection to 2D")
+		project_parser.add_argument("file", help="Loom input file")
+		project_parser.add_argument('--perplexity', help="Perplexity", type=int, default=20)
 
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
@@ -216,6 +225,11 @@ if __name__ == '__main__':
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
 		stats_parser.add_argument("file", help="Loom input file")
+
+		# loom backspin
+		backspin_parser = subparsers.add_parser('backspin', help="Perform clustering using BackSPIN")
+		backspin_parser.add_argument("file", help="Loom input file")
+		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=1000)
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
@@ -236,7 +250,7 @@ if __name__ == '__main__':
 		sql_parser.add_argument('-r','--row-attrs', help="Row (gene) attributes CSV file")
 		sql_parser.add_argument('-s','--sql', help="SQL server hostname", required=True)
 		sql_parser.add_argument('-t','--transcriptome', help="Transcriptome", required=True)
-		cellranger_parser.add_argument('--project', help="Project name")
+		sql_parser.add_argument('--project', help="Project name")
 
 		args = parser.parse_args()
 
@@ -244,8 +258,6 @@ if __name__ == '__main__':
 		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 	else:
 		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-	logging.debug(args)
 
 	if not os.path.exists(args.dataset_path):
 		logging.info("Creating dataset directory: " + args.dataset_path)
@@ -258,11 +270,13 @@ if __name__ == '__main__':
 	elif args.command == "server":
 		loom_server.start_server(args.dataset_path, args.show_browser, args.port, args.debug)
 	elif args.command == "stats":
-		stats_command(args.dataset_path, args.filename)
-	elif args.command == "stats":
-		stats_command(args.dataset_path, args.filename, args.perplexity)
+		stats_command(args.dataset_path, args.file)
+	elif args.command == "project":
+		project_command(args.dataset_path, args.file, args.perplexity)
 	elif args.command == "tile":
-		stats_command(args.dataset_path, args.filename)
+		tile_command(args.dataset_path, args.file)
+	elif args.command == "backspin":
+		backspin_command(args.dataset_path, args.file, args.n_genes)
 	elif args.command == "from_cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
 	elif args.command == "from_cellranger":
