@@ -23,7 +23,7 @@ class LoomServer(flask.Flask):
 	def __init__(self, name):
 		super(LoomServer, self).__init__(name)
 		self.cache = None
-	
+
 app = LoomServer(__name__)
 
 # enable GZIP compression
@@ -52,10 +52,12 @@ def send_img(path):
 
 @app.route('/')
 @app.route('/dataset/')
-@app.route('/dataset/<path:path>')
 def send_indexjs():
 	return app.send_static_file('index.html')
 
+@app.route('/dataset/<path:path>')
+def catch_all(path):
+	return app.send_static_file('index.html')
 
 #
 # API endpoints
@@ -101,7 +103,7 @@ def get_clone(project, filename):
 	(u,p) = get_auth(request)
 	path = app.cache.get_absolute_path(project, filename, u, p)
 	if path == None:
-		return "", 404	
+		return "", 404
 	return flask.send_file(path, mimetype='application/octet-stream')
 
 # Get one row of data (i.e. all the expression values for a single gene)
@@ -159,7 +161,7 @@ def start_server(dataset_path, show_browser, port, debug):
 		if sys.platform == "darwin":
 			subprocess.Popen(['open', url])
 		else:
-			webbrowser.open(url)	
+			webbrowser.open(url)
 	try:
 		app.run(debug=debug, host="0.0.0.0", port=port)
 	except socket_error as serr:
