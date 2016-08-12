@@ -64,6 +64,8 @@ When working with a remote server, some operations require authorization using `
 The `--debug` flag causes `loom` to print more verbose status information during processing. This can be useful
 to understand what is happening when things go wrong.  
 
+## Subcommands
+
 ### `loom`
 
 Invoking `loom` without arguments is equivalent to:
