@@ -23,15 +23,15 @@ const Routes = (
 				path='/'>
 				<IndexRoute component={DataSetView} />
 				<Route name='data-set-list' component={DataSetView}
-					path='/datasets' />
+					path='/dataset' />
 				<Route name='data-set-heatmap' component={HeatmapView}
-					path='/view/heatmap/:transcriptome/:project/:dataset(/:viewsettings)' />
+					path='/dataset/heatmap/:transcriptome/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparkline' component={SparklineView}
-					path='/view/sparkline/:transcriptome/:project/:dataset(/:viewsettings)' />
+					path='/dataset/sparkline/:transcriptome/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-landscape' component={LandscapeView}
-					path='/view/landscape/:transcriptome/:project/:dataset(/:viewsettings)' />
+					path='/dataset/landscape/:transcriptome/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
-					path='/view/genescape/:transcriptome/:project/:dataset(/:viewsettings)' />
+					path='/dataset/genescape/:transcriptome/:project/:dataset(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>

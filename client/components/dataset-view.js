@@ -14,7 +14,7 @@ const DataSetListItem = function (props) {
 	const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
 
 	const links = views.map((view) => {
-		const path = 'view/' + view + '/' + props.dataSetPath;
+		const path = 'dataset/' + view + '/' + props.dataSetPath;
 		const disabled = props.dataSetMetaData.status !== 'created';
 		return (
 			<LinkContainer to={path} key={path}>

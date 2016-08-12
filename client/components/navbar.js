@@ -12,7 +12,7 @@ export const NavbarView = function (props) {
 			(viewsettings ? ('/' + viewsettings) : '');
 		viewLinks = [ 'heatmap', 'sparkline', 'landscape', 'genescape'].map(
 			(view) => {
-				const link = '/view/' + view + projectURL;
+				const link = '/dataset/' + view + projectURL;
 				return(
 					<LinkContainer to={link}>
 						<NavItem eventKey={view}>
