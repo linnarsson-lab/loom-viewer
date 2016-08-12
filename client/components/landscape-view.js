@@ -1,59 +1,117 @@
 import React, { Component, PropTypes } from 'react';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 import { Scatterplot } from './scatterplot';
+import { fetchDataSet } from '../actions/actions';
 
 
-export class LandscapeView extends Component {
+class LandscapeViewComponent extends Component {
+	constructor(props) {
+		super(props);
+		this.makeData = this.makeData.bind(this);
+	}
+
 	makeData(attr, gene) {
-		var data = [];
-		if(attr == "(gene)") {
-			if(this.props.dataState.genes.hasOwnProperty(gene)) {
-				data = this.props.dataState.genes[gene];
+		let data = [];
+		if (attr === "(gene)") {
+			if (this.props.genes.hasOwnProperty(gene)) {
+				data = this.props.genes[gene];
 			}
 		} else {
-			data = this.props.dataState.currentDataset.colAttrs[attr];
+			data = this.props.dataSet.colAttrs[attr];
 		}
 		return data;
 	}
-	render() {
-		var dispatch = this.props.dispatch;
-		var ls = this.props.landscapeState;
-		var ds = this.props.dataState;
-	  	var vs = this.props.viewState;
 
-		var color = this.makeData(ls.colorAttr, ls.colorGene);
-		var x = this.makeData(ls.xCoordinate, ls.xGene);
-		var y = this.makeData(ls.yCoordinate, ls.yGene);
+	render() {
+		const { dispatch, landscapeState, dataSet, genes } = this.props;
+		const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
+		const color = this.makeData(colorAttr, colorGene);
+		const x = this.makeData(xCoordinate, xGene);
+		const y = this.makeData(yCoordinate, yGene);
 		return (
-		<div className="view">
-			<div className="view-sidepanel">
-				<LandscapeSidepanel
-					landscapeState={ls}
-					dataState={ds}
-					dispatch={dispatch}
-				/>
+			<div style={{ display: 'flex', flex: '1 1 auto' }}>
+				<div className='view-sidepanel'>
+					<LandscapeSidepanel
+						landscapeState={landscapeState}
+						dataSet={dataSet}
+						genes={genes}
+						dispatch={dispatch}
+						/>
+				</div>
+				<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
+					<Scatterplot
+						x={x}
+						y={y}
+						color={color}
+						colorMode={landscapeState.colorMode}
+						logScaleColor={landscapeState.colorAttr === "(gene)"}
+						logScaleX={landscapeState.xCoordinate === "(gene)"}
+						logScaleY={landscapeState.yCoordinate === "(gene)"}
+						/>
+				</div>
 			</div>
-			<div className="view-main">
-				<Scatterplot
-					x={x}
-					y={y}
-					color={color}
-					colorMode={ls.colorMode}
-					width={vs.width - 350}
-					height={vs.height - 40}
-					logScaleColor={ls.colorAttr == "(gene)"}
-					logScaleX={ls.xCoordinate == "(gene)"}
-					logScaleY={ls.yCoordinate == "(gene)"}
-				/>
-			</div>
-		</div>
-		)
+		);
 	}
 }
 
-LandscapeView.propTypes = {
-	viewState: PropTypes.object.isRequired,
-	dataState: PropTypes.object.isRequired,
+LandscapeViewComponent.propTypes = {
+	dataSet: PropTypes.object.isRequired,
+	genes: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired
+	dispatch: PropTypes.func.isRequired,
+};
+
+
+class LandscapeViewContainer extends Component {
+
+	componentDidMount(){
+		const { dispatch, data, params } = this.props;
+		const { transcriptome, project, dataset } = params;
+		const dataSetName = transcriptome + '__' + project + '__' + dataset;
+		dispatch(fetchDataSet({ dataSets: data.dataSets, dataSetName: dataSetName}));
+	}
+
+	render(){
+
+		const { dispatch, data, landscapeState, params } = this.props;
+		const { transcriptome, project, dataset } = params;
+		const fetchDatasetString = transcriptome + '__' + project + '__' + dataset;
+		const dataSet = data.dataSets[fetchDatasetString];
+		const genes = data.genes;
+		return ( dataSet ?
+			<LandscapeViewComponent
+				dispatch={dispatch}
+				landscapeState={landscapeState}
+				dataSet={dataSet}
+				genes={genes} />
+		:
+			<div className='container' >Fetching dataset...</div>
+		);
+	}
+
 }
+
+LandscapeViewContainer.propTypes = {
+	// Passed down by react-router-redux
+	params: PropTypes.object.isRequired,
+	// Passed down by react-redux
+	data: PropTypes.object.isRequired,
+	landscapeState: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+//connect GenescapeViewContainer to store
+import { connect } from 'react-redux';
+
+// react-router-redux passes URL parameters
+// through ownProps.params. See also:
+// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-component
+const mapStateToProps = (state, ownProps) => {
+	return {
+		params: ownProps.params,
+		landscapeState: state.landscapeState,
+		data: state.data,
+	};
+};
+
+export const LandscapeView = connect(mapStateToProps)(LandscapeViewContainer);
