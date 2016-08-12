@@ -1,23 +1,28 @@
 #! /bin/bash
 
 # Remove old JS files
-if [ -a ./python/static/js ]; then
-  rm -r ./python/static/js
+if [ -a ./python/loompy/static/js ]; then
+  rm -r ./python/loompy/static/js
 fi
 
 set -o nounset
 set -o errexit
 
 # Set up the static directory
-mkdir ./python/static/js
+mkdir ./python/loompy/static/js
 
 # Build static assets
 
 echo "Minifying JS bundle and inserting it into HTML template"
 webpack
 echo "Building static assets."
-uglifycss ./client/css/* > ./python/static/css/bundle.min.css
+uglifycss ./client/css/* > ./python/loompy/static/css/bundle.min.css
 # I can't figure out how to both generate correct paths in the HTML template
 # of webpack, and have the resulting index.html be put in the right folders.
 # Yes, it's an ugly hack, but it works - Job
-mv ./python/index.html ./python/static/index.html
+mv ./python/index.html ./python/loompy/static/index.html
+
+cd python
+echo "Installing loom python package"
+python setup.py install
+cd ..
