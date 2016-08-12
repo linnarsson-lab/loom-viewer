@@ -22,7 +22,7 @@ Tip: Loom is updated often. To ensure you have the latest version, do this:
 pip install -U loompy
 ```
 
-## Next steps: I want to...
+## Getting started
 
 ### The Loom browser
 
