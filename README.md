@@ -2,8 +2,8 @@
 
 Loom is 
 
-* A browser for working with large-scale single-cell RNA-seq datasets stored in `.loom` format
-* A command-line tool for manipulating `-loom` files. 
+* A browser for working with large-scale single-cell RNA-seq datasets
+* A command-line tool for manipulating `.loom` files. 
 * A Python library for creating and working with data in `.loom` format.
 
 
@@ -41,7 +41,7 @@ To learn more about the `loom` command-line tool, read the [Documentation](docs/
 
 ### Using the `loompy` Python package
 
-1. Start a Jupyter Notebook
+1. Start a Jupyter Notebook, in your terminal:
 
 ```python
 jupyter notebook
@@ -53,7 +53,7 @@ jupyter notebook
 import loompy
 ```
 
-3. Connect to a dataset, and show a summary
+3. Connect to a dataset
 
 ```python
 ds = loompy.connect("filename.loom")
