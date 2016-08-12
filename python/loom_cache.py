@@ -24,7 +24,7 @@
 
 import os.path
 import csv
-import loom
+import loompy
 import re
 import json
 import time
@@ -63,14 +63,13 @@ class LoomCache(object):
 		"""
 		Return a list of (project, filename) tuples for loom files cached locally.
 		"""
-		projects = [x[0] for x in os.walk(self.dataset_path)]
+		projects = [x for x in os.listdir(self.dataset_path) if not x.startswith(".")]
 		result = []
-		for projpath in projects:
-			proj = os.path.basename(os.path.normpath(projpath))
+		for proj in projects:
 			if self._authorize(proj, username, password):
-				for f in os.listdir(projpath):
+				for f in os.listdir(os.path.join(self.dataset_path, proj)):
 					if f.endswith(".loom"):
-						result.append({"project": proj, "filename": f})
+						result.append({"project": proj, "filename": f, "dataset": f})
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):
@@ -96,10 +95,14 @@ class LoomCache(object):
 		if self.looms.has_key(key):
 			return self.looms[key]
 
-		result = loom.connect(absolute_path)
+		result = loompy.connect(absolute_path)
 		self.looms[key] = result
 		return result
 
+	def close(self):
+		for ds in self.looms.itervalues():
+			ds.close()
+			
 	def get_absolute_path(self, project, filename, username=None, password=None):
 		"""
 		Return the absolute path to the dataset, if authorized.
@@ -114,7 +117,7 @@ class LoomCache(object):
 			An absolute path string, or None if not authorized or file does not exist.	
 		"""
 
-		if not self._authorize(proj, username, password):
+		if not self._authorize(project, username, password):
 			return None
 
 		absolute_path = os.path.join(self.dataset_path, project, filename)
