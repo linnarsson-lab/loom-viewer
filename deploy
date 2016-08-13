@@ -1,6 +1,11 @@
 #! /bin/bash
 
+cd python
+echo "Don't forget to update VERSION in setup.py before deploying!'"
+echo "Submitting to PyPi"
+python setup.py sdist upload -r pypi
+cd ..
+echo "Upgrading the server"
 gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl stop all"  --zone "us-central1-a"
-rm ./python/*.pyc 2> /dev/null # Needed to prevent access denied errors
-gcloud compute copy-files python/ root@loom:/srv/loom/ --zone "us-central1-a"
+gcloud compute ssh loom --command "pip install -U loompy"  --zone "us-central1-a"
 gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl start all"  --zone "us-central1-a"
