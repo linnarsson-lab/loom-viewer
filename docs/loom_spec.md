@@ -53,15 +53,15 @@ A valid `.loom` file conforms to the following:
 
 * There MUST be a single dataset at `/matrix` of type float32[N,M]
 * There can OPTIONALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the `/matrix` dataset. 
-  If there are, they MUST be of type `string` and should be interpreted as attribute of the whole `.loom` file. 
+  If there are, they MUST be of type `string` and should be interpreted as attributes of the whole `.loom` file. 
   The following HDF5 attributes are standard: 
   * `title`, a short title for the dataset
   * `description`, a longer description of the dataset
   * `url`, a link to a web page for the dataset
   * `doi`, a DOI for the paper where the dataset was published
-* There MUST be a group `/row_attrs``
+* There MUST be a group `/row_attrs`
 * There can OPTIONALLY be one or more datasets at `/row_attrs/{name}` of type float64[N] or string[N]
-* There MUST be a group `/col_attrs``
+* There MUST be a group `/col_attrs`
 * There can OPTIONALLY be one or more datasets at `/col_attrs/{name}` of type float64[M] or string[M]
 * There can OPTIONALLY be a group at `/tiles`, and it should be ignored
 
@@ -78,5 +78,5 @@ As noted above, only three datatypes are allowed: `float32` for the main matrix 
 represent all integers up to and including 9,007,199,254,740,992 exactly. 
 
 The group name `/tiles` is reserved and should be ignored by applications. It is used by the Loom
-browser to store 
+browser to store precomputed heatmap tiles.
 
