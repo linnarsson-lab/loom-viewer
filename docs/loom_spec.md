@@ -60,10 +60,10 @@ A valid `.loom` file conforms to the following:
   * `url`, a link to a web page for the dataset
   * `doi`, a DOI for the paper where the dataset was published
 * There MUST be a group `/row_attrs``
-* There MAY be one or more datasets at `/row_attrs/{name}` of type float64[N] or string[N]
+* There can OPTIONALLY be one or more datasets at `/row_attrs/{name}` of type float64[N] or string[N]
 * There MUST be a group `/col_attrs``
-* There MAY be one or more datasets at `/col_attrs/{name}` of type float64[M] or string[M]
-* There MAY be a group at `/tiles`, and it should be ignored
+* There can OPTIONALLY be one or more datasets at `/col_attrs/{name}` of type float64[M] or string[M]
+* There can OPTIONALLY be a group at `/tiles`, and it should be ignored
 
 The datasets under `/row_attrs` should be semantically interpreted as row attributes, with one value
 per row of the main matrix, and in the same order. Therefore, all datasets under this group must 
