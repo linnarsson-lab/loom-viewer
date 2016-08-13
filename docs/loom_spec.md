@@ -2,14 +2,14 @@
 # `.loom` file format
 
 The `.loom` file format is designed to efficiently hold large omics datasets. Typically, such data takes the form of a large
-matrix of numbers, along with metadata for the rows and columns. For example, single-cell RNA-seq data consists
+matrix of numbers, along with metadata for the rows and columns. For example, single-cell RNA-seq data consists of
 expression measurements for all genes (rows) in a large number of cells (columns), along with metadata for genes (e.g. `Chromosome`,
 `Strand`, `Location`, `Name`), and for cells (e.g. `Species`, `Sex`, `Strain`, `GFP positive`). 
 
 We designed `.loom` files to represent such datasets in a way that treats rows and columns the same. You may want to cluster
 both genes and cells, you may want to perform PCA on both of them, and filter based on quality controls. SQL databases
 and other data storage solutions almost always treat data as a *table*, not a matrix, and makes it very hard to add arbitrary
-metadata to rows and columns. In contrast, `.loom` makes this bvery easy.
+metadata to rows and columns. In contrast, `.loom` makes this very easy.
 
 Furthermore, current and future datasets can have tens of thousands of rows (genes) and hundreds of thousands of columns (cells). We 
 designed `.loom` for efficient access to arbitrary rows and columns. 
@@ -40,7 +40,7 @@ that supports HDF5, including [Python](http://h5py.org),
 Here's an example of the structure of a valid `.loom` file:
 
 |Group|Type|Description|
-+-----+----+-----------+
+|-----|----|-----------|
 |/matrix|float32[N,M]|Matrix of N rows and M columns|
 |/row_attrs/| (subgroup) | Subgroup of all row attributes|
 |/row_attrs/Name|string[N]| Row attribute "Name" of type string|
@@ -52,7 +52,7 @@ Here's an example of the structure of a valid `.loom` file:
 A valid `.loom` file conforms to the following:
 
 * There MUST be a single dataset at `/matrix` of type float32[N,M]
-* There can OPTINALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the `/matrix` dataset. 
+* There can OPTIONALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the `/matrix` dataset. 
   If there are, they MUST be of type `string` and should be interpreted as attribute of the whole `.loom` file. 
   The following HDF5 attributes are standard: 
   * `title`, a short title for the dataset
