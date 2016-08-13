@@ -235,13 +235,13 @@ class LoomConnection(object):
 		self.row_attrs = {}
 		for x in self.file['row_attrs'].keys():
 			self.row_attrs[x] = self.file['row_attrs'][x][:]
-			if not hasattr(self, x):
+			if not hasattr(LoomConnection, x):
 				setattr(self, x, self.row_attrs[x])
 
 		self.col_attrs = {}
 		for x in self.file['col_attrs'].keys():
 			self.col_attrs[x] = self.file['col_attrs'][x][:]
-			if not hasattr(self, x):
+			if not hasattr(LoomConnection, x):
 				setattr(self, x, self.col_attrs[x])
 
 	def _repr_html_(self):
@@ -422,7 +422,7 @@ class LoomConnection(object):
 				del self.file['/row_attrs/' + name]
 			self.file['/row_attrs/' + name] = values
 			self.row_attrs[name] = self.file['/row_attrs/' + name][:]
-			if not hasattr(self, name):
+			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.row_attrs[name])
 		else:
 			if len(values) != self.shape[1]:
@@ -431,7 +431,7 @@ class LoomConnection(object):
 				del self.file['/col_attrs/' + name]
 			self.file['/col_attrs/' + name] = values
 			self.col_attrs[name] = self.file['/col_attrs/' + name][:]
-			if not hasattr(self, name):
+			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.col_attrs[name])
 		self.file.flush()
 
@@ -691,6 +691,7 @@ class LoomConnection(object):
 		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
 
+		logging.debug("Selecting %i genes" % n_genes)
 		if method == "SVR":
 			logging.info("Fitting CV vs mean using SVR")
 			svr_gamma = 1000./len(mu)
@@ -715,9 +716,11 @@ class LoomConnection(object):
 			score = np.log2(cv) - fitted_fun(np.log2(mu))
 			score = np.nan_to_num(score)
 
-		threshold = np.percentile(score, 100 - n_genes/self.shape[0]*100)
+		threshold = np.percentile(score, 100. - n_genes/self.shape[0]*100.)
 		excluded = np.logical_or(excluded, (score < threshold)).astype('int')
 
+		logging.debug("Excluding %i genes" % excluded.sum())
+		logging.debug("Keeping %i genes" % (1-excluded).sum())
 		self.set_attr("_Noise", score, axis = 0)
 		self.set_attr("_Excluded", excluded, axis = 0)		
 

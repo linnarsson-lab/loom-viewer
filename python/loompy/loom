@@ -258,7 +258,7 @@ if __name__ == '__main__':
 		# loom backspin
 		backspin_parser = subparsers.add_parser('backspin', help="Perform clustering using BackSPIN")
 		backspin_parser.add_argument("file", help="Loom input file")
-		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=1000)
+		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=500)
 		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
 
 		# loom from-cef

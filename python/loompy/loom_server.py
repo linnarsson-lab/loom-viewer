@@ -149,7 +149,8 @@ def send_tile(project, filename, z,x,y):
 
 def signal_handler(signal, frame):
 	print('\nShutting down.')
-	app.cache.close()
+	if app.cache != None:
+		app.cache.close()
 	sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
