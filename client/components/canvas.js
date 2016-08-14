@@ -1,5 +1,5 @@
 import React, {PropTypes} from 'react';
-import * as _ from 'lodash';
+import { debounce } from 'lodash';
 
 
 // A simple helper component, wrapping retina logic for canvas.
@@ -49,7 +49,7 @@ export class Canvas extends React.Component {
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// resizing/redrawing of the canvas.
-		window.addEventListener("resize", _.debounce(this.draw, 200));
+		window.addEventListener("resize", debounce(this.draw, 200));
 	}
 
 	componentDidUpdate() {
