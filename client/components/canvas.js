@@ -1,4 +1,6 @@
 import React, {PropTypes} from 'react';
+import * as _ from 'lodash';
+
 
 // A simple helper component, wrapping retina logic for canvas.
 // Expects a "painter" function that takes a "context" to draw on.
@@ -16,16 +18,20 @@ export class Canvas extends React.Component {
 	fitToZoomAndPixelRatio() {
 		let el = this.refs.canvas;
 		if (el) {
-			let context = el.getContext('2d');
 			const ratio = window.devicePixelRatio || 1;
-			el.width = el.parentNode.clientWidth * ratio;
-			el.height = el.parentNode.clientHeight * ratio;
-			context.mozImageSmoothingEnabled = false;
-			context.webkitImageSmoothingEnabled = false;
-			context.msImageSmoothingEnabled = false;
-			context.imageSmoothingEnabled = false;
-			context.scale(ratio, ratio);
-			context.clearRect(0, 0, el.width, el.height);
+			const width = (el.parentNode.clientWidth * ratio) | 0;
+			const height = (el.parentNode.clientHeight * ratio) | 0;
+			if (width !== el.width || height !== el.height) {
+				el.width = width;
+				el.height = height;
+				let context = el.getContext('2d');
+				context.mozImageSmoothingEnabled = false;
+				context.webkitImageSmoothingEnabled = false;
+				context.msImageSmoothingEnabled = false;
+				context.imageSmoothingEnabled = false;
+				context.scale(ratio, ratio);
+				context.clearRect(0, 0, el.width, el.height);
+			}
 		}
 	}
 
@@ -40,7 +46,10 @@ export class Canvas extends React.Component {
 
 	componentDidMount() {
 		this.draw();
-		window.addEventListener("resize", this.draw);
+		// Because the resize event can fire very often, we
+		// add a debouncer to minimise pointless
+		// resizing/redrawing of the canvas.
+		window.addEventListener("resize", _.debounce(this.draw, 200));
 	}
 
 	componentDidUpdate() {
