@@ -4,15 +4,13 @@ import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
-	ButtonGroup, Button, Glyphicon,
+	Button, Glyphicon,
 } from 'react-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
 
 const DataSetListItem = function (props) {
 	const { dataset } = props.dataSetMetaData;
-	const views = ['heatmap', 'sparkline', 'landscape', 'genescape'];
-
 	const downloadURL = '/clone/' + props.dataSetPath;
 	const downloadButton = (
 		<a href={downloadURL} key={downloadURL}>
@@ -25,24 +23,10 @@ const DataSetListItem = function (props) {
 		</a>
 	);
 
-	const links = views.map((view) => {
-		const path = 'dataset/' + view + '/' + props.dataSetPath;
-		//const disabled = props.dataSetMetaData.status !== 'created';
-		return (
-			<LinkContainer to={path} key={path}>
-				<Button key={path} bsStyle="primary" bsSize="small">
-					{view}
-				</Button>
-			</LinkContainer>
-		);
-	});
-
+const path = 'dataset/genescape/' + props.dataSetPath;
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<p>{downloadButton} {dataset}</p>
-			<ButtonGroup key={dataset} justified >
-				{links}
-			</ButtonGroup>
+			<p><a href={path}>{dataset}</a> {downloadButton}</p>
 		</ListGroupItem>
 	);
 };
@@ -134,11 +118,12 @@ class DataSetViewComponent extends Component {
 				<Row>
 					<Col xs={12} md={8}>
 						<h1>Linnarsson Lab single-cell data repository</h1>
-						<br />
 						<h2>Available datasets</h2>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
 						</PanelGroup>
+						<h4>Debug</h4>
+						<a href='/dataset/benchmark'>Canvas Benchmark</a>
 					</Col>
 				</Row>
 			</Grid>
