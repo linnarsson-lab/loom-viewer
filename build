@@ -4,6 +4,9 @@
 if [ -a ./python/loompy/static/js ]; then
   rm -r ./python/loompy/static/js
 fi
+if [ -a ./python/build ]; then
+  rm -r ./python/build
+fi
 
 set -o nounset
 set -o errexit
