@@ -1,32 +1,56 @@
 import React, { Component, PropTypes } from 'react';
-import { LinkContainer } from 'react-router-bootstrap';
 import {
 	Grid, Col, Row,
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
 	Button, Glyphicon,
+	OverlayTrigger, Tooltip,
 } from 'react-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
 
 const DataSetListItem = function (props) {
 	const { dataset } = props.dataSetMetaData;
+
 	const downloadURL = '/clone/' + props.dataSetPath;
+	const downloadTooltip = (
+		<Tooltip id={`tooltip_${props.dataSetPath}_download`}>
+			<strong>download "{props.dataSetPath}"</strong>
+		</Tooltip>
+	);
 	const downloadButton = (
-		<a href={downloadURL} key={downloadURL}>
-			<Button
-				className='pull-right'
-				bsSize='xsmall'
-				bsStyle='link'>
+		<Button
+			className='pull-right'
+			bsSize='xsmall'
+			bsStyle='link'
+			href={downloadURL}
+			>
+			<OverlayTrigger
+				placement='top'
+				overlay={downloadTooltip} >
 				<Glyphicon glyph='cloud-download' />
-			</Button>
-		</a>
+			</OverlayTrigger>
+		</Button>
 	);
 
-const path = 'dataset/genescape/' + props.dataSetPath;
+	const datasetTooltip = (
+		<Tooltip id={'tooltip_' + props.dataSetPath}>
+			<strong>open genescape view (default) of "{props.dataSetPath}"</strong>
+		</Tooltip>
+	);
+	const path = 'dataset/genescape/' + props.dataSetPath;
+
+	const datasetLink = (
+		<OverlayTrigger
+			placement='top'
+			overlay={datasetTooltip} >
+			<a href={path}>{dataset}</a>
+		</OverlayTrigger>
+	);
+
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<p><a href={path}>{dataset}</a> {downloadButton}</p>
+			<p>{datasetLink} {downloadButton}</p>
 		</ListGroupItem>
 	);
 };
