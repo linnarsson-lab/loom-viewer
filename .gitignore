@@ -3,6 +3,7 @@
 
 # Build folder for static files, and cache for loom files
 python/static/
+python/loompy/static
 python/cache/
 cache/
 datasets/
