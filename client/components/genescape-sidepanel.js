@@ -9,8 +9,6 @@ export const GenescapeSidepanel = function (props) {
 	const rowAttrKeys = Object.keys(dataSet.rowAttrs).sort();
 
 	return (
-
-
 		<Panel
 			key='genescape-settings'
 			header='Settings'

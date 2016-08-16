@@ -3,12 +3,14 @@ import { DropdownMenu } from './dropdown';
 import { fetchGene } from '../actions/actions.js';
 import { Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup } from 'react-bootstrap';
+import { FetchGeneComponent } from './fetch-gene';
 
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet, genes } = props;
 	const landscapeState = props.landscapeState;
 	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
+	const geneList = dataSet.rowAttrs.Gene;
 	const temp = Object.keys(dataSet.colAttrs).sort();
 	temp.push("(gene)");
 
@@ -58,17 +60,24 @@ export const LandscapeSidepanel = function (props) {
 						dispatch={dispatch}
 						/>
 					{xCoordinate === "(gene)" ?
-						<input
-							className='form-control'
-							placeholder='Gene'
-							value={xGene}
-							onChange={(event) => {
-								dispatch({
-									type: 'SET_LANDSCAPE_PROPS',
-									xGene: event.target.value,
-								});
-								dispatch(fetchGene(dataSet, event.target.value, genes));
-							} } /> :
+						<div>
+							<input
+								className='form-control'
+								placeholder='Gene'
+								value={xGene}
+								onChange={(event) => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										xGene: event.target.value,
+									});
+									dispatch(fetchGene(dataSet, event.target.value, genes));
+								} } />
+							<FetchGeneComponent
+								geneList={geneList}
+								dispatch={dispatch}
+								/>
+						</div>
+						:
 						null
 					}
 				</ListGroupItem>
