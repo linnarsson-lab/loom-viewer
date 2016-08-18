@@ -7,28 +7,19 @@ export const NavbarView = function (props) {
 	let viewLinks = null;
 	let viewSettingsURL = (viewsettings ? ('/' + viewsettings) : '');
 	if (dataset) {
-		viewLinks = [
-			<LinkContainer to={`/dataset/heatmap/${project}/${dataset}${viewSettingsURL}`}>
-				<NavItem eventKey='heatmap'>
-					Heatmap
-				</NavItem>
-			</LinkContainer>,
-			<LinkContainer to={`/dataset/sparkline/${project}/${dataset}${viewSettingsURL}`}>
-				<NavItem eventKey='sparkline'>
-					Sparklines
-				</NavItem>
-			</LinkContainer>,
-			<LinkContainer to={`/dataset/landscape/${project}/${dataset}${viewSettingsURL}`}>
-				<NavItem eventKey='landscape'>
-					Cells (scatter)
-				</NavItem>
-			</LinkContainer>,
-			<LinkContainer to={`/dataset/genescape/${project}/${dataset}${viewSettingsURL}`}>
-				<NavItem eventKey='genescape'>
-					Genes (scatter)
-				</NavItem>
-			</LinkContainer>,
-		];
+		viewLinks = [ 'heatmap', 'sparklines', 'cells', 'genes'].map(
+			(view) => {
+				const link = `/dataset/${view}/${project}/${dataset}${viewSettingsURL}`;
+				return(
+					<LinkContainer to={link}>
+						<NavItem eventKey={view}>
+							{view.charAt(0).toUpperCase() + view.slice(1)}
+						</NavItem>
+					</LinkContainer>
+				);
+			}
+		);
+
 	}
 	const navbarInstance = (
 		<Navbar>

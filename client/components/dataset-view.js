@@ -100,8 +100,8 @@ const ProjectList = function (props) {
 	} else {
 		return (
 			<Panel
-				header={'Downloading list of available datasets...'}
-				bsStyle='primary'
+				header={<h3>'Downloading list of available datasets...'</h3>}
+				bsStyle='default'
 				/>
 		);
 	}

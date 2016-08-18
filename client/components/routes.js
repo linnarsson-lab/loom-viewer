@@ -28,8 +28,8 @@ const Routes = (
 					path='/dataset' />
 				<Route name='data-set-heatmap' component={HeatmapView}
 					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
-				<Route name='data-set-sparkline' component={SparklineView}
-					path='/dataset/sparkline/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-sparklines' component={SparklineView}
+					path='/dataset/sparklines/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-landscape' component={LandscapeView}
 					path='/dataset/landscape/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
