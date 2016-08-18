@@ -4,7 +4,6 @@ import {
 	ListGroup, ListGroupItem,
 	Panel, PanelGroup,
 	Button, Glyphicon,
-	OverlayTrigger, Tooltip,
 } from 'react-bootstrap';
 import { fetchProjects } from '../actions/actions';
 
@@ -13,44 +12,27 @@ const DataSetListItem = function (props) {
 	const { dataset } = props.dataSetMetaData;
 
 	const downloadURL = '/clone/' + props.dataSetPath;
-	const downloadTooltip = (
-		<Tooltip id={`tooltip_${props.dataSetPath}_download`}>
-			<strong>download "{props.dataSetPath}"</strong>
-		</Tooltip>
-	);
 	const downloadButton = (
 		<Button
 			className='pull-right'
 			bsSize='xsmall'
 			bsStyle='link'
 			href={downloadURL}
+			title={"Download " + props.dataSetPath}
 			>
-			<OverlayTrigger
-				placement='top'
-				overlay={downloadTooltip} >
-				<Glyphicon glyph='cloud-download' />
-			</OverlayTrigger>
+			<Glyphicon glyph='cloud-download' />
 		</Button>
 	);
 
-	const datasetTooltip = (
-		<Tooltip id={'tooltip_' + props.dataSetPath}>
-			<strong>open genescape view (default) of "{props.dataSetPath}"</strong>
-		</Tooltip>
-	);
 	const path = 'dataset/genescape/' + props.dataSetPath;
 
 	const datasetLink = (
-		<OverlayTrigger
-			placement='top'
-			overlay={datasetTooltip} >
-			<a href={path}>{dataset}</a>
-		</OverlayTrigger>
+		<a href={path} title={"Open " + props.dataSetPath }>{dataset}</a>
 	);
 
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<p>{datasetLink} {downloadButton}</p>
+			<div>{datasetLink} {downloadButton}</div>
 		</ListGroupItem>
 	);
 };
@@ -141,8 +123,7 @@ class DataSetViewComponent extends Component {
 			<Grid>
 				<Row>
 					<Col xs={12} md={8}>
-						<h1>Linnarsson Lab single-cell data repository</h1>
-						<h2>Available datasets</h2>
+						<h2>Linnarsson Lab single-cell datasets</h2>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
 						</PanelGroup>

@@ -24,7 +24,7 @@ uglifycss ./client/css/* > ./python/loompy/static/css/bundle.min.css
 # of webpack, and have the resulting index.html be put in the right folders.
 # Yes, it's an ugly hack, but it works - Job
 mv ./python/loompy/index.html ./python/loompy/static/index.html
-
+cp -R ./client/fonts ./python/loompy/static/
 cd python
 echo "Installing loom python package"
 python setup.py install --force
