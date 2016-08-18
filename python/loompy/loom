@@ -216,6 +216,9 @@ if __name__ == '__main__':
 		parser.add_argument('--dataset-path', help="Path to datasets directory (default: %s)" % def_dir , default=def_dir)
 		subparsers = parser.add_subparsers(title="subcommands", dest="command")
 
+		# loom version
+		version_parser = subparsers.add_parser('version', help="Print version")
+
 		# loom server
 		server_parser = subparsers.add_parser('server', help="Launch loom server (default command)")
 		server_parser.add_argument('--show-browser', help="Automatically launch browser", action="store_true")
@@ -293,6 +296,9 @@ if __name__ == '__main__':
 		logging.info("Creating dataset directory: " + args.dataset_path)
 		os.mkdir(args.dataset_path)
 
+	if args.command == "version":
+		print "loom v" + str(loompy.__version__)
+		sys.exit(0)
 	if args.command == "list":
 		list_command(args.dataset_path, args.server, args.username, args.password)
 	elif args.command == "clone":

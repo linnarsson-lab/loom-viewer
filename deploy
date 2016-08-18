@@ -7,5 +7,5 @@ python setup.py sdist upload -r pypi
 cd ..
 echo "Upgrading the server"
 gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl stop all"  --zone "us-central1-a"
-gcloud compute ssh ubuntu@loom --command "/home/ubuntu/anaconda2/bin/pip install -U loompy"  --zone "us-central1-a"
+gcloud compute ssh ubuntu@loom --command "/home/ubuntu/anaconda2/bin/pip install -U loompy scipy==0.17.1"  --zone "us-central1-a"
 gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl start all"  --zone "us-central1-a"
