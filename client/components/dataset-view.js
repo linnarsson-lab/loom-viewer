@@ -123,7 +123,7 @@ class DataSetViewComponent extends Component {
 			<Grid>
 				<Row>
 					<Col xs={12} md={8}>
-						<h2>Linnarsson Lab single-cell datasets</h2>
+						<h2>Available datasets</h2>
 						<h4>&nbsp;</h4>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
