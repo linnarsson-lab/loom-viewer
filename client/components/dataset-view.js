@@ -47,7 +47,6 @@ DataSetListItem.propTypes = {
 const DataSetList = function (props) {
 
 	const { project, projectState } = props;
-	const totalDatasets = projectState.length.toString() + ' dataset' + (projectState.length !== 1 ? 's' : '');
 	const datasets = projectState.map((dataSetMetaData) => {
 		// Takes the metadata of the dataset
 		// and returns a DataSetListItem
@@ -60,11 +59,12 @@ const DataSetList = function (props) {
 				/>
 		);
 	});
+	const title = <h3>{project}</h3>;
 	return (
 		<Panel
 			key={project}
-			header={`${project}, ${totalDatasets}`}
-			bsStyle='primary'>
+			header={title}
+			bsStyle='default'>
 			<ListGroup fill>
 				{datasets}
 			</ListGroup>
