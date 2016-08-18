@@ -1,11 +1,11 @@
 #! /bin/bash
 
 cd python
-echo "Don't forget to update VERSION in setup.py before deploying!'"
+echo "Don't forget to update _version.py before deploying!'"
 echo "Submitting to PyPi"
 python setup.py sdist upload -r pypi
 cd ..
 echo "Upgrading the server"
-gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl stop all"  --zone "us-central1-a"
-gcloud compute ssh loom --command "sudo -H /home/Sten/anaconda2/bin/pip install -U loompy"  --zone "us-central1-a"
-gcloud compute ssh loom --command "sudo /home/Sten/anaconda2/bin/supervisorctl start all"  --zone "us-central1-a"
+gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl stop all"  --zone "us-central1-a"
+gcloud compute ssh ubuntu@loom --command "/home/ubuntu/anaconda2/bin/pip install -U loompy"  --zone "us-central1-a"
+gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl start all"  --zone "us-central1-a"

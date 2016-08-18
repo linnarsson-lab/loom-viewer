@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+exec(open('loompy/_version.py').read())
+
 setup(
     name = "loompy",
-    version = "0.9.6",
+    version = __version__,
     packages = find_packages(),
     install_requires = [
         'scikit-learn',
