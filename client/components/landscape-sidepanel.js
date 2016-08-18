@@ -165,6 +165,6 @@ export const LandscapeSidepanel = function (props) {
 LandscapeSidepanel.propTypes = {
 	landscapeState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.object.isRequired,
+	genes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

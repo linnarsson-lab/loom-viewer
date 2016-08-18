@@ -41,7 +41,9 @@ export class Canvas extends React.Component {
 		if (el) {
 			this.fitToZoomAndPixelRatio();
 			let context = el.getContext('2d');
-			this.props.paint(context, el.clientWidth, el.clientHeight);
+			if (context) {
+				this.props.paint(context, el.clientWidth, el.clientHeight);
+			}
 			if (this.props.loop) {
 				window.requestAnimationFrame(this.draw);
 			}
@@ -115,8 +117,8 @@ export class CanvasBenchmark extends React.Component {
 		const radius = Math.max(3, Math.sqrt(totalDots) / 60) | 0;
 		const sprite = document.createElement('canvas');
 		sprite.id = "dot_sprite";
-		sprite.width = 2*radius + 1;
-		sprite.height = 2*radius + 1;
+		sprite.width = 2 * radius + 1;
+		sprite.height = 2 * radius + 1;
 		const context = sprite.getContext('2d');
 		// draw dot on sprite
 		context.lineWidth = 1;

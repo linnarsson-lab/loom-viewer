@@ -30,7 +30,8 @@ export class Scatterplot extends React.Component {
 		context.fillRect(0, 0, width, height);
 
 		// Calculate some general properties
-		width = (width - 200);	// Make room for color legend on right
+		// Make room for color legend on right
+		width = (width - 200);
 		let x = this.props.x;
 		// Log transform if requested
 		if (this.props.logScaleX) {
@@ -43,8 +44,10 @@ export class Scatterplot extends React.Component {
 			y = y.map((x) => { return Math.log2(x + 1 + 0.5 * Math.random()); });
 		}
 		y = _.map(y, (t) => { return isFinite(t) ? t : 0; });
-		const radius = Math.max(3, Math.sqrt(x.length) / 60);	// Suitable radius of the markers
-		const xmin = Math.min(...x);	// Scale of data
+		// Suitable radius of the markers
+		const radius = Math.max(3, Math.sqrt(x.length) / 60);
+		// Scale of data
+		const xmin = Math.min(...x);
 		const xmax = Math.max(...x);
 		const ymin = Math.min(...y);
 		const ymax = Math.max(...y);
@@ -57,15 +60,24 @@ export class Scatterplot extends React.Component {
 		} else {
 			// Do we need to categorize the color scale?
 			if (this.props.colorMode === "Categorical" || !_.every(color, (x) => { return isFinite(x); })) {
-				let cats = nMostFrequent(color, palette.length - 1);	// Reserve palette[0] for all uncategorized items
-				color = color.map((x) => { return palette[cats.indexOf(x) + 1]; });	// Add one so the uncategorized become zero
+
+				// Reserve palette[0] for all uncategorized items
+				let cats = nMostFrequent(color, palette.length - 1);
+
+				// Add one so the uncategorized become zero
+				color = color.map((x) => { return palette[cats.indexOf(x) + 1]; });
 
 				// Draw the figure legend
-				for (let i = -1; i < cats.length; i++) {  // Start at -1 which corresponds to the "(other)" category, i.e. those that didn't fit in the top 20
+				// Start at -1 which corresponds to
+				// the "(other)" category, i.e. those
+				// that didn't fit in the top 20
+				for (let i = -1; i < cats.length; i++) {
 					context.beginPath();
 					context.arc(width + 20, (i + 2) * 15, 7, 0, 2 * Math.PI, false);
 					context.closePath();
-					context.fillStyle = palette[i + 1];	// i+1 because white (other) is the first color and i = 1 would be the first category
+					// i+1 because white (other) is the first color
+					// and i = 1 would be the first category
+					context.fillStyle = palette[i + 1];
 					context.fill();
 					context.lineWidth = 0.25;
 					context.strokeStyle = "black";
@@ -94,7 +106,8 @@ export class Scatterplot extends React.Component {
 					context.beginPath();
 					context.arc(width + 20, (i + 1) * 15, 7, 0, 2 * Math.PI, false);
 					context.closePath();
-					context.fillStyle = palette[palette.length - i - 1];	// Invert it so max value is on top
+					// Invert it so max value is on top
+					context.fillStyle = palette[palette.length - i - 1];
 					context.fill();
 					context.lineWidth = 0.25;
 					context.strokeStyle = "black";
@@ -120,7 +133,8 @@ export class Scatterplot extends React.Component {
 					continue;
 				}
 				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;	// "1-" because Y needs to be flipped
+				// "1-" because Y needs to be flipped
+				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
 
 				context.beginPath();
 				context.arc(xi, yi, radius, 0, 2 * Math.PI, false);
