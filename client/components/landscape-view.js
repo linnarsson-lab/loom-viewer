@@ -29,7 +29,7 @@ class LandscapeViewComponent extends Component {
 		const x = this.makeData(xCoordinate, xGene);
 		const y = this.makeData(yCoordinate, yGene);
 		return (
-			<div style={{ display: 'flex', flex: '1 1 auto' }}>
+			<div>
 				<div className='view-sidepanel'>
 					<LandscapeSidepanel
 						landscapeState={landscapeState}
