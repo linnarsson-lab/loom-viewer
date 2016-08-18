@@ -30,10 +30,10 @@ const Routes = (
 					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparklines' component={SparklineView}
 					path='/dataset/sparklines/:project/:dataset(/:viewsettings)' />
-				<Route name='data-set-landscape' component={LandscapeView}
-					path='/dataset/landscape/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-cells' component={LandscapeView}
+					path='/dataset/cells/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
-					path='/dataset/genescape/:project/:dataset(/:viewsettings)' />
+					path='/dataset/genes/:project/:dataset(/:viewsettings)' />
 				<Route name='canvas-benchmark' component={CanvasBenchmark}
 					path='/dataset/benchmark' />
 			</Route>

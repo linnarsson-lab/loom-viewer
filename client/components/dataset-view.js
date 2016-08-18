@@ -24,7 +24,7 @@ const DataSetListItem = function (props) {
 		</Button>
 	);
 
-	const path = 'dataset/genescape/' + props.dataSetPath;
+	const path = 'dataset/genes/' + props.dataSetPath;
 
 	const datasetLink = (
 		<a href={path} title={"Open " + props.dataSetPath }>{dataset}</a>
