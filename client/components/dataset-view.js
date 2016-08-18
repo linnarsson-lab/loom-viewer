@@ -9,7 +9,7 @@ import { fetchProjects } from '../actions/actions';
 
 
 const DataSetListItem = function (props) {
-	const { dataset } = props.dataSetMetaData;
+	const { dataset, title, description, url, doi } = props.dataSetMetaData;
 
 	const downloadURL = '/clone/' + props.dataSetPath;
 	const downloadButton = (
@@ -23,16 +23,38 @@ const DataSetListItem = function (props) {
 			<Glyphicon glyph='cloud-download' />
 		</Button>
 	);
+	const paperButton = doi === "" ? (<span></span>) : (
+		<Button
+			className='pull-right'
+			bsSize='xsmall'
+			bsStyle='link'
+			href={"http://dx.doi.org/" + doi}
+			title='Original reference'
+			>
+			<Glyphicon glyph='file' />
+		</Button>
+	);
+	const urlButton = url === "" ? (<span></span>) : (
+		<Button
+			className='pull-right'
+			bsSize='xsmall'
+			bsStyle='link'
+			href={url}
+			title='External web page'
+			>
+			<Glyphicon glyph='globe' />
+		</Button>
+	);
 
 	const path = 'dataset/genes/' + props.dataSetPath;
 
-	const datasetLink = (
-		<a href={path} title={"Open " + props.dataSetPath }>{dataset}</a>
-	);
-
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
-			<div>{datasetLink} {downloadButton}</div>
+			<div>
+				<strong><a href={path} title={"Open " + props.dataSetPath}>{title}</a></strong>
+			</div>
+			<div><code>{dataset}</code> {downloadButton}{urlButton}{paperButton}</div>
+			<div><em>{description}</em></div>
 		</ListGroupItem>
 	);
 };
@@ -123,8 +145,7 @@ class DataSetViewComponent extends Component {
 			<Grid>
 				<Row>
 					<Col xs={12} md={8}>
-						<h2>Available datasets</h2>
-						<h4>&nbsp;</h4>
+						<h3>Available datasets</h3>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
 						</PanelGroup>

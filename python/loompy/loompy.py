@@ -217,6 +217,29 @@ def connect(filename):
 	"""
 	return LoomConnection(filename)
 
+class LoomAttributeManager():
+    def __init__(self, f):
+        self.f = f
+		
+    def __contains__(self, name):
+		return self.f.attrs.__contains__(name)
+
+    def __setitem__(self, name, value):
+		self.f.attrs[name] = str(value)
+		self.f.flush()
+
+    def __getitem__(self, name):
+		return str(self.f.attrs[name])
+
+    def __len__(self):
+        return len(self.f.attrs)
+
+    def get(self, name, default=None):
+		if self.__contains__(name):
+			return self[name]
+		else:
+			return default		
+
 class LoomConnection(object):
 	def __init__(self, filename):
 		"""
@@ -243,6 +266,7 @@ class LoomConnection(object):
 			self.col_attrs[x] = self.file['col_attrs'][x][:]
 			if not hasattr(LoomConnection, x):
 				setattr(self, x, self.col_attrs[x])
+		self.attrs = LoomAttributeManager(self.file)
 
 	def _repr_html_(self):
 		"""
@@ -250,7 +274,13 @@ class LoomConnection(object):
 		"""
 		rm = min(10,self.shape[0])
 		cm = min(10,self.shape[1])
-		html = "<p>" + str(self.shape) + "</p>"
+		html = "<p>"
+		if self.attrs.__contains__("title"):
+			html += "<strong>" + self.attrs["title"] + "</strong> "
+		html += "(" + str(self.shape[0]) + " genes, " + str(self.shape[1]) + " cells)<br/>"
+		html += self.file.filename + "<br/>"
+		if self.attrs.__contains__("description"):
+			html += "<em>" + self.attrs["description"] + "</em><br/>"
 		html += "<table>"
 		# Emit column attributes
 		for ca in self.col_attrs.keys():

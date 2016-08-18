@@ -69,7 +69,12 @@ class LoomCache(object):
 			if self._authorize(proj, username, password):
 				for f in os.listdir(os.path.join(self.dataset_path, proj)):
 					if f.endswith(".loom"):
-						result.append({"project": proj, "filename": f, "dataset": f})
+						ds = self.connect_dataset_locally(proj, f, username, password)
+						title = ds.attrs.get("title", f) 
+						descr = ds.attrs.get("description", "") 
+						url = ds.attrs.get("url", "")
+						doi = ds.attrs.get("doi", "")
+						result.append({"project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi":doi})
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):
