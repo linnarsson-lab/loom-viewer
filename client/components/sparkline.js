@@ -101,7 +101,8 @@ class TextPainter {
 			return;
 		}
 		groupedData.forEach((group) => {
-			const text = group[0];	// We only draw text if zoomed in so there's a single element per group
+			// We only draw text if zoomed in so there's a single element per group
+			const text = group[0];
 			const fontArgs = context.font.split(' ');
 			const fontSize = Math.min(pixelsPer, 12);
 			context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
@@ -129,16 +130,7 @@ class TextAlwaysPainter {
 export class Sparkline extends React.Component {
 	constructor(props) {
 		super(props);
-
 		this.paint = this.paint.bind(this);
-	}
-
-	componentDidMount() {
-		this.paint();
-	}
-
-	componentDidUpdate() {
-		this.paint();
 	}
 
 	paint(context, width, height) {
@@ -157,7 +149,7 @@ export class Sparkline extends React.Component {
 		context.save();
 		const fractionalPixel = this.props.dataRange[0] % 1;
 		const pixelsPer = width / (this.props.dataRange[1] - this.props.dataRange[0]);
-		const yoffset =- fractionalPixel * pixelsPer;
+		const yoffset = - fractionalPixel * pixelsPer;
 
 		// Group the data
 		const data = [];
@@ -187,7 +179,7 @@ export class Sparkline extends React.Component {
 			default:
 				painter = new TextPainter();
 		}
-		if (painter){
+		if (painter) {
 			painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
 		}
 
