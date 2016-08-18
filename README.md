@@ -33,7 +33,7 @@ Open your terminal, and type
 loom
 ```
 
-To learn more about the Loom browser, read the [Documentation](docs/loom_browser.md).
+To learn more about the Loom browser, read the [Loom Guide](docs/loom_browser.md).
 
 ### The `loom` command-line tool
 
@@ -43,7 +43,7 @@ Open your terminal, and type:
 loom --help
 ```
 
-To learn more about the `loom` command-line tool, read the [Documentation](docs/loom.md).
+To learn more about the `loom` command-line tool, read the [loom command-line documentation](docs/loom.md).
 
 ### The `loompy` Python package
 
@@ -60,9 +60,9 @@ import loompy
 ds = loompy.connect("filename.loom")
 ```
 
-To learn more about the `loompy` package, read the [Documentation](docs/loompy.md).
+To learn more about the `loompy` package, read the [loompy package documentation](docs/loompy.md).
 
 
 ### The `.loom` file format
 
-For a detailed information, read the [Specification](docs/loom_spec.md)
+For a detailed information, read the [`.loom` format specification](docs/loom_spec.md)
