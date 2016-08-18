@@ -44,7 +44,7 @@ class HeatmapViewComponent extends Component {
 				heatmapHeight -= 100;
 			}
 			heatmap = (
-				<div style={{ width: '100%', height: '100%' }}>
+				<div style={{ display: 'flex', flex: '1 1 auto'}}>
 					<Sparkline
 						orientation='horizontal'
 						width={heatmapWidth}
@@ -99,7 +99,7 @@ class HeatmapViewComponent extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<div className='view-main' ref='heatmapContainer'>
+				<div style={{display: 'flex', flex: '1 1 auto'}} ref='heatmapContainer'>
 					{heatmap}
 				</div>
 			</div>

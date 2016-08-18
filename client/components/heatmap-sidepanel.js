@@ -46,7 +46,10 @@ export const HeatmapSidepanel = function (props) {
 									value={heatmapState.colGene}
 									onChange={
 										(event) => {
-											dispatch({ type: 'SET_HEATMAP_PROPS', colGene: event.target.value });
+											dispatch({
+												type: 'SET_HEATMAP_PROPS',
+												colGene: event.target.value,
+											});
 											dispatch(fetchGene(dataSet, event.target.value, genes));
 										}
 									} />
@@ -71,7 +74,12 @@ export const HeatmapSidepanel = function (props) {
 									<textarea className='form-control' placeholder='Genes'
 										value={heatmapState.rowGenes}
 										onChange={
-											(event) => { dispatch({ type: 'SET_HEATMAP_PROPS', rowGenes: event.target.value }); }
+											(event) => {
+												dispatch({
+													type: 'SET_HEATMAP_PROPS',
+													rowGenes: event.target.value,
+												});
+											}
 										} />
 								</div>
 							</div>
