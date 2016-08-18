@@ -52,7 +52,7 @@ Here's an example of the structure of a valid `.loom` file:
 A valid `.loom` file conforms to the following:
 
 * There MUST be a single dataset at `/matrix` of type float32[N,M]
-* There can OPTIONALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the `/matrix` dataset. 
+* There can OPTIONALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the root (`/`) group. 
   If there are, they MUST be of type `string` and should be interpreted as attributes of the whole `.loom` file. 
   The following HDF5 attributes are standard: 
   * `title`, a short title for the dataset
