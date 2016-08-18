@@ -19,6 +19,7 @@ export const NavbarView = function (props) {
 				);
 			}
 		);
+
 	}
 	const navbarInstance = (
 		<Navbar>

@@ -25,29 +25,33 @@ export const LandscapeSidepanel = function (props) {
 
 			<ListGroup fill>
 				<ListGroupItem>
-					<ButtonGroup>
-						<Button
-							bsStyle={ isTSNE ? "success" : "default" }
-							onClick={ () => {
-								dispatch({
-									type: 'SET_LANDSCAPE_PROPS',
-									xCoordinate: '_tSNE1',
-									yCoordinate: '_tSNE2',
-								});
-							} }>
-							tSNE
-						</Button>
-						<Button
-							bsStyle={ isPCA ? "success" : "default" }
-							onClick={ () => {
-								dispatch({
-									type: 'SET_LANDSCAPE_PROPS',
-									xCoordinate: '_PC1',
-									yCoordinate: '_PC2',
-								});
-							} }>
-							PCA
-						</Button>
+					<ButtonGroup justified>
+						<ButtonGroup>
+							<Button
+								bsStyle={ isTSNE ? "success" : "default" }
+								onClick={ () => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										xCoordinate: '_tSNE1',
+										yCoordinate: '_tSNE2',
+									});
+								} }>
+								tSNE
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={ isPCA ? "success" : "default" }
+								onClick={ () => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										xCoordinate: '_PC1',
+										yCoordinate: '_PC2',
+									});
+								} }>
+								PCA
+							</Button>
+						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
@@ -134,27 +138,31 @@ export const LandscapeSidepanel = function (props) {
 					}
 				</ListGroupItem>
 				<ListGroupItem>
-					<ButtonGroup>
-						<Button
-							bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
-							onClick={ () => {
-								dispatch({
-									type: 'SET_LANDSCAPE_PROPS',
-									colorMode: 'Heatmap',
-								});
-							} }>
-							Heatmap
-						</Button>
-						<Button
-							bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
-							onClick={ () => {
-								dispatch({
-									type: 'SET_LANDSCAPE_PROPS',
-									colorMode: 'Categorical',
-								});
-							} }>
-							Categorical
-						</Button>
+					<ButtonGroup justified>
+						<ButtonGroup>
+							<Button
+								bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
+								onClick={ () => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										colorMode: 'Heatmap',
+									});
+								} }>
+								Heatmap
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
+								onClick={ () => {
+									dispatch({
+										type: 'SET_LANDSCAPE_PROPS',
+										colorMode: 'Categorical',
+									});
+								} }>
+								Categorical
+							</Button>
+						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
 			</ListGroup>

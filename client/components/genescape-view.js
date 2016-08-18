@@ -10,7 +10,7 @@ const GenescapeViewComponent = function (props) {
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
 
 	return (
-		<div style={{ display: 'flex', flex: '1 1 auto' }}>
+		<div >
 			<div className='view-sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
