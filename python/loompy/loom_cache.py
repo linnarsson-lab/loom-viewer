@@ -53,8 +53,9 @@ class LoomCache(object):
 			return True
 		else:
 			try:
-				with open(os.path.join(proj, "auth.txt")) as f:
-					users = {x[0]: x[1] for x in f.read().splitlines().split(",")}
+				with open(os.path.join(self.dataset_path, proj, "auth.txt")) as f:
+					lines = [x.split(",") for x in f.read().splitlines()]
+					users = {x[0]: x[1] for x in lines }
 			except IndexError:
 				return False
 		return users.has_key(username) and users[username] == password
