@@ -7,7 +7,7 @@ export const NavbarView = function (props) {
 	let viewLinks = null;
 	let viewSettingsURL = (viewsettings ? ('/' + viewsettings) : '');
 	if (dataset) {
-		viewLinks = [ 'heatmap', 'sparkline', 'landscape', 'genescape'].map(
+		viewLinks = [ 'Heatmap', 'Sparklines', 'Cells', 'Genes'].map(
 			(view) => {
 				const link = `/dataset/${view}/${project}/${dataset}${viewSettingsURL}`;
 				return(
@@ -25,7 +25,7 @@ export const NavbarView = function (props) {
 			<Navbar.Header>
 				<LinkContainer to='/'>
 					<Navbar.Brand>
-						Loom - Datasets
+						Loom
 					</Navbar.Brand>
 				</LinkContainer>
 				<Navbar.Toggle />
