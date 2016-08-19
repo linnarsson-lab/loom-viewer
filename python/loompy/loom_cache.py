@@ -46,7 +46,7 @@ class LoomCache(object):
 		self.dataset_path = dataset_path
 		self.looms = {}
 
-	def _authorize(self, proj, username, password):
+	def authorize(self, proj, username, password):
 		users = {}
 		authfile = os.path.join(self.dataset_path, proj, "auth.txt")
 		if not os.path.exists(authfile):
@@ -67,7 +67,7 @@ class LoomCache(object):
 		projects = [x for x in os.listdir(self.dataset_path) if not x.startswith(".")]
 		result = []
 		for proj in projects:
-			if self._authorize(proj, username, password):
+			if self.authorize(proj, username, password):
 				for f in os.listdir(os.path.join(self.dataset_path, proj)):
 					if f.endswith(".loom"):
 						ds = self.connect_dataset_locally(proj, f, username, password)
@@ -109,7 +109,7 @@ class LoomCache(object):
 		for ds in self.looms.itervalues():
 			ds.close()
 			
-	def get_absolute_path(self, project, filename, username=None, password=None):
+	def get_absolute_path(self, project, filename, username=None, password=None, check_exists=True):
 		"""
 		Return the absolute path to the dataset, if authorized.
 
@@ -118,16 +118,17 @@ class LoomCache(object):
 			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
 			username (string):		Username or None
 			password (string):		Password or None
+			check_exists (bool):	If true, return None if the file does not exist
 
 		Returns:
 			An absolute path string, or None if not authorized or file does not exist.	
 		"""
 
-		if not self._authorize(project, username, password):
+		if not self.authorize(project, username, password):
 			return None
 
 		absolute_path = os.path.join(self.dataset_path, project, filename)
-		if os.path.exists(absolute_path):
+		if os.path.exists(absolute_path) or not check_exists:
 			return absolute_path
 		else:
 			return None

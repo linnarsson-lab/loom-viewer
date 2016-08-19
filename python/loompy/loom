@@ -245,10 +245,10 @@ if __name__ == '__main__':
 		clone_parser.add_argument('-u','--username', help="Username")	
 		clone_parser.add_argument('-p','--password', help="Password")	
 		
-		# loom project
-		project_parser = subparsers.add_parser('project', help="Compute non-linear projection to 2D")
-		project_parser.add_argument("file", help="Loom input file")
-		project_parser.add_argument('--perplexity', help="Perplexity", type=int, default=20)
+		# loom tsne
+		tsne_parser = subparsers.add_parser('tsne', help="Compute t-SNE projection to 2D")
+		tsne_parser.add_argument("file", help="Loom input file")
+		tsne_parser.add_argument('--perplexity', help="Perplexity", type=int, default=20)
 
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
@@ -307,8 +307,8 @@ if __name__ == '__main__':
 		loompy.start_server(args.dataset_path, args.show_browser, args.port, args.debug)
 	elif args.command == "stats":
 		stats_command(args.dataset_path, args.file)
-	elif args.command == "project":
-		project_command(args.dataset_path, args.file, args.perplexity)
+	elif args.command == "tsne":
+		tsne_command(args.dataset_path, args.file, args.perplexity)
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "backspin":

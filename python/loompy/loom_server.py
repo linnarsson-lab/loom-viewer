@@ -2,6 +2,7 @@ import flask
 from flask import request
 from flask import make_response
 from flask_compress import Compress
+from werkzeug.utils import secure_filename
 from functools import wraps, update_wrapper
 import os
 import os.path
@@ -143,6 +144,32 @@ def send_fileinfo(project, filename):
 		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()])
 	}
 	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
+
+# Upload a dataset
+# curl "http://127.0.0.1:8003/loom/Published/cortex2.loom" --upload-file ~/loom-datasets/Published/cortex.loom
+@app.route('/loom/<string:project>/<string:filename>', methods=['PUT'])
+@cache(expires=None)
+def upload_file(project, filename):
+	(u,p) = get_auth(request)
+	filename = secure_filename(filename)
+
+	if not app.cache.authorize(project, u, p):
+		return "Not authorized", 403
+
+	if not filename.endswith(".loom"):
+		return "Filename must have .loom extension", 400
+
+	path = app.cache.get_absolute_path(project, filename, u, p, check_exists=True)
+	if path != None:
+		# File exists, so we delete it
+		os.remove(path)
+	path = app.cache.get_absolute_path(project, filename, u, p, check_exists=False)
+
+	data = request.get_data()
+	with open(path, 'wb') as f:
+		f.write(data)
+
+	return "",201
 
 # Download a dataset to the client
 @app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
