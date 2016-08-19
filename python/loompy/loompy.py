@@ -238,7 +238,8 @@ def upload(path, server, project, filename, username=None, password=None):
 							400		The filename was incorrect (needs a .loom extension)
 	
 	The function will throw requests.ConnectionError if the connection could not be established or was aborted. 
-	This will also happen if the credentials provided are insufficient. It may also throw a Timeout exception.
+	This will also happen if the credentials provided are insufficient. It may also throw a Timeout exception. All 
+	these exceptions inherit from requests.exceptions.RequestException.
 	"""
 	url = "http://"
 	if server.startswith("http://"):
