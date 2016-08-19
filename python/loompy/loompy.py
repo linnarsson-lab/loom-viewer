@@ -42,7 +42,9 @@ from shutil import copyfile
 import logging
 import __builtin__
 from backspin import loom_backspin
-	
+import requests
+
+
 def create(filename, matrix, row_attrs, col_attrs):
 	"""
 	Create a new .loom file from the given data.
@@ -216,6 +218,39 @@ def connect(filename):
 		A LoomConnection instance.
 	"""
 	return LoomConnection(filename)
+
+def upload(path, server, project, filename, username=None, password=None):
+	"""
+	Upload a .loom file to a remote server
+
+	Args:
+
+		path (str):			Full path to the loom file to be uploaded
+		server (str):		Domain and port of the server (e.g. loom.linnarssonlab.org or localhost:8003)
+		project (str):		Name of the project
+		filename (str):		Filename (not path) to use on the remote server
+		username (str):		Username for authorization (or None if not needed)
+		password (str):		Password for authorization (or None if not needed)		
+	
+	Returns:
+		status_code (int):
+							201		OK (the file was created on the remote server)
+							400		The filename was incorrect (needs a .loom extension)
+	
+	The function will throw requests.ConnectionError if the connection could not be established or was aborted. 
+	This will also happen if the credentials provided are insufficient. It may also throw a Timeout exception.
+	"""
+	url = "http://"
+	if server.startswith("http://"):
+		url = server
+	else:
+		url += server
+	url += "/loom/" + project + "/" + filename
+	
+	with open(path,"rb") as f:
+		response = requests.put(url, f, auth=(username, password))
+	
+	return response.status_code
 
 class LoomAttributeManager():
     def __init__(self, f):
