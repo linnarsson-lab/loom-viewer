@@ -153,7 +153,7 @@ def upload_file(project, filename):
 	(u,p) = get_auth(request)
 	filename = secure_filename(filename)
 
-	if not app.cache.authorize(project, u, p):
+	if not app.cache.authorize(project, u, p, mode="write"):
 		return "Not authorized", 403
 
 	if not filename.endswith(".loom"):

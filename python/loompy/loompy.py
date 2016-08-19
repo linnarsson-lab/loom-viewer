@@ -219,7 +219,7 @@ def connect(filename):
 	"""
 	return LoomConnection(filename)
 
-def upload(path, server, project, filename, username=None, password=None):
+def upload(path, server, project, filename, username, password):
 	"""
 	Upload a .loom file to a remote server
 
@@ -229,8 +229,8 @@ def upload(path, server, project, filename, username=None, password=None):
 		server (str):		Domain and port of the server (e.g. loom.linnarssonlab.org or localhost:8003)
 		project (str):		Name of the project
 		filename (str):		Filename (not path) to use on the remote server
-		username (str):		Username for authorization (or None if not needed)
-		password (str):		Password for authorization (or None if not needed)		
+		username (str):		Username for authorization
+		password (str):		Password for authorization
 	
 	Returns:
 		status_code (int):

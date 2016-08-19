@@ -10,6 +10,8 @@ Requests can be accompanied by a Basic Auth header (username and password), whic
 will determine access to some resources (e.g. projects and datasets). If no auth
 headers are provided, only public projects and datasets will be returned.
 
+[Learn more](/docs/authorization.md) about setting up authorization on a Loom server.
+
 ### Endpoints
 
 ##### ```GET /```

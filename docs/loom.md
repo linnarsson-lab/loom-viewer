@@ -121,7 +121,7 @@ midbrain-lamanno:
    Midbrain_Mouse_embryo.loom
 ```
 
-### `loom put` (**not yet implemented**)
+### `loom put`
 
 Submit a dataset to a remote server. This requires authorization for the specific project on
 the remote server.

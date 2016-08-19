@@ -46,19 +46,40 @@ class LoomCache(object):
 		self.dataset_path = dataset_path
 		self.looms = {}
 
-	def authorize(self, proj, username, password):
+	def authorize(self, proj, username, password, mode="read"):
+		"""
+		Check authorization for the specific project and credentials
+
+		Args:
+			proj (str):			Project name
+			username (str): 	Username
+			password (str):		Password
+			mode (str):			"read" or "write"
+		
+		Read access will be allowed if the credentials are valid, or if there is no auth.txt file
+		in the project directory. Write access will only be allowed if the credentials match
+		an existing auth.txt file (with 'w' flag for the user). 
+		"""
 		users = {}
 		authfile = os.path.join(self.dataset_path, proj, "auth.txt")
 		if not os.path.exists(authfile):
-			return True
+			return True if mode == "read" else False
 		else:
 			try:
-				with open(os.path.join(self.dataset_path, proj, "auth.txt")) as f:
+				with open(authfile) as f:
 					lines = [x.split(",") for x in f.read().splitlines()]
-					users = {x[0]: x[1] for x in lines }
+					users = {x[0]: (x[1],x[2]) for x in lines }
 			except IndexError:
 				return False
-		return users.has_key(username) and users[username] == password
+		if mode == "read":
+			if users.has_key("*"):
+				return True
+			if users.has_key(username) and users[username][0] == password:
+				return True
+		else:
+			if users.has_key(username) and users[username][0] == password and users[username][1] == "w":
+				return True			
+		return False
 
 	def list_datasets(self, username=None, password=None):
 		"""
