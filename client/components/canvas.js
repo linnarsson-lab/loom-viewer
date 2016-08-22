@@ -58,8 +58,11 @@ export class Canvas extends React.Component {
 		window.addEventListener("resize", debounce(this.draw, 200));
 	}
 
-	componentDidUpdate() {
-		this.draw();
+	componentDidUpdate(prevProps) {
+		// only call draw if it wasn't already looping
+		if (!prevProps.loop) {
+			this.draw();
+		}
 	}
 
 	render() {
