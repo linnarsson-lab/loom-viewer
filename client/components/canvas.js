@@ -64,7 +64,7 @@ export class Canvas extends React.Component {
 
 	render() {
 		return (
-			<div className='view' style={{ minWidth: '500px'}}>
+			<div className='view' style={{ minWidth: '500px', margin: '20px' }}>
 				<canvas
 					ref='canvas'
 					style={{
