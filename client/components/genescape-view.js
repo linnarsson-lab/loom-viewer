@@ -10,15 +10,15 @@ const GenescapeViewComponent = function (props) {
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
 
 	return (
-		<div style={{ display: 'flex', flex: '1 1 auto'}} >
-			<div className='view-sidepanel'>
+		<div className='view' >
+			<div className='sidepanel'>
 				<GenescapeSidepanel
 					genescapeState={genescapeState}
 					dataSet={dataSet}
 					dispatch={dispatch}
 					/>
 			</div>
-			<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
+			<div className='view'>
 				<Scatterplot
 					x={x}
 					y={y}

@@ -64,12 +64,7 @@ export class Canvas extends React.Component {
 
 	render() {
 		return (
-			<div style={{
-				flex: '1 1 auto',
-				margin: 0,
-				padding: 0,
-				border: 0,
-			}}>
+			<div className='view' style={{ minWidth: '500px'}}>
 				<canvas
 					ref='canvas'
 					style={{
@@ -172,7 +167,6 @@ export class CanvasBenchmark extends React.Component {
 			const timerEnd = performance.now();
 
 			// use a moving average to count average time to draw
-			const drawTime = (this.state.drawTime * 15 + (timerEnd - timerStart)) * 0.0625;
 			console.log('arc rendering time: ', timerEnd - timerStart);
 			//this.setState({ drawTime });
 		}
@@ -209,7 +203,7 @@ export class CanvasBenchmark extends React.Component {
 		const isArcs = selectedPainter === this.paintArc;
 		const isSprites = selectedPainter === this.paintSprite;
 		return (
-			<div style={{ display: 'flex', flex: '1 1 auto' }}>
+			<div className='view'>
 				<ButtonGroup>
 					<Button
 						bsStyle={ isArcs ? 'success' : 'default' }
@@ -228,7 +222,7 @@ export class CanvasBenchmark extends React.Component {
 					</Button>
 				</ButtonGroup>
 
-				<div style={{ display: 'flex', flex: '1 1 auto' }}>
+				<div className='view'>
 					<Canvas
 						paint={ selectedPainter }
 						loop={ this.state.playing } />

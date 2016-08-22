@@ -29,8 +29,8 @@ class LandscapeViewComponent extends Component {
 		const x = this.makeData(xCoordinate, xGene);
 		const y = this.makeData(yCoordinate, yGene);
 		return (
-			<div style={{ display: 'flex', flex: '1 1 auto'}}>
-				<div className='view-sidepanel'>
+			<div className='view'>
+				<div className='sidepanel'>
 					<LandscapeSidepanel
 						landscapeState={landscapeState}
 						dataSet={dataSet}
@@ -38,7 +38,7 @@ class LandscapeViewComponent extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<div  style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
+				<div className='view'>
 					<Scatterplot
 						x={x}
 						y={y}
