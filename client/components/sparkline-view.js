@@ -62,8 +62,8 @@ const SparklineViewComponent = function (props) {
 
 
 	return (
-		<div style={{ display: 'flex', flex: '1 1 auto' }}>
-			<div className='view-sidepanel'>
+		<div className='view'>
+			<div className='sidepanel'>
 				<SparklineSidepanel
 					sparklineState={sparklineState}
 					dataSet={dataSet}
@@ -71,7 +71,7 @@ const SparklineViewComponent = function (props) {
 					dispatch={dispatch}
 					/>
 			</div>
-			<div style={{ display: 'flex', flex: '1 1 auto', padding: '20px', overflow: 'hidden' }}>
+			<div className='view'>
 				{
 					/* Borrowing the Leaflet zoom buttons
 					<div className="leaflet-top leaflet-left">

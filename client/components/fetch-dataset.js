@@ -1,7 +1,8 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchDataSet } from '../actions/actions';
 
-
+// A placeholder <div> that simultaneously
+// dispatches a fetchDataSet action.
 export class FetchDatasetComponent extends Component {
 	componentDidMount() {
 		const { dispatch, dataSets, dataset, project } = this.props;
@@ -10,7 +11,7 @@ export class FetchDatasetComponent extends Component {
 
 	render() {
 		const { dataset } = this.props;
-		return <div className='container' >Fetching dataset: {dataset}</div>;
+		return <div className='view' >Fetching dataset: {dataset}</div>;
 	}
 }
 
