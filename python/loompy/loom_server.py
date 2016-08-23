@@ -9,7 +9,7 @@ import os.path
 import sys
 import StringIO
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from loom_cache import LoomCache
 import argparse
 import errno
@@ -51,7 +51,7 @@ def cache(expires=None, round_to_minute=False):
                 response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
                 response.headers['Expires'] = '-1'
             else:
-                expires_time = now + datetime.timedelta(seconds=expires)
+                expires_time = now + timedelta(seconds=expires)
 
                 if round_to_minute:
                     expires_time = expires_time.replace(second=0, microsecond=0)
