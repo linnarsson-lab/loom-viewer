@@ -11,24 +11,21 @@ const GenescapeViewComponent = function (props) {
 
 	return (
 		<div className='view' >
-			<div className='sidepanel'>
-				<GenescapeSidepanel
-					genescapeState={genescapeState}
-					dataSet={dataSet}
-					dispatch={dispatch}
-					/>
-			</div>
-			<div className='view'>
-				<Scatterplot
-					x={x}
-					y={y}
-					color={color}
-					colorMode={genescapeState.colorMode}
-					logScaleColor={false}
-					logScaleX={false}
-					logScaleY={false}
-					/>
-			</div>
+			<GenescapeSidepanel
+				genescapeState={genescapeState}
+				dataSet={dataSet}
+				dispatch={dispatch}
+				/>
+			<Scatterplot
+				x={x}
+				y={y}
+				color={color}
+				colorMode={genescapeState.colorMode}
+				logScaleColor={false}
+				logScaleX={false}
+				logScaleY={false}
+				style={{ margin: '20px' }}
+				/>
 		</div>
 	);
 };

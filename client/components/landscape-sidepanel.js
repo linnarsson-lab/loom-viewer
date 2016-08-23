@@ -19,6 +19,7 @@ export const LandscapeSidepanel = function (props) {
 
 	return (
 		<Panel
+			className='sidepanel'
 			key='landscape-settings'
 			header='Settings'
 			bsStyle='default'>

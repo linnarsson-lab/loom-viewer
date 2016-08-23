@@ -17,10 +17,9 @@ export class Scatterplot extends React.Component {
 	}
 
 	paint(context, width, height) {
-		if (this.props.x === undefined) {
-			return;
-		}
-		if (this.props.y === undefined) {
+		if (this.props.x === undefined ||
+			this.props.y === undefined ||
+			this.props.color === undefined) {
 			return;
 		}
 
@@ -149,17 +148,20 @@ export class Scatterplot extends React.Component {
 
 	render() {
 		return (
-			<Canvas paint={this.paint} />
+			<Canvas paint={this.paint} style={this.props.style} />
 		);
 	}
 }
 
 Scatterplot.propTypes = {
-	x: PropTypes.arrayOf(PropTypes.number).isRequired,
-	y: PropTypes.arrayOf(PropTypes.number).isRequired,
-	color: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired,
+	x: PropTypes.arrayOf(PropTypes.number),
+	y: PropTypes.arrayOf(PropTypes.number),
+	color: PropTypes.arrayOf(
+		PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+	),
 	colorMode: PropTypes.string.isRequired,
 	logScaleColor: PropTypes.bool.isRequired,
 	logScaleX: PropTypes.bool.isRequired,
 	logScaleY: PropTypes.bool.isRequired,
+	style: PropTypes.object,
 };

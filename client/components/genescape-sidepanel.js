@@ -13,6 +13,7 @@ export const GenescapeSidepanel = function (props) {
 
 	return (
 		<Panel
+			className='sidepanel'
 			key='genescape-settings'
 			header='Settings'
 			bsStyle='default'>
