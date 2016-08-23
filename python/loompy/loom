@@ -32,7 +32,7 @@ def tile_command(dataset_path, filename):
 	if ds == None:
 		logging.error("File not found")
 		sys.exit(1)
-	logging.info("Precomputing heatmap tiles")
+	logging.info("Precomputing heatmap tiles (stored inside the .loom file)")
 	ds.prepare_heatmap()
 
 def stats_command(dataset_path, filename):
