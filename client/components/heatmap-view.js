@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import { FetchDatasetComponent } from './fetch-dataset';
 
 class HeatmapViewComponent extends Component {
+
 	render() {
 		const { dispatch, dataSet, genes, heatmapState } = this.props;
 
@@ -31,8 +32,8 @@ class HeatmapViewComponent extends Component {
 		let el = this.refs.heatmapContainer;
 		let heatmap = null;
 		if (el) {
-			let heatmapWidth = el.parentNode.clientWidth; //viewState.width - 350;
-			let heatmapHeight = el.parentNode.clientHeight; //viewState.height - 40;
+			let heatmapWidth = el.clientWidth;
+			let heatmapHeight = el.clientHeight;
 			let verticalSparklineWidth = 20;
 			if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
 				heatmapWidth -= 100;
@@ -44,7 +45,7 @@ class HeatmapViewComponent extends Component {
 				heatmapHeight -= 100;
 			}
 			heatmap = (
-				<div className='view'>
+				<div>
 					<Sparkline
 						orientation='horizontal'
 						width={heatmapWidth}
