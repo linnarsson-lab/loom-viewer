@@ -54,7 +54,7 @@ export class Heatmap extends React.Component {
 		);
 
 		L.tileLayer(
-			`/loom/${this.props.transcriptome}__${this.props.project}__${this.props.dataset}/tiles/{z}/{x}_{y}.png`,
+			`/loom/${this.props.project}/${this.props.dataset}/tiles/{z}/{x}_{y}.png`,
 			{
 				maxZoom: this.props.zoomRange[2],
 				minZoom: this.props.zoomRange[0] + 1,
@@ -64,7 +64,7 @@ export class Heatmap extends React.Component {
 			}
 		).addTo(map);
 
-		this.setState({ 'map': map });
+		this.setState({ map });
 		const southWest = map.unproject([0, this.props.fullZoomHeight], map.getMaxZoom());
 		const northEast = map.unproject([this.props.fullZoomWidth, 0], map.getMaxZoom());
 		map.on('move', () => { return this.handleViewChanged(map); });
@@ -88,11 +88,11 @@ export class Heatmap extends React.Component {
 		const heatmapStyle = {
 			// width: this.props.width + "px",
 			// height: this.props.height + "px",
-			flex: '1 1 auto',
 		};
 		return (
 			<div
 				ref='map'
+				className='view'
 				style={heatmapStyle}
 				/>
 		);

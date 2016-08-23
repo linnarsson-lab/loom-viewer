@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import { FetchDatasetComponent } from './fetch-dataset';
 
 class HeatmapViewComponent extends Component {
+
 	render() {
 		const { dispatch, dataSet, genes, heatmapState } = this.props;
 
@@ -31,8 +32,8 @@ class HeatmapViewComponent extends Component {
 		let el = this.refs.heatmapContainer;
 		let heatmap = null;
 		if (el) {
-			let heatmapWidth = el.parentNode.clientWidth; //viewState.width - 350;
-			let heatmapHeight = el.parentNode.clientHeight; //viewState.height - 40;
+			let heatmapWidth = el.clientWidth;
+			let heatmapHeight = el.clientHeight;
 			let verticalSparklineWidth = 20;
 			if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
 				heatmapWidth -= 100;
@@ -44,7 +45,7 @@ class HeatmapViewComponent extends Component {
 				heatmapHeight -= 100;
 			}
 			heatmap = (
-				<div style={{ display: 'flex', flex: '1 1 auto'}}>
+				<div>
 					<Sparkline
 						orientation='horizontal'
 						width={heatmapWidth}
@@ -90,8 +91,8 @@ class HeatmapViewComponent extends Component {
 			);
 		}
 		return (
-			<div style={{ display: 'flex', flex: '1 1 auto' }}>
-				<div className='view-sidepanel'>
+			<div className='view'>
+				<div className='sidepanel'>
 					<HeatmapSidepanel
 						heatmapState={heatmapState}
 						dataSet={dataSet}
@@ -99,7 +100,7 @@ class HeatmapViewComponent extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<div style={{display: 'flex', flex: '1 1 auto'}} ref='heatmapContainer'>
+				<div className='view' ref='heatmapContainer'>
 					{heatmap}
 				</div>
 			</div>

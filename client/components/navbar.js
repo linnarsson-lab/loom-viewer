@@ -39,9 +39,9 @@ export const NavbarView = function (props) {
 		</Navbar>
 	);
 	return (
-		<div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', margin: '0' }}>
+		<div className='view-vertical'>
 			{navbarInstance}
-			<div style={{ display: 'flex', flex: '1 1 auto' } /* Ensure the rest of the screen is filled */}>
+			<div className='view'>
 				{props.children}
 			</div>
 		</div>
