@@ -102,19 +102,21 @@ represent all integers up to and including 9,007,199,254,740,992 without loss.
 Create from data:
 
 ```python
-def create(filename, matrix, row_attrs, col_attrs):
-   """
-   Create a new .loom file from the given data.
+def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
+	"""
+	Create a new .loom file from the given data.
 
-  Args:
-   filename (str):		The filename (typically using a '.loom' file extension)
-   matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
-   row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N
-   col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
+	Args:
+		filename (str):			The filename (typically using a '.loom' file extension)		
+		matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
+		row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N		
+		col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
+		row_attr_types (dict):	Row attribute types ('float64', 'int' or 'string' for each attribute)		
+		col_attr_types (dict):	Column attribute types ('float64', 'int' or 'string' for each attribute)		
 
-  Returns:
-   Nothing. To work with the file, use loompy.connect(filename).
-   """
+	Returns:
+		Nothing. To work with the file, use loom.connect(filename).
+	"""
 ```
 
 Create by combining existing .loom files:
@@ -176,33 +178,37 @@ def create_from_pandas(df, loom_file):
 Create from a 10X Genomics [cellranger](http://support.10xgenomics.com/single-cell/software/pipelines/latest/what-is-cell-ranger) output folder:
 
 ```python
-def create_from_cellranger(folder, loom_file, sample_annotation = {}):
+def create_from_cellranger(folder, loom_file, sample_annotation = {}, schema={}):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
 	Args:
-		folder (str):				path to the cellranger output folder (containing the "matrix.mtx" file)
+		folder (str):				path to the cellranger output folder (usually called `outs`)
 		loom_file (str):			full path of the resulting loom file
 		sample_annotation (dict): 	dict of additional sample attributes
+		schema (dict):				types for the additional sample attributes (required)
 
 	Returns:
 		Nothing, but creates loom_file
 	"""
 ```
 
-You can use the *sample_annotation* dictionary to add column (cell) annotations to all cells in the dataset. For example, this is useful to add a sample ID to each of several datasets before combining them into a single .loom file.
+You can use the *sample_annotation* dictionary to add column (cell) annotations to all cells in the dataset. For example, this is useful to add a
+ sample ID to each of several datasets before combining them into a single .loom file. If you do supply annotations, you must also give the corresponding
+ data types (`"float64"`, `"int"` or `"string"`).
 
 ### Connecting
 
 Establish a connection to an existing `.loom` file:
 
 ```python
-def connect(filename):
+def connect(filename, infer=False):
 	"""
 	Establish a connection to a .loom file.
 
 	Args:
 		filename (str):		Name of the .loom file to open
+		infer (bool):		Infer data types for attributes
 
 	Returns:
 		A LoomConnection instance.
@@ -224,6 +230,39 @@ file by calling `close()` on the connection, before the second can start writing
 ```python
 ds.close()
 ```
+
+Use `infer=True` to force the row and column attribute types to be inferred from the content of the HDF5 file. This can be useful when importing
+files created by other applications, but it *will destroy existing type information*. It will infer each type as `string` or `float64`, never `int`.
+
+### Uploading
+
+To upload a dataset to a remote Loom server:
+
+```python
+def upload(path, server, project, filename, username, password):
+	"""
+	Upload a .loom file to a remote server
+
+	Args:
+
+		path (str):			Full path to the loom file to be uploaded
+		server (str):		Domain and port of the server (e.g. loom.linnarssonlab.org or localhost:8003)
+		project (str):		Name of the project
+		filename (str):		Filename (not path) to use on the remote server
+		username (str):		Username for authorization
+		password (str):		Password for authorization
+	
+	Returns:
+		status_code (int):
+							201		OK (the file was created on the remote server)
+							400		The filename was incorrect (needs a .loom extension)
+	
+	The function will throw requests.ConnectionError if the connection could not be established or was aborted. 
+	This will also happen if the credentials provided are insufficient. It may also throw a Timeout exception. All 
+	these exceptions inherit from requests.exceptions.RequestException.
+	"""
+```
+
 
 
 ### Shape, indexing and slicing
@@ -258,9 +297,39 @@ ds[[0,3,5], :]    # Return rows with index 0, 3 and 5
 ds[:, bool_array] # Return columns where bool_array elements are True
 ```
 
-### Attributes
+### Global attributes
 
-Attributes are accessed as dictionaries on `row_attrs` and `col_attrs`, respectively. For example:
+Global attributes are available as
+
+```python
+>>> ds.attrs["title"]
+"The title of the dataset"
+
+>>> ds.attrs["title"] = "New title"
+>>> ds.attrs["title"]
+"New title"
+```
+
+The following global attributes are standard:
+
+  * `title`, a short title for the dataset
+  * `description`, a longer description of the dataset
+  * `url`, a link to a web page for the dataset
+  * `doi`, a DOI for the paper where the dataset was published
+
+(They are standard in the sense that you are encouraged to use `title` rather than `Title` or `TITLE` for a title, but they are
+not guaranteed to exist, or required)
+
+The following global attributes are reserved:
+
+  * `schema`, a type annotation schema (JSON-formatted string)
+
+DO NOT attempt to set reserved global attributes to a different value.
+
+
+### Row and column attributes
+
+Row and column attributes are accessed as dictionaries on `row_attrs` and `col_attrs`, respectively. For example:
 
 ```python
 ds.row_attrs.keys()       # Return list of row attribute names
@@ -303,6 +372,32 @@ There are some limitations:
 
 Note again, that you should not assign to these attributes, because your assignment will not be saved in the .loom file and will cause internal inconsistencies in the `LoomConnection` object. Use *set_attr()* (below) to add or modify attributes.
 
+### Schema
+
+The schema gives the semantic data type of each row and column attribute, and the main matrix. It returns a Python dictionary:
+
+
+```python
+>>> ds.schema
+
+{
+  "matrix": "float32",
+  "row_attrs": {
+     "GeneName":    "string",
+     "Chromosome":  "string",
+     "Position":    "int",
+     "GC_Percent":  "float64"
+  },
+  "col_attrs": {
+     "CellID":      "string",
+     "Tissue":      "string",
+     "Total_RNA":   "int",
+     "Class":       "string"
+  },
+}
+```
+
+**Note:** The `schema` property is read-only. Setting it to a value will cause weird side-effects and break your code.
 
 
 ### Adding attributes and columns
@@ -313,46 +408,49 @@ attributes or any part of the matrix.
 To add an attribute, which also saves it to the loom file:
 
 ```python
-def set_attr(self, name, values, axis = 0):
-    """
-    Create or modify an attribute.
+	def set_attr(self, name, values, axis = 0, dtype=None):
+		"""
+		Create or modify an attribute.
 
-    Args:
-        name (str): 			Name of the attribute
-        values (numpy.ndarray):		Array of values of length equal to the axis length
-        axis (int):			Axis of the attribute (0 = rows, 1 = columns)
+		Args:
+			name (str): 			Name of the attribute
+			values (numpy.ndarray):	Array of values of length equal to the axis length		
+			axis (int):				Axis of the attribute (0 = rows, 1 = columns)
+			dtype (str):			Type ("float64", "int", or "string")
 
-    Returns:
-        Nothing.
+		Returns:
+			Nothing.
 
-    This will overwrite any existing attribute of the same name.
-    """
+		This will overwrite any existing attribute of the same name.
+		"""
 ```
 
-**Note:** If you use an existing attribute name, the existing attribute will be overwritten.
+**Note:** If you use an existing attribute name, the existing attribute will be overwritten. This is pefectly fine, 
+and is the only way to change an attribute or its type.
 
 You can also add an attribute by providing a lookup dictionary based on an existing attribute. 
 This can be very useful to fill in missing values, fix typos etc:
 
 
 ```python
-def set_attr_bydict(self, name, fromattr, dict, axis = 0, default = None):
-    """
-    Create or modify an attribute by mapping source values to target values.
+	def set_attr_bydict(self, name, fromattr, dict, new_dtype = None, axis = 0, default = None):
+		"""
+		Create or modify an attribute by mapping source values to target values.
 
-    Args:
-        name (str): 			Name of the destination attribute
-        fromattr (str):			Name of the source attribute
-        dict (dict):			Key-value mapping from source to target values
-        axis (int):				Axis of the attribute (0 = rows, 1 = columns)
-        default: (float or str):	Default target value to use if no mapping exists for a source value
+		Args:
+			name (str): 			Name of the destination attribute			
+			fromattr (str):			Name of the source attribute			
+			dict (dict):			Key-value mapping from source to target values			
+			new_dtype (string):		Datatype for the new attribute			
+			axis (int):				Axis of the attribute (0 = rows, 1 = columns)	
+			default: (float or str):	Default target value to use if no mapping exists for a source value
 
-    Returns:
-        Nothing.
+		Returns:
+			Nothing.
 
-    This will overwrite any existing attribute of the same name. It is perfectly possible to map an
-    attribute to itself (in-place).
-    """
+		This will overwrite any existing attribute of the same name. It is perfectly possible to map an
+		attribute to itself (in-place).
+		"""
 ```
 
 To add columns:

@@ -141,7 +141,12 @@ def send_fileinfo(project, filename):
 		"fullZoomHeight": dims[1],
 		"fullZoomWidth": dims[0],
 		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.iteritems()]),
-		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()])
+		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()]),
+		"schema": {
+			"matrix": ds.schema["matrix"],
+			"rowAttrs": ds.schema["row_attrs"],
+			"colAttrs": ds.schema["col_attrs"]
+		}
 	}
 	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
 

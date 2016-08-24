@@ -45,25 +45,25 @@ Here's an example of the structure of a valid `.loom` file:
 |/row_attrs/| (subgroup) | Subgroup of all row attributes|
 |/row_attrs/Name|string[N]| Row attribute "Name" of type string|
 |/col_attrs/|(subgroup)|Subgroup of all column attributes|
-|/col_attrs/CellID|float32[M] | Column attribute "CellID" of type float64 |
+|/col_attrs/CellID|float64[M] | Column attribute "CellID" of type float64 |
 
 ## Specification
 
 A valid `.loom` file conforms to the following:
 
 * There MUST be a single dataset at `/matrix` of type float32[N,M]
-* There can OPTIONALLY be one or more [HDF5 attributes](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the root (`/`) group. 
-  If there are, they MUST be of type `string` and should be interpreted as attributes of the whole `.loom` file. 
+* There MUST be at least one [HDF5 attribute](https://www.hdfgroup.org/HDF5/Tutor/crtatt.html) on the root `/` group, which MUST be of type `string` and should be interpreted as attributes of the whole `.loom` file. 
   The following HDF5 attributes are standard: 
+  * `schema`, a MANDATORY type annotation schema (see below)
   * `title`, a short title for the dataset
   * `description`, a longer description of the dataset
   * `url`, a link to a web page for the dataset
   * `doi`, a DOI for the paper where the dataset was published
 * There MUST be a group `/row_attrs`
-* There can OPTIONALLY be one or more datasets at `/row_attrs/{name}` of type float64[N] or string[N]
+* There can OPTIONALLY be one or more datasets at `/row_attrs/{name}` of length N and type `float64`, `int` or `string`
 * There MUST be a group `/col_attrs`
-* There can OPTIONALLY be one or more datasets at `/col_attrs/{name}` of type float64[M] or string[M]
-* There can OPTIONALLY be a group at `/tiles`, and it should be ignored
+* There can OPTIONALLY be one or more datasets at `/col_attrs/{name}` of length M and type `float64`, `int` or `string`
+* There can OPTIONALLY be a group at `/tiles`, and it should be ignored by applications
 
 The datasets under `/row_attrs` should be semantically interpreted as row attributes, with one value
 per row of the main matrix, and in the same order. Therefore, all datasets under this group must 
@@ -73,10 +73,35 @@ The datasets under `/col_attrs` should be semantically interpreted as column att
 per column of the main matrix, and in the same order. Therefore, all datasets under this group must 
 be one-dimensional arrays with exactly M elements, where M is the number of columns in the main matrix.
 
-As noted above, only three datatypes are allowed: `float32` for the main matrix and either `float64` or
-`string` for attributes. Note that there is no integer attribute type. However, float64s are large enough to 
-represent all integers up to and including 9,007,199,254,740,992 exactly. 
+As noted above, only four datatypes are allowed: `float32` for the main matrix and either `float64`, `int` or
+`string` for attributes. 
 
 The group name `/tiles` is reserved and should be ignored by applications. It is used by the Loom
 browser to store precomputed heatmap tiles.
+
+
+### Type annotation schema
+
+The `schema` attribute (see above) MUST exist and should be a JSON string that gives the semantic data type of each row and column attribute, as
+well as the main matrix. Example:
+
+```
+{
+  "matrix": "float32",
+  "row_attrs": {
+     "GeneName":    "string",
+     "Chromosome":  "string",
+     "Position":    "int",
+     "GC_Percent":  "float64"
+  },
+  "col_attrs": {
+     "CellID":      "string",
+     "Tissue":      "string",
+     "Total_RNA":   "int",
+     "Class":       "string"
+  },
+}
+```
+
+
 
