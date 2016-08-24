@@ -495,6 +495,40 @@ class LoomConnection(object):
 
 		self.add_columns(other[:,:], other.col_attrs)				
 
+	def delete_attr(self, name, axis=0):
+		"""
+		Permanently delete an existing attribute and all its values
+
+		Args:
+
+			name (str): 	Name of the attribute to remove
+			axis (int):		Axis of the attribute (0 = rows, 1 = columns)
+		
+		Returns:
+			Nothing.
+		"""
+		if axis == 0:
+			if not self.row_attrs.has_key(name):
+				raise KeyError, "Row attribute " + name + " does not exist"
+			
+			del self.row_attrs[name]
+			del self.file['/row_attrs/' + name]
+			del self.schema["row_attrs"][name]
+
+		elif axis == 1:
+			if not self.col_attrs.has_key(name):
+				raise KeyError, "Column attribute " + name + " does not exist"
+			
+			del self.col_attrs[name]
+			del self.file['/col_attrs/' + name]
+			del self.schema["col_attrs"][name]
+
+		else:
+			raise ValueError, "Axis must be 0 or 1"
+
+		self.file.attrs["schema"] = json.dumps(self.schema)
+		self.file.flush()
+	
 	def set_attr(self, name, values, axis = 0, dtype=None):
 		"""
 		Create or modify an attribute.
@@ -510,6 +544,9 @@ class LoomConnection(object):
 
 		This will overwrite any existing attribute of the same name.
 		"""
+		if dtype == None:
+			raise TypeError, "Data type must be provided"
+
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError, "Invalid loom data type: " + dtype
 

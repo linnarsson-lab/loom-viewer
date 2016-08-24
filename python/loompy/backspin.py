@@ -39,6 +39,7 @@ from numpy import *
 import sys
 import os
 import logging
+import re
 
 class Results:
 		pass
@@ -568,12 +569,27 @@ def loom_backspin(ds,
 
 	logging.debug("Writing result to file")
 
+	# Remove existing cluster attributes
+	regex = re.compile("^BackSPIN_level_\d+_group$")
+	for attr in ds.row_attrs.keys():
+		if regex.match(attr):
+			ds.delete_attr(attr, axis = 0)
+			logging.debug("Deleting previous row attr " + attr)
+	for attr in ds.col_attrs.keys():
+		if regex.match(attr):
+			ds.delete_attr(attr, axis = 1)
+			logging.debug("Deleting previous col attr " + attr)
+
 	for level, groups in enumerate( results.genes_gr_level.T ):
+		if level == 0:
+			continue
 		temp = zeros((ds.shape[0],))
-		temp[where(ds._Excluded == 0)] = array([int(el)+1 for el in groups])
-		ds.set_attr('BackSPIN_level_%i_group' % (level+1), temp, axis=0)
+		temp[where(ds._Excluded == 0)] = array([int(el) for el in groups])
+		ds.set_attr('BackSPIN_level_%i_group' % (level), temp, axis=0, dtype="int")
 	for level, groups in enumerate( results.cells_gr_level.T ):
-		ds.set_attr('BackSPIN_level_%i_group' % (level+1), array([int(el)+1 for el in groups]), axis=1)
+		if level == 0:
+			continue
+		ds.set_attr('BackSPIN_level_%i_group' % (level), array([int(el) for el in groups]), axis=1, dtype="int")
 
 	logging.info("BackSPIN all done")
 
