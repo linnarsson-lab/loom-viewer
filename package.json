@@ -28,7 +28,7 @@
     "lodash": "^4.13.1",
     "react": "^15.3.0",
     "react-addons-shallow-compare": "^15.3.0",
-    "react-bootstrap": "^0.29.5",
+    "react-bootstrap": "^0.30.3",
     "react-dom": "^15.3.0",
     "react-redux": "^4.4.5",
     "react-router": "^2.5.2",
@@ -51,7 +51,7 @@
     "browserify": "^13.0.1",
     "html-webpack-plugin": "^2.22.0",
     "uglify-js": "^2.6.4",
-    "uglifycss": "0.0.20",
+    "uglifycss": "0.0.21",
     "webpack": "^1.13.1"
   }
 }

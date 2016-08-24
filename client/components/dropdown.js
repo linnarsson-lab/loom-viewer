@@ -40,7 +40,7 @@ export const DropdownMenu = function (props) {
 
 DropdownMenu.propTypes = {
 	buttonLabel: PropTypes.string,
-	buttonName: PropTypes.string.isRequired,
+	buttonName: PropTypes.string,
 	attributes: PropTypes.array.isRequired,
 	attrType: PropTypes.string.isRequired,
 	attrName: PropTypes.string.isRequired,

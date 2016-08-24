@@ -11,7 +11,7 @@ export const NavbarView = function (props) {
 			(view) => {
 				const link = `/dataset/${view}/${project}/${dataset}${viewSettingsURL}`;
 				return(
-					<LinkContainer to={link}>
+					<LinkContainer to={link} key={view}>
 						<NavItem eventKey={view}>
 							{view.charAt(0).toUpperCase() + view.slice(1)}
 						</NavItem>

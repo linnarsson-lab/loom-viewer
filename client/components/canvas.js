@@ -67,7 +67,7 @@ export class Canvas extends React.Component {
 
 	render() {
 		return (
-			<div className='view' style={{ minWidth: '500px', margin: '20px' }}>
+			<div className='view' style={this.props.style}>
 				<canvas
 					ref='canvas'
 					style={{
@@ -84,6 +84,7 @@ export class Canvas extends React.Component {
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
 	loop: PropTypes.bool,
+	style: PropTypes.object,
 };
 
 
@@ -98,7 +99,6 @@ export class CanvasBenchmark extends React.Component {
 		this.paintArc = this.paintArc.bind(this);
 		this.paintSprite = this.paintSprite.bind(this);
 
-		const totalDots = 100000;
 		// save sprite and timer in component state;
 		const drawTime = 0.0;
 		// save to component state
@@ -106,7 +106,7 @@ export class CanvasBenchmark extends React.Component {
 			drawTime,
 			selectedPainter: this.paintSprite,
 			playing: false,
-			totalDots: 10000,
+			totalDots: 20000,
 		};
 	}
 
@@ -149,8 +149,6 @@ export class CanvasBenchmark extends React.Component {
 		if (this.state) {
 
 			const { x, y } = this.generatePoints();
-
-			const timerStart = performance.now();
 			const TWO_PI = 2 * Math.PI;
 			const radius = Math.max(3, Math.sqrt(x.length) / 60) | 0;	// Suitable radius of the markers
 
@@ -167,11 +165,6 @@ export class CanvasBenchmark extends React.Component {
 				context.stroke();
 				context.fill();
 			}
-			const timerEnd = performance.now();
-
-			// use a moving average to count average time to draw
-			console.log('arc rendering time: ', timerEnd - timerStart);
-			//this.setState({ drawTime });
 		}
 	}
 
@@ -179,7 +172,6 @@ export class CanvasBenchmark extends React.Component {
 		if (this.state) {
 			if (this.state.sprite) {
 				const { x, y } = this.generatePoints();
-				const timerStart = performance.now();
 
 				const { sprite } = this.state;
 				context.clearRect(0, 0, width, height);
@@ -188,12 +180,6 @@ export class CanvasBenchmark extends React.Component {
 					const yi = (y[i] * height) | 0;
 					context.drawImage(sprite, xi, yi);
 				}
-				const timerEnd = performance.now();
-
-				// use a moving average to count average time to draw
-				const drawTime = (this.state.drawTime * 15 + (timerEnd - timerStart)) * 0.0625;
-				console.log('sprite rendering time: ', timerEnd - timerStart);
-				//this.setState({ drawTime });
 			}
 			else {
 				this.generateSprite(this.state.totalDots);

@@ -55,8 +55,7 @@ body {
 .sidepanel {
   min-width:200px;
   max-width: 300px;
-  padding-left: 10px;
-  padding-right: 20px;
+  margin: 10px;
   flex: 1 1 auto;
 }
 

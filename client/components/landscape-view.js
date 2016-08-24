@@ -30,25 +30,22 @@ class LandscapeViewComponent extends Component {
 		const y = this.makeData(yCoordinate, yGene);
 		return (
 			<div className='view'>
-				<div className='sidepanel'>
-					<LandscapeSidepanel
-						landscapeState={landscapeState}
-						dataSet={dataSet}
-						genes={genes}
-						dispatch={dispatch}
-						/>
-				</div>
-				<div className='view'>
-					<Scatterplot
-						x={x}
-						y={y}
-						color={color}
-						colorMode={landscapeState.colorMode}
-						logScaleColor={landscapeState.colorAttr === "(gene)"}
-						logScaleX={landscapeState.xCoordinate === "(gene)"}
-						logScaleY={landscapeState.yCoordinate === "(gene)"}
-						/>
-				</div>
+				<LandscapeSidepanel
+					landscapeState={landscapeState}
+					dataSet={dataSet}
+					genes={genes}
+					dispatch={dispatch}
+					/>
+				<Scatterplot
+					x={x}
+					y={y}
+					color={color}
+					colorMode={landscapeState.colorMode}
+					logScaleColor={landscapeState.colorAttr === "(gene)"}
+					logScaleX={landscapeState.xCoordinate === "(gene)"}
+					logScaleY={landscapeState.yCoordinate === "(gene)"}
+					style={{ margin: '20px' }}
+					/>
 			</div>
 		);
 	}
