@@ -183,7 +183,7 @@ export function fetchGene(dataSet, gene, cache) {
 			return;
 		}
 		const row = rowAttrs["Gene"].indexOf(gene);
-		if (cache.hasOwnProperty(gene)) {
+		if (cache.hasOwnProperty(gene) || row === -1) {
 			return;
 		}
 		// First, make known the fact that the request has been started
