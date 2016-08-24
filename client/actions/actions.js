@@ -179,17 +179,17 @@ function receiveGene(gene, list) {
 export function fetchGene(dataSet, gene, cache) {
 	const rowAttrs = dataSet.rowAttrs;
 	return (dispatch) => {
-		if (!rowAttrs.hasOwnProperty("GeneName")) {
+		if (!rowAttrs.hasOwnProperty("Gene")) {
 			return;
 		}
-		const row = rowAttrs["GeneName"].indexOf(gene);
+		const row = rowAttrs["Gene"].indexOf(gene);
 		if (cache.hasOwnProperty(gene)) {
 			return;
 		}
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
-		return fetch(`/loom/${dataSet.name}/row/${row}`)
+		return fetch(`/loom/${dataSet.project}/${dataSet.filename}/row/${row}`)
 			.then((response) => { return response.json(); })
 			.then((json) => {
 				// Third, once the response comes in, dispatch an action to provide the data
