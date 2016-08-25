@@ -179,13 +179,12 @@ function receiveGene(gene, list) {
 export function fetchGene(dataSet, gene, cache) {
 	const rowAttrs = dataSet.rowAttrs;
 	return (dispatch) => {
-		if (!rowAttrs.hasOwnProperty("Gene")) {
-			return;
-		}
-		const row = rowAttrs["Gene"].indexOf(gene);
-		if (cache.hasOwnProperty(gene) || row === -1) {
-			return;
-		}
+
+		if (rowAttrs.Gene === undefined) { return; }
+
+		const row = rowAttrs.Gene.indexOf(gene);
+		if (cache.hasOwnProperty(gene) || row === -1) { return; }
+
 		// First, make known the fact that the request has been started
 		dispatch(requestGene(gene));
 		// Second, perform the request (async)
