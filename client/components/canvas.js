@@ -42,8 +42,11 @@ export class Canvas extends React.Component {
 			this.fitToZoomAndPixelRatio();
 			let context = el.getContext('2d');
 			if (context) {
-				this.props.paint(context, el.clientWidth, el.clientHeight);
+				// should we clear the canvas every redraw?
+				if (this.props.clear) { context.clearRect(0, 0, el.width, el.height); }
+				this.props.paint(context, el.width, el.height);
 			}
+			// is the provided paint function an animation?
 			if (this.props.loop) {
 				window.requestAnimationFrame(this.draw);
 			}
@@ -83,6 +86,7 @@ export class Canvas extends React.Component {
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
+	clear: PropTypes.bool,
 	loop: PropTypes.bool,
 	style: PropTypes.object,
 };
