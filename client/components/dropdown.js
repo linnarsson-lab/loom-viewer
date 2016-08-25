@@ -15,9 +15,13 @@ export const DropdownMenu = function (props) {
 		options[i] = { value: i, label: attributes[i] };
 	}
 	const dispatchOnChange = (val) => {
-		let dispatchParam = { type: attrType };
-		dispatchParam[attrName] = attributes[val];
-		dispatch(dispatchParam);
+		if (val) {
+			let dispatchParam = {
+				type: attrType,
+				[attrName]: attributes[val],
+			};
+			dispatch(dispatchParam);
+		}
 	};
 
 	return (
