@@ -27,10 +27,12 @@ class CategoriesPainter {
 
 class BarPainter {
 	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-		let max = Number.MIN_VALUE;
-		let min = Number.MAX_VALUE;
+		console.log('[BarPainter] groupedData: ', groupedData);
 		const fontArgs = context.font.split(' ');
 		context.font = '8px ' + fontArgs[fontArgs.length - 1];
+
+		let max = Number.MIN_VALUE;
+		let min = Number.MAX_VALUE;
 		const means = groupedData.map((group) => {
 			let mean = 0;
 			for (let i = 0; i < group.length; i++) {
@@ -97,17 +99,26 @@ class QuantitativePainter {
 
 class TextPainter {
 	paint(context, width, height, pixelsPer, yoffset, groupedData) {
+		// force to integer values and hint this to the JS compiler
+		width |= 0;
+		height |= 0;
+		pixelsPer |= 0;
+		yoffset |= 0;
+
 		if (pixelsPer < 4) {
 			return;
 		}
+		const fontArgs = context.font.split(' ');
+		const fontSize = Math.min(pixelsPer, 12);
+		const x = 1;
+		let y = (yoffset + pixelsPer / 2 + fontSize / 2 - 1) | 0;
+		context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
+
 		groupedData.forEach((group) => {
 			// We only draw text if zoomed in so there's a single element per group
 			const text = group[0];
-			const fontArgs = context.font.split(' ');
-			const fontSize = Math.min(pixelsPer, 12);
-			context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
-			context.fillText(text, 1, yoffset + pixelsPer / 2 + fontSize / 2 - 1);
-			yoffset += pixelsPer;
+			context.fillText(text, x, y);
+			y += pixelsPer;
 		});
 	}
 }
@@ -147,18 +158,23 @@ export class Sparkline extends React.Component {
 		}
 
 		context.save();
-		const fractionalPixel = this.props.dataRange[0] % 1;
-		const pixelsPer = width / (this.props.dataRange[1] - this.props.dataRange[0]);
-		const yoffset = - fractionalPixel * pixelsPer;
+		const leftRange = Math.min(this.props.dataRange[0], this.props.dataRange[1]) | 0;
+		const rightRange = Math.max(this.props.dataRange[0], this.props.dataRange[1]) | 0;
+		const totalRange = (rightRange - leftRange) | 0;
+		if (totalRange === 0) { return; }
+
+		const fractionalPixel = leftRange % 2;
+		const pixelsPer = (width / totalRange) | 0;
+		const yoffset = -fractionalPixel * pixelsPer;
 
 		// Group the data
 		const data = [];
-		for (let ix = 0; ix < this.props.dataRange[1] - this.props.dataRange[0]; ix++) {
-			const pixel = Math.round(ix * pixelsPer);
+		for (let ix = 0; ix < totalRange; ix++) {
+			const pixel = (ix * pixelsPer) | 0;
 			if (data[pixel] === undefined) {
 				data[pixel] = [];
 			}
-			data[pixel].push(this.props.data[Math.floor(ix + this.props.dataRange[0])]);
+			data[pixel].push(this.props.data[(ix + leftRange) | 0]);
 		}
 
 		// Which painter should we use?
@@ -180,22 +196,35 @@ export class Sparkline extends React.Component {
 				painter = new TextPainter();
 		}
 		if (painter) {
-			painter.paint(context, width, height, Math.max(Math.floor(pixelsPer), 1), yoffset, data);
+			painter.paint(
+				context,
+				width,
+				height,
+				Math.max(pixelsPer, 1),
+				yoffset,
+				data);
 		}
 
 		context.restore();
 	}
 
 	render() {
+		// If not given a width or height prop, make it fill its parent div
+		// This will implicitly set the size of the <Canvas> component, which
+		// will then call the passed paint function with the right dimensions.
+		const ratio = window.devicePixelRatio || 1;
+		const style = {};
+		if (this.props.width) {
+			style['minWidth'] = ((this.props.width * ratio) | 0) + 'px';
+			style['maxWidth'] = ((this.props.width * ratio) | 0) + 'px';
+		}
+		if (this.props.height) {
+			style['minHeight'] = ((this.props.height * ratio) | 0) + 'px';
+			style['maxHeight'] = ((this.props.height * ratio) | 0) + 'px';
+		}
 		return (
-			<div
-				className='sparkline'
-				style={{
-					display: 'flex',
-					width: this.props.width ? this.props.width : '100%',
-					height: this.props.height ? this.props.height : '100%',
-				}} >
-				<Canvas paint={this.paint} />
+			<div className='view' style={style}>
+				<Canvas paint={this.paint} clear />
 			</div>
 		);
 	}

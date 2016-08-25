@@ -1,110 +1,125 @@
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { SparklineSidepanel } from './sparkline-sidepanel';
 import { Sparkline } from './sparkline';
 import { FetchDatasetComponent } from './fetch-dataset';
 import * as _ from 'lodash';
 
-const SparklineViewComponent = function (props) {
-	const { sparklineState, dataSet, genes, dispatch } = props;
-	let colData = dataSet.colAttrs[sparklineState.colAttr];
-	// Figure out the ordering
-	let indices = new Array(colData.length);
-	for (let i = 0; i < colData.length; ++i) {
-		indices[i] = i;
-	}
-	if (sparklineState.orderByAttr !== "(none)") {
-		let orderBy = null;
+class SparklineViewComponent extends Component {
+
+
+	render() {
+		const { sparklineState, dataSet, genes, dispatch } = this.props;
+
+		let colData = dataSet.colAttrs[sparklineState.colAttr];
+
+		// Determine which array we want to sort by. Note that we abuse
+		// the JS dictionary behavior of returning "undefined" when an
+		// entry doesn't exist: if the string returned by orderByGene or
+		// orderByAttr is not present, comparedArray stays undefined.
+		let compareArray = undefined;
 		if (sparklineState.orderByAttr === "(gene)") {
-			if (genes.hasOwnProperty(sparklineState.orderByGene)) {
-				orderBy = genes[sparklineState.orderByGene];
-			}
+			compareArray = genes[sparklineState.orderByGene];
 		} else {
-			orderBy = dataSet.colAttrs[sparklineState.orderByAttr];
+			compareArray = dataSet.colAttrs[sparklineState.orderByAttr];
 		}
-		if (orderBy !== null) {
-			indices.sort((a, b) => { return orderBy[a] < orderBy[b] ? -1 : orderBy[a] > orderBy[b] ? 1 : 0; });
+
+		// Default to sorted "as is" ...
+		let indices = new Array(colData.length);
+		for (let i = 0; i < indices.length; ++i) {
+			indices[i] = i;
 		}
-	}
-
-	// Order the column attribute values
-	let temp = new Array(colData.length);
-	for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
-	colData = temp;
-
-	const uniqueGenes = _.uniq(sparklineState.genes.trim().split(/[ ,\r\n]+/));
-	const geneSparklines = (uniqueGenes.length === 0 || uniqueGenes[0] === "") ? <div></div> : (
-		_.map(uniqueGenes, (gene) => {
-			if (uniqueGenes.hasOwnProperty(gene)) {
-				let geneData = new Array(colData.length);
-				for (let i = 0; i < geneData.length; ++i) {
-					geneData[i] = uniqueGenes[gene][indices[i]];
+		// ... but if compareArray is defined, sort by that instead
+		if (compareArray) {
+			indices.sort(
+				(a, b) => {
+					return compareArray[a] < compareArray[b] ? -1 :
+						compareArray[a] > compareArray[b] ? 1 : 0;
 				}
+			);
+		}
+		// Finally, order the column attribute values by the determined indices
+		let temp = new Array(colData.length);
+		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
+		colData = temp;
 
-				return (
-					<div key={gene}>
-						<Sparkline
-							orientation='horizontal'
-							width={500}
-							height={20}
-							data={geneData}
-							dataRange={[0, colData.length]}
-							screenRange={[0, 500]}
-							mode={sparklineState.geneMode}
-							/>
-						<span className='sparkline-label'>{gene}</span>
-					</div>
-				);
-			} else {
-				return <div key={gene}></div>;
+		const showGenes = sparklineState.genes.trim().split(/[ ,\r\n]+/);
+		const uniqueGenes = _.intersection(showGenes, dataSet.rowAttrs.Gene);
+		let geneSparklines = [];
+
+		if (uniqueGenes.length !== 0 && uniqueGenes[0] !== '') {
+			for (let i = 0; i < uniqueGenes.length; i++) {
+
 			}
-		})
-	);
+			geneSparklines = _.map(uniqueGenes, (gene) => {
+				if (uniqueGenes.hasOwnProperty(gene)) {
+					let geneData = new Array(colData.length);
+					for (let i = 0; i < geneData.length; ++i) {
+						geneData[i] = genes[uniqueGenes[gene]][indices[i]];
+					}
+					console.log("geneData: ", geneData);
+					return (
+						<div key={gene}>
+							<Sparkline
+								orientation='horizontal'
+								height={40}
+								data={geneData}
+								dataRange={[0, colData.length]}
+								screenRange={[0, 500]}
+								mode={sparklineState.geneMode}
+								/>
+							<span className='sparkline-label'>{gene}</span>
+						</div>
+					);
+				} else {
+					return null;
+				}
+			});
+		}
 
 
-	return (
-		<div className='view'>
-			<div className='sidepanel'>
+		return (
+			<div className='view'>
 				<SparklineSidepanel
 					sparklineState={sparklineState}
 					dataSet={dataSet}
-					genes={uniqueGenes}
+					geneArray={uniqueGenes}
 					dispatch={dispatch}
 					/>
-			</div>
-			<div className='view'>
-				{
-					/* Borrowing the Leaflet zoom buttons
-					<div className="leaflet-top leaflet-left">
-						<div className="leaflet-control-zoom leaflet-bar leaflet-control">
-							<a className="leaflet-control-zoom-in"
-								title="Zoom in">
-								+
-							</a>
-							<a className="leaflet-control-zoom-out leaflet-disabled"
-								title="Zoom out">
-								-
-							</a>
+				<div className='view-vertical' style={{ margin: '20px' }}>
+					{
+						/* Borrowing the Leaflet zoom buttons
+						<div className="leaflet-top leaflet-left">
+							<div className="leaflet-control-zoom leaflet-bar leaflet-control">
+								<a className="leaflet-control-zoom-in"
+									title="Zoom in">
+									+
+								</a>
+								<a className="leaflet-control-zoom-out leaflet-disabled"
+									title="Zoom out">
+									-
+								</a>
+							</div>
 						</div>
+						*/
+					}
+					<Sparkline
+						orientation='horizontal'
+						height={40}
+						data={colData}
+						dataRange={[0, colData.length]}
+						mode={sparklineState.colMode}
+						/>
+					<span className='sparkline-label'>
+						{sparklineState.colAttr}
+					</span>
+					<div className='view-vertical'>
+						{geneSparklines}
 					</div>
-					*/
-				}
-				<Sparkline
-					orientation='horizontal'
-					height={20}
-					data={colData}
-					dataRange={[0, colData.length]}
-					mode={sparklineState.colMode}
-					/>
-				<span className='sparkline-label'>
-					{sparklineState.colAttr}
-				</span>
-				<div>
-					{geneSparklines}
 				</div>
 			</div>
-		</div>
-	);
-};
+		);
+	}
+}
 
 SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
