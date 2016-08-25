@@ -7,6 +7,10 @@ import { forEach } from 'lodash';
 export const SparklineSidepanel = function (props) {
 	const { dispatch, sparklineState, dataSet, geneArray } = props;
 
+	// // The full list of available genes is part of rowAttrs
+	// // Not to be confused with gene data that has been fetched!
+	// const geneList = dataSet.rowAttrs.Gene;
+
 	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.push("(original order)");
@@ -17,7 +21,7 @@ export const SparklineSidepanel = function (props) {
 	return (
 		<Panel
 			className='sidepanel'
-			key='landscape-settings'
+			key='sparkline-settings'
 			header='Settings'
 			bsStyle='default'>
 			<ListGroup fill>
