@@ -66,6 +66,7 @@ def cache(expires=None, round_to_minute=False):
 
 
 app = flask.Flask(__name__)
+app.cache = None
 
 # enable GZIP compression
 compress = Compress()
