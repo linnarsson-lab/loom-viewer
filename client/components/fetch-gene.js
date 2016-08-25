@@ -1,39 +1,63 @@
 import React, { Component, PropTypes } from 'react';
-import { FormGroup, ControlLabel } from 'react-bootstrap';
+import { FormGroup } from 'react-bootstrap';
 import VirtualizedSelect from 'react-virtualized-select';
-import { debounce } from 'lodash';
 import { fetchGene } from '../actions/actions.js';
 
 
-export const FetchGeneComponent = function (props) {
-	const {
-		geneList, dispatch,
-	} = props;
+export class FetchGeneComponent extends Component {
+	constructor(props) {
+		super(props);
 
-	const options = new Array(geneList.length);
-	for (let i = 0; i < geneList.length; i++) {
-		options[i] = { value: geneList[i], label: geneList[i] };
+		this.state = {};
 	}
 
-	const dispatchOnChange = (val) => {
-		console.log(val);
-	};
-	return(
-		<FormGroup>
-			<VirtualizedSelect
-				options={options}
-				onChange={dispatchOnChange}
-				multi
-				simpleValue
-				clearable
-				/>
-		</FormGroup>
-	);
-};
+	render() {
+		const { dataSet, geneList, geneCache, dispatch, attrType, attrName } = this.props;
+
+		const options = new Array(geneList.length);
+		for (let i = 0; i < geneList.length; i++) {
+			options[i] = { value: geneList[i], label: geneList[i] };
+		}
+
+		// val will be an array of objects with { label, value } entries
+		const dispatchOnChange = this.props.multi ? (val) => {
+			console.log(val);
+			if (val.length) {
+				for (let i = 0; i < val.length; i++) {
+					dispatch({ type: attrType, [attrName]: val[i].value });
+					dispatch(fetchGene(dataSet, val[i].value, geneCache));
+				}
+			}
+			this.setState({ val });
+		} : (val) => {
+			if (val) {
+				dispatch({ type: attrType, [attrName]: val.value });
+				dispatch(fetchGene(dataSet, val.value, geneCache));
+			}
+			this.setState({ val });
+		};
+
+		return (
+			<FormGroup>
+				<VirtualizedSelect
+					options={options}
+					onChange={dispatchOnChange}
+					value={this.state.val}
+					multi={this.props.multi}
+					clearable={this.props.clearable}
+					/>
+			</FormGroup>
+		);
+	}
+}
 
 FetchGeneComponent.propTypes = {
-	buttonLabel: PropTypes.string,
-	buttonName: PropTypes.string.isRequired,
 	geneList: PropTypes.array.isRequired,
+	geneCache: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	dataSet: PropTypes.object.isRequired,
+	attrType: PropTypes.string.isRequired,
+	attrName: PropTypes.string.isRequired,
+	multi: PropTypes.bool,
+	clearable: PropTypes.bool,
 };

@@ -64,27 +64,15 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
-					{xCoordinate === "(gene)" ?
-						<div>
-							<input
-								className='form-control'
-								placeholder='Gene'
-								value={xGene}
-								onChange={(event) => {
-									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
-										xGene: event.target.value,
-									});
-									dispatch(fetchGene(dataSet, event.target.value, genes));
-								} } />
-							<FetchGeneComponent
-								geneList={geneList}
-								dispatch={dispatch}
-								/>
-						</div>
-						:
-						null
-					}
+					{ xCoordinate === "(gene)" ?
+						<FetchGeneComponent
+							dataSet={dataSet}
+							geneCache={genes}
+							geneList={geneList}
+							dispatch={dispatch}
+							attrType={'SET_LANDSCAPE_PROPS'}
+							attrName={'xGene'}
+							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -95,22 +83,15 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
-					{
-						yCoordinate === "(gene)" ?
-							<input
-								className='form-control'
-								placeholder='Gene'
-								value={yGene}
-								onChange={(event) => {
-									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
-										yGene: event.target.value,
-									});
-									dispatch(fetchGene(dataSet, event.target.value, genes));
-								} } />
-							:
-							null
-					}
+					{ yCoordinate === "(gene)" ?
+						<FetchGeneComponent
+							dataSet={dataSet}
+							geneCache={genes}
+							geneList={geneList}
+							dispatch={dispatch}
+							attrType={'SET_LANDSCAPE_PROPS'}
+							attrName={'yGene'}
+							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -121,22 +102,15 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'colorAttr'}
 						dispatch={dispatch}
 						/>
-					{
-						colorAttr === "(gene)" ?
-							<input
-								className='form-control'
-								placeholder='Gene'
-								value={colorGene}
-								onChange={ () => {
-									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
-										colorGene: event.target.value,
-									});
-									dispatch(fetchGene(dataSet, event.target.value, genes));
-								} } />
-							:
-							null
-					}
+					{ colorAttr === "(gene)" ?
+						<FetchGeneComponent
+							dataSet={dataSet}
+							geneCache={genes}
+							geneList={geneList}
+							dispatch={dispatch}
+							attrType={'SET_LANDSCAPE_PROPS'}
+							attrName={'colorGene'}
+							/> : null  }
 				</ListGroupItem>
 				<ListGroupItem>
 					<ButtonGroup justified>
