@@ -42,47 +42,39 @@ class SparklineViewComponent extends Component {
 		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
 		colData = temp;
 
-		const showGenes = sparklineState.genes.trim().split(/[ ,\r\n]+/);
-		const uniqueGenes = _.intersection(showGenes, dataSet.rowAttrs.Gene);
+		const genesList = _.intersection(
+			sparklineState.genes.trim().split(/[ ,\r\n]+/),
+			dataSet.rowAttrs.Gene
+		);
 		let geneSparklines = [];
-
-		if (uniqueGenes.length !== 0 && uniqueGenes[0] !== '') {
-			for (let i = 0; i < uniqueGenes.length; i++) {
-
-			}
-			geneSparklines = _.map(uniqueGenes, (gene) => {
-				if (uniqueGenes.hasOwnProperty(gene)) {
-					let geneData = new Array(colData.length);
-					for (let i = 0; i < geneData.length; ++i) {
-						geneData[i] = genes[uniqueGenes[gene]][indices[i]];
-					}
-					console.log("geneData: ", geneData);
-					return (
-						<div key={gene}>
-							<Sparkline
-								orientation='horizontal'
-								height={40}
-								data={geneData}
-								dataRange={[0, colData.length]}
-								screenRange={[0, 500]}
-								mode={sparklineState.geneMode}
-								/>
-							<span className='sparkline-label'>{gene}</span>
-						</div>
-					);
-				} else {
-					return null;
+		if (genesList.length !== 0 && genesList[0] !== '') {
+			for (let i = 0; i < genesList.length; i++) {
+				const gene = genesList[i];
+				let geneData = new Array(colData.length);
+				for (let j = 0; j < geneData.length; ++j) {
+					geneData[j] = genes[gene][indices[j]];
 				}
-			});
+				geneSparklines[i] = (
+					<div key={gene}>
+						<Sparkline
+							orientation='horizontal'
+							height={40}
+							data={geneData}
+							dataRange={[0, colData.length]}
+							mode={sparklineState.geneMode}
+							/>
+						<span className='sparkline-label'>{gene}</span>
+					</div>
+				);
+			}
 		}
-
 
 		return (
 			<div className='view'>
 				<SparklineSidepanel
 					sparklineState={sparklineState}
 					dataSet={dataSet}
-					geneArray={uniqueGenes}
+					genesList={genesList}
 					dispatch={dispatch}
 					/>
 				<div className='view-vertical' style={{ margin: '20px' }}>

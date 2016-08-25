@@ -5,7 +5,7 @@ import { fetchGene } from '../actions/actions.js';
 import { forEach } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet, geneArray } = props;
+	const { dispatch, sparklineState, dataSet, genesList } = props;
 
 	// // The full list of available genes is part of rowAttrs
 	// // Not to be confused with gene data that has been fetched!
@@ -45,7 +45,7 @@ export const SparklineSidepanel = function (props) {
 										type: 'SET_SPARKLINE_PROPS',
 										orderByGene: event.target.value,
 									});
-									dispatch(fetchGene(dataSet, event.target.value, geneArray));
+									dispatch(fetchGene(dataSet, event.target.value, genesList));
 								} } /> :
 							<span></span>
 						}
@@ -84,7 +84,7 @@ export const SparklineSidepanel = function (props) {
 									event.target.value.trim().split(/[ ,\r\n]+/),
 									(gene) => {
 										dispatch(
-											fetchGene(dataSet, gene, geneArray)
+											fetchGene(dataSet, gene, genesList)
 										);
 									}
 								);
@@ -109,6 +109,6 @@ export const SparklineSidepanel = function (props) {
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	geneArray: PropTypes.array.isRequired,
+	genesList: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
