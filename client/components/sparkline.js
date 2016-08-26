@@ -75,10 +75,10 @@ class BarPainter {
 			context.fillText(Number(max.toPrecision(3)), 2, 10);
 		} else {
 			const fontArgs = context.font.split(' ');
-			context.font = '16px ' + fontArgs[fontArgs.length - 1];
+			context.font = '10px ' + fontArgs[fontArgs.length - 1];
 			context.fillStyle = 'black';
 			context.strokeStyle = 'white';
-			context.lineWidth = 32;
+			context.lineWidth = 3;
 			context.strokeText('Cannot draw bars for non-numerical data', 10, height - 10);
 			context.fillText('Cannot draw bars for non-numerical data', 10, height - 10);
 		}

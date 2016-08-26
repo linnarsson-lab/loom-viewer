@@ -123,7 +123,7 @@ class SparklineViewComponent extends Component {
 				{sidepanel}
 				<div className='view-vertical' style={{ margin: '20px 0px 20px 20px' }}>
 					{legend}
-					<div style={{ display: 'flex', flex: 1, overflowY: 'scroll' }}>
+					<div style={{ display: 'flex', flex: 1, overflowY: 'scroll', overflowX: 'hidden' }}>
 						<div style={{
 							display: 'flex',
 							flexDirection: 'column',
