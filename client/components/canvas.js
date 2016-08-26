@@ -44,7 +44,7 @@ export class Canvas extends React.Component {
 			if (context) {
 				// should we clear the canvas every redraw?
 				if (this.props.clear) { context.clearRect(0, 0, el.width, el.height); }
-				this.props.paint(context, el.width, el.height);
+				this.props.paint(context, el.width/window.devicePixelRatio, el.height/window.devicePixelRatio);
 			}
 			// is the provided paint function an animation?
 			if (this.props.loop) {
