@@ -4,6 +4,7 @@ import VirtualizedSelect from 'react-virtualized-select';
 import { fetchGene } from '../actions/actions.js';
 
 
+// TODO: document how FetchGeneComponent works
 export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);

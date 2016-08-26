@@ -2,6 +2,8 @@ import React, { PropTypes } from 'react';
 import { FormGroup, ControlLabel } from 'react-bootstrap';
 import Select from 'react-select';
 
+
+//TODO: document what DropdownMenu expects
 export const DropdownMenu = function (props) {
 
 	const {
@@ -11,11 +13,11 @@ export const DropdownMenu = function (props) {
 	} = props;
 
 	let options = new Array(attributes.length);
-	for (let i = 0; i < attributes.length; i++) {
+	for (let i = 0; i <= attributes.length; i++) {
 		options[i] = { value: i, label: attributes[i] };
 	}
 	const dispatchOnChange = (val) => {
-		if (val) {
+		if (val !== undefined && val !== null) {
 			let dispatchParam = {
 				type: attrType,
 				[attrName]: attributes[val],
