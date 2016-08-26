@@ -10,63 +10,84 @@ class CategoriesPainter {
 		this.categories = nMostFrequent(data, 20);
 	}
 
-	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-		const cwidth = Math.min(width, 20);
-		const fontArgs = context.font.split(' ');
-		context.font = (cwidth - 1) + 'px ' + fontArgs[fontArgs.length - 1];
-		let y = 0;
-		groupedData.forEach((group) => {
-			const commonest = nMostFrequent(group, 1)[0];
+	// paint(context, width, height, pixelsPer, yoffset, groupedData) {
+	paint(groupedData, context, width, height) {
+		let x = 0;
+		const xStepSize = width / groupedData.length;
+		for (let i = 0; i < groupedData.length; i++) {
+			const commonest = nMostFrequent(groupedData[i], 1)[0];
 			const color = this.categories.indexOf(commonest) + 1;
 			context.fillStyle = colors.category20[color];
-			context.fillRect(0, yoffset + y, cwidth, pixelsPer);
-			y += pixelsPer;
-		});
+			context.fillRect(x, 0, xStepSize, height);
+			x += xStepSize;
+		}
 	}
 }
 
 class BarPainter {
-	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-		console.log('[BarPainter] groupedData: ', groupedData);
-		const fontArgs = context.font.split(' ');
-		context.font = '8px ' + fontArgs[fontArgs.length - 1];
+	// paint(context, width, height, pixelsPer, xOffset, groupedData) {
+	paint(groupedData, context, width, height) {
 
-		let max = Number.MIN_VALUE;
-		let min = Number.MAX_VALUE;
-		const means = groupedData.map((group) => {
-			let mean = 0;
-			for (let i = 0; i < group.length; i++) {
-				mean += group[i];
+		if (typeof groupedData[0][0] === 'number') {
+			let max = Number.MIN_VALUE, min = Number.MAX_VALUE;
+
+			let means = groupedData.map((group) => {
+				let mean = 0;
+				for (let i = 0; i < group.length; i++) {
+					mean += group[i];
+				}
+				mean /= group.length;
+				max = mean > max ? mean : max;
+				min = mean < min ? mean : min;
+				return mean;
+			});
+
+			if (min >= 0 && min < 0.5 * max) {
+				min = 0;
+			} else {
+				for (let i = 0; i < means.length; i++) { means[i] -= min; }
 			}
-			mean /= group.length;
-			if (mean > max) {
-				max = mean;
+
+			// factor to multiply the mean values by,
+			// to calculate their's height (see below)
+			const scaleMean = height / (max - min);
+
+			context.fillStyle = '#404040';
+			const meanWidth = width / groupedData.length;
+			for (let i = 0, xOffset = 0; i < means.length; i++) {
+				// canvas defaults to positive y going *down*, so to
+				// draw from bottom to top we start at height and
+				// subtract the height.
+				let meanHeight = (means[i] * scaleMean) | 0;
+				let yOffset = height - meanHeight;
+				context.fillRect(xOffset, yOffset, meanWidth, meanHeight);
+				xOffset += meanWidth;
 			}
-			if (mean < min) {
-				min = mean;
-			}
-			return mean;
-		});
-		if (min >= 0 && min < 0.5 * max) {
-			min = 0;
+
+			const fontArgs = context.font.split(' ');
+			context.font = '10px ' + fontArgs[fontArgs.length - 1];
+			context.fillStyle = 'black';
+			context.strokeStyle = 'white';
+			context.lineWidth = 3;
+			context.strokeText(Number(min.toPrecision(3)), 2, height - 2);
+			context.strokeText(Number(max.toPrecision(3)), 2, 10);
+			context.fillText(Number(min.toPrecision(3)), 2, height - 2);
+			context.fillText(Number(max.toPrecision(3)), 2, 10);
+		} else {
+			const fontArgs = context.font.split(' ');
+			context.font = '16px ' + fontArgs[fontArgs.length - 1];
+			context.fillStyle = 'black';
+			context.strokeStyle = 'white';
+			context.lineWidth = 32;
+			context.strokeText('Cannot draw bars for non-numerical data', 10, height - 10);
+			context.fillText('Cannot draw bars for non-numerical data', 10, height - 10);
 		}
-		context.fillStyle = "grey";
-		means.forEach((m) => {
-			context.fillRect(0, yoffset, (m - min) / (max - min) * width, pixelsPer);
-			yoffset += pixelsPer;
-		});
-		context.save();
-		context.rotate(90 * Math.PI / 180);
-		context.fillStyle = "blue";
-		context.fillText(Number(min.toPrecision(3)), 0, -2);
-		context.fillText(Number(max.toPrecision(3)), 0, -width + 2 + 10);
-		context.restore();
 	}
 }
 
 class QuantitativePainter {
-	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-
+	// paint(context, width, height, pixelsPer, yoffset, groupedData) {
+	paint(groupedData, context, width, height) {
 		let max = Number.MIN_VALUE;
 		let min = Number.MAX_VALUE;
 		const means = groupedData.map((group) => {
@@ -75,68 +96,102 @@ class QuantitativePainter {
 				mean += group[i];
 			}
 			mean /= group.length;
-			if (mean > max) {
-				max = mean;
-			}
-			if (mean < min) {
-				min = mean;
-			}
+			max = mean > max ? mean : max;
+			min = mean < min ? mean : min;
 			return mean;
 		});
 		if (min >= 0 && min < 0.5 * max) {
 			min = 0;
+		} else {
+			for (let i = 0; i < means.length; i++) { means[i] -= min; }
 		}
-		const color = means.map((x) => {
-			return colors.solar9[Math.round((x - min) / (max - min) * colors.solar9.length)];
-		});
-		for (let ix = 0; ix < means.length; ix++) {
-			context.fillStyle = color[ix];
-			context.fillRect(0, yoffset, width, pixelsPer);
-			yoffset += pixelsPer;
+
+		const colorIdxScale = colors.solar9.length / max;
+		const xStepSize = means.length / width;
+		for (let i = 0, x = 0; i < means.length; i++) {
+			const colorIdx = (means[i] * colorIdxScale) | 0;
+			context.fillStyle = colors.solar9[colorIdx];
+			context.fillRect(x, 0, xStepSize, height);
+			x += xStepSize;
 		}
 	}
 }
 
 class TextPainter {
-	paint(context, width, height, pixelsPer, yoffset, groupedData) {
-		// force to integer values and hint this to the JS compiler
-		width |= 0;
-		height |= 0;
-		pixelsPer |= 0;
-		yoffset |= 0;
+	// paint(context, width, height, pixelsPer, yoffset, groupedData) {
+	paint(groupedData, context, width, height) {
+		console.log('[TextPainter] groupedData: ', groupedData);
 
-		if (pixelsPer < 4) {
+		// When drawing horizontally, the text should be vertical
+		// Note that this essentually undoes the rotation we perform
+		// when Sparkline is drawn vertically.
+		context.save();
+		let t = width;
+		width = height;
+		height = t;
+		context.rotate(90 * Math.PI / 180);
+		context.translate(0, -height);
+
+		const yStepSize = width / groupedData.length;
+		if (yStepSize < 4) {
 			return;
 		}
 		const fontArgs = context.font.split(' ');
-		const fontSize = Math.min(pixelsPer, 12);
+		const fontSize = Math.min(yStepSize, 12);
 		const x = 1;
-		let y = (yoffset + pixelsPer / 2 + fontSize / 2 - 1) | 0;
+		let y = (yStepSize + fontSize) / 2 - 1;
 		context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
+		context.fillStyle = 'black';
+		context.strokeStyle = 'white';
+		context.lineWidth = 3;
 
 		groupedData.forEach((group) => {
 			// We only draw text if zoomed in so there's a single element per group
 			const text = group[0];
+			context.strokeText(text, x, y);
 			context.fillText(text, x, y);
-			y += pixelsPer;
+			y += yStepSize;
 		});
+		context.restore();
 	}
 }
 
 class TextAlwaysPainter {
-	paint(context, width, height, pixelsPer, yoffset, groupedData) {
+	//paint(context, width, height, pixelsPer, yoffset, groupedData) {
+	paint(groupedData, context, width, height) {
+		console.log('[TextAlwaysPainter] groupedData: ', groupedData);
+		context.save();
+
+		const fontArgs = context.font.split(' ');
+		const fontSize = 10;
+		context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
+		context.fillStyle = 'black';
+		context.strokeStyle = 'white';
+		context.lineWidth = 3;
+
+		let t = width;
+		width = height;
+		height = t;
+		context.rotate(90 * Math.PI / 180);
+		context.translate(0, -height);
+
+
+
+		const yStepSize = width / groupedData.length;
+		let y = (yStepSize + fontSize) / 2 - 1;
 		groupedData.forEach((group) => {
 			const text = _.find(group, (s) => { return s !== ''; });
 			if (text !== undefined) {
-				const fontArgs = context.font.split(' ');
-				const fontSize = 10;
-				context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
-				context.fillText(text, 1, yoffset + pixelsPer / 2 + fontSize / 2 - 1);
+				context.strokeText(text, 1, y);
+				context.fillText(text, 1, y);
 			}
-			yoffset += pixelsPer;
+			y += yStepSize;
 		});
+
+		context.restore();
 	}
 }
+
 
 export class Sparkline extends React.Component {
 	constructor(props) {
@@ -148,8 +203,9 @@ export class Sparkline extends React.Component {
 		if (this.props.data === undefined) {
 			return;
 		}
+		context.save();
 
-		if (this.props.orientation === 'horizontal') {
+		if (this.props.orientation !== 'horizontal') {
 			context.translate(0, this.props.height);
 			context.rotate(-90 * Math.PI / 180);
 			let t = width;
@@ -157,24 +213,21 @@ export class Sparkline extends React.Component {
 			height = t;
 		}
 
-		context.save();
+		// force range numbers to integers
 		const leftRange = Math.min(this.props.dataRange[0], this.props.dataRange[1]) | 0;
 		const rightRange = Math.max(this.props.dataRange[0], this.props.dataRange[1]) | 0;
 		const totalRange = (rightRange - leftRange) | 0;
 		if (totalRange === 0) { return; }
 
-		const fractionalPixel = leftRange % 2;
-		const pixelsPer = (width / totalRange) | 0;
-		const yoffset = -fractionalPixel * pixelsPer;
-
 		// Group the data
-		const data = [];
+		const groupedData = [];
+		const pixelsPer = width / totalRange;
 		for (let ix = 0; ix < totalRange; ix++) {
 			const pixel = (ix * pixelsPer) | 0;
-			if (data[pixel] === undefined) {
-				data[pixel] = [];
+			if (groupedData[pixel] === undefined) {
+				groupedData[pixel] = [];
 			}
-			data[pixel].push(this.props.data[(ix + leftRange) | 0]);
+			groupedData[pixel].push(this.props.data[(ix + leftRange) | 0]);
 		}
 
 		// Which painter should we use?
@@ -196,13 +249,7 @@ export class Sparkline extends React.Component {
 				painter = new TextPainter();
 		}
 		if (painter) {
-			painter.paint(
-				context,
-				width,
-				height,
-				Math.max(pixelsPer, 1),
-				yoffset,
-				data);
+			painter.paint(groupedData, context, width, height);
 		}
 
 		context.restore();

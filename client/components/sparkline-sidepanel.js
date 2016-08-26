@@ -1,11 +1,13 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { FetchGeneComponent } from './fetch-gene';
 import { fetchGene } from '../actions/actions.js';
+
 import { forEach } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet, genesList } = props;
+	const { dispatch, sparklineState, dataSet, geneCache, geneList } = props;
 
 	// // The full list of available genes is part of rowAttrs
 	// // Not to be confused with gene data that has been fetched!
@@ -13,10 +15,10 @@ export const SparklineSidepanel = function (props) {
 
 	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
-	orderByOptions.push("(original order)");
-	orderByOptions.push("(gene)");
-	const optionsForCols = ["Text", "Bars", "Heatmap", "Categorical"];
-	const optionsForGenes = ["Bars", "Heatmap"];
+	orderByOptions.unshift('(gene)');
+	orderByOptions.unshift('(original order)');
+	const optionsForCols = ['Text', 'Bars', 'Heatmap', 'Categorical'];
+	const optionsForGenes = ['Bars', 'Heatmap'];
 
 	return (
 		<Panel
@@ -35,20 +37,14 @@ export const SparklineSidepanel = function (props) {
 						dispatch={dispatch}
 						/>
 					<div className='btn-group btn-block'>
-						{sparklineState.orderByAttr === "(gene)" ?
-							<input
-								className='form-control'
-								placeholder='Gene'
-								value={sparklineState.orderByGene}
-								onChange={(event) => {
-									dispatch({
-										type: 'SET_SPARKLINE_PROPS',
-										orderByGene: event.target.value,
-									});
-									dispatch(fetchGene(dataSet, event.target.value, genesList));
-								} } /> :
-							<span></span>
-						}
+						{ sparklineState.orderByAttr === '(gene)' ?
+							<FetchGeneComponent
+								dataSet={dataSet}
+								geneCache={geneCache}
+								geneList={geneList}
+								dispatch={dispatch}
+								attrType={'SET_SPARKLINE_PROPS'}
+								attrName={'orderByGene'} /> : null }
 					</div>
 				</ListGroupItem>
 				<ListGroupItem>
@@ -84,13 +80,24 @@ export const SparklineSidepanel = function (props) {
 									event.target.value.trim().split(/[ ,\r\n]+/),
 									(gene) => {
 										dispatch(
-											fetchGene(dataSet, gene, genesList)
+											fetchGene(dataSet, gene, geneCache)
 										);
 									}
 								);
 							}
 						}>
 					</textarea>
+
+							<FetchGeneComponent
+								dataSet={dataSet}
+								geneCache={geneCache}
+								geneList={geneList}
+								dispatch={dispatch}
+								attrType={'SET_SPARKLINE_PROPS'}
+								attrName={'genes'}
+								multi
+								clearable
+								/>
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -109,6 +116,7 @@ export const SparklineSidepanel = function (props) {
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	genesList: PropTypes.array.isRequired,
+	geneCache: PropTypes.array.isRequired,
+	geneList: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

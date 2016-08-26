@@ -68,11 +68,6 @@ code {
 a {
   cursor: pointer;
 }
-.sparkline-label {
-  vertical-align: super;
-  margin-left: 5px;
-}
-
 
 .navbar-brand {
   cursor: default;

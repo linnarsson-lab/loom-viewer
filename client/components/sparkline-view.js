@@ -9,6 +9,7 @@ class SparklineViewComponent extends Component {
 
 	render() {
 		const { sparklineState, dataSet, genes, dispatch } = this.props;
+		const geneList = dataSet.rowAttrs.Gene;
 
 		let colData = dataSet.colAttrs[sparklineState.colAttr];
 
@@ -42,10 +43,40 @@ class SparklineViewComponent extends Component {
 		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
 		colData = temp;
 
+
+
+
 		const genesList = _.intersection(
 			sparklineState.genes.trim().split(/[ ,\r\n]+/),
 			dataSet.rowAttrs.Gene
 		);
+
+		// Sidepanel
+		const sidepanel = (
+			<SparklineSidepanel
+				sparklineState={sparklineState}
+				dataSet={dataSet}
+				geneCache={genes}
+				geneList={geneList}
+				dispatch={dispatch}
+				/>
+		);
+
+		// "Show cell attribute"
+		// Showing the scrollbar is ugly, but otherwise lining up will be *really hard*
+		const legend = (
+			<div style={{ flex: '0 0 auto', minHeight: '20px', overflowY: 'scroll' }}>
+				<Sparkline
+					orientation='horizontal'
+					height={20}
+					data={colData}
+					dataRange={[0, colData.length]}
+					mode={sparklineState.colMode}
+					/>
+			</div>
+		);
+
+		// Actual sparklines
 		let geneSparklines = [];
 		if (genesList.length !== 0 && genesList[0] !== '') {
 			for (let i = 0; i < genesList.length; i++) {
@@ -55,58 +86,53 @@ class SparklineViewComponent extends Component {
 					geneData[j] = genes[gene][indices[j]];
 				}
 				geneSparklines[i] = (
-					<div key={gene}>
+					<div
+						key={gene}
+						style={{
+							background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+							display: 'flex',
+							flexDirection: 'column',
+							minHeight: '32px',
+							maxHeight: '100px',
+						}}>
+						<span
+							style={{
+								display: 'block',
+								width: '100%',
+								fontSize: '10px',
+								marginLeft: '2px',
+								minHeight: '12px',
+								maxHeight: '12px',
+							}}>
+							{gene}
+						</span>
 						<Sparkline
 							orientation='horizontal'
-							height={40}
 							data={geneData}
 							dataRange={[0, colData.length]}
 							mode={sparklineState.geneMode}
+							style={{ minHeight: '20px' }}
 							/>
-						<span className='sparkline-label'>{gene}</span>
 					</div>
 				);
 			}
 		}
 
 		return (
-			<div className='view'>
-				<SparklineSidepanel
-					sparklineState={sparklineState}
-					dataSet={dataSet}
-					genesList={genesList}
-					dispatch={dispatch}
-					/>
-				<div className='view-vertical' style={{ margin: '20px' }}>
-					{
-						/* Borrowing the Leaflet zoom buttons
-						<div className="leaflet-top leaflet-left">
-							<div className="leaflet-control-zoom leaflet-bar leaflet-control">
-								<a className="leaflet-control-zoom-in"
-									title="Zoom in">
-									+
-								</a>
-								<a className="leaflet-control-zoom-out leaflet-disabled"
-									title="Zoom out">
-									-
-								</a>
-							</div>
+			<div className='view' style={{ overflowX: 'hidden' }}>
+				{sidepanel}
+				<div className='view-vertical' style={{ margin: '20px 0px 20px 20px' }}>
+					{legend}
+					<div style={{ display: 'flex', flex: 1, overflowY: 'scroll' }}>
+						<div style={{
+							display: 'flex',
+							flexDirection: 'column',
+							width: '100%',
+						}}>
+							{geneSparklines}
 						</div>
-						*/
-					}
-					<Sparkline
-						orientation='horizontal'
-						height={40}
-						data={colData}
-						dataRange={[0, colData.length]}
-						mode={sparklineState.colMode}
-						/>
-					<span className='sparkline-label'>
-						{sparklineState.colAttr}
-					</span>
-					<div className='view-vertical'>
-						{geneSparklines}
 					</div>
+					{legend}
 				</div>
 			</div>
 		);
