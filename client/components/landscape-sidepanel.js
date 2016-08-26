@@ -1,6 +1,5 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { fetchGene } from '../actions/actions.js';
 import { Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';

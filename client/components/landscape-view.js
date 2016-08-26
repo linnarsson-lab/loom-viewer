@@ -11,15 +11,10 @@ class LandscapeViewComponent extends Component {
 	}
 
 	makeData(attr, gene) {
-		let data = [];
-		if (attr === "(gene)") {
-			if (this.props.genes.hasOwnProperty(gene)) {
-				data = this.props.genes[gene];
-			}
-		} else {
-			data = this.props.dataSet.colAttrs[attr];
+		if (attr === "(gene)" && this.props.genes.hasOwnProperty(gene)) {
+			return this.props.genes[gene];
 		}
-		return data;
+		return this.props.dataSet.colAttrs[attr];
 	}
 
 	render() {
