@@ -23,7 +23,7 @@ const initialSparklineState = {
 	type: SET_SPARKLINE_PROPS,	// This will be set to the last action type
 	colAttr: "CellID",
 	colMode: "Text",
-	orderByAttr: "(none)",	// meaning, original order
+	orderByAttr: "(original order)",	// meaning, original order
 	orderByGene: "",
 	geneMode: "Heatmap",
 	genes: "",
