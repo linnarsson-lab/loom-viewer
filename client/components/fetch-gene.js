@@ -22,18 +22,23 @@ export class FetchGeneComponent extends Component {
 
 		// val will be an array of objects with { label, value } entries
 		const dispatchOnChange = this.props.multi ? (val) => {
-			console.log(val);
-			if (val.length) {
+			if (val && val.length) {
+				let geneString = '';
 				for (let i = 0; i < val.length; i++) {
-					dispatch({ type: attrType, [attrName]: val[i].value });
+					geneString += val[i].value + ' ';
 					dispatch(fetchGene(dataSet, val[i].value, geneCache));
 				}
+				dispatch({ type: attrType, [attrName]: geneString });
+			} else {
+				dispatch({ type: attrType, [attrName]: '' });
 			}
 			this.setState({ val });
 		} : (val) => {
 			if (val) {
 				dispatch({ type: attrType, [attrName]: val.value });
 				dispatch(fetchGene(dataSet, val.value, geneCache));
+			} else {
+				dispatch({ type: attrType, [attrName]: '' });
 			}
 			this.setState({ val });
 		};
