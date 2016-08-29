@@ -6,17 +6,21 @@ import * as _ from 'lodash';
 
 class SparklineViewComponent extends Component {
 
-
 	render() {
 		const { sparklineState, dataSet, genes, dispatch } = this.props;
-		const geneList = dataSet.rowAttrs.Gene;
 
-		let colData = dataSet.colAttrs[sparklineState.colAttr];
 
 		// Determine which array we want to sort by. Note that we abuse
 		// the JS dictionary behavior of returning "undefined" when an
 		// entry doesn't exist: if the string returned by orderByGene or
 		// orderByAttr is not present, comparedArray stays undefined.
+		let colData = dataSet.colAttrs[sparklineState.colAttr];
+		// if colAttr does not exist (for example, the default values
+		// in the Loom interface is not present), pick the first one
+		if (colData === undefined){
+			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
+			colData = dataSet.colAttrs[properties[0]];
+		}
 		let compareArray = undefined;
 		if (sparklineState.orderByAttr === "(gene)") {
 			compareArray = genes[sparklineState.orderByGene];
@@ -43,13 +47,11 @@ class SparklineViewComponent extends Component {
 		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
 		colData = temp;
 
-
-
-
-		const genesList = _.intersection(
-			sparklineState.genes.trim().split(/[ ,\r\n]+/),
-			dataSet.rowAttrs.Gene
-		);
+		let selectedGenesList = sparklineState.genes.trim().split(/[ ,\r\n]+/);
+		const selectableGenes = dataSet.rowAttrs.Gene;
+		if (selectableGenes) {
+			selectedGenesList = _.intersection(selectedGenesList, dataSet.rowAttrs.Gene);
+		}
 
 		// Sidepanel
 		const sidepanel = (
@@ -57,7 +59,7 @@ class SparklineViewComponent extends Component {
 				sparklineState={sparklineState}
 				dataSet={dataSet}
 				geneCache={genes}
-				geneList={geneList}
+				selectableGenes={selectableGenes}
 				dispatch={dispatch}
 				/>
 		);
@@ -78,9 +80,9 @@ class SparklineViewComponent extends Component {
 
 		// Actual sparklines
 		let geneSparklines = [];
-		if (genesList.length !== 0 && genesList[0] !== '') {
-			for (let i = 0; i < genesList.length; i++) {
-				const gene = genesList[i];
+		if (selectedGenesList.length !== 0 && selectedGenesList[0] !== '') {
+			for (let i = 0; i < selectedGenesList.length; i++) {
+				const gene = selectedGenesList[i];
 				let geneData = new Array(colData.length);
 				for (let j = 0; j < geneData.length; ++j) {
 					geneData[j] = genes[gene][indices[j]];

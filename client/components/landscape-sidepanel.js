@@ -9,7 +9,7 @@ export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet, genes } = props;
 	const landscapeState = props.landscapeState;
 	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
-	const geneList = dataSet.rowAttrs.Gene;
+	const selectableGenes = dataSet.rowAttrs.Gene;
 	const temp = Object.keys(dataSet.colAttrs).sort();
 	temp.push("(gene)");
 
@@ -67,7 +67,7 @@ export const LandscapeSidepanel = function (props) {
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
-							geneList={geneList}
+							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
 							attrName={'xGene'}
@@ -86,7 +86,7 @@ export const LandscapeSidepanel = function (props) {
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
-							geneList={geneList}
+							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
 							attrName={'yGene'}
@@ -105,7 +105,7 @@ export const LandscapeSidepanel = function (props) {
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
-							geneList={geneList}
+							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
 							attrName={'colorGene'}
