@@ -5,6 +5,7 @@ import {
 	Panel, PanelGroup,
 	Button, Glyphicon,
 } from 'react-bootstrap';
+import { Link } from 'react-router';
 import { fetchProjects } from '../actions/actions';
 
 
@@ -51,7 +52,7 @@ const DataSetListItem = function (props) {
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
 			<div>
-				<strong><a href={path} title={"Open " + props.dataSetPath}>{title}</a></strong>
+				<strong><Link to={path} title={"Open " + props.dataSetPath}>{title}</Link></strong>
 			</div>
 			<div><code>{dataset}</code> {downloadButton}{urlButton}{paperButton}</div>
 			<div><em>{description}</em></div>
