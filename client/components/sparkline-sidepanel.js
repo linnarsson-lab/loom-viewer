@@ -17,7 +17,7 @@ export const SparklineSidepanel = function (props) {
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.unshift('(gene)');
 	orderByOptions.unshift('(original order)');
-	const optionsForCols = ['Text', 'Bars', 'Heatmap', 'Categorical'];
+	const optionsForCols = ['Bars', 'Heatmap', 'Categorical'];
 	const optionsForGenes = ['Bars', 'Heatmap'];
 
 	return (

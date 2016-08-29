@@ -1,5 +1,5 @@
 // See http://rackt.org/redux/docs/basics/Reducers.html
-import L from "leaflet";
+import L from 'leaflet';
 import { combineReducers } from 'redux';
 import { routerReducer } from 'react-router-redux';
 
@@ -21,12 +21,12 @@ import {
 
 const initialSparklineState = {
 	type: SET_SPARKLINE_PROPS,	// This will be set to the last action type
-	colAttr: "CellID",
-	colMode: "Text",
-	orderByAttr: "(original order)",	// meaning, original order
-	orderByGene: "",
-	geneMode: "Heatmap",
-	genes: "",
+	colAttr: 'Class',
+	colMode: 'Categorical',
+	orderByAttr: '(original order)',	// meaning, original order
+	orderByGene: '',
+	geneMode: 'Bars',
+	genes: '',
 };
 
 function sparklineState(state = initialSparklineState, action) {
@@ -41,13 +41,13 @@ function sparklineState(state = initialSparklineState, action) {
 
 const initialLandscapeState = {
 	type: SET_LANDSCAPE_PROPS,	// This will be set to the last action type
-	xCoordinate: "_tSNE1",
-	xGene: "",
-	yCoordinate: "_tSNE2",
-	yGene: "",
-	colorAttr: "CellID",
-	colorMode: "Heatmap",
-	colorGene: "",
+	xCoordinate: '_tSNE1',
+	xGene: '',
+	yCoordinate: '_tSNE2',
+	yGene: '',
+	colorAttr: 'CellID',
+	colorMode: 'Heatmap',
+	colorGene: '',
 };
 
 function landscapeState(state = initialLandscapeState, action) {
@@ -61,10 +61,10 @@ function landscapeState(state = initialLandscapeState, action) {
 
 const initialGenescapeState = {
 	type: SET_GENESCAPE_PROPS,	// This will be set to the last action type
-	xCoordinate: "",
-	yCoordinate: "",
-	colorAttr: "",
-	colorMode: "Heatmap",
+	xCoordinate: '',
+	yCoordinate: '',
+	colorAttr: '',
+	colorMode: 'Heatmap',
 };
 
 function genescapeState(state = initialGenescapeState, action) {
@@ -82,10 +82,10 @@ const initialHeatmapState = {
 	dataBounds: (0, 0, 0, 0),		// Data coordinates of the current view
 	center: L.latLng(0, 0),
 	zoom: 8,
-	rowAttr: "",
+	rowAttr: '',
 	rowMode: 'Text',
 	rowGenes: '',
-	colAttr: "",
+	colAttr: '',
 	colMode: 'Text',
 	colGene: '',
 };
@@ -106,15 +106,15 @@ const initialData = {
 
 	// dict like
 	//	{
-	//		"Midbrain": [{ "dataset": "mouse_midbrain.loom", "isCached": false}, ... ],
-	// 	"Cortex": ...
+	//		'Midbrain': [{ 'dataset': 'mouse_midbrain.loom', 'isCached': false}, ... ],
+	// 	'Cortex': ...
 	//	}
 	projects: undefined,
 
 	// dataSets object will store fetched datasets for caching purposes.
 	dataSets: {},
 
-	// contains row data by gene, i.e. {"Actb": [1,2,1,3,42,4,...]}
+	// contains row data by gene, i.e. {'Actb': [1,2,1,3,42,4,...]}
 	genes: undefined,
 };
 
