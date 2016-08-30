@@ -139,13 +139,14 @@ def create_from_pandas(df, loom_file):
 	f.close()	
 	pass
 
-def create_from_cellranger(folder, loom_file, sample_annotation = {}, schema={}):
+def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotation = {}, schema={}):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
 	Args:
 		folder (str):				path to the cellranger output folder (usually called `outs`)
 		loom_file (str):			full path of the resulting loom file
+		cell_id_prefix (str):		prefix to add to cell IDs (e.g. the sample id for this sample)
 		sample_annotation (dict): 	dict of additional sample attributes
 		schema (dict):				types for the additional sample attributes (required)
 
@@ -154,7 +155,7 @@ def create_from_cellranger(folder, loom_file, sample_annotation = {}, schema={})
 	"""
 	matrix = mmread(os.path.join(folder, "matrix.mtx")).astype("float32").todense()
 
-	col_attrs = {"CellID": np.loadtxt(os.path.join(folder, "barcodes.tsv"), delimiter="\t", dtype="string")}
+	col_attrs = {"CellID": np.array([(cell_id_prefix + bc) for bc in np.loadtxt(os.path.join(folder, "barcodes.tsv"), delimiter="\t", dtype="string")])}
 	col_types = {"CellID": "string"}
 
 	temp = np.loadtxt(os.path.join(folder, "genes.tsv"), delimiter="\t", dtype="string")
@@ -163,7 +164,17 @@ def create_from_cellranger(folder, loom_file, sample_annotation = {}, schema={})
 	for key in sample_annotation.keys():
 		col_attrs[key] = np.array([sample_annotation[key]]*matrix.shape[1])
 
-	# TODO: Load t-SNE and PCA from cellranger
+	tsne = np.loadtxt(os.path.join(folder, "analysis","tsne","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
+	col_attrs["_tSNE1"] = tsne[:,0]
+	col_attrs["_tSNE2"] = tsne[:,1]
+
+	pca = np.loadtxt(os.path.join(folder, "analysis","pca","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
+	col_attrs["_PC1"] = pca[:,0]
+	col_attrs["_PC2"] = pca[:,1]
+
+	kmeans = np.loadtxt(os.path.join(folder, "analysis","kmeans","10_clusters","clusters.csv"), usecols=(1), delimiter=',', skiprows=1)
+	col_attrs["_KMeans_10"] = kmeans
+
 
 	create(loom_file, matrix, row_attrs, col_attrs, row_types, col_types)
 

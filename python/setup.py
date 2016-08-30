@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 
+# pylint: disable=exec-used
 exec(open('loompy/_version.py').read())
 
 setup(
@@ -14,7 +15,8 @@ setup(
         'numpy', 
         'progressbar',
         'requests',
-        'flask-compress'
+        'flask-compress',
+        'PyMySQL'
     ],
     
     # loom command
