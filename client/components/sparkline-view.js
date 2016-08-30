@@ -9,7 +9,6 @@ class SparklineViewComponent extends Component {
 	render() {
 		const { sparklineState, dataSet, genes, dispatch } = this.props;
 
-
 		// Determine which array we want to sort by. Note that we abuse
 		// the JS dictionary behavior of returning "undefined" when an
 		// entry doesn't exist: if the string returned by orderByGene or

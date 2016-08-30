@@ -1,10 +1,11 @@
 import React, {PropTypes} from 'react';
 import { nMostFrequent } from '../js/util';
-import * as _ from 'lodash';
 import * as colors from '../js/colors';
 import { Canvas } from './canvas';
 
-// Some helper functions for context
+// Some helper functions for context.
+// This should probably be encapsulated by <Canvas> at some point,
+// and set as prototypical methods on the context object
 
 const textSize = function (context, size = 10) {
 	// will return an array with [ size, font ] as strings
@@ -140,8 +141,8 @@ class TextPainter {
 		// Instead of drawing at (x, y), we move the whole context with
 		// translate() and draw at (0, 0).
 		context.translate(0, height);
-		context.rotate(-Math.PI/2);
-		context.translate(0, stepSize/2);
+		context.rotate(-Math.PI / 2);
+		context.translate(0, stepSize / 2);
 		groupedData.forEach((group) => {
 			// We only draw text if zoomed in far enough that there's a single element per group
 			const text = group[0];
@@ -163,8 +164,8 @@ class TextAlwaysPainter {
 		const stepSize = width / groupedData.length;
 		context.save();
 		context.translate(0, height);
-		context.rotate(-Math.PI/2);
-		context.translate(0, stepSize/2);
+		context.rotate(-Math.PI / 2);
+		context.translate(0, stepSize / 2);
 		groupedData.forEach((group) => {
 			const text = group[0];
 			drawText(context, text, 0, 0);
