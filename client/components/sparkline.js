@@ -1,9 +1,56 @@
 import React, {PropTypes} from 'react';
 import { nMostFrequent } from '../js/util';
-import * as _ from 'lodash';
 import * as colors from '../js/colors';
 import { Canvas } from './canvas';
 
+// Some helper functions for context.
+// This should probably be encapsulated by <Canvas> at some point,
+// and set as prototypical methods on the context object
+
+const textSize = function (context, size = 10) {
+	// will return an array with [ size, font ] as strings
+	const fontArgs = context.font.split(' ');
+	const font = fontArgs[fontArgs.length - 1];
+	switch (typeof size) {
+		case 'number':
+			context.font = size + 'px ' + font;
+			break;
+		case 'string':
+			context.font = size + font;
+			break;
+	}
+};
+
+const textStyle = function (context, fill = 'black', stroke = 'white', lineWidth = 2) {
+	context.fillStyle = fill;
+	context.strokeStyle = stroke;
+	context.lineWidth = lineWidth;
+};
+
+const drawText = function (context, text, x, y) {
+	context.strokeText(text, x, y);
+	context.fillText(text, x, y);
+};
+
+// Calculate the means, the max and the min
+const calcMeans = function (groupedData) {
+	let max = Number.MIN_VALUE, min = Number.MAX_VALUE;
+
+	let means = groupedData.map((group) => {
+		let mean = 0;
+		for (let i = 0; i < group.length; i++) {
+			mean += group[i];
+		}
+		mean /= group.length;
+		max = mean > max ? mean : max;
+		min = mean < min ? mean : min;
+		return mean;
+	});
+
+	return { means, max, min };
+};
+
+// Plotting functions
 
 class CategoriesPainter {
 	constructor(data) {
@@ -25,28 +72,13 @@ class CategoriesPainter {
 }
 
 class BarPainter {
+
 	// paint(context, width, height, pixelsPer, xOffset, groupedData) {
 	paint(groupedData, context, width, height) {
 
 		if (typeof groupedData[0][0] === 'number') {
-			let max = Number.MIN_VALUE, min = Number.MAX_VALUE;
 
-			let means = groupedData.map((group) => {
-				let mean = 0;
-				for (let i = 0; i < group.length; i++) {
-					mean += group[i];
-				}
-				mean /= group.length;
-				max = mean > max ? mean : max;
-				min = mean < min ? mean : min;
-				return mean;
-			});
-
-			if (min >= 0 && min < 0.5 * max) {
-				min = 0;
-			} else {
-				for (let i = 0; i < means.length; i++) { means[i] -= min; }
-			}
+			const { means, min, max } = calcMeans(groupedData);
 
 			// factor to multiply the mean values by,
 			// to calculate their's height (see below)
@@ -64,23 +96,14 @@ class BarPainter {
 				xOffset += meanWidth;
 			}
 
-			const fontArgs = context.font.split(' ');
-			context.font = '10px ' + fontArgs[fontArgs.length - 1];
-			context.fillStyle = 'black';
-			context.strokeStyle = 'white';
-			context.lineWidth = 3;
-			context.strokeText(Number(min.toPrecision(3)), 2, height - 2);
-			context.strokeText(Number(max.toPrecision(3)), 2, 10);
-			context.fillText(Number(min.toPrecision(3)), 2, height - 2);
-			context.fillText(Number(max.toPrecision(3)), 2, 10);
+			textSize(context, 10);
+			textStyle(context);
+			drawText(context, min.toPrecision(3), 2, height - 2);
+			drawText(context, max.toPrecision(3), 2, 10);
 		} else {
-			const fontArgs = context.font.split(' ');
-			context.font = '10px ' + fontArgs[fontArgs.length - 1];
-			context.fillStyle = 'black';
-			context.strokeStyle = 'white';
-			context.lineWidth = 3;
-			context.strokeText('Cannot draw bars for non-numerical data', 10, height - 10);
-			context.fillText('Cannot draw bars for non-numerical data', 10, height - 10);
+			textSize(context, 10);
+			textStyle(context);
+			drawText(context, 'Cannot draw bars for non-numerical data', 2, height - 2);
 		}
 	}
 }
@@ -88,24 +111,7 @@ class BarPainter {
 class QuantitativePainter {
 	// paint(context, width, height, pixelsPer, yoffset, groupedData) {
 	paint(groupedData, context, width, height) {
-		let max = Number.MIN_VALUE;
-		let min = Number.MAX_VALUE;
-		const means = groupedData.map((group) => {
-			let mean = 0;
-			for (let i = 0; i < group.length; i++) {
-				mean += group[i];
-			}
-			mean /= group.length;
-			max = mean > max ? mean : max;
-			min = mean < min ? mean : min;
-			return mean;
-		});
-		if (min >= 0 && min < 0.5 * max) {
-			min = 0;
-		} else {
-			for (let i = 0; i < means.length; i++) { means[i] -= min; }
-		}
-
+		const { means, max } = calcMeans(groupedData);
 		const colorIdxScale = colors.solar9.length / max;
 		const xStepSize = means.length / width;
 		for (let i = 0, x = 0; i < means.length; i++) {
@@ -120,37 +126,28 @@ class QuantitativePainter {
 class TextPainter {
 	// paint(context, width, height, pixelsPer, yoffset, groupedData) {
 	paint(groupedData, context, width, height) {
-		console.log('[TextPainter] groupedData: ', groupedData);
 
-		// When drawing horizontally, the text should be vertical
-		// Note that this essentually undoes the rotation we perform
-		// when Sparkline is drawn vertically.
-		context.save();
-		let t = width;
-		width = height;
-		height = t;
-		context.rotate(90 * Math.PI / 180);
-		context.translate(0, -height);
 
-		const yStepSize = width / groupedData.length;
-		if (yStepSize < 4) {
+		const stepSize = width / groupedData.length;
+		if (stepSize < 4) {
 			return;
 		}
-		const fontArgs = context.font.split(' ');
-		const fontSize = Math.min(yStepSize, 12);
-		const x = 1;
-		let y = (yStepSize + fontSize) / 2 - 1;
-		context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
-		context.fillStyle = 'black';
-		context.strokeStyle = 'white';
-		context.lineWidth = 3;
+		const fontSize = Math.min(stepSize, 12);
+		textSize(context, fontSize);
+		textStyle(context);
 
+		context.save();
+		// The default is drawing horizontally, so the text should be vertical
+		// Instead of drawing at (x, y), we move the whole context with
+		// translate() and draw at (0, 0).
+		context.translate(0, height);
+		context.rotate(-Math.PI / 2);
+		context.translate(0, stepSize / 2);
 		groupedData.forEach((group) => {
-			// We only draw text if zoomed in so there's a single element per group
+			// We only draw text if zoomed in far enough that there's a single element per group
 			const text = group[0];
-			context.strokeText(text, x, y);
-			context.fillText(text, x, y);
-			y += yStepSize;
+			drawText(context, text, 0, 0);
+			context.translate(0, stepSize);
 		});
 		context.restore();
 	}
@@ -160,35 +157,22 @@ class TextAlwaysPainter {
 	//paint(context, width, height, pixelsPer, yoffset, groupedData) {
 	paint(groupedData, context, width, height) {
 		console.log('[TextAlwaysPainter] groupedData: ', groupedData);
+
+		textSize(context, 10);
+		textStyle(context);
+
+		const stepSize = width / groupedData.length;
 		context.save();
-
-		const fontArgs = context.font.split(' ');
-		const fontSize = 10;
-		context.font = fontSize + 'px ' + fontArgs[fontArgs.length - 1];
-		context.fillStyle = 'black';
-		context.strokeStyle = 'white';
-		context.lineWidth = 3;
-
-		let t = width;
-		width = height;
-		height = t;
-		context.rotate(90 * Math.PI / 180);
-		context.translate(0, -height);
-
-
-
-		const yStepSize = width / groupedData.length;
-		let y = (yStepSize + fontSize) / 2 - 1;
+		context.translate(0, height);
+		context.rotate(-Math.PI / 2);
+		context.translate(0, stepSize / 2);
 		groupedData.forEach((group) => {
-			const text = _.find(group, (s) => { return s !== ''; });
-			if (text !== undefined) {
-				context.strokeText(text, 1, y);
-				context.fillText(text, 1, y);
-			}
-			y += yStepSize;
+			const text = group[0];
+			drawText(context, text, 0, 0);
+			context.translate(0, stepSize);
 		});
-
 		context.restore();
+
 	}
 }
 
@@ -206,8 +190,8 @@ export class Sparkline extends React.Component {
 		context.save();
 
 		if (this.props.orientation !== 'horizontal') {
-			context.translate(0, this.props.height);
-			context.rotate(-90 * Math.PI / 180);
+			context.translate(this.props.width, 0);
+			context.rotate(90 * Math.PI / 180);
 			let t = width;
 			width = height;
 			height = t;

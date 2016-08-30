@@ -45,48 +45,53 @@ class HeatmapViewComponent extends Component {
 				heatmapHeight -= 100;
 			}
 			heatmap = (
-				<div>
-					<Sparkline
-						orientation='horizontal'
-						width={heatmapWidth}
-						height={horizontalSparklineHeight}
-						data={colData}
-						dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
-						screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
-						mode={heatmapState.colMode}
-						/>
-					<Heatmap
-						transcriptome={dataSet.transcriptome}
-						project={dataSet.project}
-						dataset={dataSet.dataset}
-						width={heatmapWidth}
-						height={heatmapHeight}
-						zoom={heatmapState.zoom}
-						center={heatmapState.center}
-						shape={dataSet.shape}
-						zoomRange={dataSet.zoomRange}
-						fullZoomWidth={dataSet.fullZoomWidth}
-						fullZoomHeight={dataSet.fullZoomHeight}
-						onViewChanged={
-							(bounds) => {
-								dispatch({
-									type: 'SET_HEATMAP_PROPS',
-									screenBounds: bounds.screenBounds,
-									dataBounds: bounds.dataBounds,
-									center: bounds.center,
-									zoom: bounds.zoom,
-								});
-							}
-						} />
-					<Sparkline
-						orientation='vertical'
-						width={verticalSparklineWidth}
-						height={heatmapHeight}
-						data={rowData}
-						dataRange={[heatmapState.dataBounds[1], heatmapState.dataBounds[3]]}
-						screenRange={[heatmapState.screenBounds[1], heatmapState.screenBounds[3]]}
-						mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
-						/>
+				<div className='view-vertical'>
+					<div className='view'>
+						<Sparkline
+							orientation='horizontal'
+							width={heatmapWidth}
+							height={horizontalSparklineHeight}
+							data={colData}
+							dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
+							screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
+							mode={heatmapState.colMode}
+							style={{ marginRight: '20px' }}
+							/>
+					</div>
+					<div className='view'>
+						<Heatmap
+							transcriptome={dataSet.transcriptome}
+							project={dataSet.project}
+							dataset={dataSet.dataset}
+							width={heatmapWidth}
+							height={heatmapHeight}
+							zoom={heatmapState.zoom}
+							center={heatmapState.center}
+							shape={dataSet.shape}
+							zoomRange={dataSet.zoomRange}
+							fullZoomWidth={dataSet.fullZoomWidth}
+							fullZoomHeight={dataSet.fullZoomHeight}
+							onViewChanged={
+								(bounds) => {
+									dispatch({
+										type: 'SET_HEATMAP_PROPS',
+										screenBounds: bounds.screenBounds,
+										dataBounds: bounds.dataBounds,
+										center: bounds.center,
+										zoom: bounds.zoom,
+									});
+								}
+							} />
+						<Sparkline
+							orientation='vertical'
+							width={verticalSparklineWidth}
+							height={heatmapHeight}
+							data={rowData}
+							dataRange={[heatmapState.dataBounds[1], heatmapState.dataBounds[3]]}
+							screenRange={[heatmapState.screenBounds[1], heatmapState.screenBounds[3]]}
+							mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
+							/>
+					</div>
 				</div>
 			);
 		}

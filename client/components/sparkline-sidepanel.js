@@ -3,21 +3,16 @@ import { DropdownMenu } from './dropdown';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
 import { fetchGene } from '../actions/actions.js';
-
 import { forEach } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet, geneCache, geneList } = props;
-
-	// // The full list of available genes is part of rowAttrs
-	// // Not to be confused with gene data that has been fetched!
-	// const geneList = dataSet.rowAttrs.Gene;
+	const { dispatch, sparklineState, dataSet, geneCache, selectableGenes } = props;
 
 	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.unshift('(gene)');
 	orderByOptions.unshift('(original order)');
-	const optionsForCols = ['Text', 'Bars', 'Heatmap', 'Categorical'];
+	const optionsForCols = ['Bars', 'Heatmap', 'Categorical'];
 	const optionsForGenes = ['Bars', 'Heatmap'];
 
 	return (
@@ -41,7 +36,7 @@ export const SparklineSidepanel = function (props) {
 							<FetchGeneComponent
 								dataSet={dataSet}
 								geneCache={geneCache}
-								geneList={geneList}
+								selectableGenes={selectableGenes}
 								dispatch={dispatch}
 								attrType={'SET_SPARKLINE_PROPS'}
 								attrName={'orderByGene'} /> : null }
@@ -91,7 +86,7 @@ export const SparklineSidepanel = function (props) {
 							<FetchGeneComponent
 								dataSet={dataSet}
 								geneCache={geneCache}
-								geneList={geneList}
+								selectableGenes={selectableGenes}
 								dispatch={dispatch}
 								attrType={'SET_SPARKLINE_PROPS'}
 								attrName={'genes'}
@@ -117,6 +112,6 @@ SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	geneCache: PropTypes.array.isRequired,
-	geneList: PropTypes.array.isRequired,
+	selectableGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
