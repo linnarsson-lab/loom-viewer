@@ -11,7 +11,7 @@ setup(
         'scikit-learn',
         'h5py', 
         'pandas', 
-        'scipy',
+        'scipy==0.17.1',
         'numpy', 
         'progressbar',
         'requests',
