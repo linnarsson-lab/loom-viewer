@@ -35,7 +35,7 @@ export const SparklineSidepanel = function (props) {
 						{ sparklineState.orderByAttr === '(gene)' ?
 							<FetchGeneComponent
 								dataSet={dataSet}
-								geneCache={fetchedGenes}
+								fetchedGenes={fetchedGenes}
 								selectableGenes={selectableGenes}
 								dispatch={dispatch}
 								attrType={'SET_SPARKLINE_PROPS'}
