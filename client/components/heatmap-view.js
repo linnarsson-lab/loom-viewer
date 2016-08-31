@@ -7,8 +7,39 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 class HeatmapViewComponent extends Component {
 
-	renderHeatmapview(el, heatmapState, dataSet, colData, rowData, dispatch) {
+	constructor(props) {
+		super(props);
+		this.renderHeatmapview = this.renderHeatmapview.bind(this);
+		this.state = {};
+	}
+
+	componentDidMount() {
+		this.renderHeatmapview(this.props);
+	}
+
+	componentWillUpdate(nextProps) {
+		if (!_.isEqual(nextProps, this.props)){
+			this.renderHeatmapview(nextProps);
+		}
+	}
+
+	renderHeatmapview(props) {
+		const { dispatch, dataSet, fetchedGenes, heatmapState } = props;
+
+		const colGeneSelected = (heatmapState.colAttr === '(gene)') && fetchedGenes.hasOwnProperty(heatmapState.colGene);
+		const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
+
+		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
+		if (heatmapState.rowAttr === '(gene positions)') {
+			const shownGenes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
+			const allGenes = dataSet.rowAttrs['Gene'];
+			rowData = new Array(allGenes.length);
+			for (let i = 0; i < allGenes.length; i++) {
+				rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
+			}
+		}
 		// Calculate the layout of everything
+		const el = this.refs.heatmapContainer;
 		let heatmapWidth = el.clientWidth - 20;
 		let heatmapHeight = el.clientHeight - 20;
 		let verticalSparklineWidth = 20;
@@ -21,7 +52,7 @@ class HeatmapViewComponent extends Component {
 			horizontalSparklineHeight = 120;
 			heatmapHeight -= 100;
 		}
-		return (
+		const heatmap = (
 			<div className='view-vertical'>
 				<div className='view'>
 					<Sparkline
@@ -71,26 +102,11 @@ class HeatmapViewComponent extends Component {
 				</div>
 			</div>
 		);
+		this.setState({ heatmap });
 	}
 
 	render() {
 		const { dispatch, dataSet, fetchedGenes, heatmapState } = this.props;
-
-		const colGeneSelected = (heatmapState.colAttr === '(gene)') && fetchedGenes.hasOwnProperty(heatmapState.colGene);
-		const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
-
-		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
-		if (heatmapState.rowAttr === '(gene positions)') {
-			const shownGenes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
-			const allGenes = dataSet.rowAttrs['Gene'];
-			rowData = new Array(allGenes.length);
-			for (let i = 0; i < allGenes.length; i++) {
-				rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
-			}
-		}
-
-		const el = this.refs.heatmapContainer;
-		const heatmap = el ? this.renderHeatmapview(el, heatmapState, dataSet, colData, rowData, dispatch) : null;
 
 		return (
 			<div className='view'>
@@ -103,7 +119,7 @@ class HeatmapViewComponent extends Component {
 						/>
 				</div>
 				<div className='view' ref='heatmapContainer'>
-					{heatmap}
+					{this.state.heatmap}
 				</div>
 			</div>
 		);
