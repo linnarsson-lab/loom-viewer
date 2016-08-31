@@ -16,46 +16,39 @@ export class Canvas extends React.Component {
 
 	// Make sure we get a sharp canvas on Retina displays
 	// as well as adjust the canvas on zoomed browsers
-	fitToZoomAndPixelRatio() {
-		let el = this.refs.canvas;
-		if (el) {
-			const ratio = window.devicePixelRatio || 1;
-			const width = (el.parentNode.clientWidth * ratio) | 0;
-			const height = (el.parentNode.clientHeight * ratio) | 0;
-			if (width !== el.width || height !== el.height) {
-				el.width = width;
-				el.height = height;
-				let context = el.getContext('2d');
-				context.mozImageSmoothingEnabled = false;
-				context.webkitImageSmoothingEnabled = false;
-				context.msImageSmoothingEnabled = false;
-				context.imageSmoothingEnabled = false;
-				context.scale(ratio, ratio);
-				context.clearRect(0, 0, el.width, el.height);
-				// store width and height in context for paint functions
-				context.width = el.parentNode.clientWidth;
-				context.height = el.parentNode.clientHeight;
-				return context;
-			}
-		} else {
-			return null;
+	fitToZoomAndPixelRatio(canvasEl) {
+		const ratio = window.devicePixelRatio || 1;
+		const width = (canvasEl.parentNode.clientWidth * ratio) | 0;
+		const height = (canvasEl.parentNode.clientHeight * ratio) | 0;
+		let context = canvasEl.getContext('2d');
+		// store width and height in context for paint functions
+		context.width = canvasEl.parentNode.clientWidth;
+		context.height = canvasEl.parentNode.clientHeight;
+		if (width !== canvasEl.width || height !== canvasEl.height) {
+			canvasEl.width = width;
+			canvasEl.height = height;
+			context.mozImageSmoothingEnabled = false;
+			context.msImageSmoothingEnabled = false;
+			context.imageSmoothingEnabled = false;
+			context.webkitImageSmoothingEnabled = false;
+			context.scale(ratio, ratio);
+			context.clearRect(0, 0, canvasEl.width, canvasEl.height);
 		}
+		return context;
 	}
 
+	// Relies on a ref to a DOM element, so only call after mounting!
 	draw() {
-		let el = this.refs.canvas;
-		if (el) {
-			let context = this.fitToZoomAndPixelRatio();
-			if (context) {
-				// should we clear the canvas every redraw?
-				if (this.props.clear) { context.clearRect(0, 0, el.width, el.height); }
-				this.props.paint(context);
-			}
-			// is the provided paint function an animation?
-			if (this.props.loop) {
-				window.requestAnimationFrame(this.draw);
-			}
+		let canvasEl = this.refs.canvas;
+		let context = this.fitToZoomAndPixelRatio(canvasEl);
+		// should we clear the canvas every redraw?
+		if (this.props.clear) { context.clearRect(0, 0, canvasEl.width, canvasEl.height); }
+		this.props.paint(context);
+		// is the provided paint function an animation?
+		if (this.props.loop) {
+			window.requestAnimationFrame(this.draw);
 		}
+
 	}
 
 	componentDidMount() {
