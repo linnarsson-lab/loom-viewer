@@ -21,7 +21,7 @@ class SparklineViewComponent extends Component {
 			colData = dataSet.colAttrs[properties[0]];
 		}
 		let compareArray = undefined;
-		if (sparklineState.orderByAttr === "(gene)") {
+		if (sparklineState.orderByAttr === '(gene)') {
 			compareArray = genes[sparklineState.orderByGene];
 		} else {
 			compareArray = dataSet.colAttrs[sparklineState.orderByAttr];

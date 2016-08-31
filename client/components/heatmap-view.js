@@ -11,7 +11,7 @@ class HeatmapViewComponent extends Component {
 		const { dispatch, dataSet, genes, heatmapState } = this.props;
 
 		let colData = [];
-		if (heatmapState.colAttr === "(gene)") {
+		if (heatmapState.colAttr === '(gene)') {
 			if (genes.hasOwnProperty(heatmapState.colGene)) {
 				colData = genes[heatmapState.colGene];
 			}
@@ -23,7 +23,7 @@ class HeatmapViewComponent extends Component {
 		if (heatmapState.rowAttr === '(gene positions)') {
 			const genes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
 			rowData = _.map(
-				dataSet.rowAttrs["Gene"],
+				dataSet.rowAttrs['Gene'],
 				(x) => { return _.indexOf(genes, x) !== -1 ? x : ''; }
 			);
 		}
@@ -55,7 +55,7 @@ class HeatmapViewComponent extends Component {
 							dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
 							screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
 							mode={heatmapState.colMode}
-							style={{ marginRight: '20px' }}
+							style={{ marginRight: (verticalSparklineWidth + 'px') }}
 							/>
 					</div>
 					<div className='view'>

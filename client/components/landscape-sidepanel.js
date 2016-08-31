@@ -11,7 +11,7 @@ export const LandscapeSidepanel = function (props) {
 	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
 	const selectableGenes = dataSet.rowAttrs.Gene;
 	const temp = Object.keys(dataSet.colAttrs).sort();
-	temp.push("(gene)");
+	temp.push('(gene)');
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
 	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
@@ -28,7 +28,7 @@ export const LandscapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isTSNE ? "success" : "default" }
+								bsStyle={ isTSNE ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
@@ -41,7 +41,7 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isPCA ? "success" : "default" }
+								bsStyle={ isPCA ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
@@ -63,7 +63,7 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
-					{ xCoordinate === "(gene)" ?
+					{ xCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
@@ -82,7 +82,7 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
-					{ yCoordinate === "(gene)" ?
+					{ yCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
@@ -101,7 +101,7 @@ export const LandscapeSidepanel = function (props) {
 						attrName={'colorAttr'}
 						dispatch={dispatch}
 						/>
-					{ colorAttr === "(gene)" ?
+					{ colorAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							geneCache={genes}
@@ -115,7 +115,7 @@ export const LandscapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
+								bsStyle={ colorMode === 'Heatmap' ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
@@ -127,7 +127,7 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
+								bsStyle={ colorMode === 'Categorical' ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',

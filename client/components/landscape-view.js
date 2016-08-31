@@ -11,7 +11,7 @@ class LandscapeViewComponent extends Component {
 	}
 
 	makeData(attr, gene) {
-		if (attr === "(gene)" && this.props.genes.hasOwnProperty(gene)) {
+		if (attr === '(gene)' && this.props.genes.hasOwnProperty(gene)) {
 			return this.props.genes[gene];
 		}
 		return this.props.dataSet.colAttrs[attr];
@@ -36,9 +36,9 @@ class LandscapeViewComponent extends Component {
 					y={y}
 					color={color}
 					colorMode={landscapeState.colorMode}
-					logScaleColor={landscapeState.colorAttr === "(gene)"}
-					logScaleX={landscapeState.xCoordinate === "(gene)"}
-					logScaleY={landscapeState.yCoordinate === "(gene)"}
+					logScaleColor={landscapeState.colorAttr === '(gene)'}
+					logScaleX={landscapeState.xCoordinate === '(gene)'}
+					logScaleY={landscapeState.yCoordinate === '(gene)'}
 					style={{ margin: '20px' }}
 					/>
 			</div>

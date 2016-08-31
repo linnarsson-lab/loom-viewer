@@ -53,7 +53,7 @@ export function fetchProjects(projects) {
 		// If not, perform a fetch request (async)
 		if (projects === undefined) {
 			return (
-				fetch(`/loom`)
+				fetch('/loom')
 					.then((response) => { return response.json(); })
 					.then((json) => {
 						// Grouping by project must be done here, instead of in

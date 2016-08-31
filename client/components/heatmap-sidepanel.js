@@ -7,11 +7,11 @@ export const HeatmapSidepanel = function (props) {
 
 	let colAttrKeys = Object.keys(dataSet.colAttrs);
 	colAttrKeys.sort();
-	colAttrKeys.push("(gene)");
+	colAttrKeys.push('(gene)');
 	let rowAttrKeys = Object.keys(dataSet.rowAttrs);
 	rowAttrKeys.sort();
-	rowAttrKeys.push("(gene positions)");
-	let optionNames = ["Text", "Bars", "Heatmap", "Categorical"];
+	rowAttrKeys.push('(gene positions)');
+	let optionNames = ['Text', 'Bars', 'Heatmap', 'Categorical'];
 
 	return (
 		<div className='panel panel-default'>
@@ -39,7 +39,7 @@ export const HeatmapSidepanel = function (props) {
 
 					<div className='form-group'>
 						<div className='btn-group btn-block'>
-							{heatmapState.colAttr === "(gene)" ?
+							{heatmapState.colAttr === '(gene)' ?
 								<input
 									className='form-control'
 									placeholder='Gene'

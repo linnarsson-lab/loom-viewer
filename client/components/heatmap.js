@@ -1,4 +1,4 @@
-import L from "leaflet";
+import L from 'leaflet';
 import React, {PropTypes} from 'react';
 
 export class Heatmap extends React.Component {
@@ -80,7 +80,7 @@ export class Heatmap extends React.Component {
 	}
 
 	componentWillUnmount() {
-		const map = this.state["map"];
+		const map = this.state['map'];
 		map.off('move', this.handleViewChanged);
 	}
 
