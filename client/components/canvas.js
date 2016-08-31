@@ -32,19 +32,24 @@ export class Canvas extends React.Component {
 				context.imageSmoothingEnabled = false;
 				context.scale(ratio, ratio);
 				context.clearRect(0, 0, el.width, el.height);
+				// store width and height in context for paint functions
+				context.width = el.parentNode.clientWidth;
+				context.height = el.parentNode.clientHeight;
+				return context;
 			}
+		} else {
+			return null;
 		}
 	}
 
 	draw() {
 		let el = this.refs.canvas;
 		if (el) {
-			this.fitToZoomAndPixelRatio();
-			let context = el.getContext('2d');
+			let context = this.fitToZoomAndPixelRatio();
 			if (context) {
 				// should we clear the canvas every redraw?
 				if (this.props.clear) { context.clearRect(0, 0, el.width, el.height); }
-				this.props.paint(context, el.width/window.devicePixelRatio, el.height/window.devicePixelRatio);
+				this.props.paint(context);
 			}
 			// is the provided paint function an animation?
 			if (this.props.loop) {
@@ -58,7 +63,7 @@ export class Canvas extends React.Component {
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// resizing/redrawing of the canvas.
-		window.addEventListener("resize", debounce(this.draw, 200));
+		window.addEventListener('resize', debounce(this.draw, 200));
 	}
 
 	componentDidUpdate(prevProps) {
@@ -118,14 +123,14 @@ export class CanvasBenchmark extends React.Component {
 		// create a pre-rendered dot sprite
 		const radius = Math.max(3, Math.sqrt(totalDots) / 60) | 0;
 		const sprite = document.createElement('canvas');
-		sprite.id = "dot_sprite";
+		sprite.id = 'dot_sprite';
 		sprite.width = 2 * radius + 1;
 		sprite.height = 2 * radius + 1;
 		const context = sprite.getContext('2d');
 		// draw dot on sprite
 		context.lineWidth = 1;
-		context.strokeStyle = "white";
-		context.fillStyle = "black";
+		context.strokeStyle = 'white';
+		context.fillStyle = 'black';
 		context.beginPath();
 		context.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
 		context.closePath();
@@ -157,8 +162,8 @@ export class CanvasBenchmark extends React.Component {
 			const radius = Math.max(3, Math.sqrt(x.length) / 60) | 0;	// Suitable radius of the markers
 
 			context.lineWidth = 1;
-			context.strokeStyle = "white";
-			context.fillStyle = "black";
+			context.strokeStyle = 'white';
+			context.fillStyle = 'black';
 			context.clearRect(0, 0, width, height);
 			for (let i = 0; i < x.length; i++) {
 				const xi = (x[i] * width) | 0;

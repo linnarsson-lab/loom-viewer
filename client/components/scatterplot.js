@@ -16,16 +16,17 @@ export class Scatterplot extends React.Component {
 		this.paint = this.paint.bind(this);
 	}
 
-	paint(context, width, height) {
+	paint(context) {
 		if (this.props.x === undefined ||
 			this.props.y === undefined ||
 			this.props.color === undefined) {
 			return;
 		}
+		let { width, height } = context;
 
 		// Erase previous paint
 		context.save();
-		context.fillStyle = "white";
+		context.fillStyle = 'white';
 		context.fillRect(0, 0, width, height);
 
 		// Calculate some general properties
@@ -51,14 +52,14 @@ export class Scatterplot extends React.Component {
 		const ymin = Math.min(...y);
 		const ymax = Math.max(...y);
 		let color = _.map(this.props.color, (t) => { return isNaN(t) ? 0 : t; });
-		const palette = (this.props.colorMode === "Heatmap" ? colors.solar9 : colors.category20);
+		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
 		if (color === undefined || color.length === 0) {
-			color = Array.from({ length: x.length }, () => { return "grey"; });
+			color = Array.from({ length: x.length }, () => { return 'grey'; });
 		} else {
 			// Do we need to categorize the color scale?
-			if (this.props.colorMode === "Categorical" || !_.every(color, (x) => { return isFinite(x); })) {
+			if (this.props.colorMode === 'Categorical' || !_.every(color, (x) => { return isFinite(x); })) {
 
 				// Reserve palette[0] for all uncategorized items
 				let cats = nMostFrequent(color, palette.length - 1);
@@ -79,11 +80,11 @@ export class Scatterplot extends React.Component {
 					context.fillStyle = palette[i + 1];
 					context.fill();
 					context.lineWidth = 0.25;
-					context.strokeStyle = "black";
+					context.strokeStyle = 'black';
 					context.stroke();
-					context.fillStyle = "black";
+					context.fillStyle = 'black';
 					if (i === -1) {
-						context.fillText("(all other categories)", width + 30, (i + 2) * 15 + 3);
+						context.fillText('(all other categories)', width + 30, (i + 2) * 15 + 3);
 					} else {
 						context.fillText(cats[i], width + 30, (i + 2) * 15 + 3);
 					}
@@ -109,9 +110,9 @@ export class Scatterplot extends React.Component {
 					context.fillStyle = palette[palette.length - i - 1];
 					context.fill();
 					context.lineWidth = 0.25;
-					context.strokeStyle = "black";
+					context.strokeStyle = 'black';
 					context.stroke();
-					context.fillStyle = "black";
+					context.fillStyle = 'black';
 					if (i === 0) {
 						context.fillText(parseFloat(original_cmax.toPrecision(3)), width + 30, (i + 1) * 15 + 3);
 					}
@@ -123,7 +124,7 @@ export class Scatterplot extends React.Component {
 		}
 		// Draw the scatter plot itself
 		context.globalAlpha = 0.5;
-		context.strokeStyle = "black";
+		context.strokeStyle = 'black';
 		context.lineWidth = 0.25;
 		// Trick to draw by color, which is a lot faster on the HTML canvas element
 		palette.forEach((current_color) => {
