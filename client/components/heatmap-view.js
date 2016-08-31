@@ -7,95 +7,90 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 class HeatmapViewComponent extends Component {
 
+	renderHeatmapview(el, heatmapState, dataSet, colData, rowData, dispatch) {
+		// Calculate the layout of everything
+		let heatmapWidth = el.clientWidth - 20;
+		let heatmapHeight = el.clientHeight - 20;
+		let verticalSparklineWidth = 20;
+		if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
+			heatmapWidth -= 100;
+			verticalSparklineWidth = 120;
+		}
+		let horizontalSparklineHeight = 20;
+		if (heatmapState.colMode === 'Text') {
+			horizontalSparklineHeight = 120;
+			heatmapHeight -= 100;
+		}
+		return (
+			<div className='view-vertical'>
+				<div className='view'>
+					<Sparkline
+						orientation='horizontal'
+						width={heatmapWidth}
+						height={horizontalSparklineHeight}
+						data={colData}
+						dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
+						screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
+						mode={heatmapState.colMode}
+						style={{ marginRight: (verticalSparklineWidth + 'px') }}
+						/>
+				</div>
+				<div className='view'>
+					<Heatmap
+						transcriptome={dataSet.transcriptome}
+						project={dataSet.project}
+						dataset={dataSet.dataset}
+						width={heatmapWidth}
+						height={heatmapHeight}
+						zoom={heatmapState.zoom}
+						center={heatmapState.center}
+						shape={dataSet.shape}
+						zoomRange={dataSet.zoomRange}
+						fullZoomWidth={dataSet.fullZoomWidth}
+						fullZoomHeight={dataSet.fullZoomHeight}
+						onViewChanged={
+							(bounds) => {
+								dispatch({
+									type: 'SET_HEATMAP_PROPS',
+									screenBounds: bounds.screenBounds,
+									dataBounds: bounds.dataBounds,
+									center: bounds.center,
+									zoom: bounds.zoom,
+								});
+							}
+						} />
+					<Sparkline
+						orientation='vertical'
+						width={verticalSparklineWidth}
+						height={heatmapHeight}
+						data={rowData}
+						dataRange={[heatmapState.dataBounds[1], heatmapState.dataBounds[3]]}
+						screenRange={[heatmapState.screenBounds[1], heatmapState.screenBounds[3]]}
+						mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
+						/>
+				</div>
+			</div>
+		);
+	}
+
 	render() {
 		const { dispatch, dataSet, genes, heatmapState } = this.props;
 
-		let colData = [];
-		if (heatmapState.colAttr === '(gene)') {
-			if (genes.hasOwnProperty(heatmapState.colGene)) {
-				colData = genes[heatmapState.colGene];
-			}
-		} else {
-			colData = dataSet.colAttrs[heatmapState.colAttr];
-		}
+		const colGeneSelected = (heatmapState.colAttr === '(gene)') && genes.hasOwnProperty(heatmapState.colGene);
+		const colData = colGeneSelected ? genes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
 
 		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
 		if (heatmapState.rowAttr === '(gene positions)') {
-			const genes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
-			rowData = _.map(
-				dataSet.rowAttrs['Gene'],
-				(x) => { return _.indexOf(genes, x) !== -1 ? x : ''; }
-			);
+			const shownGenes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
+			const allGenes = dataSet.rowAttrs['Gene'];
+			rowData = new Array(allGenes.length);
+			for (let i = 0; i < allGenes.length; i++) {
+				rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
+			}
 		}
 
-		// Calculate the layout of everything
-		let el = this.refs.heatmapContainer;
-		let heatmap = null;
-		if (el) {
-			let heatmapWidth = el.clientWidth - 20;
-			let heatmapHeight = el.clientHeight - 20;
-			let verticalSparklineWidth = 20;
-			if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
-				heatmapWidth -= 100;
-				verticalSparklineWidth = 120;
-			}
-			let horizontalSparklineHeight = 20;
-			if (heatmapState.colMode === 'Text') {
-				horizontalSparklineHeight = 120;
-				heatmapHeight -= 100;
-			}
-			heatmap = (
-				<div className='view-vertical'>
-					<div className='view'>
-						<Sparkline
-							orientation='horizontal'
-							width={heatmapWidth}
-							height={horizontalSparklineHeight}
-							data={colData}
-							dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
-							screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
-							mode={heatmapState.colMode}
-							style={{ marginRight: (verticalSparklineWidth + 'px') }}
-							/>
-					</div>
-					<div className='view'>
-						<Heatmap
-							transcriptome={dataSet.transcriptome}
-							project={dataSet.project}
-							dataset={dataSet.dataset}
-							width={heatmapWidth}
-							height={heatmapHeight}
-							zoom={heatmapState.zoom}
-							center={heatmapState.center}
-							shape={dataSet.shape}
-							zoomRange={dataSet.zoomRange}
-							fullZoomWidth={dataSet.fullZoomWidth}
-							fullZoomHeight={dataSet.fullZoomHeight}
-							onViewChanged={
-								(bounds) => {
-									dispatch({
-										type: 'SET_HEATMAP_PROPS',
-										screenBounds: bounds.screenBounds,
-										dataBounds: bounds.dataBounds,
-										center: bounds.center,
-										zoom: bounds.zoom,
-									});
-								}
-							} />
-						<Sparkline
-							orientation='vertical'
-							width={verticalSparklineWidth}
-							height={heatmapHeight}
-							data={rowData}
-							dataRange={[heatmapState.dataBounds[1], heatmapState.dataBounds[3]]}
-							screenRange={[heatmapState.screenBounds[1], heatmapState.screenBounds[3]]}
-							mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
-							/>
-					</div>
-				</div>
-			);
-		}
-
+		const el = this.refs.heatmapContainer;
+		const heatmap = el ? this.renderHeatmapview(el, heatmapState, dataSet, colData, rowData, dispatch) : null;
 
 		return (
 			<div className='view'>
