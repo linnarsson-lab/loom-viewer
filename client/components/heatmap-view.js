@@ -74,10 +74,10 @@ class HeatmapViewComponent extends Component {
 	}
 
 	render() {
-		const { dispatch, dataSet, genes, heatmapState } = this.props;
+		const { dispatch, dataSet, fetchedGenes, heatmapState } = this.props;
 
-		const colGeneSelected = (heatmapState.colAttr === '(gene)') && genes.hasOwnProperty(heatmapState.colGene);
-		const colData = colGeneSelected ? genes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
+		const colGeneSelected = (heatmapState.colAttr === '(gene)') && fetchedGenes.hasOwnProperty(heatmapState.colGene);
+		const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
 
 		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
 		if (heatmapState.rowAttr === '(gene positions)') {
@@ -98,7 +98,7 @@ class HeatmapViewComponent extends Component {
 					<HeatmapSidepanel
 						heatmapState={heatmapState}
 						dataSet={dataSet}
-						genes={genes}
+						fetchedGenes={fetchedGenes}
 						dispatch={dispatch}
 						/>
 				</div>
@@ -112,7 +112,7 @@ class HeatmapViewComponent extends Component {
 
 HeatmapViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	heatmapState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -132,7 +132,7 @@ const HeatmapViewContainer = function (props) {
 			dispatch={dispatch}
 			heatmapState={heatmapState}
 			dataSet={dataSet}
-			genes={data.genes} />
+			fetchedGenes={data.fetchedGenes} />
 	);
 };
 

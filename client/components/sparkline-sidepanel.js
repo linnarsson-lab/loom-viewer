@@ -6,7 +6,7 @@ import { fetchGene } from '../actions/actions.js';
 import { forEach } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet, geneCache, selectableGenes } = props;
+	const { dispatch, sparklineState, dataSet, fetchedGenes, selectableGenes } = props;
 
 	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
@@ -35,7 +35,7 @@ export const SparklineSidepanel = function (props) {
 						{ sparklineState.orderByAttr === '(gene)' ?
 							<FetchGeneComponent
 								dataSet={dataSet}
-								geneCache={geneCache}
+								geneCache={fetchedGenes}
 								selectableGenes={selectableGenes}
 								dispatch={dispatch}
 								attrType={'SET_SPARKLINE_PROPS'}
@@ -75,24 +75,23 @@ export const SparklineSidepanel = function (props) {
 									event.target.value.trim().split(/[ ,\r\n]+/),
 									(gene) => {
 										dispatch(
-											fetchGene(dataSet, gene, geneCache)
+											fetchGene(dataSet, gene, fetchedGenes)
 										);
 									}
 								);
 							}
 						}>
 					</textarea>
-
-							<FetchGeneComponent
-								dataSet={dataSet}
-								geneCache={geneCache}
-								selectableGenes={selectableGenes}
-								dispatch={dispatch}
-								attrType={'SET_SPARKLINE_PROPS'}
-								attrName={'genes'}
-								multi
-								clearable
-								/>
+					<FetchGeneComponent
+						dataSet={dataSet}
+						fetchedGenes={fetchedGenes}
+						selectableGenes={selectableGenes}
+						dispatch={dispatch}
+						attrType={'SET_SPARKLINE_PROPS'}
+						attrName={'genes'}
+						multi
+						clearable
+						/>
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -111,7 +110,7 @@ export const SparklineSidepanel = function (props) {
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	geneCache: PropTypes.array.isRequired,
+	fetchedGenes: PropTypes.array.isRequired,
 	selectableGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

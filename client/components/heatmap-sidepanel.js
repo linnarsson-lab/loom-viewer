@@ -1,9 +1,9 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { fetchGene } from '../actions/actions.js';
+import { FetchGeneComponent } from './fetch-gene';
 
 export const HeatmapSidepanel = function (props) {
-	const { dispatch, heatmapState, dataSet, genes } = props;
+	const { dispatch, heatmapState, dataSet, fetchedGenes } = props;
 
 	let colAttrKeys = Object.keys(dataSet.colAttrs);
 	colAttrKeys.sort();
@@ -40,22 +40,13 @@ export const HeatmapSidepanel = function (props) {
 					<div className='form-group'>
 						<div className='btn-group btn-block'>
 							{heatmapState.colAttr === '(gene)' ?
-								<input
-									className='form-control'
-									placeholder='Gene'
-									value={heatmapState.colGene}
-									onChange={
-										(event) => {
-											dispatch({
-												type: 'SET_HEATMAP_PROPS',
-												colGene: event.target.value,
-											});
-											dispatch(fetchGene(dataSet, event.target.value, genes));
-										}
-									} />
-								:
-								<span></span>
-							}
+								<FetchGeneComponent
+									dataSet={dataSet}
+									fetchedGenes={fetchedGenes}
+									selectableGenes={dataSet.rowAttrs.Gene}
+									dispatch={dispatch}
+									attrType={'SET_HEATMAP_PROPS'}
+									attrName={'colGene'} /> : null }
 						</div>
 					</div>
 
@@ -102,6 +93,6 @@ export const HeatmapSidepanel = function (props) {
 HeatmapSidepanel.propTypes = {
 	heatmapState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

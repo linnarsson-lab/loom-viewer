@@ -7,7 +7,7 @@ import * as _ from 'lodash';
 class SparklineViewComponent extends Component {
 
 	render() {
-		const { sparklineState, dataSet, genes, dispatch } = this.props;
+		const { sparklineState, dataSet, fetchedGenes, dispatch } = this.props;
 
 		// Determine which array we want to sort by. Note that we abuse
 		// the JS dictionary behavior of returning "undefined" when an
@@ -22,7 +22,7 @@ class SparklineViewComponent extends Component {
 		}
 		let compareArray = undefined;
 		if (sparklineState.orderByAttr === '(gene)') {
-			compareArray = genes[sparklineState.orderByGene];
+			compareArray = fetchedGenes[sparklineState.orderByGene];
 		} else {
 			compareArray = dataSet.colAttrs[sparklineState.orderByAttr];
 		}
@@ -57,7 +57,7 @@ class SparklineViewComponent extends Component {
 			<SparklineSidepanel
 				sparklineState={sparklineState}
 				dataSet={dataSet}
-				geneCache={genes}
+				fetchedGenes={fetchedGenes}
 				selectableGenes={selectableGenes}
 				dispatch={dispatch}
 				/>
@@ -65,6 +65,7 @@ class SparklineViewComponent extends Component {
 
 		// "Show cell attribute"
 		// Showing the scrollbar is ugly, but otherwise lining up will be *really hard*
+		// because browsers do not allow for direct access to scrollbar size
 		const legend = (
 			<div style={{ flex: '0 0 auto', minHeight: '20px', overflowY: 'scroll' }}>
 				<Sparkline
@@ -84,7 +85,7 @@ class SparklineViewComponent extends Component {
 				const gene = selectedGenesList[i];
 				let geneData = new Array(colData.length);
 				for (let j = 0; j < geneData.length; ++j) {
-					geneData[j] = genes[gene][indices[j]];
+					geneData[j] = fetchedGenes[gene][indices[j]];
 				}
 				geneSparklines[i] = (
 					<div
@@ -142,7 +143,7 @@ class SparklineViewComponent extends Component {
 
 SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	sparklineState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -151,7 +152,7 @@ const SparklineViewContainer = function (props) {
 	const { dispatch, data, sparklineState, params } = props;
 	const { project, dataset } = params;
 	const dataSet = data.dataSets[dataset];
-	const genes = data.genes;
+	const fetchedGenes = data.fetchedGenes;
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
 			dispatch={dispatch}
@@ -163,7 +164,7 @@ const SparklineViewContainer = function (props) {
 			dispatch={dispatch}
 			sparklineState={sparklineState}
 			dataSet={dataSet}
-			genes={genes} />
+			fetchedGenes={fetchedGenes} />
 	);
 };
 

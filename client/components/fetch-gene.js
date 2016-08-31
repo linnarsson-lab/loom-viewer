@@ -38,7 +38,7 @@ export class FetchGeneComponent extends Component {
 	}
 
 	render() {
-		const { dataSet, geneCache, dispatch, attrType, attrName } = this.props;
+		const { dataSet, fetchedGenes, dispatch, attrType, attrName } = this.props;
 		const { options, filterOptions, val } = this.state;
 		if (options) {
 
@@ -48,7 +48,7 @@ export class FetchGeneComponent extends Component {
 					let geneString = '';
 					for (let i = 0; i < val.length; i++) {
 						geneString += val[i].value + ' ';
-						dispatch(fetchGene(dataSet, val[i].value, geneCache));
+						dispatch(fetchGene(dataSet, val[i].value, fetchedGenes));
 					}
 					dispatch({ type: attrType, [attrName]: geneString });
 				} else {
@@ -58,7 +58,7 @@ export class FetchGeneComponent extends Component {
 			} : (val) => {
 				if (val) {
 					dispatch({ type: attrType, [attrName]: val.value });
-					dispatch(fetchGene(dataSet, val.value, geneCache));
+					dispatch(fetchGene(dataSet, val.value, fetchedGenes));
 				} else {
 					dispatch({ type: attrType, [attrName]: '' });
 				}
@@ -93,7 +93,7 @@ export class FetchGeneComponent extends Component {
 								event.target.value.trim().split(/[ ,\r\n]+/),
 								(gene) => {
 									dispatch(
-										fetchGene(dataSet, gene, geneCache)
+										fetchGene(dataSet, gene, fetchedGenes)
 									);
 								}
 							);
@@ -107,7 +107,7 @@ export class FetchGeneComponent extends Component {
 
 FetchGeneComponent.propTypes = {
 	selectableGenes: PropTypes.array,
-	geneCache: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	attrType: PropTypes.string.isRequired,

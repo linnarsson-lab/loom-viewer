@@ -115,7 +115,7 @@ const initialData = {
 	dataSets: {},
 
 	// contains row data by gene, i.e. {'Actb': [1,2,1,3,42,4,...]}
-	genes: undefined,
+	fetchedGenes: undefined,
 };
 
 function data(state = initialData, action) {
@@ -141,7 +141,7 @@ function data(state = initialData, action) {
 		return Object.assign({}, state, {
 			isFetchingData: false,
 			hasDataset: true,
-			genes: {},
+			fetchedGenes: {},
 			dataSets: Object.assign({}, state.dataSets, action.dataset),
 		});
 
@@ -155,9 +155,7 @@ function data(state = initialData, action) {
 	case RECEIVE_GENE:
 		return Object.assign({}, state, {
 			isFetchingData: false,
-			genes: Object.assign({}, state.genes, {
-				[action.gene]: action.data,
-			}),
+			fetchedGenes: Object.assign({}, state.fetchedGenes, {[action.gene]: action.data}),
 		});
 
 	case REQUEST_GENE_FAILED:

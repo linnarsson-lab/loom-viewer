@@ -6,7 +6,7 @@ import { FetchGeneComponent } from './fetch-gene';
 
 
 export const LandscapeSidepanel = function (props) {
-	const { dispatch, dataSet, genes } = props;
+	const { dispatch, dataSet, fetchedGenes } = props;
 	const landscapeState = props.landscapeState;
 	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
 	const selectableGenes = dataSet.rowAttrs.Gene;
@@ -66,7 +66,7 @@ export const LandscapeSidepanel = function (props) {
 					{ xCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							geneCache={genes}
+							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
@@ -85,7 +85,7 @@ export const LandscapeSidepanel = function (props) {
 					{ yCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							geneCache={genes}
+							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
@@ -104,7 +104,7 @@ export const LandscapeSidepanel = function (props) {
 					{ colorAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							geneCache={genes}
+							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
 							attrType={'SET_LANDSCAPE_PROPS'}
@@ -147,6 +147,6 @@ export const LandscapeSidepanel = function (props) {
 LandscapeSidepanel.propTypes = {
 	landscapeState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.array.isRequired,
+	fetchedGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
