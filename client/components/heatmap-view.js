@@ -18,7 +18,7 @@ class HeatmapViewComponent extends Component {
 	}
 
 	componentWillUpdate(nextProps) {
-		if (!_.isEqual(nextProps, this.props)){
+		if (!_.isEqual(nextProps.heatmapState, this.props.heatmapState)){
 			this.renderHeatmapview(nextProps);
 		}
 	}
