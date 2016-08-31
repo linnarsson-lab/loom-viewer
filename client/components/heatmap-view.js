@@ -32,8 +32,8 @@ class HeatmapViewComponent extends Component {
 		let el = this.refs.heatmapContainer;
 		let heatmap = null;
 		if (el) {
-			let heatmapWidth = el.clientWidth;
-			let heatmapHeight = el.clientHeight;
+			let heatmapWidth = el.clientWidth - 20;
+			let heatmapHeight = el.clientHeight - 20;
 			let verticalSparklineWidth = 20;
 			if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
 				heatmapWidth -= 100;
@@ -95,6 +95,8 @@ class HeatmapViewComponent extends Component {
 				</div>
 			);
 		}
+
+
 		return (
 			<div className='view'>
 				<div className='sidepanel'>
