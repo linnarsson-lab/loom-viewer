@@ -70,7 +70,7 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='lzf', maxshape=(matrix.shape[0], None), chunks=(min(10,matrix.shape[0]),min(10,matrix.shape[1])))
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
-	f.attrs["schema"] = "{}"
+	f.attrs["schema"] = json.dumps({"matrix": "float32", "row_attrs": {}, "col_attrs": {}})
 	f.flush()
 	f.close()	
 
@@ -169,13 +169,18 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotatio
 	tsne = np.loadtxt(os.path.join(folder, "analysis","tsne","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
 	col_attrs["_tSNE1"] = tsne[:,0]
 	col_attrs["_tSNE2"] = tsne[:,1]
+	col_types["_tSNE1"] = "float64"
+	col_types["_tSNE2"] = "float64"
 
 	pca = np.loadtxt(os.path.join(folder, "analysis","pca","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
 	col_attrs["_PC1"] = pca[:,0]
 	col_attrs["_PC2"] = pca[:,1]
+	col_types["_PC1"] = "float64"
+	col_types["_PC2"] = "float64"
 
 	kmeans = np.loadtxt(os.path.join(folder, "analysis","kmeans","10_clusters","clusters.csv"), usecols=(1,), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans
+	col_types["_KMeans_10"] = "float64"
 
 
 	create(loom_file, matrix, row_attrs, col_attrs, row_types, col_types)
