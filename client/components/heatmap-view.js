@@ -32,6 +32,7 @@ class HeatmapViewComponent extends Component {
 
 	renderHeatmapview(props) {
 		const { dispatch, dataSet, fetchedGenes, heatmapState } = props;
+		const { dataBounds } = heatmapState;
 
 		const colGeneSelected = (heatmapState.colAttr === '(gene)') && fetchedGenes.hasOwnProperty(heatmapState.colGene);
 		const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
@@ -67,8 +68,7 @@ class HeatmapViewComponent extends Component {
 						width={heatmapWidth}
 						height={horizontalSparklineHeight}
 						data={colData}
-						dataRange={[heatmapState.dataBounds[0], heatmapState.dataBounds[2]]}
-						screenRange={[heatmapState.screenBounds[0], heatmapState.screenBounds[2]]}
+						dataRange={[dataBounds[0], dataBounds[2]]}
 						mode={heatmapState.colMode}
 						style={{ marginRight: (verticalSparklineWidth + 'px') }}
 						/>
@@ -78,22 +78,15 @@ class HeatmapViewComponent extends Component {
 						transcriptome={dataSet.transcriptome}
 						project={dataSet.project}
 						dataset={dataSet.dataset}
-						width={heatmapWidth}
-						height={heatmapHeight}
-						zoom={heatmapState.zoom}
-						center={heatmapState.center}
 						shape={dataSet.shape}
 						zoomRange={dataSet.zoomRange}
 						fullZoomWidth={dataSet.fullZoomWidth}
 						fullZoomHeight={dataSet.fullZoomHeight}
 						onViewChanged={
-							(bounds) => {
+							(dataBounds) => {
 								dispatch({
 									type: 'SET_HEATMAP_PROPS',
-									screenBounds: bounds.screenBounds,
-									dataBounds: bounds.dataBounds,
-									center: bounds.center,
-									zoom: bounds.zoom,
+									dataBounds,
 								});
 							}
 						} />
@@ -102,8 +95,7 @@ class HeatmapViewComponent extends Component {
 						width={verticalSparklineWidth}
 						height={heatmapHeight}
 						data={rowData}
-						dataRange={[heatmapState.dataBounds[1], heatmapState.dataBounds[3]]}
-						screenRange={[heatmapState.screenBounds[1], heatmapState.screenBounds[3]]}
+						dataRange={[dataBounds[1], dataBounds[3]]}
 						mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
 						/>
 				</div>

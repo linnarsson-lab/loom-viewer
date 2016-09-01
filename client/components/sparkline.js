@@ -203,7 +203,6 @@ export class Sparkline extends React.Component {
 		const leftDataRange = Math.min(dataRange[0], dataRange[1]) | 0;
 		const rightDataRange = Math.max(dataRange[0], dataRange[1]) | 0;
 		const totalDataRange = (rightDataRange - leftDataRange) | 0;
-		const screenRange = this.props.screenRange ? this.props.screenRange : [0, context.width];
 		if (totalDataRange === 0) { return; }
 
 
@@ -274,5 +273,4 @@ Sparkline.propTypes = {
 	height: PropTypes.number,
 	data: PropTypes.array,
 	dataRange: PropTypes.arrayOf(PropTypes.number).isRequired,
-	screenRange: PropTypes.arrayOf(PropTypes.number),
 };
