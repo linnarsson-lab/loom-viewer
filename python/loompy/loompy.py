@@ -139,7 +139,7 @@ def create_from_pandas(df, loom_file):
 	f.close()	
 	pass
 
-def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotation = {}, schema={}):
+def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotation = {}, schema={}, genome='mm10'):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
@@ -149,16 +149,18 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotatio
 		cell_id_prefix (str):		prefix to add to cell IDs (e.g. the sample id for this sample)
 		sample_annotation (dict): 	dict of additional sample attributes
 		schema (dict):				types for the additional sample attributes (required)
+		genome (str):				genome build to load (e.g. 'mm10')
 
 	Returns:
 		Nothing, but creates loom_file
 	"""
-	matrix = mmread(os.path.join(folder, "matrix.mtx")).astype("float32").todense()
+	matrix_folder = os.path.join(folder, 'filtered_gene_bc_matrices', genome)
+	matrix = mmread(os.path.join(matrix_folder, "matrix.mtx")).astype("float32").todense()
 
-	col_attrs = {"CellID": np.array([(cell_id_prefix + bc) for bc in np.loadtxt(os.path.join(folder, "barcodes.tsv"), delimiter="\t", dtype="string")])}
+	col_attrs = {"CellID": np.array([(cell_id_prefix + bc) for bc in np.loadtxt(os.path.join(matrix_folder, "barcodes.tsv"), delimiter="\t", dtype="string")])}
 	col_types = {"CellID": "string"}
 
-	temp = np.loadtxt(os.path.join(folder, "genes.tsv"), delimiter="\t", dtype="string")
+	temp = np.loadtxt(os.path.join(matrix_folder, "genes.tsv"), delimiter="\t", dtype="string")
 	row_attrs = {"Accession": temp[:, 0], "Gene": temp[:,1]}
 	row_types = {"Accession": "string", "Gene": "string"}
 	for key in sample_annotation.keys():
