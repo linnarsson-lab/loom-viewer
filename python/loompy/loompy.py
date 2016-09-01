@@ -174,7 +174,7 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotatio
 	col_attrs["_PC1"] = pca[:,0]
 	col_attrs["_PC2"] = pca[:,1]
 
-	kmeans = np.loadtxt(os.path.join(folder, "analysis","kmeans","10_clusters","clusters.csv"), usecols=(1), delimiter=',', skiprows=1)
+	kmeans = np.loadtxt(os.path.join(folder, "analysis","kmeans","10_clusters","clusters.csv"), usecols=(1,), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans
 
 
