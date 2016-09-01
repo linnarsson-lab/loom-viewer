@@ -570,7 +570,7 @@ class LoomConnection(object):
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError, "Invalid loom data type: " + dtype
 
-		if dtype == "int" or dtype == "float64":
+		if dtype == "float64":
 			if not np.isfinite(values).all():
 				raise ValueError("INF, NaN not allowed in .loom attributes")
 
