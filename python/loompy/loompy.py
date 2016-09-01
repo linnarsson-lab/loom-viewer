@@ -163,8 +163,10 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotatio
 	temp = np.loadtxt(os.path.join(matrix_folder, "genes.tsv"), delimiter="\t", dtype="string")
 	row_attrs = {"Accession": temp[:, 0], "Gene": temp[:,1]}
 	row_types = {"Accession": "string", "Gene": "string"}
+
 	for key in sample_annotation.keys():
 		col_attrs[key] = np.array([sample_annotation[key]]*matrix.shape[1])
+		col_types[key] = schema[key]
 
 	tsne = np.loadtxt(os.path.join(folder, "analysis","tsne","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
 	col_attrs["_tSNE1"] = tsne[:,0]
