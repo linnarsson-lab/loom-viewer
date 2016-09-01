@@ -11,10 +11,17 @@ class HeatmapViewComponent extends Component {
 		super(props);
 		this.renderHeatmapview = this.renderHeatmapview.bind(this);
 		this.state = {};
+
+		this.renderOnResize = () => { this.renderHeatmapview(this.props); };
 	}
 
 	componentDidMount() {
 		this.renderHeatmapview(this.props);
+		window.addEventListener('resize', this.renderOnResize);
+	}
+
+	componentWillUnmount(){
+		window.removeEventListener('resize', this.renderOnResize);
 	}
 
 	componentWillUpdate(nextProps) {
