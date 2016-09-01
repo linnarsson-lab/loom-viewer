@@ -11,14 +11,14 @@ class LandscapeViewComponent extends Component {
 	}
 
 	makeData(attr, gene) {
-		if (attr === "(gene)" && this.props.genes.hasOwnProperty(gene)) {
-			return this.props.genes[gene];
+		if (attr === '(gene)' && this.props.fetchedGenes.hasOwnProperty(gene)) {
+			return this.props.fetchedGenes[gene];
 		}
 		return this.props.dataSet.colAttrs[attr];
 	}
 
 	render() {
-		const { dispatch, landscapeState, dataSet, genes } = this.props;
+		const { dispatch, landscapeState, dataSet, fetchedGenes } = this.props;
 		const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
 		const color = this.makeData(colorAttr, colorGene);
 		const x = this.makeData(xCoordinate, xGene);
@@ -28,7 +28,7 @@ class LandscapeViewComponent extends Component {
 				<LandscapeSidepanel
 					landscapeState={landscapeState}
 					dataSet={dataSet}
-					genes={genes}
+					fetchedGenes={fetchedGenes}
 					dispatch={dispatch}
 					/>
 				<Scatterplot
@@ -36,9 +36,9 @@ class LandscapeViewComponent extends Component {
 					y={y}
 					color={color}
 					colorMode={landscapeState.colorMode}
-					logScaleColor={landscapeState.colorAttr === "(gene)"}
-					logScaleX={landscapeState.xCoordinate === "(gene)"}
-					logScaleY={landscapeState.yCoordinate === "(gene)"}
+					logScaleColor={landscapeState.colorAttr === '(gene)'}
+					logScaleX={landscapeState.xCoordinate === '(gene)'}
+					logScaleY={landscapeState.yCoordinate === '(gene)'}
 					style={{ margin: '20px' }}
 					/>
 			</div>
@@ -48,7 +48,7 @@ class LandscapeViewComponent extends Component {
 
 LandscapeViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	genes: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	landscapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -59,7 +59,7 @@ const LandscapeViewContainer = function (props) {
 	const { dispatch, data, landscapeState, params } = props;
 	const { project, dataset } = params;
 	const dataSet = data.dataSets[dataset];
-	const genes = data.genes;
+	const fetchedGenes = data.fetchedGenes;
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
 			dispatch={dispatch}
@@ -71,7 +71,7 @@ const LandscapeViewContainer = function (props) {
 			dispatch={dispatch}
 			landscapeState={landscapeState}
 			dataSet={dataSet}
-			genes={genes} />
+			fetchedGenes={fetchedGenes} />
 	);
 };
 

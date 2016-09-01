@@ -16,41 +16,39 @@ export class Canvas extends React.Component {
 
 	// Make sure we get a sharp canvas on Retina displays
 	// as well as adjust the canvas on zoomed browsers
-	fitToZoomAndPixelRatio() {
-		let el = this.refs.canvas;
-		if (el) {
-			const ratio = window.devicePixelRatio || 1;
-			const width = (el.parentNode.clientWidth * ratio) | 0;
-			const height = (el.parentNode.clientHeight * ratio) | 0;
-			if (width !== el.width || height !== el.height) {
-				el.width = width;
-				el.height = height;
-				let context = el.getContext('2d');
-				context.mozImageSmoothingEnabled = false;
-				context.webkitImageSmoothingEnabled = false;
-				context.msImageSmoothingEnabled = false;
-				context.imageSmoothingEnabled = false;
-				context.scale(ratio, ratio);
-				context.clearRect(0, 0, el.width, el.height);
-			}
+	fitToZoomAndPixelRatio(canvasEl) {
+		const ratio = window.devicePixelRatio || 1;
+		const width = (canvasEl.parentNode.clientWidth * ratio) | 0;
+		const height = (canvasEl.parentNode.clientHeight * ratio) | 0;
+		let context = canvasEl.getContext('2d');
+		// store width and height in context for paint functions
+		context.width = canvasEl.parentNode.clientWidth;
+		context.height = canvasEl.parentNode.clientHeight;
+		if (width !== canvasEl.width || height !== canvasEl.height) {
+			canvasEl.width = width;
+			canvasEl.height = height;
+			context.mozImageSmoothingEnabled = false;
+			context.msImageSmoothingEnabled = false;
+			context.imageSmoothingEnabled = false;
+			context.webkitImageSmoothingEnabled = false;
+			context.scale(ratio, ratio);
+			context.clearRect(0, 0, canvasEl.width, canvasEl.height);
 		}
+		return context;
 	}
 
+	// Relies on a ref to a DOM element, so only call after mounting!
 	draw() {
-		let el = this.refs.canvas;
-		if (el) {
-			this.fitToZoomAndPixelRatio();
-			let context = el.getContext('2d');
-			if (context) {
-				// should we clear the canvas every redraw?
-				if (this.props.clear) { context.clearRect(0, 0, el.width, el.height); }
-				this.props.paint(context, el.width/window.devicePixelRatio, el.height/window.devicePixelRatio);
-			}
-			// is the provided paint function an animation?
-			if (this.props.loop) {
-				window.requestAnimationFrame(this.draw);
-			}
+		let canvasEl = this.refs.canvas;
+		let context = this.fitToZoomAndPixelRatio(canvasEl);
+		// should we clear the canvas every redraw?
+		if (this.props.clear) { context.clearRect(0, 0, canvasEl.width, canvasEl.height); }
+		this.props.paint(context);
+		// is the provided paint function an animation?
+		if (this.props.loop) {
+			window.requestAnimationFrame(this.draw);
 		}
+
 	}
 
 	componentDidMount() {
@@ -58,7 +56,7 @@ export class Canvas extends React.Component {
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// resizing/redrawing of the canvas.
-		window.addEventListener("resize", debounce(this.draw, 200));
+		window.addEventListener('resize', debounce(this.draw, 200));
 	}
 
 	componentDidUpdate(prevProps) {
@@ -118,14 +116,14 @@ export class CanvasBenchmark extends React.Component {
 		// create a pre-rendered dot sprite
 		const radius = Math.max(3, Math.sqrt(totalDots) / 60) | 0;
 		const sprite = document.createElement('canvas');
-		sprite.id = "dot_sprite";
+		sprite.id = 'dot_sprite';
 		sprite.width = 2 * radius + 1;
 		sprite.height = 2 * radius + 1;
 		const context = sprite.getContext('2d');
 		// draw dot on sprite
 		context.lineWidth = 1;
-		context.strokeStyle = "white";
-		context.fillStyle = "black";
+		context.strokeStyle = 'white';
+		context.fillStyle = 'black';
 		context.beginPath();
 		context.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
 		context.closePath();
@@ -157,8 +155,8 @@ export class CanvasBenchmark extends React.Component {
 			const radius = Math.max(3, Math.sqrt(x.length) / 60) | 0;	// Suitable radius of the markers
 
 			context.lineWidth = 1;
-			context.strokeStyle = "white";
-			context.fillStyle = "black";
+			context.strokeStyle = 'white';
+			context.fillStyle = 'black';
 			context.clearRect(0, 0, width, height);
 			for (let i = 0; i < x.length; i++) {
 				const xi = (x[i] * width) | 0;

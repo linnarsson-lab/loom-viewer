@@ -19,23 +19,23 @@ const DataSetListItem = function (props) {
 			bsSize='xsmall'
 			bsStyle='link'
 			href={downloadURL}
-			title={"Download " + props.dataSetPath}
+			title={'Download ' + props.dataSetPath}
 			>
 			<Glyphicon glyph='cloud-download' />
 		</Button>
 	);
-	const paperButton = doi === "" ? (<span></span>) : (
+	const paperButton = doi === '' ? (<span></span>) : (
 		<Button
 			className='pull-right'
 			bsSize='xsmall'
 			bsStyle='link'
-			href={"http://dx.doi.org/" + doi}
+			href={'http://dx.doi.org/' + doi}
 			title='Original reference'
 			>
 			<Glyphicon glyph='file' />
 		</Button>
 	);
-	const urlButton = url === "" ? (<span></span>) : (
+	const urlButton = url === '' ? (<span></span>) : (
 		<Button
 			className='pull-right'
 			bsSize='xsmall'
@@ -52,7 +52,7 @@ const DataSetListItem = function (props) {
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
 			<div>
-				<strong><Link to={path} title={"Open " + props.dataSetPath}>{title}</Link></strong>
+				<strong><Link to={path} title={'Open ' + props.dataSetPath}>{title}</Link></strong>
 			</div>
 			<div><code>{dataset}</code> {downloadButton}{urlButton}{paperButton}</div>
 			<div><em>{description}</em></div>

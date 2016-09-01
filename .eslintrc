@@ -47,8 +47,9 @@
             "error",
             "always-multiline"
         ],
+        "quotes": ["error", "single"],
         "jsx-quotes": [
-            "error",
+            2,
             "prefer-single"
         ],
         "no-mixed-spaces-and-tabs": 2,
@@ -88,8 +89,8 @@
         "react/jsx-no-undef": 2,
         "react/jsx-no-duplicate-props": 2,
         "react/no-direct-mutation-state": 2,
-        "react/no-did-update-set-state": 2, // use componentWillUpdate instead
-        "react/no-did-mount-set-state": 2, // use componentWillMount instead
+        "react/no-did-update-set-state": 1, // use componentWillUpdate instead
+        "react/no-did-mount-set-state": 1, // use componentWillMount instead
         "react/no-deprecated": 2,
         "react/prop-types": 2,
         "react/jsx-no-bind": 1, // refactoring to prototype functions is more efficient

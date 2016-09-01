@@ -1,25 +1,46 @@
 import React, { Component, PropTypes } from 'react';
 import { FormControl, FormGroup } from 'react-bootstrap';
-import VirtualizedSelect from 'react-virtualized-select';
 import { fetchGene } from '../actions/actions.js';
 import { forEach } from 'lodash';
 
+import Select from 'react-virtualized-select';
+import createFilterOptions from 'react-select-fast-filter-options';
 
 // TODO: document how FetchGeneComponent works
 export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);
+		this.state = this.createFilterOptions(this.props.selectableGenes);
+	}
 
-		this.state = {};
+	componentWillReceiveProps(nextProps) {
+		if (this.props.selectableGenes !== nextProps.selectableGenes) {
+			this.setState(this.createFilterOptions(nextProps.selectableGenes));
+		}
+	}
+
+	createFilterOptions(selectableGenes) {
+		if (selectableGenes) {
+			let options = new Array(selectableGenes.length);
+			for (let i = 0; i < selectableGenes.length; i++) {
+				options[i] = {
+					value: selectableGenes[i],
+					label: selectableGenes[i],
+				};
+			}
+			return {
+				options,
+				filterOptions: createFilterOptions({ options }),
+			};
+		} else {
+			return { options: null, filterOptions: null };
+		}
 	}
 
 	render() {
-		const { dataSet, selectableGenes, geneCache, dispatch, attrType, attrName } = this.props;
-		if (selectableGenes) {
-			const options = new Array(selectableGenes.length);
-			for (let i = 0; i < selectableGenes.length; i++) {
-				options[i] = { value: selectableGenes[i], label: selectableGenes[i] };
-			}
+		const { dataSet, fetchedGenes, dispatch, attrType, attrName } = this.props;
+		const { options, filterOptions, val } = this.state;
+		if (options) {
 
 			// val will be an array of objects with { label, value } entries
 			const dispatchOnChange = this.props.multi ? (val) => {
@@ -27,7 +48,7 @@ export class FetchGeneComponent extends Component {
 					let geneString = '';
 					for (let i = 0; i < val.length; i++) {
 						geneString += val[i].value + ' ';
-						dispatch(fetchGene(dataSet, val[i].value, geneCache));
+						dispatch(fetchGene(dataSet, val[i].value, fetchedGenes));
 					}
 					dispatch({ type: attrType, [attrName]: geneString });
 				} else {
@@ -37,7 +58,7 @@ export class FetchGeneComponent extends Component {
 			} : (val) => {
 				if (val) {
 					dispatch({ type: attrType, [attrName]: val.value });
-					dispatch(fetchGene(dataSet, val.value, geneCache));
+					dispatch(fetchGene(dataSet, val.value, fetchedGenes));
 				} else {
 					dispatch({ type: attrType, [attrName]: '' });
 				}
@@ -46,10 +67,11 @@ export class FetchGeneComponent extends Component {
 
 			return (
 				<FormGroup>
-					<VirtualizedSelect
+					<Select
 						options={options}
+						filterOptions={filterOptions}
 						onChange={dispatchOnChange}
-						value={this.state.val}
+						value={val}
 						multi={this.props.multi}
 						clearable={this.props.clearable}
 						/>
@@ -61,7 +83,7 @@ export class FetchGeneComponent extends Component {
 					<FormControl
 						type='text'
 						placeholder='Enter gene name...'
-						value={this.state.val}
+						value={val}
 						onChange={(event) => {
 							dispatch({
 								type: 'SET_SPARKLINE_PROPS',
@@ -71,7 +93,7 @@ export class FetchGeneComponent extends Component {
 								event.target.value.trim().split(/[ ,\r\n]+/),
 								(gene) => {
 									dispatch(
-										fetchGene(dataSet, gene, geneCache)
+										fetchGene(dataSet, gene, fetchedGenes)
 									);
 								}
 							);
@@ -85,7 +107,7 @@ export class FetchGeneComponent extends Component {
 
 FetchGeneComponent.propTypes = {
 	selectableGenes: PropTypes.array,
-	geneCache: PropTypes.object.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	attrType: PropTypes.string.isRequired,

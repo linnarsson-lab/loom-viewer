@@ -22,7 +22,7 @@ export const GenescapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isTSNE ? "success" : "default" }
+								bsStyle={ isTSNE ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
@@ -35,7 +35,7 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isPCA ? "success" : "default" }
+								bsStyle={ isPCA ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
@@ -82,7 +82,7 @@ export const GenescapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Heatmap' ? "success" : "default" }
+								bsStyle={ colorMode === 'Heatmap' ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
@@ -94,7 +94,7 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Categorical' ? "success" : "default" }
+								bsStyle={ colorMode === 'Categorical' ? 'success' : 'default' }
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
