@@ -1,5 +1,4 @@
 // See http://rackt.org/redux/docs/basics/Reducers.html
-import L from 'leaflet';
 import { combineReducers } from 'redux';
 import { routerReducer } from 'react-router-redux';
 
@@ -78,10 +77,7 @@ function genescapeState(state = initialGenescapeState, action) {
 
 const initialHeatmapState = {
 	type: SET_HEATMAP_PROPS,	// This prop gets set by the reducer below, but we should ignore it
-	screenBounds:[0, 0, 0, 0],	// Screen pixel coordinates of the dataset in the current view
 	dataBounds: [0, 0, 0, 0],		// Data coordinates of the current view
-	center: L.latLng(0, 0),
-	zoom: 8,
 	rowAttr: '',
 	rowMode: 'Text',
 	rowGenes: '',
@@ -155,7 +151,7 @@ function data(state = initialData, action) {
 	case RECEIVE_GENE:
 		return Object.assign({}, state, {
 			isFetchingData: false,
-			fetchedGenes: Object.assign({}, state.fetchedGenes, {[action.gene]: action.data}),
+			fetchedGenes: Object.assign({}, state.fetchedGenes, { [action.gene]: action.data }),
 		});
 
 	case REQUEST_GENE_FAILED:

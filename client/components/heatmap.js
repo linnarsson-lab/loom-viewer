@@ -7,15 +7,9 @@ export class Heatmap extends React.Component {
 	}
 
 	handleViewChanged(map) {
-		let bounds = map.getBounds();
-		const sb = map.getPixelBounds();
+		const bounds = map.getBounds();
 		const dse = map.project(bounds.getSouthEast(), this.props.zoomRange[1]);
 		const dnw = map.project(bounds.getNorthWest(), this.props.zoomRange[1]);
-
-		const screenOrigin = {
-			x: Math.max(0, -sb.min.x),
-			y: Math.max(0, -sb.min.y),
-		};
 
 		const dataBounds = [
 			Math.max(0, dnw.x),
@@ -24,21 +18,7 @@ export class Heatmap extends React.Component {
 			Math.min(dse.y, this.props.shape[0]),
 		];
 
-		const units = dnw.x / sb.min.x;
-		const screenBounds = [
-			screenOrigin.x,
-			screenOrigin.y,
-			Math.round((dataBounds[2] - dataBounds[0]) / units) + screenOrigin.x,
-			Math.round((dataBounds[3] - dataBounds[1]) / units) + screenOrigin.y,
-		];
-
-		bounds = {
-			screenBounds: screenBounds,
-			dataBounds: dataBounds,
-			zoom: map.getZoom(),
-			center: map.getCenter(),
-		};
-		this.props.onViewChanged(bounds);
+		this.props.onViewChanged(dataBounds);
 	}
 
 	componentDidMount() {
@@ -65,18 +45,16 @@ export class Heatmap extends React.Component {
 		).addTo(map);
 
 		this.setState({ map });
+
 		const southWest = map.unproject([0, this.props.fullZoomHeight], map.getMaxZoom());
 		const northEast = map.unproject([this.props.fullZoomWidth, 0], map.getMaxZoom());
 		map.on('move', () => { return this.handleViewChanged(map); });
-		if (this.props.center.lat === 0 && this.props.center.lng === 0) {
-			map.fitBounds(new L.LatLngBounds(southWest, northEast));
-		} else {
-			map.setView(this.props.center, this.props.zoom);
-		}
-		this.handleViewChanged(map);
-	}
+		map.fitBounds(new L.LatLngBounds(southWest, northEast));
+		const center = L.latLng(0, 0);
+		const zoom = 8;
+		map.setView(center, zoom);
 
-	componentDidUpdate() {
+		this.handleViewChanged(map);
 	}
 
 	componentWillUnmount() {
@@ -85,16 +63,8 @@ export class Heatmap extends React.Component {
 	}
 
 	render() {
-		const heatmapStyle = {
-			// width: this.props.width + "px",
-			// height: this.props.height + "px",
-		};
 		return (
-			<div
-				ref='map'
-				className='view'
-				style={heatmapStyle}
-				/>
+			<div ref='map' className='view' />
 		);
 	}
 }
@@ -103,10 +73,6 @@ Heatmap.propTypes = {
 	transcriptome: PropTypes.string.isRequired,
 	project: PropTypes.string.isRequired,
 	dataset: PropTypes.string.isRequired,
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
-	zoom: PropTypes.number.isRequired,
-	center: PropTypes.object.isRequired,
 	shape: PropTypes.arrayOf(PropTypes.number).isRequired,
 	zoomRange: PropTypes.arrayOf(PropTypes.number).isRequired,
 	fullZoomWidth: PropTypes.number.isRequired,

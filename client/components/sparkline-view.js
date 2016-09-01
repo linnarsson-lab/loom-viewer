@@ -9,30 +9,31 @@ class SparklineViewComponent extends Component {
 	render() {
 		const { sparklineState, dataSet, fetchedGenes, dispatch } = this.props;
 
-		// Determine which array we want to sort by. Note that we abuse
-		// the JS dictionary behavior of returning "undefined" when an
-		// entry doesn't exist: if the string returned by orderByGene or
-		// orderByAttr is not present, comparedArray stays undefined.
+		// The column attribute values that we want to display in the "legend"
 		let colData = dataSet.colAttrs[sparklineState.colAttr];
 		// if colAttr does not exist (for example, the default values
-		// in the Loom interface is not present), pick the first one
-		if (colData === undefined){
+		// in the Loom interface is not present), pick the first column
+		if (colData === undefined) {
 			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
 			colData = dataSet.colAttrs[properties[0]];
 		}
-		let compareArray = undefined;
-		if (sparklineState.orderByAttr === '(gene)') {
-			compareArray = fetchedGenes[sparklineState.orderByGene];
-		} else {
-			compareArray = dataSet.colAttrs[sparklineState.orderByAttr];
-		}
 
-		// Default to sorted "as is" ...
+		// Indices that we want to sort the data by. Default to sorted "as is"
 		let indices = new Array(colData.length);
 		for (let i = 0; i < indices.length; ++i) {
 			indices[i] = i;
 		}
-		// ... but if compareArray is defined, sort by that instead
+
+		// Determine which array we want to sort colData by. Note that we abuse
+		// the JS dictionary behavior of returning "undefined" when an
+		// entry doesn't exist: if the string returned by orderByGene or
+		// orderByAttr is not present, compareArray will be undefined,
+		// and we don't re-arrange the indices.
+		const compareArray = (sparklineState.orderByAttr === '(gene)') ?
+			fetchedGenes[sparklineState.orderByGene]
+			:
+			dataSet.colAttrs[sparklineState.orderByAttr];
+
 		if (compareArray) {
 			indices.sort(
 				(a, b) => {
@@ -40,11 +41,11 @@ class SparklineViewComponent extends Component {
 						compareArray[a] > compareArray[b] ? 1 : 0;
 				}
 			);
+			// Finally, order the column attribute values by the determined indices
+			let temp = new Array(colData.length);
+			for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
+			colData = temp;
 		}
-		// Finally, order the column attribute values by the determined indices
-		let temp = new Array(colData.length);
-		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
-		colData = temp;
 
 		let selectedGenesList = sparklineState.genes.trim().split(/[ ,\r\n]+/);
 		const selectableGenes = dataSet.rowAttrs.Gene;
