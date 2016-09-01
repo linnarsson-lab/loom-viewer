@@ -12,6 +12,9 @@ export class Canvas extends React.Component {
 
 		this.fitToZoomAndPixelRatio = this.fitToZoomAndPixelRatio.bind(this);
 		this.draw = this.draw.bind(this);
+		// We need to name this debounced function in order to
+		// be able to remove the listener later
+		this.debouncedDraw = debounce(this.draw, 200);
 	}
 
 	// Make sure we get a sharp canvas on Retina displays
@@ -56,7 +59,11 @@ export class Canvas extends React.Component {
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// resizing/redrawing of the canvas.
-		window.addEventListener('resize', debounce(this.draw, 200));
+		window.addEventListener('resize', this.debouncedDraw);
+	}
+
+	componentWillUnmount(){
+		window.removeEventListener('resize', this.debouncedDraw);
 	}
 
 	componentDidUpdate(prevProps) {
