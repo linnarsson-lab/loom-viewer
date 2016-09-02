@@ -48,29 +48,20 @@ class HeatmapViewComponent extends Component {
 		}
 		// Calculate the layout of everything
 		const el = this.refs.heatmapContainer;
-		let heatmapWidth = el.clientWidth - 20;
-		let heatmapHeight = el.clientHeight - 20;
-		let verticalSparklineWidth = 20;
-		if (heatmapState.rowMode === 'Text' || heatmapState.rowMode === 'TexAlways') {
-			heatmapWidth -= 100;
-			verticalSparklineWidth = 120;
-		}
-		let horizontalSparklineHeight = 20;
-		if (heatmapState.colMode === 'Text') {
-			horizontalSparklineHeight = 120;
-			heatmapHeight -= 100;
-		}
+		const sparklineHeight = 80;
+		let heatmapWidth = el.clientWidth - sparklineHeight;
+		let heatmapHeight = el.clientHeight - sparklineHeight;
 		const heatmap = (
 			<div className='view-vertical'>
 				<div className='view'>
 					<Sparkline
 						orientation='horizontal'
 						width={heatmapWidth}
-						height={horizontalSparklineHeight}
+						height={sparklineHeight}
 						data={colData}
 						dataRange={[dataBounds[0], dataBounds[2]]}
 						mode={heatmapState.colMode}
-						style={{ marginRight: (verticalSparklineWidth + 'px') }}
+						style={{ marginRight: (sparklineHeight + 'px') }}
 						/>
 				</div>
 				<div className='view'>
@@ -92,7 +83,7 @@ class HeatmapViewComponent extends Component {
 						} />
 					<Sparkline
 						orientation='vertical'
-						width={verticalSparklineWidth}
+						width={sparklineHeight}
 						height={heatmapHeight}
 						data={rowData}
 						dataRange={[dataBounds[1], dataBounds[3]]}

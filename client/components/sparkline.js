@@ -3,27 +3,6 @@ import { nMostFrequent } from '../js/util';
 import * as colors from '../js/colors';
 import { Canvas } from './canvas';
 
-// Sparkline Component
-
-
-// Calculate the means, the max and the min
-const calcMeans = function (rangeData) {
-	let max = Number.MIN_VALUE, min = Number.MAX_VALUE;
-
-	let means = rangeData.map((group) => {
-		let mean = 0;
-		for (let i = 0; i < group.length; i++) {
-			mean += group[i];
-		}
-		mean /= group.length;
-		max = mean > max ? mean : max;
-		min = mean < min ? mean : min;
-		return mean;
-	});
-
-	return { means, max, min };
-};
-
 export class Sparkline extends React.Component {
 	constructor(props) {
 		super(props);
@@ -75,58 +54,52 @@ export class Sparkline extends React.Component {
 		const dataRange = this.props.dataRange ?
 			this.props.dataRange : [0, data.length];
 
-		const leftRange = dataRange[0];
-		const rightRange = dataRange[1];
+		let leftRange = dataRange[0];
+		let rightRange = dataRange[1];
 
 		// While we return if our total data range is zero, it *is*
 		// allowed to be out of bounds for the dataset. For the
 		// "datapoints" out of the range we simply don't display anything.
-		// This is a simple way of allowing us to zoom out!
+		// This allows us to zoom out!
 
+		const unboundedRange = rightRange - leftRange;
 		const totalRange = Math.ceil(rightRange) - Math.floor(leftRange);
-		if (totalRange === 0) { return; }
-		const unroundedRange = rightRange - leftRange;
-		const leftRangeFrac = leftRange - Math.floor(leftRange);
+		if (totalRange <= 0) { return; }
 
 		// We need to find the effective rangeWidth spanned by all bars.
 		// Mathematically speaking the following equation is true:
 		//   rangeWidth/context.width = totalRange/unroundedRange
 		// Therefore:
-		let rangeWidth = (context.width * totalRange / unroundedRange) | 0;
+		let rangeWidth = (context.width * totalRange / unboundedRange) | 0;
 
 		// Note that the bars should have a width of:
 		//   barWidth = rangeWidth / totalRange
 		//            = context.width / unroundedRange;
 		// Total pixels by which the first bar is outside the canvas:
-		//   xOffset = barWidth * leftRangeFrac - barWidth
-		//           = barWidth * (leftRangeFrac - 1)
+		//   xOffset = -leftRangeFrac * barWidth
 		// Which is equal to:
-		let xOffset = (context.width * (leftRangeFrac - 1) / unroundedRange) | 0;
+		const leftRangeFrac = Math.floor(leftRange) - leftRange;
+		const xOffset = (leftRangeFrac * context.width / unboundedRange) | 0;
 
-		// When dealing with out of bounds ranges (in which case JS returns
-		// undefined), we replace these "datapoints" with the relevant null
-		// value for the type of data we have (0 for numbers, '' for strings)
-
+		// When dealing with out of bounds ranges we rely on JS returning
+		// "undefined" for empty indices, effectively padding the data
+		// with undefined entries on either or both ends.
 		let rangeData = new Array(totalRange);
-		let nullValue = typeof data[0] === 'number' ? 0 : '';
 		for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
-			rangeData[i] = data[i0 + i] || nullValue;
+			rangeData[i] = data[i0 + i];
 		}
 
 		// Determine actual plotter
 		let painter = null;
 		switch (this.props.mode) {
-			case 'TextAlways':
-				painter = new TextAlwaysPainter();
-				break;
 			case 'Categorical':
 				painter = new CategoriesPainter(this.props.data);
 				break;
 			case 'Bars':
-				painter = new BarPainter();
+				painter = new BarPainter(this.props.data);
 				break;
 			case 'Heatmap':
-				painter = new HeatmapPainter();
+				painter = new HeatmapPainter(this.props.data);
 				break;
 			default:
 				painter = new TextPainter();
@@ -137,7 +110,7 @@ export class Sparkline extends React.Component {
 
 		// Make sure our rotation from before is undone
 		if (this.props.orientation !== 'horizontal') {
-			context.restor();
+			context.restore();
 			let t = context.width;
 			context.width = context.height;
 			context.height = t;
@@ -175,8 +148,6 @@ Sparkline.propTypes = {
 	dataRange: PropTypes.arrayOf(PropTypes.number),
 };
 
-
-
 // Plotting functions. The plotters assume a horizontal plot.
 // To draw vertically we rotate/translate the context before
 // passing it to the plotter.
@@ -199,128 +170,162 @@ class CategoriesPainter {
 	paint(context, rangeData, xOffset, rangeWidth) {
 		if (rangeData.length <= rangeWidth) {
 			// more pixels than data
-
+			const barWidth = rangeWidth / rangeData.length;
+			for (let i = 0; i < rangeData.length; i++) {
+				if (rangeData[i] !== undefined) {
+					const color = this.categories.indexOf(rangeData[i]) + 1;
+					context.fillStyle = colors.category20[color];
+					context.fillRect(xOffset + i * barWidth, 0, barWidth, context.height);
+				}
+			}
 		} else {
 			// more data than pixels
-		}
-
-		let x = 0;
-		const xStepSize = context.width / rangeData.length;
-		for (let i = 0; i < rangeData.length; i++) {
-			const commonest = nMostFrequent(rangeData[i], 1)[0];
-			const color = this.categories.indexOf(commonest) + 1;
-			context.fillStyle = colors.category20[color];
-			context.fillRect(x, 0, xStepSize, context.height);
-			x += xStepSize;
+			for (let i = 0; i < rangeWidth; i++) {
+				const i0 = (i * rangeData.length / rangeWidth) | 0;
+				const i1 = ((i + 1) * rangeData.length / rangeWidth) | 0;
+				const slice = rangeData.slice(i0, i1);
+				const commonest = nMostFrequent(slice, 1)[0];
+				if (commonest !== undefined) {
+					const color = this.categories.indexOf(commonest) + 1;
+					context.fillStyle = colors.category20[color];
+					context.fillRect(xOffset + i, 0, 1, context.height);
+				}
+			}
 		}
 	}
+}
+
+function calcMinMax(data) {
+	let min = 0;
+	let max = 0;
+	if (typeof data[0] === 'number') {
+		min = Number.MAX_VALUE;
+		max = Number.MIN_VALUE;
+		for (let i = 0; i < data.length; i++) {
+			min = min < data[i] ? min : data[i];
+			max = max > data[i] ? max : data[i];
+		}
+	}
+	return { min, max };
+}
+
+function calcMeans(rangeData, rangeWidth) {
+	// determine real start and end of range,
+	// skipping undefined padding if present.
+	let start = 0;
+	let end = rangeData.length;
+	while (rangeData[start] === undefined && start < end) { start++; }
+	while (rangeData[end] === undefined && end > start) { end--; }
+
+	let barWidth = 0;
+	let means = null;
+	if (rangeData.length <= rangeWidth) {
+		// more pixels than data
+		means = rangeData;
+		barWidth = rangeWidth / rangeData.length;
+	} else {
+		// more data than pixels
+		barWidth = 1;
+		means = new Array(rangeWidth);
+		for (let i = 0; i < rangeWidth; i++) {
+			let i0 = (i * rangeData.length / rangeWidth) | 0;
+			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
+			if (i0 < start || i0 >= end) {
+				means[i] = 0;
+				continue;
+			}
+			i1 = i1 < end ? i1 : end;
+			let sum = 0;
+			for (let j = i0; j < i1; j++) {
+				sum += rangeData[j];
+			}
+			const mean = (i1 - i0) !== 0 ? sum / (i1 - i0) : sum;
+			means[i] = mean;
+		}
+	}
+	return { means, barWidth };
 }
 
 class BarPainter {
 
+	constructor(data) {
+		const { min, max } = calcMinMax(data);
+		this.min = min;
+		this.max = max;
+	}
+
 	paint(context, rangeData, xOffset, rangeWidth) {
 
-		if (typeof rangeData[0][0] === 'number') {
-
-			const { means, min, max } = calcMeans(rangeData);
-
-			// factor to multiply the mean values by,
-			// to calculate their's height (see below)
-			const scaleMean = context.height / (max - min);
-
-			context.fillStyle = '#404040';
-			const meanWidth = context.width / rangeData.length;
-			for (let i = 0, xOffset = 0; i < means.length; i++) {
-				// canvas defaults to positive y going *down*, so to
-				// draw from bottom to top we start at height and
-				// subtract the height.
-				let meanHeight = (means[i] * scaleMean) | 0;
-				let yOffset = context.height - meanHeight;
-				context.fillRect(xOffset, yOffset, meanWidth, meanHeight);
-				xOffset += meanWidth;
-			}
-
-			textSize(context, 10);
-			textStyle(context);
-			drawText(context, min.toPrecision(3), 2, context.height - 2);
-			drawText(context, max.toPrecision(3), 2, 10);
-		} else {
-			textSize(context, 10);
-			textStyle(context);
-			drawText(context, 'Cannot draw bars for non-numerical data', 2, context.height - 2);
+		const { means, barWidth } = calcMeans(rangeData, rangeWidth);
+		// factor to multiply the mean values by, to calculate bar height
+		const scaleMean = context.height / this.max;
+		context.fillStyle = '#404040';
+		for (let i = 0, x = xOffset; i < means.length; i++) {
+			// Even if means[i] is non a number, OR-masking forces it to 0
+			let barHeight = (means[i] * scaleMean) | 0;
+			// canvas defaults to positive y going *down*, so to
+			// draw from bottom to top we start at height and
+			// subtract the height.
+			let y = context.height - barHeight;
+			context.fillRect(x, y, barWidth, barHeight);
+			x += barWidth;
 		}
+
+		textSize(context, 10);
+		textStyle(context);
+		drawText(context, this.min.toPrecision(3), 2, context.height - 2);
+		drawText(context, this.max.toPrecision(3), 2, 10);
 	}
 }
 
+
 class HeatmapPainter {
 
+	constructor(data) {
+		const { min, max } = calcMinMax(data);
+		this.min = min;
+		this.max = max;
+	}
+
 	paint(context, rangeData, xOffset, rangeWidth) {
-		const { means, max } = calcMeans(rangeData);
-		const colorIdxScale = colors.solar9.length / max;
-		const xStepSize = context.width / means.length;
-		for (let i = 0, x = 0; i < means.length; i++) {
-			const colorIdx = (means[i] * colorIdxScale) | 0;
+		const { means, barWidth } = calcMeans(rangeData, rangeWidth);
+		const colorIdxScale = (colors.solar9.length / (this.max - this.min) || 1);
+		for (let i = 0, x = xOffset; i < means.length; i++) {
+			// Even if means[i] is non a number, OR-masking forces it to 0
+			let colorIdx = (means[i] * colorIdxScale) | 0;
 			context.fillStyle = colors.solar9[colorIdx];
-			context.fillRect(x, 0, xStepSize, context.height);
-			x += xStepSize;
+			context.fillRect(x, 0, barWidth, context.height);
+			x += barWidth;
 		}
 	}
 }
 
 class TextPainter {
 	paint(context, rangeData, xOffset, rangeWidth) {
-
-
-		const stepSize = context.width / rangeData.length;
-		if (stepSize < 4) {
-			return;
+		const lineSize = rangeWidth / rangeData.length;
+		// only draw if we have six pixels per
+		const minLineSize = 8;
+		if (lineSize >= minLineSize) {
+			const fontSize = Math.min(lineSize-2, 12);
+			textSize(context, fontSize);
+			textStyle(context);
+			context.save();
+			// The default is drawing horizontally,
+			// so the text should be vertical.
+			// Instead of drawing at (x, y), we
+			// rotate and move the whole context
+			// with rotate() and translate(), then
+			// and draw at (0, 0) and translate().
+			context.translate(0, context.height);
+			context.rotate(-Math.PI / 2);
+			context.translate(2, lineSize/2 + xOffset);
+			rangeData.forEach((label) => {
+				if (label) { drawText(context, label, 0, 0); }
+				context.translate(0, lineSize);
+			});
+			// undo all rotations/translations
+			context.restore();
 		}
-		const fontSize = Math.min(stepSize, 12);
-		textSize(context, fontSize);
-		textStyle(context);
-
-		context.save();
-		// The default is drawing horizontally,
-		// so the text should be vertical.
-		// Instead of drawing at (x, y), we
-		// rotate and move the whole context
-		// with rotate() and translate(), then
-		// and draw at (0, 0) and translate().
-		context.translate(0, context.height);
-		context.rotate(-Math.PI / 2);
-		context.translate(2, stepSize);
-		rangeData.forEach((group) => {
-			// We only draw text if zoomed in far
-			// enough that there's a single element
-			// per group
-			const text = group[0];
-			drawText(context, text, 0, 0);
-			context.translate(0, stepSize);
-		});
-		// undo all rotations/translations
-		context.restore();
-	}
-}
-
-class TextAlwaysPainter {
-	paint(context, rangeData, xOffset, rangeWidth) {
-		console.log('[TextAlwaysPainter] rangeData: ', rangeData);
-
-		textSize(context, 10);
-		textStyle(context);
-
-		const stepSize = context.width / rangeData.length;
-		context.save();
-		context.translate(0, context.height);
-		context.rotate(-Math.PI / 2);
-		context.translate(0, stepSize / 2);
-		rangeData.forEach((group) => {
-			const text = group[0];
-			drawText(context, text, 0, 0);
-			context.translate(0, stepSize);
-		});
-		context.restore();
-
 	}
 }
 
