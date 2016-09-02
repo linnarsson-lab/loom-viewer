@@ -958,13 +958,14 @@ class LoomConnection(object):
 	# PROJECTION #
 	##############
 
-	def project_to_2d(self, axis = 1, perplexity = 20):
+	def project_to_2d(self, axis = 1, perplexity = 20, n_components = 10):
 		"""
 		Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
 
 		Args:
 			axis (int):			Axis to project (0 for rows, 1 for columns, 2 for both)
 			perplexity (int): 	Perplexity to use for tSNE
+			n_components (int):	Number of PCA components to use
 
 		Returns:
 			Nothing.
@@ -978,7 +979,6 @@ class LoomConnection(object):
 
 			# First perform PCA out of band
 			batch_size = 1000
-			n_components = int(math.sqrt(self.shape[0])/2)
 			logging.debug("Incremental PCA with " + str(n_components) + " components")
 			ipca = IncrementalPCA(n_components=n_components)
 			row = 0
@@ -1032,7 +1032,6 @@ class LoomConnection(object):
 			if self.row_attrs.__contains__("_Excluded"):
 				selection = (1-self.row_attrs["_Excluded"]).astype('bool')
 
-			n_components = int(math.sqrt(selection.sum())/2)
 			logging.debug("Incremental PCA with " + str(n_components) + " components")
 			ipca = IncrementalPCA(n_components=n_components)
 			col = 0
