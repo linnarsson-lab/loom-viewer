@@ -73,7 +73,6 @@ class SparklineViewComponent extends Component {
 					orientation='horizontal'
 					height={20}
 					data={colData}
-					dataRange={[0, colData.length]}
 					mode={sparklineState.colMode}
 					/>
 			</div>

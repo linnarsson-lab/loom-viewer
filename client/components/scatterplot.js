@@ -51,7 +51,7 @@ export class Scatterplot extends React.Component {
 		const xmax = Math.max(...x);
 		const ymin = Math.min(...y);
 		const ymax = Math.max(...y);
-		let color = this.props.color; // _.map(this.props.color, (t) => { return isNaN(t) ? 0 : t; });
+		let color = this.props.color;
 		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
@@ -123,11 +123,12 @@ export class Scatterplot extends React.Component {
 			}
 		}
 		// Draw the scatter plot itself
-		context.globalAlpha = 0.5;
+		context.globalAlpha = 0.6;
 		context.strokeStyle = 'black';
 		context.lineWidth = 0.25;
 		// Trick to draw by color, which is a lot faster on the HTML canvas element
 		palette.forEach((current_color) => {
+			context.beginPath();
 			for (let i = 0; i < x.length; i++) {
 				if (color[i] !== current_color) {
 					continue;
@@ -135,14 +136,13 @@ export class Scatterplot extends React.Component {
 				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
 				// "1-" because Y needs to be flipped
 				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
-
-				context.beginPath();
+				context.moveTo(xi + radius, yi);
 				context.arc(xi, yi, radius, 0, 2 * Math.PI, false);
-				context.closePath();
-				context.fillStyle = color[i];
-				context.fill();
-				context.stroke();
 			}
+			context.closePath();
+			context.fillStyle = current_color;
+			context.stroke();
+			context.fill();
 		});
 		context.restore();
 	}
