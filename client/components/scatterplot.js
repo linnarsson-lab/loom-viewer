@@ -51,7 +51,7 @@ export class Scatterplot extends React.Component {
 		const xmax = Math.max(...x);
 		const ymin = Math.min(...y);
 		const ymax = Math.max(...y);
-		let color = _.map(this.props.color, (t) => { return isNaN(t) ? 0 : t; });
+		let color = this.props.color; // _.map(this.props.color, (t) => { return isNaN(t) ? 0 : t; });
 		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
