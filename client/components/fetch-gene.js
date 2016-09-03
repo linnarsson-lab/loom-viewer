@@ -10,12 +10,13 @@ export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);
 		this.state = this.createOptions(this.props.selectableGenes);
+		this.handleChange = this.handleChange.bind(this);
 	}
 
 	componentWillReceiveProps(nextProps) {
 		const prevSG = this.props.selectableGenes;
 		const nextSG = nextProps.selectableGenes;
-		if (!isEqual(prevSG, nextSG)){
+		if (!isEqual(prevSG, nextSG)) {
 			this.setState(this.createOptions(nextSG));
 		}
 	}
@@ -38,42 +39,44 @@ export class FetchGeneComponent extends Component {
 		}
 	}
 
-	render() {
-		const { dataSet, fetchedGenes, dispatch, attrType, attrName } = this.props;
-		const { options, filterOptions, val } = this.state;
-		if (options) {
-			// val will be an array of objects with { label, value } entries
-			const dispatchOnChange = this.props.multi ? (val) => {
-				if (val && val.length) {
-					let geneString = '';
-					for (let i = 0; i < val.length; i++) {
-						geneString += val[i].value + ' ';
-						dispatch(fetchGene(dataSet, val[i].value, fetchedGenes));
-					}
-					dispatch({ type: attrType, [attrName]: geneString });
-				} else {
-					dispatch({ type: attrType, [attrName]: '' });
+	handleChange(value) {
+		const { dataSet, fetchedGenes, dispatch, actionType, actionName } = this.props;
+		if (this.props.multi) {
+			if (value && value.length) {
+				let geneString = '';
+				for (let i = 0; i < value.length; i++) {
+					geneString += value[i].value + ' ';
+					dispatch(fetchGene(dataSet, value[i].value, fetchedGenes));
 				}
-				this.setState({ val });
-			} : (val) => {
-				if (val) {
-					dispatch({ type: attrType, [attrName]: val.value });
-					dispatch(fetchGene(dataSet, val.value, fetchedGenes));
-				} else {
-					dispatch({ type: attrType, [attrName]: '' });
-				}
-				this.setState({ val });
-			};
+				dispatch({ type: actionType, [actionName]: geneString });
+			} else {
+				dispatch({ type: actionType, [actionName]: '' });
+			}
+			this.setState({ value });
+		} else {
+			if (value) {
+				dispatch({ type: actionType, [actionName]: value.value });
+				dispatch(fetchGene(dataSet, value.value, fetchedGenes));
+			} else {
+				dispatch({ type: actionType, [actionName]: '' });
+			}
+			this.setState({ value });
+		}
+	}
 
+	render() {
+		const { dataSet, fetchedGenes, dispatch } = this.props;
+		const { options, filterOptions, value } = this.state;
+		if (options) {
 			return (
 				<FormGroup>
 					<Select
 						options={options}
 						filterOptions={filterOptions}
-						onChange={dispatchOnChange}
-						value={val}
+						onChange={this.handleChange}
+						value={value}
 						multi={this.props.multi}
-						clearable={this.props.clearable}
+						clearable={this.props.clearable === true}
 						/>
 				</FormGroup>
 			);
@@ -83,7 +86,7 @@ export class FetchGeneComponent extends Component {
 					<FormControl
 						type='text'
 						placeholder='Enter gene name...'
-						value={val}
+						value={value}
 						onChange={(event) => {
 							dispatch({
 								type: 'SET_SPARKLINE_PROPS',
@@ -110,8 +113,8 @@ FetchGeneComponent.propTypes = {
 	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	attrType: PropTypes.string.isRequired,
-	attrName: PropTypes.string.isRequired,
+	actionType: PropTypes.string.isRequired,
+	actionName: PropTypes.string.isRequired,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
 };

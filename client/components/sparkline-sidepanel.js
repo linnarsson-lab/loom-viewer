@@ -27,8 +27,8 @@ export const SparklineSidepanel = function (props) {
 						buttonLabel={'Order by'}
 						buttonName={sparklineState.orderByAttr}
 						attributes={orderByOptions}
-						attrType={'SET_SPARKLINE_PROPS'}
-						attrName={'orderByAttr'}
+						actionType={'SET_SPARKLINE_PROPS'}
+						actionName={'orderByAttr'}
 						dispatch={dispatch}
 						/>
 					<div className='btn-group btn-block'>
@@ -38,8 +38,8 @@ export const SparklineSidepanel = function (props) {
 								fetchedGenes={fetchedGenes}
 								selectableGenes={selectableGenes}
 								dispatch={dispatch}
-								attrType={'SET_SPARKLINE_PROPS'}
-								attrName={'orderByGene'} /> : null }
+								actionType={'SET_SPARKLINE_PROPS'}
+								actionName={'orderByGene'} /> : null }
 					</div>
 				</ListGroupItem>
 				<ListGroupItem>
@@ -47,15 +47,15 @@ export const SparklineSidepanel = function (props) {
 						buttonLabel={'Show cell attribute'}
 						buttonName={sparklineState.colAttr}
 						attributes={colAttrsSorted}
-						attrType={'SET_SPARKLINE_PROPS'}
-						attrName={'colAttr'}
+						actionType={'SET_SPARKLINE_PROPS'}
+						actionName={'colAttr'}
 						dispatch={dispatch}
 						/>
 					<DropdownMenu
 						buttonName={sparklineState.colMode}
 						attributes={optionsForCols}
-						attrType={'SET_SPARKLINE_PROPS'}
-						attrName={'colMode'}
+						actionType={'SET_SPARKLINE_PROPS'}
+						actionName={'colMode'}
 						dispatch={dispatch}
 						/>
 				</ListGroupItem>
@@ -87,8 +87,8 @@ export const SparklineSidepanel = function (props) {
 						fetchedGenes={fetchedGenes}
 						selectableGenes={selectableGenes}
 						dispatch={dispatch}
-						attrType={'SET_SPARKLINE_PROPS'}
-						attrName={'genes'}
+						actionType={'SET_SPARKLINE_PROPS'}
+						actionName={'genes'}
 						multi
 						clearable
 						/>
@@ -97,8 +97,8 @@ export const SparklineSidepanel = function (props) {
 					<DropdownMenu
 						buttonName={sparklineState.geneMode}
 						attributes={optionsForGenes}
-						attrType={'SET_SPARKLINE_PROPS'}
-						attrName={'geneMode'}
+						actionType={'SET_SPARKLINE_PROPS'}
+						actionName={'geneMode'}
 						dispatch={dispatch}
 						/>
 				</ListGroupItem>

@@ -59,8 +59,8 @@ export const LandscapeSidepanel = function (props) {
 						buttonLabel={'X Coordinate'}
 						buttonName={xCoordinate}
 						attributes={temp}
-						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={'xCoordinate'}
+						actionType={'SET_LANDSCAPE_PROPS'}
+						actionName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
 					{ xCoordinate === '(gene)' ?
@@ -69,8 +69,8 @@ export const LandscapeSidepanel = function (props) {
 							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							attrType={'SET_LANDSCAPE_PROPS'}
-							attrName={'xGene'}
+							actionType={'SET_LANDSCAPE_PROPS'}
+							actionName={'xGene'}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
@@ -78,8 +78,8 @@ export const LandscapeSidepanel = function (props) {
 						buttonLabel={'Y Coordinate'}
 						buttonName={yCoordinate}
 						attributes={temp}
-						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={'yCoordinate'}
+						actionType={'SET_LANDSCAPE_PROPS'}
+						actionName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
 					{ yCoordinate === '(gene)' ?
@@ -88,8 +88,8 @@ export const LandscapeSidepanel = function (props) {
 							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							attrType={'SET_LANDSCAPE_PROPS'}
-							attrName={'yGene'}
+							actionType={'SET_LANDSCAPE_PROPS'}
+							actionName={'yGene'}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
@@ -97,8 +97,8 @@ export const LandscapeSidepanel = function (props) {
 						buttonLabel={'Color'}
 						buttonName={colorAttr}
 						attributes={temp}
-						attrType={'SET_LANDSCAPE_PROPS'}
-						attrName={'colorAttr'}
+						actionType={'SET_LANDSCAPE_PROPS'}
+						actionName={'colorAttr'}
 						dispatch={dispatch}
 						/>
 					{ colorAttr === '(gene)' ?
@@ -107,8 +107,8 @@ export const LandscapeSidepanel = function (props) {
 							fetchedGenes={fetchedGenes}
 							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							attrType={'SET_LANDSCAPE_PROPS'}
-							attrName={'colorGene'}
+							actionType={'SET_LANDSCAPE_PROPS'}
+							actionName={'colorGene'}
 							/> : null  }
 				</ListGroupItem>
 				<ListGroupItem>

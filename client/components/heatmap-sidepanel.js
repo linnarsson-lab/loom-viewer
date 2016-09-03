@@ -23,8 +23,8 @@ export const HeatmapSidepanel = function (props) {
 						buttonLabel={'Show cell attribute'}
 						buttonName={heatmapState.colAttr}
 						attributes={colAttrKeys}
-						attrType={'SET_HEATMAP_PROPS'}
-						attrName={'colAttr'}
+						actionType={'SET_HEATMAP_PROPS'}
+						actionName={'colAttr'}
 						dispatch={dispatch}
 						/>
 
@@ -32,8 +32,8 @@ export const HeatmapSidepanel = function (props) {
 						buttonLabel={undefined}
 						buttonName={heatmapState.colMode}
 						attributes={optionNames}
-						attrType={'SET_HEATMAP_PROPS'}
-						attrName={'colMode'}
+						actionType={'SET_HEATMAP_PROPS'}
+						actionName={'colMode'}
 						dispatch={dispatch}
 						/>
 
@@ -45,8 +45,8 @@ export const HeatmapSidepanel = function (props) {
 									fetchedGenes={fetchedGenes}
 									selectableGenes={dataSet.rowAttrs.Gene}
 									dispatch={dispatch}
-									attrType={'SET_HEATMAP_PROPS'}
-									attrName={'colGene'} /> : null }
+									actionType={'SET_HEATMAP_PROPS'}
+									actionName={'colGene'} /> : null }
 						</div>
 					</div>
 
@@ -54,8 +54,8 @@ export const HeatmapSidepanel = function (props) {
 						buttonLabel={'Show gene attribute'}
 						buttonName={heatmapState.rowAttr}
 						attributes={rowAttrKeys}
-						attrType={'SET_HEATMAP_PROPS'}
-						attrName={'rowAttr'}
+						actionType={'SET_HEATMAP_PROPS'}
+						actionName={'rowAttr'}
 						dispatch={dispatch}
 						/>
 					{
@@ -79,8 +79,8 @@ export const HeatmapSidepanel = function (props) {
 								buttonLabel={undefined}
 								buttonName={heatmapState.rowMode}
 								attributes={optionNames}
-								attrType={'SET_HEATMAP_PROPS'}
-								attrName={'rowMode'}
+								actionType={'SET_HEATMAP_PROPS'}
+								actionName={'rowMode'}
 								dispatch={dispatch}
 								/>
 					}

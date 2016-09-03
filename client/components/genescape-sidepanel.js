@@ -53,8 +53,8 @@ export const GenescapeSidepanel = function (props) {
 						buttonLabel={'X Coordinate'}
 						buttonName={xCoordinate}
 						attributes={rowAttrKeys}
-						attrType={'SET_GENESCAPE_PROPS'}
-						attrName={'xCoordinate'}
+						actionType={'SET_GENESCAPE_PROPS'}
+						actionName={'xCoordinate'}
 						dispatch={dispatch}
 						/>
 				</ListGroupItem>
@@ -63,8 +63,8 @@ export const GenescapeSidepanel = function (props) {
 						buttonLabel={'Y Coordinate'}
 						buttonName={yCoordinate}
 						attributes={rowAttrKeys}
-						attrType={'SET_GENESCAPE_PROPS'}
-						attrName={'yCoordinate'}
+						actionType={'SET_GENESCAPE_PROPS'}
+						actionName={'yCoordinate'}
 						dispatch={dispatch}
 						/>
 				</ListGroupItem>
@@ -73,8 +73,8 @@ export const GenescapeSidepanel = function (props) {
 						buttonLabel={'Color'}
 						buttonName={colorAttr}
 						attributes={rowAttrKeys}
-						attrType={'SET_GENESCAPE_PROPS'}
-						attrName={'colorAttr'}
+						actionType={'SET_GENESCAPE_PROPS'}
+						actionName={'colorAttr'}
 						dispatch={dispatch}
 						/>
 				</ListGroupItem>
