@@ -567,6 +567,8 @@ class LoomConnection(object):
 		if dtype == None:
 			raise TypeError, "Data type must be provided"
 
+		values = values.astype(dtype)
+		
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError, "Invalid loom data type: " + dtype
 
