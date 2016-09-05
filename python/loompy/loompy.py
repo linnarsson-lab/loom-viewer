@@ -67,7 +67,7 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 	f = h5py.File(filename, 'w')
 	
 	# Save the main matrix
-	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='lzf', maxshape=(matrix.shape[0], None), chunks=(min(10,matrix.shape[0]),min(10,matrix.shape[1])))
+	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10,matrix.shape[0]),min(10,matrix.shape[1])))
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
 	f.attrs["schema"] = json.dumps({"matrix": "float32", "row_attrs": {}, "col_attrs": {}})
@@ -125,7 +125,7 @@ def create_from_pandas(df, loom_file):
 	f = h5py.File(loom_file, "w")
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
-	f.create_dataset('matrix', data=df.values.astype('float32'), compression='lzf', maxshape=(n_rows, None), chunks=(100,100))
+	f.create_dataset('matrix', data=df.values.astype('float32'), compression='gzip', maxshape=(n_rows, None), chunks=(100,100))
 	for attr in df.index.names:		
 		try:
 			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float64')
@@ -479,8 +479,10 @@ class LoomConnection(object):
 				if not np.isfinite(vals).all():
 					raise ValueError, "INF and NaN not allowed in numeric attribute"
 
-			self.file['/col_attrs/' + key].resize(n_cols, axis = 0)
-			self.file['/col_attrs/' + key][self.shape[1]:] = vals
+			temp = self.file['/col_attrs/' + key]
+			temp.resize((n_cols,))
+			temp[self.shape[1]:] = vals
+			self.file['/col_attrs/' + key] = temp
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
 		self.file['/matrix'].resize(n_cols, axis = 1)
 		self.file['/matrix'][:,self.shape[1]:n_cols] = submatrix
@@ -1243,7 +1245,7 @@ class LoomConnection(object):
 				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
 				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
 				tile = temp[0::2,0::2]
-				self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='lzf')
+				self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
 				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
 				self.file.flush()
 			return tile
