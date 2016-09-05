@@ -12,79 +12,96 @@ export class Canvas extends React.Component {
 
 		this.fitToZoomAndPixelRatio = this.fitToZoomAndPixelRatio.bind(this);
 		this.draw = this.draw.bind(this);
-		// We need to name this debounced function in order to
-		// be able to remove the listener later
-		this.debouncedDraw = debounce(this.draw, 200);
-	}
 
-	// Make sure we get a sharp canvas on Retina displays
-	// as well as adjust the canvas on zoomed browsers
-	fitToZoomAndPixelRatio(canvasEl) {
-		const ratio = window.devicePixelRatio || 1;
-		const width = (canvasEl.parentNode.clientWidth * ratio) | 0;
-		const height = (canvasEl.parentNode.clientHeight * ratio) | 0;
-		let context = canvasEl.getContext('2d');
-		// store width and height in context for paint functions
-		if (width !== canvasEl.width || height !== canvasEl.height) {
-			canvasEl.width = width;
-			canvasEl.height = height;
-			context.width = width;
-			context.height = height;
-			context.pixelRatio = ratio;
-			context.scale(1, 1);
-			context.mozImageSmoothingEnabled = false;
-			context.msImageSmoothingEnabled = false;
-			context.imageSmoothingEnabled = false;
-			context.webkitImageSmoothingEnabled = false;
-			context.clearRect(0, 0, width, height);
-		}
-		return context;
-	}
+		this.state = {
+			width: 1,
+			height: 1,
+			resizing: true,
+		};
 
-	// Relies on a ref to a DOM element, so only call after mounting!
-	draw() {
-		let canvasEl = this.refs.canvas;
-		let context = this.fitToZoomAndPixelRatio(canvasEl);
-		// should we clear the canvas every redraw?
-		if (this.props.clear) { context.clearRect(0, 0, canvasEl.width, canvasEl.height); }
-		this.props.paint(context);
-		// is the provided paint function an animation?
-		if (this.props.loop) {
-			window.requestAnimationFrame(this.draw);
-		}
-
+		const resize = () => { this.setState({ resizing: true }); };
+		this.setResize = debounce(resize, 200);
 	}
 
 	componentDidMount() {
-		this.draw();
+		this.fitToZoomAndPixelRatio();
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// resizing/redrawing of the canvas.
-		window.addEventListener('resize', this.debouncedDraw);
+		window.addEventListener('resize', this.setResize);
 	}
 
 	componentWillUnmount() {
-		window.removeEventListener('resize', this.debouncedDraw);
+		window.removeEventListener('resize', this.setResize);
 	}
 
-	componentDidUpdate(prevProps) {
-		// only call draw if it wasn't already looping
+	componentDidUpdate(prevProps, prevState) {
+
+		// If resizing was true, but no longer, this means
+		// that on our last render canvas was unmounted
+		if (prevState.resizing && !this.state.resizing) {
+			this.fitToZoomAndPixelRatio();
+		}
+
+		// Only call draw if it wasn't already looping;
+		// in the latter case it will re-render on its own
 		if (!prevProps.loop) {
 			this.draw();
 		}
 	}
 
+	// Make sure we get a sharp canvas on Retina displays
+	// as well as adjust the canvas on zoomed browsers
+	fitToZoomAndPixelRatio() {
+		const ratio = window.devicePixelRatio || 1;
+		const view = this.refs.view;
+		const width = (view.clientWidth * ratio) | 0;
+		const height = (view.clientHeight * ratio) | 0;
+		this.setState({ width, height, ratio });
+	}
+
+	// Relies on a ref to a DOM element, so only call after mounting!
+	draw() {
+		if (!this.state.resizing) {
+			let canvas = this.refs.canvas;
+			const { width, height, ratio } = this.state;
+			let context = canvas.getContext('2d');
+			// store width, height and ratio in context for paint functions
+			context.width = width;
+			context.height = height;
+			context.pixelRatio = ratio;
+			// should we clear the canvas every redraw?
+			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
+			this.props.paint(context);
+			// is the provided paint function an animation?
+			if (this.props.loop) {
+				window.requestAnimationFrame(this.draw);
+			}
+		}
+	}
+
 	render() {
+		let canvas = null;
+		if (!this.state.resizing) {
+			canvas = (<canvas
+				ref='canvas'
+				width={this.state.width}
+				height={this.state.height}
+				style={{
+					width: '100%',
+					height: '100%',
+				}} />
+			);
+		} else {
+			this.setState({ resizing: false });
+		}
+
 		return (
-			<div className='view' style={this.props.style}>
-				<canvas
-					ref='canvas'
-					style={{
-						display: 'block',
-						width: '100%',
-						height: '100%',
-					}}
-					/>
+			<div
+				className='view'
+				ref='view'
+				style={this.props.style}>
+				{canvas}
 			</div>
 		);
 	}
@@ -96,137 +113,3 @@ Canvas.propTypes = {
 	loop: PropTypes.bool,
 	style: PropTypes.object,
 };
-
-
-
-export class CanvasBenchmark extends React.Component {
-
-	constructor(props) {
-		super(props);
-
-		this.generateSprite = this.generateSprite.bind(this);
-		this.generatePoints = this.generatePoints.bind(this);
-		this.paintArc = this.paintArc.bind(this);
-		this.paintSprite = this.paintSprite.bind(this);
-
-		// save sprite and timer in component state;
-		const drawTime = 0.0;
-		// save to component state
-		this.state = {
-			drawTime,
-			selectedPainter: this.paintSprite,
-			playing: false,
-			totalDots: 20000,
-		};
-	}
-
-	generateSprite(totalDots) {
-		// create a pre-rendered dot sprite
-		const radius = Math.max(3, Math.sqrt(totalDots) / 60) | 0;
-		const sprite = document.createElement('canvas');
-		sprite.id = 'dot_sprite';
-		sprite.width = 2 * radius + 1;
-		sprite.height = 2 * radius + 1;
-		const context = sprite.getContext('2d');
-		// draw dot on sprite
-		context.lineWidth = 1;
-		context.strokeStyle = 'white';
-		context.fillStyle = 'black';
-		context.beginPath();
-		context.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
-		context.closePath();
-		context.stroke();
-		context.fill();
-		this.setState({ sprite });
-	}
-
-	// create x and y arrays with random points between 0-1
-	// not included in rendering timing
-	generatePoints() {
-		if (this.state) {
-			const totalDots = this.state.totalDots;
-			const x = new Array(totalDots);
-			const y = new Array(totalDots);
-			for (let i = 0; i < totalDots; i++) {
-				x[i] = Math.random();
-				y[i] = Math.random();
-			}
-			return { x, y };
-		}
-	}
-
-	paintArc(context, width, height) {
-		if (this.state) {
-
-			const { x, y } = this.generatePoints();
-			const TWO_PI = 2 * Math.PI;
-			const radius = Math.max(3, Math.sqrt(x.length) / 60) | 0;	// Suitable radius of the markers
-
-			context.lineWidth = 1;
-			context.strokeStyle = 'white';
-			context.fillStyle = 'black';
-			context.clearRect(0, 0, width, height);
-			for (let i = 0; i < x.length; i++) {
-				const xi = (x[i] * width) | 0;
-				const yi = (y[i] * height) | 0;
-				context.beginPath();
-				context.arc(xi, yi, radius, 0, TWO_PI, false);
-				context.closePath();
-				context.stroke();
-				context.fill();
-			}
-		}
-	}
-
-	paintSprite(context, width, height) {
-		if (this.state) {
-			if (this.state.sprite) {
-				const { x, y } = this.generatePoints();
-
-				const { sprite } = this.state;
-				context.clearRect(0, 0, width, height);
-				for (let i = 0; i < x.length; i++) {
-					const xi = (x[i] * width) | 0;
-					const yi = (y[i] * height) | 0;
-					context.drawImage(sprite, xi, yi);
-				}
-			}
-			else {
-				this.generateSprite(this.state.totalDots);
-			}
-		}
-	}
-
-	render() {
-		const { selectedPainter, playing } = this.state;
-		const isArcs = selectedPainter === this.paintArc;
-		const isSprites = selectedPainter === this.paintSprite;
-		return (
-			<div className='view'>
-				<ButtonGroup>
-					<Button
-						bsStyle={ isArcs ? 'success' : 'default' }
-						onClick={ () => { this.setState({ selectedPainter: this.paintArc }); } } >
-						Arcs
-					</Button>
-					<Button
-						bsStyle={ isSprites ? 'success' : 'default' }
-						onClick={ () => { this.setState({ selectedPainter: this.paintSprite }); } }  >
-						Sprites
-					</Button>
-					<Button
-						bsStyle={ playing ? 'warning' : 'success' }
-						onClick={ () => { this.setState({ playing: !this.state.playing }); } }>
-						<Glyphicon glyph={ playing ? 'pause' : 'play' } />
-					</Button>
-				</ButtonGroup>
-
-				<div className='view'>
-					<Canvas
-						paint={ selectedPainter }
-						loop={ this.state.playing } />
-				</div>
-			</div>
-		);
-	}
-}

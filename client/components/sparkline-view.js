@@ -68,7 +68,11 @@ class SparklineViewComponent extends Component {
 		// Showing the scrollbar is ugly, but otherwise lining up will be *really hard*
 		// because browsers do not allow for direct access to scrollbar size
 		const legend = (
-			<div style={{ flex: '0 0 auto', minHeight: '20px', overflowY: 'scroll' }}>
+			<div style={{
+				flex: '0 0 auto',
+				minHeight: '20px',
+				overflowY: 'scroll',
+			}}>
 				<Sparkline
 					orientation='horizontal'
 					height={20}
@@ -94,8 +98,8 @@ class SparklineViewComponent extends Component {
 							background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
 							display: 'flex',
 							flexDirection: 'column',
-							minHeight: '32px',
-							maxHeight: '100px',
+							minHeight: '42px',
+							maxHeight: '42px',
 						}}>
 						<span
 							style={{
@@ -113,7 +117,7 @@ class SparklineViewComponent extends Component {
 							data={geneData}
 							dataRange={[0, colData.length]}
 							mode={sparklineState.geneMode}
-							style={{ minHeight: '20px' }}
+							style={{ minHeight: '30px', maxHeight: '30px' }}
 							/>
 					</div>
 				);
@@ -136,7 +140,7 @@ class SparklineViewComponent extends Component {
 					</div>
 					{legend}
 				</div>
-			</div>
+			</div >
 		);
 	}
 }
