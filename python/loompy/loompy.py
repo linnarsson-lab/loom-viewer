@@ -568,7 +568,7 @@ class LoomConnection(object):
 			raise TypeError, "Data type must be provided"
 
 		values = values.astype(dtype)
-		
+
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError, "Invalid loom data type: " + dtype
 
@@ -825,6 +825,8 @@ class LoomConnection(object):
 				submatrix = self.file['matrix'][:, start:start + chunksize]
 				self.file['matrix'][:, start:start + chunksize] = submatrix[ordering, :]
 				start = start + chunksize
+			for key in self.row_attrs.keys():
+				self.row_attrs[key] = self.row_attrs[key][ordering]
 			self.file.flush()
 		if axis == 1:
 			chunksize = 100000000//self.shape[1]
@@ -833,6 +835,8 @@ class LoomConnection(object):
 				submatrix = self.file['matrix'][start:start + chunksize, :]
 				self.file['matrix'][start:start + chunksize, :] = submatrix[:, ordering]
 				start = start + chunksize
+			for key in self.col_attrs.keys():
+				self.col_attrs[key] = self.col_attrs[key][ordering]
 			self.file.flush()
 
 	#####################
