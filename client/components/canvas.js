@@ -25,17 +25,18 @@ export class Canvas extends React.Component {
 		const height = (canvasEl.parentNode.clientHeight * ratio) | 0;
 		let context = canvasEl.getContext('2d');
 		// store width and height in context for paint functions
-		context.width = canvasEl.parentNode.clientWidth;
-		context.height = canvasEl.parentNode.clientHeight;
 		if (width !== canvasEl.width || height !== canvasEl.height) {
 			canvasEl.width = width;
 			canvasEl.height = height;
+			context.width = width;
+			context.height = height;
+			context.pixelRatio = ratio;
+			context.scale(1, 1);
 			context.mozImageSmoothingEnabled = false;
 			context.msImageSmoothingEnabled = false;
 			context.imageSmoothingEnabled = false;
 			context.webkitImageSmoothingEnabled = false;
-			context.scale(ratio, ratio);
-			context.clearRect(0, 0, canvasEl.width, canvasEl.height);
+			context.clearRect(0, 0, width, height);
 		}
 		return context;
 	}
@@ -62,7 +63,7 @@ export class Canvas extends React.Component {
 		window.addEventListener('resize', this.debouncedDraw);
 	}
 
-	componentWillUnmount(){
+	componentWillUnmount() {
 		window.removeEventListener('resize', this.debouncedDraw);
 	}
 
