@@ -185,8 +185,7 @@ def get_clone(project, filename):
 	path = app.cache.get_absolute_path(project, filename, u, p)
 	if path == None:
 		return "", 404
-	if not os.path.exists(path):
-		return "", 404
+
 	return flask.send_file(path, mimetype='application/octet-stream')
 
 # Get one row of data (i.e. all the expression values for a single gene)
