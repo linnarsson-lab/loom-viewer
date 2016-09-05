@@ -12,7 +12,7 @@ export const SparklineSidepanel = function (props) {
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.unshift('(gene)');
 	orderByOptions.unshift('(original order)');
-	const optionsForCols = ['Bars', 'Heatmap', 'Categorical'];
+	const optionsForCols = ['Bars', 'Categorical', 'Heatmap'];
 	const optionsForGenes = ['Bars', 'Heatmap'];
 
 	return (
@@ -31,16 +31,14 @@ export const SparklineSidepanel = function (props) {
 						actionName={'orderByAttr'}
 						dispatch={dispatch}
 						/>
-					<div className='btn-group btn-block'>
-						{ sparklineState.orderByAttr === '(gene)' ?
-							<FetchGeneComponent
-								dataSet={dataSet}
-								fetchedGenes={fetchedGenes}
-								selectableGenes={selectableGenes}
-								dispatch={dispatch}
-								actionType={'SET_SPARKLINE_PROPS'}
-								actionName={'orderByGene'} /> : null }
-					</div>
+					{ sparklineState.orderByAttr === '(gene)' ?
+						<FetchGeneComponent
+							dataSet={dataSet}
+							fetchedGenes={fetchedGenes}
+							selectableGenes={selectableGenes}
+							dispatch={dispatch}
+							actionType={'SET_SPARKLINE_PROPS'}
+							actionName={'orderByGene'} /> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -92,9 +90,8 @@ export const SparklineSidepanel = function (props) {
 						multi
 						clearable
 						/>
-				</ListGroupItem>
-				<ListGroupItem>
 					<DropdownMenu
+						buttonLabel={'Show genes as'}
 						buttonName={sparklineState.geneMode}
 						attributes={optionsForGenes}
 						actionType={'SET_SPARKLINE_PROPS'}
