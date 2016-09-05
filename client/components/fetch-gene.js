@@ -24,10 +24,11 @@ export class FetchGeneComponent extends Component {
 	createOptions(selectableGenes) {
 		if (selectableGenes) {
 			let options = new Array(selectableGenes.length);
-			for (let i = 0; i < selectableGenes.length; i++) {
+			let sorted = selectableGenes.slice(0).sort();
+			for (let i = 0; i < sorted.length; i++) {
 				options[i] = {
-					value: selectableGenes[i],
-					label: selectableGenes[i],
+					value: sorted[i],
+					label: sorted[i],
 				};
 			}
 			return {
@@ -41,6 +42,8 @@ export class FetchGeneComponent extends Component {
 
 	handleChange(value) {
 		const { dataSet, fetchedGenes, dispatch, actionType, actionName } = this.props;
+		this.setState({ value });
+
 		if (this.props.multi) {
 			if (value && value.length) {
 				let geneString = '';
@@ -52,7 +55,6 @@ export class FetchGeneComponent extends Component {
 			} else {
 				dispatch({ type: actionType, [actionName]: '' });
 			}
-			this.setState({ value });
 		} else {
 			if (value) {
 				dispatch({ type: actionType, [actionName]: value.value });
@@ -60,7 +62,6 @@ export class FetchGeneComponent extends Component {
 			} else {
 				dispatch({ type: actionType, [actionName]: '' });
 			}
-			this.setState({ value });
 		}
 	}
 

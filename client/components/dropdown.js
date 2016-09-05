@@ -35,17 +35,16 @@ export class DropdownMenu extends Component {
 		}
 	}
 
-	handleChange(value) {
-		if (value !== undefined && value !== null) {
+	handleChange(event) {
+		if (event !== undefined && event !== null) {
 			const {
-				dispatch, attributes,
-				actionType, actionName,
+				dispatch, actionType, actionName,
 			} = this.props;
 
 			if (this.props.multi) {
 				let values = [];
-				for (let i = 0; i < value.length; i++) {
-					values.push(value[i].value);
+				for (let i = 0; i < event.length; i++) {
+					values.push(event[i].value);
 				}
 				dispatch({
 					type: actionType,
@@ -54,19 +53,23 @@ export class DropdownMenu extends Component {
 			} else {
 				dispatch({
 					type: actionType,
-					[actionName]: attributes[value.value],
+					[actionName]: event.value,
 				});
 			}
 		}
-		this.setState(value);
+		this.setState({value: event.value});
 	}
 
 	render() {
 		const { attributes, buttonLabel } = this.props;
 
-		let options = new Array(attributes.length);
-		for (let i = 0; i <= attributes.length; i++) {
-			options[i] = { value: i, label: attributes[i] };
+		const sorted = attributes.slice(0).sort();
+		let options = new Array(sorted.length);
+		for (let i = 0; i <= sorted.length; i++) {
+			options[i] = {
+				value: sorted[i],
+				label: sorted[i],
+			};
 		}
 
 		return (
