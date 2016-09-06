@@ -160,7 +160,6 @@ export class Scatterplot extends React.Component {
 				if (color[i] !== current_color) {
 					continue;
 				}
-				context.moveTo(x[i] + radius, y[i]);
 				context.circle(x[i], y[i], radius);
 			}
 			context.closePath();

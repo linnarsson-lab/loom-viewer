@@ -28,6 +28,43 @@ export class Canvas extends React.Component {
 		// add a debouncer to minimise pointless
 		// (unmount, resize, remount)-ing of the canvas.
 		this.setResize = debounce(resize, 200);
+
+
+		// Attach helper functions to context prototype
+		if (CanvasRenderingContext2D.prototype.circle === undefined) {
+			CanvasRenderingContext2D.prototype.circle = function (x, y, radius) {
+				this.moveTo(x + radius, y);
+				this.arc(x, y, radius, 0, 2 * Math.PI);
+			};
+		}
+		if (CanvasRenderingContext2D.prototype.textSize === undefined) {
+			CanvasRenderingContext2D.prototype.textSize = function (size = 10) {
+				// will return an array with [ size, font ] as strings
+				const fontArgs = this.font.split(' ');
+				const font = fontArgs[fontArgs.length - 1];
+				switch (typeof size) {
+					case 'number':
+						this.font = size + 'px ' + font;
+						break;
+					case 'string':
+						this.font = size + font;
+						break;
+				}
+			};
+		}
+		if (CanvasRenderingContext2D.prototype.textStyle === undefined) {
+			CanvasRenderingContext2D.prototype.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
+				this.fillStyle = fill;
+				this.strokeStyle = stroke;
+				this.lineWidth = lineWidth;
+			};
+		}
+		if (CanvasRenderingContext2D.prototype.drawText === undefined) {
+			CanvasRenderingContext2D.prototype.drawText = function (text, x, y) {
+				this.strokeText(text, x, y);
+				this.fillText(text, x, y);
+			};
+		}
 	}
 
 	componentDidMount() {
@@ -71,37 +108,6 @@ export class Canvas extends React.Component {
 		if (!resizing) {
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');
-			// Attach helper functions
-			// TODO: this should be put into the context prototype.
-			context.circle = (x, y, radius) => {
-				context.arc(x, y, radius, 0, 2 * Math.PI);
-			};
-
-			context.textSize = function (size = 10) {
-				// will return an array with [ size, font ] as strings
-				const fontArgs = context.font.split(' ');
-				const font = fontArgs[fontArgs.length - 1];
-				switch (typeof size) {
-					case 'number':
-						context.font = size + 'px ' + font;
-						break;
-					case 'string':
-						context.font = size + font;
-						break;
-				}
-			};
-
-			context.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
-				context.fillStyle = fill;
-				context.strokeStyle = stroke;
-				context.lineWidth = lineWidth;
-			};
-
-			context.drawText = function (text, x, y) {
-				context.strokeText(text, x, y);
-				context.fillText(text, x, y);
-			};
-
 			// store width, height and ratio in context for paint functions
 			context.width = width;
 			context.height = height;
