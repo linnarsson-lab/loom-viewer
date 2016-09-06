@@ -3,10 +3,24 @@ import { DropdownMenu } from './dropdown';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
 import { fetchGene } from '../actions/actions.js';
-import { forEach } from 'lodash';
+import { debounce } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
 	const { dispatch, sparklineState, dataSet, fetchedGenes, selectableGenes } = props;
+
+	const dispatchFetchGenes = (genes) => {
+		dispatch(fetchGene(dataSet, genes, fetchedGenes));
+	};
+	// don't fire too often
+	const debouncedFetch = debounce(dispatchFetchGenes, 200);
+	const fetchShownGenes = (event) => {
+		dispatch({
+			type: 'SET_SPARKLINE_PROPS',
+			genes: event.target.value,
+		});
+		const genes = event.target.value.trim().split(/[ ,\r\n]+/);
+		debouncedFetch(genes);
+	};
 
 	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
@@ -63,22 +77,7 @@ export const SparklineSidepanel = function (props) {
 						className='form-control'
 						rows='5'
 						value={sparklineState.genes}
-						onChange={
-							(event) => {
-								dispatch({
-									type: 'SET_SPARKLINE_PROPS',
-									genes: event.target.value,
-								});
-								forEach(
-									event.target.value.trim().split(/[ ,\r\n]+/),
-									(gene) => {
-										dispatch(
-											fetchGene(dataSet, gene, fetchedGenes)
-										);
-									}
-								);
-							}
-						}>
+						onChange={fetchShownGenes}>
 					</textarea>
 					<FetchGeneComponent
 						dataSet={dataSet}
@@ -107,7 +106,7 @@ export const SparklineSidepanel = function (props) {
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.array.isRequired,
+	fetchedGenes: PropTypes.object.isRequired,
 	selectableGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

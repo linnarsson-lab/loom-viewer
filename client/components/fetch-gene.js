@@ -49,16 +49,16 @@ export class FetchGeneComponent extends Component {
 				let geneString = '';
 				for (let i = 0; i < value.length; i++) {
 					geneString += value[i].value + ' ';
-					dispatch(fetchGene(dataSet, value[i].value, fetchedGenes));
 				}
+				dispatch(fetchGene(dataSet, value, fetchedGenes));
 				dispatch({ type: actionType, [actionName]: geneString });
 			} else {
 				dispatch({ type: actionType, [actionName]: '' });
 			}
 		} else {
 			if (value) {
+				dispatch(fetchGene(dataSet, [value.value], fetchedGenes));
 				dispatch({ type: actionType, [actionName]: value.value });
-				dispatch(fetchGene(dataSet, value.value, fetchedGenes));
 			} else {
 				dispatch({ type: actionType, [actionName]: '' });
 			}

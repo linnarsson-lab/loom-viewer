@@ -87,40 +87,47 @@ class SparklineViewComponent extends Component {
 		if (selectedGenesList.length !== 0 && selectedGenesList[0] !== '') {
 			for (let i = 0; i < selectedGenesList.length; i++) {
 				const gene = selectedGenesList[i];
-				let geneData = new Array(colData.length);
-				for (let j = 0; j < geneData.length; ++j) {
-					geneData[j] = fetchedGenes[gene][indices[j]];
-				}
-				geneSparklines[i] = (
-					<div
-						key={gene}
-						style={{
-							background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-							display: 'flex',
-							flexDirection: 'column',
-							minHeight: '42px',
-							maxHeight: '42px',
-						}}>
-						<span
+				const fetchedGene = fetchedGenes[gene];
+				if (!fetchedGene) {
+					geneSparklines[i] = (
+						<span>Please wait, downloading gene data for {gene}</span>
+					);
+				} else {
+					let geneData = new Array(colData.length);
+					for (let j = 0; j < geneData.length; ++j) {
+						geneData[j] = fetchedGenes[gene][indices[j]];
+					}
+					geneSparklines[i] = (
+						<div
+							key={gene}
 							style={{
-								display: 'block',
-								width: '100%',
-								fontSize: '10px',
-								marginLeft: '2px',
-								minHeight: '12px',
-								maxHeight: '12px',
+								background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+								display: 'flex',
+								flexDirection: 'column',
+								minHeight: '42px',
+								maxHeight: '42px',
 							}}>
-							{gene}
-						</span>
-						<Sparkline
-							orientation='horizontal'
-							data={geneData}
-							dataRange={[0, colData.length]}
-							mode={sparklineState.geneMode}
-							style={{ minHeight: '30px', maxHeight: '30px' }}
-							/>
-					</div>
-				);
+							<span
+								style={{
+									display: 'block',
+									width: '100%',
+									fontSize: '10px',
+									marginLeft: '2px',
+									minHeight: '12px',
+									maxHeight: '12px',
+								}}>
+								{gene}
+							</span>
+							<Sparkline
+								orientation='horizontal'
+								data={geneData}
+								dataRange={[0, colData.length]}
+								mode={sparklineState.geneMode}
+								style={{ minHeight: '30px', maxHeight: '30px' }}
+								/>
+						</div>
+					);
+				}
 			}
 		}
 

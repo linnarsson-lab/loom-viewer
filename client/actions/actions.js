@@ -176,28 +176,28 @@ function receiveGene(gene, list) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchGene(dataSet, gene, cache) {
+export function fetchGene(dataSet, genes, cache) {
 	const rowAttrs = dataSet.rowAttrs;
 	return (dispatch) => {
-
 		if (rowAttrs.Gene === undefined) { return; }
-
-		const row = rowAttrs.Gene.indexOf(gene);
-		if (cache.hasOwnProperty(gene) || row === -1) { return; }
-
-		// First, make known the fact that the request has been started
-		dispatch(requestGene(gene));
-		// Second, perform the request (async)
-		return fetch(`/loom/${dataSet.project}/${dataSet.filename}/row/${row}`)
-			.then((response) => { return response.json(); })
-			.then((json) => {
-				// Third, once the response comes in, dispatch an action to provide the data
-				dispatch(receiveGene(gene, json));
-			})
-			// Or, if it failed, dispatch an action to set the error flag
-			.catch((err) => {
-				console.log(err);
-				dispatch(requestGeneFailed());
-			});
+		for (let i = 0; i < genes.length; i++) {
+			const gene = genes[i];
+			const row = rowAttrs.Gene.indexOf(gene);
+			if (cache.hasOwnProperty(gene) || row === -1) { continue; }
+			// First, make known the fact that the request has been started
+			dispatch(requestGene(gene));
+			// Second, perform the request (async)
+			fetch(`/loom/${dataSet.project}/${dataSet.filename}/row/${row}`)
+				.then((response) => { return response.json(); })
+				.then((json) => {
+					// Third, once the response comes in, dispatch an action to provide the data
+					dispatch(receiveGene(gene, json));
+				})
+				// Or, if it failed, dispatch an action to set the error flag
+				.catch((err) => {
+					console.log(err);
+					dispatch(requestGeneFailed());
+				});
+		}
 	};
 }
