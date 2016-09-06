@@ -89,14 +89,12 @@ export class Scatterplot extends React.Component {
 				// Start at -1 which corresponds to
 				// the "(other)" category, i.e. those
 				// that didn't fit in the top 20
-				context.lineWidth = 0.25 * pixelRatio;
-				context.strokeStyle = 'black';
-				const dotRadius = 2*radius;
+				const dotRadius = 2 * radius;
 				const dotMargin = 10 * pixelRatio;
 				const xDot = width + dotMargin + dotRadius;
 				const xText = xDot + dotMargin + dotRadius;
 				for (let i = -1; i < cats.length; i++) {
-					let yDot = (i+2) * (2*dotRadius + dotMargin);
+					let yDot = (i + 2) * (2 * dotRadius + dotMargin);
 					context.beginPath();
 					context.circle(xDot, yDot, dotRadius);
 					context.closePath();
@@ -104,12 +102,15 @@ export class Scatterplot extends React.Component {
 					// and i = 1 would be the first category
 					context.fillStyle = palette[i + 1];
 					context.fill();
+					context.lineWidth = 0.25 * pixelRatio;
+					context.strokeStyle = 'black';
 					context.stroke();
-					context.fillStyle = 'black';
+					context.textStyle();
+					context.textSize(10 * pixelRatio);
 					if (i === -1) {
-						context.fillText('(all other categories)', xText, yDot + radius);
+						context.fillText('(all other categories)', xText, yDot + 5*pixelRatio);
 					} else {
-						context.fillText(cats[i], xText, yDot + radius);
+						context.fillText(cats[i], xText, yDot + 5*pixelRatio);
 					}
 				}
 			} else {
@@ -125,26 +126,28 @@ export class Scatterplot extends React.Component {
 				color = color.map((c) => { return palette[Math.round((c - cmin) / (cmax - cmin) * palette.length)]; });
 
 				// Draw the color legend
-				context.lineWidth = 0.25 * pixelRatio;
-				context.strokeStyle = 'black';
-				const dotRadius = 2*radius;
+				const dotRadius = 2 * radius;
 				const dotMargin = 10 * pixelRatio;
 				const xDot = width + dotMargin + dotRadius;
 				const xText = xDot + dotMargin + dotRadius;
 				for (let i = 0; i < palette.length; i++) {
-					let yDot = (i+1) * (2*dotRadius + dotMargin);
+					let yDot = (i + 1) * (2 * dotRadius + dotMargin);
 					context.beginPath();
 					context.circle(xDot, yDot, dotRadius);
 					context.closePath();
 					// Invert it so max value is on top
 					context.fillStyle = palette[palette.length - i - 1];
 					context.fill();
+					context.lineWidth = 0.25 * pixelRatio;
+					context.strokeStyle = 'black';
 					context.stroke();
+					context.textStyle();
+					context.textSize(10 * pixelRatio);
 					if (i === 0) {
-						context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + radius);
+						context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + 5*pixelRatio);
 					}
 					if (i === palette.length - 1) {
-						context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + radius);
+						context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + 5*pixelRatio);
 					}
 				}
 			}
