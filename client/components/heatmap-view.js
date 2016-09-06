@@ -10,32 +10,44 @@ class HeatmapViewComponent extends Component {
 	constructor(props) {
 		super(props);
 		this.renderHeatmapview = this.renderHeatmapview.bind(this);
-		this.state = {};
+
+		this.state = { resizing: true };
+
+		const resize = () => { this.setState({ resizing: true }); };
+		// Because the resize event can fire very often, we
+		// add a debouncer to minimise pointless
+		// (unmount, resize, remount)-ing of the canvas.
+		this.setResize = _.debounce(resize, 200);
 
 		this.renderOnResize = () => { this.renderHeatmapview(this.props); };
 	}
 
 	componentDidMount() {
-		this.renderHeatmapview(this.props);
-		window.addEventListener('resize', this.renderOnResize);
+		window.addEventListener('resize', this.setResize);
+		this.setState({ resizing: false });
 	}
 
-	componentWillUnmount(){
-		window.removeEventListener('resize', this.renderOnResize);
+	componentWillUnmount() {
+		window.removeEventListener('resize', this.setResize);
 	}
 
-	componentWillUpdate(nextProps) {
-		if (!_.isEqual(nextProps.heatmapState, this.props.heatmapState)){
-			this.renderHeatmapview(nextProps);
+	componentDidUpdate(prevProps, prevState) {
+		if (!prevState.resizing && this.state.resizing) {
+			this.setState({ resizing: false });
 		}
 	}
 
-	renderHeatmapview(props) {
-		const { dispatch, dataSet, fetchedGenes, heatmapState } = props;
+	renderHeatmapview() {
+		const { dispatch, dataSet, fetchedGenes, heatmapState } = this.props;
 		const { dataBounds } = heatmapState;
 
-		const colGeneSelected = (heatmapState.colAttr === '(gene)') && fetchedGenes.hasOwnProperty(heatmapState.colGene);
-		const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene] : dataSet.colAttrs[heatmapState.colAttr];
+		const colGeneSelected = (heatmapState.colAttr === '(gene)') &&
+			fetchedGenes.hasOwnProperty(heatmapState.colGene);
+
+		const colData = colGeneSelected ?
+			fetchedGenes[heatmapState.colGene]
+			:
+			dataSet.colAttrs[heatmapState.colAttr];
 
 		let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
 		if (heatmapState.rowAttr === '(gene positions)') {
@@ -48,39 +60,47 @@ class HeatmapViewComponent extends Component {
 		}
 		// Calculate the layout of everything
 		const el = this.refs.heatmapContainer;
-		const sparklineHeight = 80;
+		const sparklineHeight = 80 / (window.devicePixelRatio || 1);
 		let heatmapWidth = el.clientWidth - sparklineHeight;
 		let heatmapHeight = el.clientHeight - sparklineHeight;
-		const heatmap = (
+		let heatmapSize = {
+			display: 'flex',
+			flex: '0 0 auto',
+			minWidth: `${heatmapWidth}px`,
+			maxWidth: `${heatmapWidth}px`,
+			minHeight: `${heatmapHeight}px`,
+			maxHeight: `${heatmapHeight}px`,
+		};
+		return (
 			<div className='view-vertical'>
+				<Sparkline
+					orientation='horizontal'
+					width={heatmapWidth}
+					height={sparklineHeight}
+					data={colData}
+					dataRange={[dataBounds[0], dataBounds[2]]}
+					mode={heatmapState.colMode}
+					style={{ marginRight: (sparklineHeight + 'px') }}
+					/>
 				<div className='view'>
-					<Sparkline
-						orientation='horizontal'
-						width={heatmapWidth}
-						height={sparklineHeight}
-						data={colData}
-						dataRange={[dataBounds[0], dataBounds[2]]}
-						mode={heatmapState.colMode}
-						style={{ marginRight: (sparklineHeight + 'px') }}
-						/>
-				</div>
-				<div className='view'>
-					<Heatmap
-						transcriptome={dataSet.transcriptome}
-						project={dataSet.project}
-						dataset={dataSet.dataset}
-						shape={dataSet.shape}
-						zoomRange={dataSet.zoomRange}
-						fullZoomWidth={dataSet.fullZoomWidth}
-						fullZoomHeight={dataSet.fullZoomHeight}
-						onViewChanged={
-							(dataBounds) => {
-								dispatch({
-									type: 'SET_HEATMAP_PROPS',
-									dataBounds,
-								});
-							}
-						} />
+					<div style={heatmapSize}>
+						<Heatmap
+							transcriptome={dataSet.transcriptome}
+							project={dataSet.project}
+							dataset={dataSet.dataset}
+							shape={dataSet.shape}
+							zoomRange={dataSet.zoomRange}
+							fullZoomWidth={dataSet.fullZoomWidth}
+							fullZoomHeight={dataSet.fullZoomHeight}
+							onViewChanged={
+								(dataBounds) => {
+									dispatch({
+										type: 'SET_HEATMAP_PROPS',
+										dataBounds,
+									});
+								}
+							} />
+					</div>
 					<Sparkline
 						orientation='vertical'
 						width={sparklineHeight}
@@ -90,14 +110,17 @@ class HeatmapViewComponent extends Component {
 						mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
 						/>
 				</div>
-			</div>
+			</div >
 		);
-		this.setState({ heatmap });
 	}
 
 	render() {
 		const { dispatch, dataSet, fetchedGenes, heatmapState } = this.props;
 
+		let heatmap = null;
+		if (!this.state.resizing) {
+			heatmap = this.renderHeatmapview(this.props);
+		}
 		return (
 			<div className='view'>
 				<div className='sidepanel'>
@@ -109,7 +132,7 @@ class HeatmapViewComponent extends Component {
 						/>
 				</div>
 				<div className='view' ref='heatmapContainer'>
-					{this.state.heatmap}
+					{heatmap}
 				</div>
 			</div>
 		);
