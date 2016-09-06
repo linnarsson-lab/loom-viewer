@@ -20,7 +20,7 @@ export class Sparkline extends React.Component {
 		// settings, we save before and restore at the end
 		if (this.props.orientation !== 'horizontal') {
 			context.save();
-			context.translate(this.props.width, 0);
+			context.translate(context.width, 0);
 			context.rotate(90 * Math.PI / 180);
 			let t = context.width;
 			context.width = context.height;
@@ -121,15 +121,14 @@ export class Sparkline extends React.Component {
 		// If not given a width or height prop, make these fill their parent div
 		// This will implicitly set the size of the <Canvas> component, which
 		// will then call the passed paint function with the right dimensions.
-		const ratio = window.devicePixelRatio || 1;
 		const style = {};
 		if (this.props.width) {
-			style['minWidth'] = ((this.props.width * ratio) | 0) + 'px';
-			style['maxWidth'] = ((this.props.width * ratio) | 0) + 'px';
+			style['minWidth'] = (this.props.width | 0) + 'px';
+			style['maxWidth'] = (this.props.width | 0) + 'px';
 		}
 		if (this.props.height) {
-			style['minHeight'] = ((this.props.height * ratio) | 0) + 'px';
-			style['maxHeight'] = ((this.props.height * ratio) | 0) + 'px';
+			style['minHeight'] = (this.props.height | 0) + 'px';
+			style['maxHeight'] = (this.props.height | 0) + 'px';
 		}
 		return (
 			<div className='view' style={style}>
@@ -319,7 +318,7 @@ class HeatmapPainter {
 
 class TextPainter {
 	paint(context, rangeData, xOffset, rangeWidth) {
-		const lineSize = rangeWidth / rangeData.length;
+		const lineSize = (rangeWidth / rangeData.length) | 0;
 		// only draw if we have six pixels per
 		const minLineSize = 8;
 		if (lineSize >= minLineSize) {
