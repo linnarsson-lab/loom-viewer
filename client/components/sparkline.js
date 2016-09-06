@@ -96,10 +96,10 @@ export class Sparkline extends React.Component {
 				painter = new CategoriesPainter(this.props.data);
 				break;
 			case 'Bars':
-				painter = new BarPainter(this.props.data);
+				painter = new BarPainter(this.props.data, this.props.label);
 				break;
 			case 'Heatmap':
-				painter = new HeatmapPainter(this.props.data);
+				painter = new HeatmapPainter(this.props.data, this.props.label);
 				break;
 			default:
 				painter = new TextPainter();
@@ -145,6 +145,7 @@ Sparkline.propTypes = {
 	width: PropTypes.number,
 	height: PropTypes.number,
 	data: PropTypes.array,
+	label: PropTypes.string,
 	dataRange: PropTypes.arrayOf(PropTypes.number),
 };
 
@@ -248,10 +249,11 @@ function calcMeans(rangeData, rangeWidth) {
 
 class BarPainter {
 
-	constructor(data) {
+	constructor(data, label) {
 		const { min, max } = calcMinMax(data);
 		this.min = min;
 		this.max = max;
+		this.label = label;
 	}
 
 	paint(context, rangeData, xOffset, rangeWidth) {
@@ -270,21 +272,30 @@ class BarPainter {
 			context.fillRect(x, y, barWidth, barHeight);
 			x += barWidth;
 		}
-
-		textSize(context, 10);
-		textStyle(context);
-		drawText(context, this.min.toPrecision(3), 2, context.height - 2);
-		drawText(context, this.max.toPrecision(3), 2, 10);
+		const ratio = context.pixelRatio;
+		context.textStyle();
+		if (ratio > 0.5) {
+			const minmaxSize = 8 * ratio;
+			context.textSize(minmaxSize);
+			context.drawText(this.min.toPrecision(3), 4 * ratio, context.height - 2);
+			context.drawText(this.max.toPrecision(3), 4 * ratio, 2 + minmaxSize);
+		}
+		if (this.label) {
+			const labelSize = Math.max(8, 10 * ratio);
+			context.textSize(labelSize);
+			context.drawText(this.label, 6 * ratio, (context.height + labelSize) * 0.5);
+		}
 	}
 }
 
 
 class HeatmapPainter {
 
-	constructor(data) {
+	constructor(data, label) {
 		const { min, max } = calcMinMax(data);
 		this.min = min;
 		this.max = max;
+		this.label = label;
 	}
 
 	paint(context, rangeData, xOffset, rangeWidth) {
@@ -297,6 +308,12 @@ class HeatmapPainter {
 			context.fillRect(x, 0, barWidth, context.height);
 			x += barWidth;
 		}
+		context.textStyle();
+		if (this.label) {
+			const labelSize = Math.max(8, 10 * context.pixelRatio);
+			context.textSize(labelSize);
+			context.drawText(this.label, 6 * context.pixelRatio, (context.height + labelSize) * 0.5);
+		}
 	}
 }
 
@@ -306,9 +323,8 @@ class TextPainter {
 		// only draw if we have six pixels per
 		const minLineSize = 8;
 		if (lineSize >= minLineSize) {
-			const fontSize = Math.min(lineSize-2, 12);
-			textSize(context, fontSize);
-			textStyle(context);
+			context.textSize(Math.min(lineSize - 2, 12));
+			context.textStyle();
 			context.save();
 			// The default is drawing horizontally,
 			// so the text should be vertical.
@@ -318,9 +334,9 @@ class TextPainter {
 			// and draw at (0, 0) and translate().
 			context.translate(0, context.height);
 			context.rotate(-Math.PI / 2);
-			context.translate(2, lineSize/2 + xOffset);
+			context.translate(2, lineSize / 2 + xOffset);
 			rangeData.forEach((label) => {
-				if (label) { drawText(context, label, 0, 0); }
+				if (label) { context.drawText(label, 0, 0); }
 				context.translate(0, lineSize);
 			});
 			// undo all rotations/translations
@@ -328,34 +344,3 @@ class TextPainter {
 		}
 	}
 }
-
-
-
-// Some helper functions for context.
-// This should probably be encapsulated by <Canvas> at some point,
-// and set as prototypical methods on the context object
-
-const textSize = function (context, size = 10) {
-	// will return an array with [ size, font ] as strings
-	const fontArgs = context.font.split(' ');
-	const font = fontArgs[fontArgs.length - 1];
-	switch (typeof size) {
-		case 'number':
-			context.font = size + 'px ' + font;
-			break;
-		case 'string':
-			context.font = size + font;
-			break;
-	}
-};
-
-const textStyle = function (context, fill = 'black', stroke = 'white', lineWidth = 2) {
-	context.fillStyle = fill;
-	context.strokeStyle = stroke;
-	context.lineWidth = lineWidth;
-};
-
-const drawText = function (context, text, x, y) {
-	context.strokeText(text, x, y);
-	context.fillText(text, x, y);
-};

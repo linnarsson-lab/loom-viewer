@@ -71,13 +71,41 @@ export class Canvas extends React.Component {
 		if (!resizing) {
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');
+			// Attach helper functions
+			// TODO: this should be put into the context prototype.
+			context.circle = (x, y, radius) => {
+				context.arc(x, y, radius, 0, 2 * Math.PI);
+			};
+
+			context.textSize = function (size = 10) {
+				// will return an array with [ size, font ] as strings
+				const fontArgs = context.font.split(' ');
+				const font = fontArgs[fontArgs.length - 1];
+				switch (typeof size) {
+					case 'number':
+						context.font = size + 'px ' + font;
+						break;
+					case 'string':
+						context.font = size + font;
+						break;
+				}
+			};
+
+			context.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
+				context.fillStyle = fill;
+				context.strokeStyle = stroke;
+				context.lineWidth = lineWidth;
+			};
+
+			context.drawText = function (text, x, y) {
+				context.strokeText(text, x, y);
+				context.fillText(text, x, y);
+			};
+
 			// store width, height and ratio in context for paint functions
 			context.width = width;
 			context.height = height;
 			context.pixelRatio = ratio;
-			context.circle = (x, y, radius) => {
-				context.arc(x, y, radius, 0, 2 * Math.PI);
-			};
 			// should we clear the canvas every redraw?
 			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
 			this.props.paint(context);

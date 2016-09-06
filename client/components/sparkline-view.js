@@ -88,46 +88,40 @@ class SparklineViewComponent extends Component {
 			for (let i = 0; i < selectedGenesList.length; i++) {
 				const gene = selectedGenesList[i];
 				const fetchedGene = fetchedGenes[gene];
-				if (!fetchedGene) {
-					geneSparklines[i] = (
-						<span>Please wait, downloading gene data for {gene}</span>
-					);
-				} else {
-					let geneData = new Array(colData.length);
+
+				let geneData = [0];
+				let label = `Fetching gene data for ${gene}`;
+				let mode = 'Bars';
+				if (fetchedGene) {
+					geneData = new Array(colData.length);
 					for (let j = 0; j < geneData.length; ++j) {
 						geneData[j] = fetchedGenes[gene][indices[j]];
 					}
-					geneSparklines[i] = (
-						<div
-							key={gene}
-							style={{
-								background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-								display: 'flex',
-								flexDirection: 'column',
-								minHeight: '42px',
-								maxHeight: '42px',
-							}}>
-							<span
-								style={{
-									display: 'block',
-									width: '100%',
-									fontSize: '10px',
-									marginLeft: '2px',
-									minHeight: '12px',
-									maxHeight: '12px',
-								}}>
-								{gene}
-							</span>
-							<Sparkline
-								orientation='horizontal'
-								data={geneData}
-								dataRange={[0, colData.length]}
-								mode={sparklineState.geneMode}
-								style={{ minHeight: '30px', maxHeight: '30px' }}
-								/>
-						</div>
-					);
+					label = gene;
+					mode = sparklineState.geneMode;
 				}
+				let dataRange = [0, geneData.length];
+				geneSparklines[i] = (
+					<div
+						key={gene}
+						style={{
+							background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+							display: 'flex',
+							flexDirection: 'column',
+							minHeight: '30px',
+							maxHeight: '30px',
+						}}>
+						<Sparkline
+							orientation='horizontal'
+							data={geneData}
+							label={label}
+							dataRange={dataRange}
+							mode={mode}
+							style={{ minHeight: '30px', maxHeight: '30px' }}
+							/>
+					</div>
+				);
+
 			}
 		}
 
