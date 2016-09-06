@@ -8,7 +8,7 @@ import { FetchGeneComponent } from './fetch-gene';
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet, fetchedGenes } = props;
 	const landscapeState = props.landscapeState;
-	const { xCoordinate, yCoordinate, colorAttr, colorMode, xGene, yGene, colorGene } = landscapeState;
+	const { xCoordinate, yCoordinate, colorAttr, colorMode } = landscapeState;
 	const selectableGenes = dataSet.rowAttrs.Gene;
 	const temp = Object.keys(dataSet.colAttrs).sort();
 	temp.push('(gene)');
