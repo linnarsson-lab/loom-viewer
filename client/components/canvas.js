@@ -75,6 +75,9 @@ export class Canvas extends React.Component {
 			context.width = width;
 			context.height = height;
 			context.pixelRatio = ratio;
+			context.circle = (x, y, radius) => {
+				context.arc(x, y, radius, 0, 2 * Math.PI);
+			};
 			// should we clear the canvas every redraw?
 			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
 			this.props.paint(context);
