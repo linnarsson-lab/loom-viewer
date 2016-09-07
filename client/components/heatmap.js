@@ -59,7 +59,6 @@ export class Heatmap extends React.Component {
 }
 
 Heatmap.propTypes = {
-	transcriptome: PropTypes.string.isRequired,
 	project: PropTypes.string.isRequired,
 	dataset: PropTypes.string.isRequired,
 	shape: PropTypes.arrayOf(PropTypes.number).isRequired,

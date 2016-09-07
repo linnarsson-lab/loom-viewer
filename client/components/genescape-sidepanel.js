@@ -4,9 +4,26 @@ import { Panel, ListGroup, ListGroupItem,
 	ButtonGroup, Button } from 'react-bootstrap';
 
 export const GenescapeSidepanel = function (props) {
-	const { dispatch, genescapeState, dataSet } = props;
+	const { dispatch, dataSet } = props;
+	const { genescapeState } = dataSet;
 	const {xCoordinate, yCoordinate, colorAttr, colorMode} = genescapeState;
-	const rowAttrKeys = Object.keys(dataSet.rowAttrs).sort();
+
+	const handleChangeFactory = (field) => {
+		return (value) => {
+			dispatch({
+				type: 'SET_GENESCAPE_PROPS',
+				datasetName: dataSet.dataset,
+				genescapeState: { [field]: value },
+			});
+		};
+	};
+
+	const rowAttrOptions = Object.keys(dataSet.rowAttrs).sort();
+
+	const xCoordinateHC = handleChangeFactory('xCoordinate');
+	const yCoordinateHC = handleChangeFactory('yCoordinate');
+	const colorAttrHC = handleChangeFactory('colorAttr');
+
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
 	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
@@ -26,8 +43,11 @@ export const GenescapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
-										xCoordinate: '_tSNE1',
-										yCoordinate: '_tSNE2',
+										datasetName: dataSet.dataset,
+										genescapeState: {
+											xCoordinate: '_tSNE1',
+											yCoordinate: '_tSNE2',
+										},
 									});
 								} }>
 								tSNE
@@ -39,8 +59,11 @@ export const GenescapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
-										xCoordinate: '_PC1',
-										yCoordinate: '_PC2',
+										datasetName: dataSet.dataset,
+										genescapeState: {
+											xCoordinate: '_PC1',
+											yCoordinate: '_PC2',
+										},
 									});
 								} }>
 								PCA
@@ -52,30 +75,24 @@ export const GenescapeSidepanel = function (props) {
 					<DropdownMenu
 						buttonLabel={'X Coordinate'}
 						buttonName={xCoordinate}
-						attributes={rowAttrKeys}
-						actionType={'SET_GENESCAPE_PROPS'}
-						actionName={'xCoordinate'}
-						dispatch={dispatch}
+						options={rowAttrOptions}
+						onChange={xCoordinateHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Y Coordinate'}
 						buttonName={yCoordinate}
-						attributes={rowAttrKeys}
-						actionType={'SET_GENESCAPE_PROPS'}
-						actionName={'yCoordinate'}
-						dispatch={dispatch}
+						options={rowAttrOptions}
+						onChange={yCoordinateHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Color'}
 						buttonName={colorAttr}
-						attributes={rowAttrKeys}
-						actionType={'SET_GENESCAPE_PROPS'}
-						actionName={'colorAttr'}
-						dispatch={dispatch}
+						options={rowAttrOptions}
+						onChange={colorAttrHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
@@ -86,7 +103,8 @@ export const GenescapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
-										colorMode: 'Heatmap',
+										datasetName: dataSet.dataset,
+										genescapeState: { colorMode: 'Heatmap' },
 									});
 								} }>
 								Heatmap
@@ -98,7 +116,8 @@ export const GenescapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_GENESCAPE_PROPS',
-										colorMode: 'Categorical',
+										datasetName: dataSet.dataset,
+										genescapeState: { colorMode: 'Categorical' },
 									});
 								} }>
 								Categorical
@@ -112,7 +131,6 @@ export const GenescapeSidepanel = function (props) {
 };
 
 GenescapeSidepanel.propTypes = {
-	genescapeState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

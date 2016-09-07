@@ -1,17 +1,25 @@
 import React, { Component, PropTypes } from 'react';
+
 import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
 import { Sparkline } from './sparkline';
 import { RemountOnResize } from './remount-on-resize';
-import * as _ from 'lodash';
 import { FetchDatasetComponent } from './fetch-dataset';
 
-class HeatmapViewComponent extends Component {
+import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
+
+import * as _ from 'lodash';
+
+// Just the map+sparklines part
+class HeatmapMapComponent extends Component {
+
 	componentDidMount() {
 		this.setState({ mounted: true });
 	}
 
 	render() {
+		const { dispatch, dataSet } = this.props;
+		const { fetchedGenes, heatmapState } = dataSet;
 		if (this.state) {
 			// Calculate the layout of everything, which we can only
 			// do after mounting because we rely on the parent node.
@@ -27,9 +35,6 @@ class HeatmapViewComponent extends Component {
 				minHeight: `${heatmapHeight}px`,
 				maxHeight: `${heatmapHeight}px`,
 			};
-
-
-			const { dispatch, dataSet, fetchedGenes, heatmapState } = this.props;
 			const { dataBounds } = heatmapState;
 
 			const colGeneSelected = (heatmapState.colAttr === '(gene)') &&
@@ -75,7 +80,8 @@ class HeatmapViewComponent extends Component {
 									(dataBounds) => {
 										dispatch({
 											type: 'SET_HEATMAP_PROPS',
-											dataBounds,
+											datasetName: dataSet.dataset,
+											heatmapState: { dataBounds },
 										});
 									}
 								} />
@@ -92,63 +98,112 @@ class HeatmapViewComponent extends Component {
 				</div >
 			);
 		} else {
-			return <div className='view-vertical' ref='heatmapContainer' />;
+			return (
+				<div className='view-vertical' ref='heatmapContainer'>
+					Initialising Heatmap Settings
+				</div>
+			);
 		}
 	}
 }
 
-HeatmapViewComponent.propTypes = {
+HeatmapMapComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.object.isRequired,
-	heatmapState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-const HeatmapViewContainer = function (props) {
-	const { dispatch, data, heatmapState, params } = props;
-	const { project, dataset } = params;
-	const dataSet = data.dataSets[dataset];
-	return (dataSet === undefined ?
-		<FetchDatasetComponent
-			dispatch={dispatch}
-			dataSets={data.dataSets}
-			dataset={dataset}
-			project={project} />
-		:
-
+const HeatmapComponent = function (props) {
+	const { dataSet, dispatch } = props;
+	return (
 		<div className='view'>
 			<div className='sidepanel'>
 				<HeatmapSidepanel
-					heatmapState={heatmapState}
 					dataSet={dataSet}
-					fetchedGenes={data.fetchedGenes}
 					dispatch={dispatch}
 					/>
 			</div>
 			<RemountOnResize
-			/* Leaflet's canvas interferes with CSS layouting,
-			so we unmount and remount it on resize events */
-			>
-				<HeatmapViewComponent
-					heatmapState={heatmapState}
+				/* Leaflet's canvas interferes with CSS layouting,
+				so we unmount and remount it on resize events */
+				>
+				<HeatmapMapComponent
 					dataSet={dataSet}
-					fetchedGenes={data.fetchedGenes}
 					dispatch={dispatch} />
 			</RemountOnResize>
 		</div>
 	);
 };
 
-HeatmapViewContainer.propTypes = {
-	// Passed down by react-router-redux
-	params: PropTypes.object.isRequired,
-	// Passed down by react-redux
-	data: PropTypes.object.isRequired,
-	heatmapState: PropTypes.object.isRequired,
+HeatmapComponent.propTypes = {
+	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-//connect HeatmapViewContainer to store
+
+class HeatmapStateInitialiser extends Component {
+
+	componentWillMount() {
+		const { dispatch, dataSet } = this.props;
+		if (!dataSet.heatmapState) {
+			// Initialise heatmapState for this dataset
+			dispatch({
+				type: SET_HEATMAP_PROPS,
+				datasetName: dataSet.dataset,
+				heatmapState: {
+					dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
+					rowAttr: dataSet.rowAttrs[0],
+					rowMode: 'Text',
+					rowGenes: '',
+					colAttr: dataSet.colAttrs[0],
+					colMode: 'Text',
+					colGene: '',
+				},
+			});
+		}
+	}
+
+	render() {
+		const { dispatch, dataSet } = this.props;
+		return dataSet.heatmapState ? (
+			<HeatmapComponent
+				dispatch={dispatch}
+				dataSet={dataSet}
+				/>
+		) : <div className='view'>Initialising Heatmap Settings</div>;
+	}
+}
+
+HeatmapStateInitialiser.propTypes = {
+	dataSet: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+
+const HeatmapDatasetFetcher = function (props) {
+	const { dispatch, data, params } = props;
+	const { dataset, project } = params;
+	const dataSet = data.dataSets[dataset];
+	return (dataSet === undefined ? (
+		<FetchDatasetComponent
+			dispatch={dispatch}
+			dataSets={data.dataSets}
+			dataset={dataset}
+			project={project} />
+	) : <HeatmapStateInitialiser
+			dispatch={dispatch}
+			dataSet={dataSet} />
+	);
+};
+
+HeatmapDatasetFetcher.propTypes = {
+			// Passed down by react-router-redux
+	params: PropTypes.object.isRequired,
+			// Passed down by react-redux
+	data: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+//connect HeatmapDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -157,10 +212,8 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		heatmapState: state.heatmapState,
 		data: state.data,
 	};
 };
 
-export const HeatmapView = connect(mapStateToProps)(HeatmapViewContainer);
-
+export const HeatmapView = connect(mapStateToProps)(HeatmapDatasetFetcher);

@@ -1,65 +1,98 @@
 import React, { Component, PropTypes } from 'react';
+
 import { LandscapeSidepanel } from './landscape-sidepanel';
 import { Scatterplot } from './scatterplot';
 import { FetchDatasetComponent } from './fetch-dataset';
 
+import { SET_LANDSCAPE_PROPS } from '../actions/actionTypes';
 
-class LandscapeViewComponent extends Component {
-	constructor(props) {
-		super(props);
-		this.makeData = this.makeData.bind(this);
-	}
 
-	makeData(attr, gene) {
-		if (attr === '(gene)' && this.props.fetchedGenes.hasOwnProperty(gene)) {
-			return this.props.fetchedGenes[gene];
+const LandscapeComponent = function (props) {
+	const { dispatch, dataSet } = props;
+	const { fetchedGenes, landscapeState } = dataSet;
+	const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
+
+	const makeData = (attr, gene) => {
+		if (attr === '(gene)' && fetchedGenes.hasOwnProperty(gene)) {
+			return fetchedGenes[gene];
 		}
-		return this.props.dataSet.colAttrs[attr];
-	}
+		return dataSet.colAttrs[attr];
+	};
 
-	render() {
-		const { dispatch, landscapeState, dataSet, fetchedGenes } = this.props;
-		const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
-		const color = this.makeData(colorAttr, colorGene);
-		const x = this.makeData(xCoordinate, xGene);
-		const y = this.makeData(yCoordinate, yGene);
-		return (
-			<div className='view'>
-				<LandscapeSidepanel
-					landscapeState={landscapeState}
-					dataSet={dataSet}
-					fetchedGenes={fetchedGenes}
-					dispatch={dispatch}
-					/>
-				<Scatterplot
-					x={x}
-					y={y}
-					color={color}
-					colorMode={landscapeState.colorMode}
-					logScaleColor={landscapeState.colorAttr === '(gene)'}
-					logScaleX={landscapeState.xCoordinate === '(gene)'}
-					logScaleY={landscapeState.yCoordinate === '(gene)'}
-					style={{ margin: '20px' }}
-					/>
-			</div>
-		);
-	}
-}
+	const color = makeData(colorAttr, colorGene);
+	const x = makeData(xCoordinate, xGene);
+	const y = makeData(yCoordinate, yGene);
+	return (
+		<div className='view'>
+			<LandscapeSidepanel
+				landscapeState={landscapeState}
+				dataSet={dataSet}
+				fetchedGenes={fetchedGenes}
+				dispatch={dispatch}
+				/>
+			<Scatterplot
+				x={x}
+				y={y}
+				color={color}
+				colorMode={landscapeState.colorMode}
+				logScaleColor={landscapeState.colorAttr === '(gene)'}
+				logScaleX={landscapeState.xCoordinate === '(gene)'}
+				logScaleY={landscapeState.yCoordinate === '(gene)'}
+				style={{ margin: '20px' }}
+				/>
+		</div>
+	);
+};
 
-LandscapeViewComponent.propTypes = {
+LandscapeComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.object.isRequired,
-	landscapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
 
-const LandscapeViewContainer = function (props) {
+class LandscapeStateInitialiser extends Component {
 
-	const { dispatch, data, landscapeState, params } = props;
-	const { project, dataset } = params;
+	componentWillMount() {
+		const { dispatch, dataSet } = this.props;
+		if (!dataSet.landscapeState) {
+			// Initialise landscapeState for this dataset
+			dispatch({
+				type: SET_LANDSCAPE_PROPS,
+				datasetName: dataSet.dataset,
+				landscapeState: {
+					xCoordinate: '_tSNE1',
+					xGene: '',
+					yCoordinate: '_tSNE2',
+					yGene: '',
+					colorAttr: 'CellID',
+					colorMode: 'Heatmap',
+					colorGene: '',
+				},
+			});
+		}
+	}
+
+	render() {
+		const { dispatch, dataSet } = this.props;
+		return dataSet.landscapeState ? (
+			<LandscapeComponent
+				dispatch={dispatch}
+				dataSet={dataSet}
+				/>
+		) : <div className='view'>Initialising Landscape View Settings</div>;
+	}
+}
+
+
+LandscapeStateInitialiser.propTypes = {
+	dataSet: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+const LandscapeDatasetFetcher = function (props) {
+	const { dispatch, data, params } = props;
+	const { dataset, project } = params;
 	const dataSet = data.dataSets[dataset];
-	const fetchedGenes = data.fetchedGenes;
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
 			dispatch={dispatch}
@@ -67,24 +100,22 @@ const LandscapeViewContainer = function (props) {
 			dataset={dataset}
 			project={project} />
 		:
-		<LandscapeViewComponent
-			dispatch={dispatch}
-			landscapeState={landscapeState}
+		<LandscapeStateInitialiser
 			dataSet={dataSet}
-			fetchedGenes={fetchedGenes} />
+			dispatch={dispatch} />
 	);
 };
 
-LandscapeViewContainer.propTypes = {
+LandscapeDatasetFetcher.propTypes = {
 	// Passed down by react-router-redux
 	params: PropTypes.object.isRequired,
 	// Passed down by react-redux
 	data: PropTypes.object.isRequired,
-	landscapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-//connect GenescapeViewContainer to store
+
+//connect LandscapeDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -93,9 +124,8 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		landscapeState: state.landscapeState,
 		data: state.data,
 	};
 };
 
-export const LandscapeView = connect(mapStateToProps)(LandscapeViewContainer);
+export const LandscapeView = connect(mapStateToProps)(LandscapeDatasetFetcher);

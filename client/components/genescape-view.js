@@ -1,14 +1,17 @@
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
+
 import { GenescapeSidepanel } from './genescape-sidepanel';
 import { Scatterplot } from './scatterplot';
 import { FetchDatasetComponent } from './fetch-dataset';
 
-const GenescapeViewComponent = function (props) {
-	const { dispatch, genescapeState, dataSet } = props;
+import { SET_GENESCAPE_PROPS } from '../actions/actionTypes';
+
+const GenescapeComponent = function (props) {
+	const { dispatch, dataSet } = props;
+	const { genescapeState } = dataSet;
 	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
 	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
-
 	return (
 		<div className='view' >
 			<GenescapeSidepanel
@@ -28,17 +31,52 @@ const GenescapeViewComponent = function (props) {
 				/>
 		</div>
 	);
+
 };
 
-GenescapeViewComponent.propTypes = {
+GenescapeComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	genescapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-const GenescapeViewContainer = function (props) {
-	const { dispatch, data, genescapeState, params } = props;
-	const { project, dataset } = params;
+class GenescapeStateInitialiser extends Component {
+
+	componentWillMount() {
+		const { dispatch, dataSet } = this.props;
+		if (!dataSet.genescapeState) {
+			// Initialise genescapeState for this dataset
+			dispatch({
+				type: SET_GENESCAPE_PROPS,
+				datasetName: dataSet.dataset,
+				genescapeState: {
+					xCoordinate: '_tSNE1',
+					yCoordinate: '_tSNE2',
+					colorAttr: dataSet.rowAttrs[0],
+					colorMode: 'Heatmap',
+				},
+			});
+		}
+	}
+
+	render() {
+		const { dispatch, dataSet } = this.props;
+		return dataSet.genescapeState ? (
+			<GenescapeComponent
+				dispatch={dispatch}
+				dataSet={dataSet}
+				/>
+		) : <div className='view'>Initialising Gene View Settings</div>;
+	}
+}
+
+GenescapeStateInitialiser.propTypes = {
+	dataSet: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+const GenescapeDatasetFetcher = function (props) {
+	const { dispatch, data, params } = props;
+	const { dataset, project } = params;
 	const dataSet = data.dataSets[dataset];
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
@@ -47,23 +85,21 @@ const GenescapeViewContainer = function (props) {
 			dataset={dataset}
 			project={project} />
 		:
-		<GenescapeViewComponent
-			dispatch={dispatch}
-			genescapeState={genescapeState}
-			dataSet={dataSet} />
+		<GenescapeStateInitialiser
+			dataSet={dataSet}
+			dispatch={dispatch} />
 	);
 };
 
-GenescapeViewContainer.propTypes = {
+GenescapeDatasetFetcher.propTypes = {
 	// Passed down by react-router-redux
 	params: PropTypes.object.isRequired,
 	// Passed down by react-redux
 	data: PropTypes.object.isRequired,
-	genescapeState: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-//connect GenescapeViewContainer to store
+//connect GenescapeDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -72,10 +108,9 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		genescapeState: state.genescapeState,
 		data: state.data,
 	};
 };
 
-export const GenescapeView = connect(mapStateToProps)(GenescapeViewContainer);
+export const GenescapeView = connect(mapStateToProps)(GenescapeDatasetFetcher);
 

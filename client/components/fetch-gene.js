@@ -9,13 +9,13 @@ import createFilterOptions from 'react-select-fast-filter-options';
 export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);
-		this.state = this.createOptions(this.props.selectableGenes);
+		this.state = this.createOptions(this.props.dataSet.rowAttrs.Gene);
 		this.handleChange = this.handleChange.bind(this);
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const prevSG = this.props.selectableGenes;
-		const nextSG = nextProps.selectableGenes;
+		const prevSG = this.props.dataSet.rowAttrs.Gene;
+		const nextSG = nextProps.dataSet.rowAttrs.Gene;
 		if (!isEqual(prevSG, nextSG)) {
 			this.setState(this.createOptions(nextSG));
 		}
@@ -41,81 +41,49 @@ export class FetchGeneComponent extends Component {
 	}
 
 	handleChange(value) {
-		const { dataSet, fetchedGenes, dispatch, actionType, actionName } = this.props;
+		const { dataSet, dispatch, onChange } = this.props;
 		this.setState({ value });
-
-		if (this.props.multi) {
-			if (value && value.length) {
+		if (value) {
+			if (this.props.multi) {
 				let geneString = '';
+				let values = new Array(value.length);
 				for (let i = 0; i < value.length; i++) {
 					geneString += value[i].value + ' ';
+					values[i] = value[i].value;
 				}
-				dispatch(fetchGene(dataSet, value, fetchedGenes));
-				dispatch({ type: actionType, [actionName]: geneString });
+				dispatch(fetchGene(dataSet, values));
+				onChange ? onChange(geneString) : null;
 			} else {
-				dispatch({ type: actionType, [actionName]: '' });
+				dispatch(fetchGene(dataSet, [value.value]));
+				onChange ? onChange(value.value) : null;
 			}
 		} else {
-			if (value) {
-				dispatch(fetchGene(dataSet, [value.value], fetchedGenes));
-				dispatch({ type: actionType, [actionName]: value.value });
-			} else {
-				dispatch({ type: actionType, [actionName]: '' });
-			}
+			onChange ? onChange('') : null;
 		}
 	}
 
 	render() {
-		const { dataSet, fetchedGenes, dispatch } = this.props;
 		const { options, filterOptions, value } = this.state;
-		if (options) {
-			return (
-				<FormGroup>
-					<Select
-						options={options}
-						filterOptions={filterOptions}
-						onChange={this.handleChange}
-						value={value}
-						multi={this.props.multi}
-						clearable={this.props.clearable === true}
-						/>
-				</FormGroup>
-			);
-		} else {
-			return (
-				<FormGroup>
-					<FormControl
-						type='text'
-						placeholder='Enter gene name...'
-						value={value}
-						onChange={(event) => {
-							dispatch({
-								type: 'SET_SPARKLINE_PROPS',
-								genes: event.target.value,
-							});
-							forEach(
-								event.target.value.trim().split(/[ ,\r\n]+/),
-								(gene) => {
-									dispatch(
-										fetchGene(dataSet, gene, fetchedGenes)
-									);
-								}
-							);
-						} }
-						/>
-				</FormGroup>
-			);
-		}
+		return (
+			<FormGroup>
+				<Select
+					options={options}
+					filterOptions={filterOptions}
+					onChange={this.handleChange}
+					value={value}
+					multi={this.props.multi}
+					clearable={this.props.clearable === true}
+					/>
+			</FormGroup>
+		);
 	}
 }
 
+
 FetchGeneComponent.propTypes = {
-	selectableGenes: PropTypes.array,
-	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	actionType: PropTypes.string.isRequired,
-	actionName: PropTypes.string.isRequired,
+	onChange: PropTypes.func,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
 };

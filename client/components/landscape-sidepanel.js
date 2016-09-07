@@ -6,12 +6,31 @@ import { FetchGeneComponent } from './fetch-gene';
 
 
 export const LandscapeSidepanel = function (props) {
-	const { dispatch, dataSet, fetchedGenes } = props;
-	const landscapeState = props.landscapeState;
+	const { dispatch, dataSet } = props;
+	const landscapeState = dataSet.landscapeState;
 	const { xCoordinate, yCoordinate, colorAttr, colorMode } = landscapeState;
-	const selectableGenes = dataSet.rowAttrs.Gene;
-	const temp = Object.keys(dataSet.colAttrs).sort();
-	temp.push('(gene)');
+
+	const handleChangeFactory = (field) => {
+		return (value) => {
+			dispatch({
+				type: 'SET_LANDSCAPE_PROPS',
+				datasetName: dataSet.dataset,
+				landscapeState: { [field]: value },
+			});
+		};
+	};
+
+	const colAttrsOptions = Object.keys(dataSet.colAttrs).sort();
+	colAttrsOptions.push('(gene)');
+
+	const xCoordinateHC = handleChangeFactory('xCoordinate');
+	const xGeneHC = handleChangeFactory('xGene');
+
+	const yCoordinateHC = handleChangeFactory('yCoordinate');
+	const yGeneHC = handleChangeFactory('yGene');
+
+	const colorAttrHC = handleChangeFactory('colorAttr');
+	const colorGeneHC = handleChangeFactory('colorGene');
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
 	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
@@ -32,8 +51,11 @@ export const LandscapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
-										xCoordinate: '_tSNE1',
-										yCoordinate: '_tSNE2',
+										datasetName: dataSet.dataset,
+										landscapeState: {
+											xCoordinate: '_tSNE1',
+											yCoordinate: '_tSNE2',
+										},
 									});
 								} }>
 								tSNE
@@ -45,8 +67,11 @@ export const LandscapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
-										xCoordinate: '_PC1',
-										yCoordinate: '_PC2',
+										datasetName: dataSet.dataset,
+										landscapeState: {
+											xCoordinate: '_PC1',
+											yCoordinate: '_PC2',
+										},
 									});
 								} }>
 								PCA
@@ -58,57 +83,42 @@ export const LandscapeSidepanel = function (props) {
 					<DropdownMenu
 						buttonLabel={'X Coordinate'}
 						buttonName={xCoordinate}
-						attributes={temp}
-						actionType={'SET_LANDSCAPE_PROPS'}
-						actionName={'xCoordinate'}
-						dispatch={dispatch}
+						options={colAttrsOptions}
+						onChange={xCoordinateHC}
 						/>
 					{ xCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							fetchedGenes={fetchedGenes}
-							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							actionType={'SET_LANDSCAPE_PROPS'}
-							actionName={'xGene'}
+							onChange={xGeneHC}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Y Coordinate'}
 						buttonName={yCoordinate}
-						attributes={temp}
-						actionType={'SET_LANDSCAPE_PROPS'}
-						actionName={'yCoordinate'}
-						dispatch={dispatch}
+						options={colAttrsOptions}
+						onChange={yCoordinateHC}
 						/>
 					{ yCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							fetchedGenes={fetchedGenes}
-							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							actionType={'SET_LANDSCAPE_PROPS'}
-							actionName={'yGene'}
+							onChange={yGeneHC}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Color'}
 						buttonName={colorAttr}
-						attributes={temp}
-						actionType={'SET_LANDSCAPE_PROPS'}
-						actionName={'colorAttr'}
-						dispatch={dispatch}
+						options={colAttrsOptions}
+						onChange={colorAttrHC}
 						/>
 					{ colorAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							fetchedGenes={fetchedGenes}
-							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							actionType={'SET_LANDSCAPE_PROPS'}
-							actionName={'colorGene'}
+							onChange={colorGeneHC}
 							/> : null  }
 				</ListGroupItem>
 				<ListGroupItem>
@@ -119,7 +129,8 @@ export const LandscapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
-										colorMode: 'Heatmap',
+										datasetName: dataSet.dataset,
+										landscapeState: { colorMode: 'Heatmap' },
 									});
 								} }>
 								Heatmap
@@ -131,7 +142,8 @@ export const LandscapeSidepanel = function (props) {
 								onClick={ () => {
 									dispatch({
 										type: 'SET_LANDSCAPE_PROPS',
-										colorMode: 'Categorical',
+										datasetName: dataSet.dataset,
+										landscapeState: { colorMode: 'Categorical' },
 									});
 								} }>
 								Categorical
@@ -145,8 +157,6 @@ export const LandscapeSidepanel = function (props) {
 };
 
 LandscapeSidepanel.propTypes = {
-	landscapeState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

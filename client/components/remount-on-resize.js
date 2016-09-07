@@ -37,5 +37,5 @@ export class RemountOnResize extends React.Component {
 RemountOnResize.propTypes = {
 	className: PropTypes.string,
 	style: PropTypes.object,
-	children: PropTypes.node,
+	children: PropTypes.node.isRequired,
 };

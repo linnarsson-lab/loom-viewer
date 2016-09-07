@@ -6,28 +6,50 @@ import { fetchGene } from '../actions/actions.js';
 import { debounce } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet, fetchedGenes, selectableGenes } = props;
+	const { dispatch, sparklineState, dataSet } = props;
 
 	const dispatchFetchGenes = (genes) => {
-		dispatch(fetchGene(dataSet, genes, fetchedGenes));
+		dispatch(fetchGene(dataSet, genes));
 	};
 	// don't fire too often
 	const debouncedFetch = debounce(dispatchFetchGenes, 200);
+
 	const fetchShownGenes = (event) => {
 		dispatch({
 			type: 'SET_SPARKLINE_PROPS',
-			genes: event.target.value,
+			datasetName: dataSet.dataset,
+			sparklineState: { genes: event.target.value },
 		});
 		const genes = event.target.value.trim().split(/[ ,\r\n]+/);
 		debouncedFetch(genes);
 	};
 
-	const colAttrsSorted = Object.keys(dataSet.colAttrs).sort();
+	const handleChangeFactory = (field) => {
+		return (value) => {
+			dispatch({
+				type: 'SET_SPARKLINE_PROPS',
+				datasetName: dataSet.dataset,
+				sparklineState: { [field]: value },
+			});
+		};
+	};
+
+	const colAttrsOptions = Object.keys(dataSet.colAttrs).sort();
+	const colAttrsHC = handleChangeFactory('colAttr');
+
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.unshift('(gene)');
 	orderByOptions.unshift('(original order)');
-	const optionsForCols = ['Bars', 'Categorical', 'Heatmap'];
-	const optionsForGenes = ['Bars', 'Heatmap'];
+	const orderByHC = handleChangeFactory('orderByAttr');
+	const orderByGeneHC = handleChangeFactory('orderByGene');
+
+	const colModeOptions = ['Bars', 'Categorical', 'Heatmap'];
+	const colModeHC = handleChangeFactory('colMode');
+
+	const genesHC = handleChangeFactory('genes');
+
+	const geneModeOptions = ['Bars', 'Heatmap'];
+	const geneModeHC = handleChangeFactory('geneMode');
 
 	return (
 		<Panel
@@ -40,35 +62,26 @@ export const SparklineSidepanel = function (props) {
 					<DropdownMenu
 						buttonLabel={'Order by'}
 						buttonName={sparklineState.orderByAttr}
-						attributes={orderByOptions}
-						actionType={'SET_SPARKLINE_PROPS'}
-						actionName={'orderByAttr'}
-						dispatch={dispatch}
+						options={orderByOptions}
+						onChange={orderByHC}
 						/>
 					{ sparklineState.orderByAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							fetchedGenes={fetchedGenes}
-							selectableGenes={selectableGenes}
 							dispatch={dispatch}
-							actionType={'SET_SPARKLINE_PROPS'}
-							actionName={'orderByGene'} /> : null }
+							onChange={orderByGeneHC} /> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Show cell attribute'}
 						buttonName={sparklineState.colAttr}
-						attributes={colAttrsSorted}
-						actionType={'SET_SPARKLINE_PROPS'}
-						actionName={'colAttr'}
-						dispatch={dispatch}
+						options={colAttrsOptions}
+						onChange={colAttrsHC}
 						/>
 					<DropdownMenu
 						buttonName={sparklineState.colMode}
-						attributes={optionsForCols}
-						actionType={'SET_SPARKLINE_PROPS'}
-						actionName={'colMode'}
-						dispatch={dispatch}
+						options={colModeOptions}
+						onChange={colModeHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
@@ -81,32 +94,25 @@ export const SparklineSidepanel = function (props) {
 					</textarea>
 					<FetchGeneComponent
 						dataSet={dataSet}
-						fetchedGenes={fetchedGenes}
-						selectableGenes={selectableGenes}
 						dispatch={dispatch}
-						actionType={'SET_SPARKLINE_PROPS'}
-						actionName={'genes'}
+						onChange={genesHC}
 						multi
 						clearable
 						/>
 					<DropdownMenu
 						buttonLabel={'Show genes as'}
 						buttonName={sparklineState.geneMode}
-						attributes={optionsForGenes}
-						actionType={'SET_SPARKLINE_PROPS'}
-						actionName={'geneMode'}
-						dispatch={dispatch}
+						options={geneModeOptions}
+						onChange={geneModeHC}
 						/>
 				</ListGroupItem>
 			</ListGroup>
 		</Panel>
-	);
+			);
 };
 
 SparklineSidepanel.propTypes = {
 	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.object.isRequired,
-	selectableGenes: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

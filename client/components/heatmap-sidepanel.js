@@ -4,14 +4,33 @@ import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
 
 export const HeatmapSidepanel = function (props) {
-	const { dispatch, heatmapState, dataSet, fetchedGenes } = props;
+	const { dispatch, dataSet } = props;
+	const { heatmapState } = dataSet;
 
-	let colAttrKeys = Object.keys(dataSet.colAttrs);
-	colAttrKeys.sort();
-	colAttrKeys.push('(gene)');
-	let rowAttrKeys = Object.keys(dataSet.rowAttrs);
-	rowAttrKeys.sort();
-	rowAttrKeys.push('(gene positions)');
+	const handleChangeFactory = (field) => {
+		return (value) => {
+			dispatch({
+				type: 'SET_HEATMAP_PROPS',
+				datasetName: dataSet.dataset,
+				heatmapState: { [field]: value },
+			});
+		};
+	};
+
+
+	let colAttrOptions = Object.keys(dataSet.colAttrs);
+	colAttrOptions.sort();
+	colAttrOptions.push('(gene)');
+	const colAttrHC = handleChangeFactory('colAttr');
+	const colModeHC = handleChangeFactory('colMode');
+	const colGeneHC = handleChangeFactory('colGene');
+
+	let rowAttrOptions = Object.keys(dataSet.rowAttrs);
+	rowAttrOptions.sort();
+	rowAttrOptions.push('(gene positions)');
+	const rowAttrHC = handleChangeFactory('rowAttr');
+	const rowModeHC = handleChangeFactory('rowMode');
+
 	let optionNames = ['Text', 'Bars', 'Heatmap', 'Categorical'];
 
 	return (
@@ -26,36 +45,27 @@ export const HeatmapSidepanel = function (props) {
 					<DropdownMenu
 						buttonLabel={'Cell attribute to show'}
 						buttonName={heatmapState.colAttr}
-						attributes={colAttrKeys}
-						actionType={'SET_HEATMAP_PROPS'}
-						actionName={'colAttr'}
-						dispatch={dispatch}
+						options={colAttrOptions}
+						onChange={colAttrHC}
 						/>
 					{heatmapState.colAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
-							fetchedGenes={fetchedGenes}
-							selectableGenes={dataSet.rowAttrs.Gene}
 							dispatch={dispatch}
-							actionType={'SET_HEATMAP_PROPS'}
-							actionName={'colGene'} /> : null }
+							onChange={colGeneHC} /> : null }
 					<DropdownMenu
 						buttonLabel={'Show cell attribute as'}
 						buttonName={heatmapState.colMode}
-						attributes={optionNames}
-						actionType={'SET_HEATMAP_PROPS'}
-						actionName={'colMode'}
-						dispatch={dispatch}
+						options={optionNames}
+						onChange={colModeHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
 						buttonLabel={'Gene attribute to display'}
 						buttonName={heatmapState.rowAttr}
-						attributes={rowAttrKeys}
-						actionType={'SET_HEATMAP_PROPS'}
-						actionName={'rowAttr'}
-						dispatch={dispatch}
+						options={rowAttrOptions}
+						onChange={rowAttrHC}
 						/>
 					{
 						(heatmapState.rowAttr === '(gene positions)') ?
@@ -65,7 +75,8 @@ export const HeatmapSidepanel = function (props) {
 									(event) => {
 										dispatch({
 											type: 'SET_HEATMAP_PROPS',
-											rowGenes: event.target.value,
+											datasetName: dataSet.dataset,
+											heatmapState: { rowGenes: event.target.value },
 										});
 									}
 								} />
@@ -73,13 +84,11 @@ export const HeatmapSidepanel = function (props) {
 							null
 					}
 					<DropdownMenu
-								buttonLabel={'Display gene attribute as'}
-								buttonName={heatmapState.rowMode}
-								attributes={optionNames}
-								actionType={'SET_HEATMAP_PROPS'}
-								actionName={'rowMode'}
-								dispatch={dispatch}
-								/>
+						buttonLabel={'Display gene attribute as'}
+						buttonName={heatmapState.rowMode}
+						options={optionNames}
+						onChange={rowModeHC}
+						/>
 				</ListGroupItem>
 			</ListGroup>
 		</Panel>
@@ -87,8 +96,6 @@ export const HeatmapSidepanel = function (props) {
 };
 
 HeatmapSidepanel.propTypes = {
-	heatmapState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	fetchedGenes: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

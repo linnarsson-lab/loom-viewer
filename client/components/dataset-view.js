@@ -8,7 +8,6 @@ import {
 import { Link } from 'react-router';
 import { fetchProjects } from '../actions/actions';
 
-
 const DataSetListItem = function (props) {
 	const { dataset, title, description, url, doi } = props.dataSetMetaData;
 
@@ -152,8 +151,6 @@ class DataSetViewComponent extends Component {
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
 						</PanelGroup>
-						<h4>Debug</h4>
-						<a href='/dataset/benchmark'>Canvas Benchmark</a>
 					</Col>
 				</Row>
 			</Grid>

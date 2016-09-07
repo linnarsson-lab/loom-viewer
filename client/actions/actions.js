@@ -5,6 +5,7 @@ import {
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	REQUEST_DATASET,
+	REQUEST_DATASET_CACHED,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
 	REQUEST_GENE,
@@ -88,16 +89,23 @@ function requestDataSet(dataSet) {
 	};
 }
 
+function requestDataSetCached(dataSet) {
+	return {
+		type: REQUEST_DATASET_CACHED,
+		dataSet: dataSet,
+	};
+}
+
 function requestDataSetFailed() {
 	return {
 		type: REQUEST_DATASET_FAILED,
 	};
 }
 
-function receiveDataSet(dataset) {
+function receiveDataSet(dataSet) {
 	return {
 		type: RECEIVE_DATASET,
-		dataset,
+		dataSet,
 	};
 }
 
@@ -107,67 +115,61 @@ function receiveDataSet(dataset) {
 
 export function fetchDataSet(data) {
 	const { project, dataset, dataSets } = data;
-	return (dispatch) => {
-		// First, make known the fact that the request has been started
-		dispatch(requestDataSet(dataset));
-		// Second, see if the dataset already exists in the store
-		// If so, return it. If not, perform the request (async)
-		let requestedDataSet = {};
-		requestedDataSet[dataset] = dataSets[dataset];
-		if (requestedDataSet[dataset] !== undefined) {
-			return dispatch(receiveDataSet(requestedDataSet));
-		} else {
+	// no need to fetch a cached dataset
+	if (dataSets[dataset] !== undefined) {
+		return (dispatch) => {
+			dispatch(requestDataSetCached(dataset));
+		};
+	} else {
+		return (dispatch) => {
+			// First, make known the fact that the request has been started
+			dispatch(requestDataSet(dataset));
+			// Second, see if the dataset already exists in the store
+			// If so, return it. If not, perform the request (async)
 			return (fetch(`/loom/${project}/${dataset}`)
 				.then((response) => { return response.json(); })
 				.then((ds) => {
-					// Once the response comes in, dispatch an action to provide the data
-					// Also, dispatch some actions to set required properties on the subviews
-					// TODO: move to react-router state and
-					// replace with necessary router.push() logic
-					const ra = ds.rowAttrs[0];
-					const ca = ds.colAttrs[0];
-					dispatch({ type: 'SET_GENESCAPE_PROPS', xCoordinate: ra, yCoordinate: ra, colorAttr: ra });
-					dispatch({ type: 'SET_HEATMAP_PROPS', rowAttr: ra, colAttr: ca });
-
 					// This goes last, to ensure the above defaults are set when the views are rendered
-					requestedDataSet[dataset] = ds;
-					dispatch(receiveDataSet(requestedDataSet));
+					dispatch(receiveDataSet(ds, dataset));
 				})
 				.catch((err) => {
 					// Or, if it failed, dispatch an action to set the error flag
 					console.log(err);
 					dispatch(requestDataSetFailed(dataset));
 				}));
-		}
-	};
+		};
+	}
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
-// Fetch a row of values for a single gene
+// Fetch a row of values for a single gene for a dataset
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestGene(gene) {
+function requestGene(gene, datasetName) {
 	return {
 		type: REQUEST_GENE,
-		gene: gene,
+		gene,
+		datasetName,
 	};
 }
 
-function requestGeneFailed() {
+function requestGeneFailed(gene, datasetName) {
 	return {
 		type: REQUEST_GENE_FAILED,
+		gene,
+		datasetName,
 	};
 }
 
-function receiveGene(gene, list) {
+function receiveGene(gene, datasetName, list) {
 	return {
 		type: RECEIVE_GENE,
-		gene: gene,
-		data: list,
+		fetchedGenes: { [gene]: list },
+		datasetName,
 		receivedAt: Date.now(),
 	};
 }
@@ -176,27 +178,28 @@ function receiveGene(gene, list) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchGene(dataSet, genes, cache) {
+export function fetchGene(dataSet, genes) {
 	const rowAttrs = dataSet.rowAttrs;
 	return (dispatch) => {
 		if (rowAttrs.Gene === undefined) { return; }
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
 			const row = rowAttrs.Gene.indexOf(gene);
-			if (cache.hasOwnProperty(gene) || row === -1) { continue; }
+			// If gene is already cached or not part of the dataset, skip
+			if (dataSet.fetchedGenes.hasOwnProperty(gene) || row === -1) { continue; }
 			// First, make known the fact that the request has been started
-			dispatch(requestGene(gene));
+			dispatch(requestGene(gene, dataSet.dataset));
 			// Second, perform the request (async)
 			fetch(`/loom/${dataSet.project}/${dataSet.filename}/row/${row}`)
 				.then((response) => { return response.json(); })
 				.then((json) => {
 					// Third, once the response comes in, dispatch an action to provide the data
-					dispatch(receiveGene(gene, json));
+					dispatch(receiveGene(gene, dataSet.dataset, json));
 				})
 				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {
 					console.log(err);
-					dispatch(requestGeneFailed());
+					dispatch(requestGeneFailed(gene, dataSet.dataset));
 				});
 		}
 	};
