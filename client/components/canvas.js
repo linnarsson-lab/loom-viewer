@@ -97,7 +97,7 @@ class CanvasEnhancer extends React.Component {
 		// and inconsistent across browsers. To make it dependent on
 		// the layout of the parent container, we only render it after
 		// mounting, after CSS layouting is done.
-		let canvas = this.state ? (
+		const canvas = this.state ? (
 			<canvas
 				ref='canvas'
 				width={this.state.width}
