@@ -1,5 +1,5 @@
 import React, {PropTypes} from 'react';
-import { debounce } from 'lodash';
+import { RemountOnResize } from './remount-on-resize';
 
 // A simple helper component, wrapping retina logic for canvas and
 // auto-resizing the canvas to fill its parent container.
@@ -9,26 +9,10 @@ import { debounce } from 'lodash';
 // Whenever this component updates it will call this paint function
 // to draw on the canvas. For convenience, pixel dimensions are stored
 // in context.width, context.height and contex.pixelRatio.
-export class Canvas extends React.Component {
+class CanvasEnhancer extends React.Component {
 	constructor(props) {
 		super(props);
-
-		this.fitToZoomAndPixelRatio = this.fitToZoomAndPixelRatio.bind(this);
 		this.draw = this.draw.bind(this);
-
-		this.state = {
-			width: 1,
-			height: 1,
-			ratio: window.devicePixelRatio || 1,
-			resizing: true,
-		};
-
-		const resize = () => { this.setState({ resizing: true }); };
-		// Because the resize event can fire very often, we
-		// add a debouncer to minimise pointless
-		// (unmount, resize, remount)-ing of the canvas.
-		this.setResize = debounce(resize, 200);
-
 
 		// Attach helper functions to context prototype
 		if (CanvasRenderingContext2D.prototype.circle === undefined) {
@@ -67,32 +51,11 @@ export class Canvas extends React.Component {
 		}
 	}
 
-	componentDidMount() {
-		this.fitToZoomAndPixelRatio();
-		window.addEventListener('resize', this.setResize);
-	}
-
-	componentWillUnmount() {
-		window.removeEventListener('resize', this.setResize);
-	}
-
-	componentDidUpdate(prevProps, prevState) {
-		// if resizing was not true both before the update,
-		// but is now, then the canvas has been unmounted
-		if (!prevState.resizing && this.state.resizing) {
-			this.fitToZoomAndPixelRatio();
-		}
-
-		if (!this.state.resizing && !prevProps.loop) {
-			this.draw();
-		}
-	}
-
 	// Make sure we get a sharp canvas on Retina displays
 	// as well as adjust the canvas on zoomed browsers
 	// Does NOT scale; painter functions decide how to handle
 	// window.devicePixelRatio on a case-by-case basis
-	fitToZoomAndPixelRatio() {
+	componentDidMount() {
 		const view = this.refs.view;
 		const ratio = window.devicePixelRatio || 1;
 		const width = (view.clientWidth * ratio) | 0;
@@ -101,11 +64,18 @@ export class Canvas extends React.Component {
 		this.setState({ width, height, ratio, resizing });
 	}
 
+	componentDidUpdate(prevProps) {
+		if (!prevProps.loop) {
+			this.draw();
+		}
+	}
+
+
 	// Relies on a ref to a DOM element, so only call
 	// when canvas element has been rendered!
 	draw() {
-		const { width, height, ratio, resizing } = this.state;
-		if (!resizing) {
+		if (this.state) {
+			const { width, height, ratio } = this.state;
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');
 			// store width, height and ratio in context for paint functions
@@ -115,8 +85,8 @@ export class Canvas extends React.Component {
 			// should we clear the canvas every redraw?
 			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
 			this.props.paint(context);
-			// is the provided paint function an animation? (not entirely sure about this API)
 		}
+		// is the provided paint function an animation? (not entirely sure about this API)
 		if (this.props.loop) {
 			window.requestAnimationFrame(this.draw);
 		}
@@ -125,12 +95,10 @@ export class Canvas extends React.Component {
 	render() {
 		// The way canvas interacts with CSS layouting is a bit buggy
 		// and inconsistent across browsers. To make it dependent on
-		// the layout of the parent container, we completely remove
-		// the node when resizing. After calculations are done,
-		// we mount it again at the proper dimensions.
-		let canvas = null;
-		if (!this.state.resizing) {
-			canvas = (<canvas
+		// the layout of the parent container, we only render it after
+		// mounting, after CSS layouting is done.
+		let canvas = this.state ? (
+			<canvas
 				ref='canvas'
 				width={this.state.width}
 				height={this.state.height}
@@ -138,8 +106,7 @@ export class Canvas extends React.Component {
 					width: '100%',
 					height: '100%',
 				}} />
-			);
-		}
+		) : null;
 
 		return (
 			<div
@@ -151,6 +118,31 @@ export class Canvas extends React.Component {
 		);
 	}
 }
+
+CanvasEnhancer.propTypes = {
+	paint: PropTypes.func.isRequired,
+	clear: PropTypes.bool,
+	loop: PropTypes.bool,
+	className: PropTypes.string,
+	style: PropTypes.object,
+};
+
+export const Canvas = function (props) {
+	return (
+		<RemountOnResize
+			/* Since canvas interferes with CSS layouting,
+			we unmount and remount it on resize events */
+			>
+			<CanvasEnhancer
+				paint={props.paint}
+				clear={props.clear}
+				loop={props.loop}
+				className={props.className}
+				style={props.style}
+				/>
+		</RemountOnResize>
+	);
+};
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
