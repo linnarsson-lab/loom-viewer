@@ -46,10 +46,12 @@ const SparklineComponent = function (props) {
 					compareArray[a] > compareArray[b] ? 1 : 0;
 			}
 		);
-		// Finally, order the column attribute values by the determined indices
+		// Finally, order the column attribute values by the determined indices.
 		let temp = new Array(colData.length);
 		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
 		colData = temp;
+	} else {
+		colData = colData.slice(0);
 	}
 
 	let selectedGenesList = sparklineState.genes.trim().split(/[ ,\r\n]+/);
