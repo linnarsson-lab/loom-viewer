@@ -42,10 +42,8 @@ class HeatmapMapComponent extends Component {
 			const colGeneSelected = (heatmapState.colAttr === '(gene)') &&
 				fetchedGenes.hasOwnProperty(heatmapState.colGene);
 
-			const colData = colGeneSelected ?
-				fetchedGenes[heatmapState.colGene]
-				:
-				dataSet.colAttrs[heatmapState.colAttr];
+			const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene]
+				: dataSet.colAttrs[heatmapState.colAttr];
 
 			let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
 			if (heatmapState.rowAttr === '(gene positions)') {
@@ -71,19 +69,14 @@ class HeatmapMapComponent extends Component {
 					<div className='view'>
 						<div style={heatmapSize}>
 							<Heatmap
-								transcriptome={dataSet.transcriptome}
-								project={dataSet.project}
-								dataset={dataSet.dataset}
-								shape={dataSet.shape}
-								zoomRange={dataSet.zoomRange}
-								fullZoomWidth={dataSet.fullZoomWidth}
-								fullZoomHeight={dataSet.fullZoomHeight}
+								dataSet={dataSet}
 								onViewChanged={
-									(dataBounds) => {
+									(val) => {
+										const { dataBounds, zoom, center } = val;
 										dispatch({
 											type: 'SET_HEATMAP_PROPS',
 											datasetName: dataSet.dataset,
-											heatmapState: { dataBounds },
+											heatmapState: { dataBounds, zoom, center },
 										});
 									}
 								} />
