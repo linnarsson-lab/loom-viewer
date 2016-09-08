@@ -6,6 +6,7 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 import { SET_LANDSCAPE_PROPS } from '../actions/actionTypes';
 
+import JSURL from 'jsurl';
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
@@ -53,13 +54,14 @@ LandscapeComponent.propTypes = {
 class LandscapeStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataSet } = this.props;
-		if (!dataSet.landscapeState) {
-			// Initialise landscapeState for this dataset
-			dispatch({
-				type: SET_LANDSCAPE_PROPS,
-				datasetName: dataSet.dataset,
-				landscapeState: {
+		const { dispatch, dataSet, viewsettings } = this.props;
+
+		const landscapeState = viewsettings ?
+			JSURL.parse(viewsettings) :
+			(dataSet.landscapeState ?
+				dataSet.landscapeState
+				:
+				({ // Initialise landscapeState for this dataset
 					xCoordinate: '_tSNE1',
 					xGene: '',
 					yCoordinate: '_tSNE2',
@@ -67,9 +69,16 @@ class LandscapeStateInitialiser extends Component {
 					colorAttr: 'CellID',
 					colorMode: 'Heatmap',
 					colorGene: '',
-				},
-			});
-		}
+				})
+			);
+
+		// We dispatch even in case of existing state,
+		// to synchronise the view-settings URL
+		dispatch({
+			type: SET_LANDSCAPE_PROPS,
+			datasetName: dataSet.dataset,
+			landscapeState,
+		});
 	}
 
 	render() {
@@ -87,11 +96,12 @@ class LandscapeStateInitialiser extends Component {
 LandscapeStateInitialiser.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	viewsettings: PropTypes.string,
 };
 
 const LandscapeDatasetFetcher = function (props) {
 	const { dispatch, data, params } = props;
-	const { dataset, project } = params;
+	const { dataset, project, viewsettings } = params;
 	const dataSet = data.dataSets[dataset];
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
@@ -102,7 +112,8 @@ const LandscapeDatasetFetcher = function (props) {
 		:
 		<LandscapeStateInitialiser
 			dataSet={dataSet}
-			dispatch={dispatch} />
+			dispatch={dispatch}
+			viewsettings={viewsettings} />
 	);
 };
 

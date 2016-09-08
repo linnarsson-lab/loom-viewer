@@ -10,6 +10,8 @@ import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
 
 import * as _ from 'lodash';
 
+import JSURL from 'jsurl';
+
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
 
@@ -143,13 +145,14 @@ HeatmapComponent.propTypes = {
 class HeatmapStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataSet } = this.props;
-		if (!dataSet.heatmapState) {
-			// Initialise heatmapState for this dataset
-			dispatch({
-				type: SET_HEATMAP_PROPS,
-				datasetName: dataSet.dataset,
-				heatmapState: {
+		const { dispatch, dataSet, viewsettings } = this.props;
+
+		const heatmapState = viewsettings ?
+			JSURL.parse(viewsettings) :
+			(dataSet.heatmapState ?
+				dataSet.heatmapState
+				:
+				({ // Initialise heatmapState for this dataset
 					dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
 					rowAttr: dataSet.rowAttrs[0],
 					rowMode: 'Text',
@@ -157,9 +160,16 @@ class HeatmapStateInitialiser extends Component {
 					colAttr: dataSet.colAttrs[0],
 					colMode: 'Text',
 					colGene: '',
-				},
-			});
-		}
+				})
+			);
+
+		// We dispatch even in case of existing state,
+		// to synchronise the view-settings URL
+		dispatch({
+			type: SET_HEATMAP_PROPS,
+			datasetName: dataSet.dataset,
+			heatmapState,
+		});
 	}
 
 	render() {
@@ -176,12 +186,13 @@ class HeatmapStateInitialiser extends Component {
 HeatmapStateInitialiser.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	viewsettings: PropTypes.string,
 };
 
 
 const HeatmapDatasetFetcher = function (props) {
 	const { dispatch, data, params } = props;
-	const { dataset, project } = params;
+	const { dataset, project, viewsettings } = params;
 	const dataSet = data.dataSets[dataset];
 	return (dataSet === undefined ? (
 		<FetchDatasetComponent
@@ -191,7 +202,8 @@ const HeatmapDatasetFetcher = function (props) {
 			project={project} />
 	) : <HeatmapStateInitialiser
 			dispatch={dispatch}
-			dataSet={dataSet} />
+			dataSet={dataSet}
+			viewsettings={viewsettings} />
 	);
 };
 

@@ -9,7 +9,7 @@ export const NavbarView = function (props) {
 	if (dataset) {
 		viewLinks = [ 'heatmap', 'sparklines', 'cells', 'genes'].map(
 			(view) => {
-				const link = `/dataset/${view}/${project}/${dataset}${viewSettingsURL}`;
+				const link = `/dataset/${view}/${project}/${dataset}`;
 				return(
 					<LinkContainer to={link} key={view}>
 						<NavItem eventKey={view}>

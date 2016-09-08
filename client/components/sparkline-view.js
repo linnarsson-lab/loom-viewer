@@ -8,6 +8,7 @@ import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
 
 import * as _ from 'lodash';
 
+import JSURL from 'jsurl';
 
 const SparklineComponent = function (props) {
 	const { dataSet, dispatch } = props;
@@ -156,22 +157,30 @@ SparklineComponent.propTypes = {
 class SparklineStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataSet } = this.props;
-		if (!dataSet.sparklineState) {
-			// Initialise sparklineState for this dataset
-			dispatch({
-				type: SET_SPARKLINE_PROPS,
-				datasetName: dataSet.dataset,
-				sparklineState: {
-					colAttr: 'Class',
-					colMode: 'Categorical',
+		const { dispatch, dataSet, viewsettings } = this.props;
+
+		const sparklineState = viewsettings ?
+			JSURL.parse(viewsettings) :
+			(dataSet.sparklineState ?
+				dataSet.sparklineState
+				:
+				({ // Initialise sparklineState for this dataset
 					orderByAttr: '(original order)',	// meaning, original order
 					orderByGene: '',
+					colAttr: dataSet.colAttrs[0],
+					colMode: 'Categorical',
 					geneMode: 'Bars',
 					genes: '',
-				},
-			});
-		}
+				})
+			);
+
+		// We dispatch even in case of existing state,
+		// to synchronise the view-settings URL
+		dispatch({
+			type: SET_SPARKLINE_PROPS,
+			datasetName: dataSet.dataset,
+			sparklineState,
+		});
 	}
 
 	render() {
@@ -188,12 +197,13 @@ class SparklineStateInitialiser extends Component {
 SparklineStateInitialiser.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	viewsettings: PropTypes.string,
 };
 
 
 const SparklineDatasetFetcher = function (props) {
 	const { dispatch, data, params } = props;
-	const { dataset, project } = params;
+	const { dataset, project, viewsettings } = params;
 	const dataSet = data.dataSets[dataset];
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
@@ -204,7 +214,8 @@ const SparklineDatasetFetcher = function (props) {
 		:
 		<SparklineStateInitialiser
 			dataSet={dataSet}
-			dispatch={dispatch} />
+			dispatch={dispatch}
+			viewsettings={viewsettings} />
 
 	);
 };

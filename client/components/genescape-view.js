@@ -6,6 +6,8 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 import { SET_GENESCAPE_PROPS } from '../actions/actionTypes';
 
+import JSURL from 'jsurl';
+
 const GenescapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { genescapeState } = dataSet;
@@ -42,20 +44,28 @@ GenescapeComponent.propTypes = {
 class GenescapeStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataSet } = this.props;
-		if (!dataSet.genescapeState) {
-			// Initialise genescapeState for this dataset
-			dispatch({
-				type: SET_GENESCAPE_PROPS,
-				datasetName: dataSet.dataset,
-				genescapeState: {
+		const { dispatch, dataSet, viewsettings } = this.props;
+
+		const genescapeState = viewsettings ?
+			JSURL.parse(viewsettings) :
+			(dataSet.genescapeState ?
+				dataSet.genescapeState
+				:
+				({ // Initialise genescapeState for this dataset
 					xCoordinate: '_tSNE1',
 					yCoordinate: '_tSNE2',
 					colorAttr: dataSet.rowAttrs[0],
 					colorMode: 'Heatmap',
-				},
-			});
-		}
+				})
+			);
+
+		// We dispatch even in case of existing state,
+		// to synchronise the view-settings URL
+		dispatch({
+			type: SET_GENESCAPE_PROPS,
+			datasetName: dataSet.dataset,
+			genescapeState,
+		});
 	}
 
 	render() {
@@ -72,11 +82,12 @@ class GenescapeStateInitialiser extends Component {
 GenescapeStateInitialiser.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	viewsettings: PropTypes.string,
 };
 
 const GenescapeDatasetFetcher = function (props) {
 	const { dispatch, data, params } = props;
-	const { dataset, project } = params;
+	const { dataset, project, viewsettings } = params;
 	const dataSet = data.dataSets[dataset];
 	return (dataSet === undefined ?
 		<FetchDatasetComponent
@@ -87,7 +98,8 @@ const GenescapeDatasetFetcher = function (props) {
 		:
 		<GenescapeStateInitialiser
 			dataSet={dataSet}
-			dispatch={dispatch} />
+			dispatch={dispatch}
+			viewsettings={viewsettings} />
 	);
 };
 

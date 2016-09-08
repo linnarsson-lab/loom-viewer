@@ -1,6 +1,5 @@
 // See http://rackt.org/redux/docs/basics/Reducers.html
 import { combineReducers } from 'redux';
-import { routerReducer } from 'react-router-redux';
 
 import {
 	REQUEST_PROJECTS,
@@ -32,6 +31,34 @@ function mergeDataSetState(state, action, stateName) {
 	const dataSet = merge(prevDataSet, { [stateName]: newState });
 	const dataSets = merge(state.dataSets, { [action.datasetName]: dataSet });
 	return merge(state, { dataSets });
+}
+
+// used for writing view state to the browser URL
+import { browserHistory } from 'react-router';
+import JSURL from 'jsurl';
+
+function setViewStateURL(state, action, stateName){
+	let view = '';
+	switch(stateName){
+	case 'heatmapState':
+		view = 'heatmap';
+		break;
+	case 'sparklineState':
+		view = 'sparklines';
+		break;
+	case 'landscapeState':
+		view = 'cells';
+		break;
+	case 'genescapeState':
+		view = 'genes';
+		break;
+	}
+	const datasetName = action.datasetName;
+	const dataSet = state.dataSets[datasetName];
+	const project = dataSet.project;
+	const viewState = merge(dataSet[stateName], action[stateName]);
+	const viewSettings = JSURL.stringify(viewState);
+	browserHistory.replace(`/dataset/${view}/${project}/${datasetName}/${viewSettings}`);
 }
 
 // Keeps track of projects and datasets, including managing asynchronous fetching
@@ -93,15 +120,19 @@ function data(state = initialData, action) {
 		//===VIEW ACTIONS===
 
 	case SET_HEATMAP_PROPS:
+		setViewStateURL(state, action, 'heatmapState');
 		return mergeDataSetState(state, action, 'heatmapState');
 
 	case SET_SPARKLINE_PROPS:
+		setViewStateURL(state, action, 'sparklineState');
 		return mergeDataSetState(state, action, 'sparklineState');
 
 	case SET_LANDSCAPE_PROPS:
+		setViewStateURL(state, action, 'landscapeState');
 		return mergeDataSetState(state, action, 'landscapeState');
 
 	case SET_GENESCAPE_PROPS:
+		setViewStateURL(state, action, 'genescapeState');
 		return mergeDataSetState(state, action, 'genescapeState');
 
 	default:
@@ -109,9 +140,5 @@ function data(state = initialData, action) {
 	}
 }
 
-const loomAppReducer = combineReducers({
-	data,
-	routing: routerReducer,
-});
-
+const loomAppReducer = combineReducers({ data });
 export default loomAppReducer;
