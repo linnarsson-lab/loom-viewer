@@ -31,6 +31,8 @@ export const LandscapeSidepanel = function (props) {
 
 	const colorAttrHC = handleChangeFactory('colorAttr');
 	const colorGeneHC = handleChangeFactory('colorGene');
+	const filterZeros = handleChangeFactory('filterZeros');
+	const filterZerosHC = () => { filterZeros(!landscapeState.filterZeros); };
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
 	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
@@ -121,7 +123,15 @@ export const LandscapeSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={colorGeneHC}
-							/> : null  }
+							value={landscapeState.colorGene}
+							/>
+						: null }
+					<Button
+						bsStyle={ landscapeState.filterZeros ? 'success' : 'default' }
+						onClick={filterZerosHC}
+						>
+						Filter zeros
+					</Button>
 				</ListGroupItem>
 				<ListGroupItem>
 					<ButtonGroup justified>
@@ -154,7 +164,7 @@ export const LandscapeSidepanel = function (props) {
 					</ButtonGroup>
 				</ListGroupItem>
 			</ListGroup>
-		</Panel>
+		</Panel >
 	);
 };
 

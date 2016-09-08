@@ -11,18 +11,26 @@ import JSURL from 'jsurl';
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { fetchedGenes, landscapeState } = dataSet;
-	const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
+	const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
 
 	const makeData = (attr, gene) => {
-		if (attr === '(gene)' && fetchedGenes[gene]) {
-			return fetchedGenes[gene];
-		}
-		return dataSet.colAttrs[attr];
+		const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
+			fetchedGenes[gene] : dataSet.colAttrs[attr]);
+		// don't mutate data from the redux store
+		return data ? data.slice(0) : null;
 	};
 
-	const color = makeData(colorAttr, colorGene);
-	const x = makeData(xCoordinate, xGene);
-	const y = makeData(yCoordinate, yGene);
+	let color = makeData(colorAttr, colorGene);
+	let x = makeData(xCoordinate, xGene);
+	let y = makeData(yCoordinate, yGene);
+	if (filterZeros && color) {
+		const filterData = color.slice(0);
+		const data = (v, i) => { return filterData[i]; };
+		color = color.filter(data);
+		x = x ? x.filter(data) : null;
+		y = y ? y.filter(data) : null;
+	}
+
 	return (
 		<div className='view'>
 			<LandscapeSidepanel

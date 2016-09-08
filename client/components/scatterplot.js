@@ -6,9 +6,10 @@ import { nMostFrequent } from '../js/util';
 import { Canvas } from './canvas';
 
 // Crude normal curve approximation by taking the average of 8 random values
+// random value between [-1, 1)
 function rndNorm() {
 	return ((Math.random() + Math.random() + Math.random() + Math.random() +
-	Math.random() + Math.random() + Math.random() + Math.random()) - 4)*0.25;
+		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.25;
 }
 
 export class Scatterplot extends React.Component {
@@ -20,9 +21,9 @@ export class Scatterplot extends React.Component {
 
 
 	paint(context) {
-		if (this.props.x === undefined ||
-			this.props.y === undefined ||
-			this.props.color === undefined) {
+		if (!(Array.isArray(this.props.x) &&
+			Array.isArray(this.props.y) &&
+			Array.isArray(this.props.color))) {
 			return;
 		}
 		let { width, height, pixelRatio } = context;
@@ -40,37 +41,46 @@ export class Scatterplot extends React.Component {
 		let x = this.props.x.slice(0);
 		let y = this.props.y.slice(0);
 
+		// Scale of data
+		let xmin = Math.min(...x);
+		let xmax = Math.max(...x);
+		let ymin = Math.min(...y);
+		let ymax = Math.max(...y);
+
 		// Log transform if requested
 		if (this.props.logScaleX && this.props.logScaleY) {
-			// if both log scales are required, jitter in a
-			// circle around the data, instead of a box
+			// if both axes are log scales, jitter in a
+			// circle around the data instead of a box
 			for (let i = 0; i < x.length; i++) {
 				const r = rndNorm();
 				const t = Math.PI * 2 * Math.random();
-				x[i] = Math.log2(2 + x[i]) + r*Math.sin(t);
-				y[i] = Math.log2(2 + y[i]) + r*Math.cos(t);
+				x[i] = Math.log2(2 + x[i]) + r * Math.sin(t);
+				y[i] = Math.log2(2 + y[i]) + r * Math.cos(t);
 			}
+			xmin = Math.log2(2 + xmin) - 1;
+			xmax = Math.log2(2 + xmax) + 1;
+			ymin = Math.log2(2 + ymin) - 1;
+			ymax = Math.log2(2 + ymax) + 1;
 		} else {
 			if (this.props.logScaleX) {
 				for (let i = 0; i < x.length; i++) {
 					x[i] = Math.log2(2 + x[i]) + rndNorm();
 				}
+				xmin = Math.log2(1 + xmin) - 1;
+				xmax = Math.log2(1 + xmax) + 1;
 			}
 			if (this.props.logScaleY) {
 				for (let i = 0; i < y.length; i++) {
 					y[i] = Math.log2(2 + y[i]) + rndNorm();
 				}
+				ymin = Math.log2(1 + ymin) - 1;
+				ymax = Math.log2(1 + ymax) + 1;
 			}
 		}
 
 		// Suitable radius of the markers
 		const radius = Math.max(3, Math.sqrt(x.length) / 60) * pixelRatio;
 
-		// Scale of data
-		const xmin = Math.min(...x);
-		const xmax = Math.max(...x);
-		const ymin = Math.min(...y);
-		const ymax = Math.max(...y);
 
 		// Scale to screen dimensions
 		for (let i = 0; i < x.length; i++) {
@@ -87,7 +97,7 @@ export class Scatterplot extends React.Component {
 		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
-		if (!color.length) {
+		if (Array.isArray(color) === false) {
 			color = Array.from({ length: x.length }, () => { return 'grey'; });
 		} else {
 			// Do we need to categorize the color scale?
@@ -189,17 +199,20 @@ export class Scatterplot extends React.Component {
 
 	render() {
 		return (
-			<Canvas paint={this.paint} style={this.props.style} />
+			<Canvas
+				paint={this.paint}
+				style={this.props.style}
+				clear />
 		);
 	}
 }
 
 Scatterplot.propTypes = {
-	x: PropTypes.arrayOf(PropTypes.number),
-	y: PropTypes.arrayOf(PropTypes.number),
+	x: PropTypes.arrayOf(PropTypes.number).isRequired,
+	y: PropTypes.arrayOf(PropTypes.number).isRequired,
 	color: PropTypes.arrayOf(
 		PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-	),
+	).isRequired,
 	colorMode: PropTypes.string.isRequired,
 	logScaleColor: PropTypes.bool.isRequired,
 	logScaleX: PropTypes.bool.isRequired,
