@@ -24,12 +24,27 @@ export const HeatmapSidepanel = function (props) {
 	const colAttrHC = handleChangeFactory('colAttr');
 	const colModeHC = handleChangeFactory('colMode');
 	const colGeneHC = handleChangeFactory('colGene');
+	const fetchColGene = heatmapState.colAttr === '(gene)' ? (
+		<FetchGeneComponent
+			dataSet={dataSet}
+			dispatch={dispatch}
+			onChange={colGeneHC}
+			value={heatmapState.colGene} />) : null;
 
 	let rowAttrOptions = Object.keys(dataSet.rowAttrs);
 	rowAttrOptions.sort();
 	rowAttrOptions.push('(gene positions)');
 	const rowAttrHC = handleChangeFactory('rowAttr');
 	const rowModeHC = handleChangeFactory('rowMode');
+	const rowGeneHC = handleChangeFactory('rowGene');
+
+	const fetchRowGene = (heatmapState.rowAttr === '(gene positions)') ? (
+		<FetchGeneComponent
+			dataSet={dataSet}
+			dispatch={dispatch}
+			onChange={rowGeneHC}
+			value={heatmapState.rowGene}
+			multi clearable />) : null;
 
 	let optionNames = ['Text', 'Bars', 'Heatmap', 'Categorical'];
 
@@ -48,11 +63,7 @@ export const HeatmapSidepanel = function (props) {
 						options={colAttrOptions}
 						onChange={colAttrHC}
 						/>
-					{heatmapState.colAttr === '(gene)' ?
-						<FetchGeneComponent
-							dataSet={dataSet}
-							dispatch={dispatch}
-							onChange={colGeneHC} /> : null }
+					{fetchColGene}
 					<DropdownMenu
 						buttonLabel={'Show cell attribute as'}
 						buttonName={heatmapState.colMode}
@@ -67,22 +78,7 @@ export const HeatmapSidepanel = function (props) {
 						options={rowAttrOptions}
 						onChange={rowAttrHC}
 						/>
-					{
-						(heatmapState.rowAttr === '(gene positions)') ?
-							<textarea className='form-control' placeholder='Genes'
-								value={heatmapState.rowGenes}
-								onChange={
-									(event) => {
-										dispatch({
-											type: 'SET_HEATMAP_PROPS',
-											datasetName: dataSet.dataset,
-											heatmapState: { rowGenes: event.target.value },
-										});
-									}
-								} />
-							:
-							null
-					}
+					{fetchRowGene}
 					<DropdownMenu
 						buttonLabel={'Display gene attribute as'}
 						buttonName={heatmapState.rowMode}

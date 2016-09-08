@@ -2,27 +2,9 @@ import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
-import { fetchGene } from '../actions/actions.js';
-import { debounce } from 'lodash';
 
 export const SparklineSidepanel = function (props) {
 	const { dispatch, sparklineState, dataSet } = props;
-
-	const dispatchFetchGenes = (genes) => {
-		dispatch(fetchGene(dataSet, genes));
-	};
-	// don't fire too often
-	const debouncedFetch = debounce(dispatchFetchGenes, 200);
-
-	const fetchShownGenes = (event) => {
-		dispatch({
-			type: 'SET_SPARKLINE_PROPS',
-			datasetName: dataSet.dataset,
-			sparklineState: { genes: event.target.value },
-		});
-		const genes = event.target.value.trim().split(/[ ,\r\n]+/);
-		debouncedFetch(genes);
-	};
 
 	const handleChangeFactory = (field) => {
 		return (value) => {
@@ -69,7 +51,8 @@ export const SparklineSidepanel = function (props) {
 						<FetchGeneComponent
 							dataSet={dataSet}
 							dispatch={dispatch}
-							onChange={orderByGeneHC} /> : null }
+							onChange={orderByGeneHC}
+							value={sparklineState.orderByGene} /> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<DropdownMenu
@@ -86,16 +69,11 @@ export const SparklineSidepanel = function (props) {
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Show genes</label>
-					<textarea
-						className='form-control'
-						rows='5'
-						value={sparklineState.genes}
-						onChange={fetchShownGenes}>
-					</textarea>
 					<FetchGeneComponent
 						dataSet={dataSet}
 						dispatch={dispatch}
 						onChange={genesHC}
+						value={sparklineState.genes}
 						multi
 						clearable
 						/>

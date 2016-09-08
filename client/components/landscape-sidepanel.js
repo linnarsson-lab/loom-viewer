@@ -91,6 +91,7 @@ export const LandscapeSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={xGeneHC}
+							value={landscapeState.xGene}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
@@ -105,6 +106,7 @@ export const LandscapeSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={yGeneHC}
+							value={landscapeState.yGene}
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>

@@ -41,7 +41,7 @@ const SparklineComponent = function (props) {
 
 	// Because not all browsers use a stable algorithm,
 	// we force stability with this trick:
-	// http://blog.vjeux.com/2010/javascript/javascript-sorting-table.html
+	// http://stackoverflow.com/a/2085225
 	// This is important to maintain a consistent look across browsers.
 	if (compareArray) {
 		indices = indices.slice(0).sort((a, b) => {

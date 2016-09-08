@@ -9,8 +9,24 @@ import createFilterOptions from 'react-select-fast-filter-options';
 export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);
-		this.state = this.createOptions(this.props.dataSet.rowAttrs.Gene);
 		this.handleChange = this.handleChange.bind(this);
+	}
+
+	componentWillMount(){
+		this.setState(this.createOptions(this.props.dataSet.rowAttrs.Gene));
+		if (this.props.value) {
+			let value = null;
+			if (this.props.multi) {
+				const genes = this.props.value.trim().split(/[ ,\r\n]+/);
+				value = new Array(genes.length);
+				for (let i = 0; i < genes.length; i++) {
+					value[i] = { value: genes[i], label: genes[i] };
+				}
+			} else {
+				value = { value: this.props.value, label: this.props.value };
+			}
+			this.handleChange(value);
+		}
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -83,6 +99,7 @@ export class FetchGeneComponent extends Component {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
+	value: PropTypes.string,
 	onChange: PropTypes.func,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
