@@ -25,10 +25,13 @@ function merge(...args) {
 
 // pattern used for merging various view states
 // and fetchedGenes with their respective datasets
-function mergeDataSetState(state, action, stateName) {
+function mergeDataSetState(state, action, ...stateNames) {
 	const prevDataSet = state.dataSets[action.datasetName];
-	const newState = merge(prevDataSet[stateName], action[stateName] );
-	const dataSet = merge(prevDataSet, { [stateName]: newState });
+	const newDataSets = stateNames.map((name) => {
+		const newState = merge(prevDataSet[name], action[name]);
+		return { [name]: newState };
+	});
+	const dataSet = merge(prevDataSet, ...newDataSets);
 	const dataSets = merge(state.dataSets, { [action.datasetName]: dataSet });
 	return merge(state, { dataSets });
 }
@@ -97,7 +100,7 @@ function data(state = initialData, action) {
 
 	case RECEIVE_DATASET:
 		// initialise empty fetchedGenes cache
-		const dataSet = merge(action.dataSet, { fetchedGenes: {} });
+		const dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
 		return merge(state, {
 			isFetchingData: false,
 			hasDataset: true,
@@ -109,13 +112,15 @@ function data(state = initialData, action) {
 
 		//===GENE ACTIONS===
 	case REQUEST_GENE:
-		return merge(state, { isFetchingData: true, errorFetchingData: false });
+		//return merge(state, { isFetchingData: true, errorFetchingData: false });
+		return mergeDataSetState(state, action, 'fetchingGenes');
 
 	case RECEIVE_GENE:
-		return mergeDataSetState(state, action, 'fetchedGenes');
+		return mergeDataSetState(state, action, 'fetchingGenes', 'fetchedGenes');
 
 	case REQUEST_GENE_FAILED:
-		return merge(state, { isFetchingData: false, errorFetchingData: true });
+		//return merge(state, { isFetchingData: false, errorFetchingData: true });
+		return mergeDataSetState(state, action, 'fetchingGenes');
 
 		//===VIEW ACTIONS===
 

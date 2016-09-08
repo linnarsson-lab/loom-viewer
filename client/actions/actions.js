@@ -152,7 +152,7 @@ export function fetchDataSet(data) {
 function requestGene(gene, datasetName) {
 	return {
 		type: REQUEST_GENE,
-		gene,
+		fetchingGenes: { [gene]: true },
 		datasetName,
 	};
 }
@@ -160,7 +160,7 @@ function requestGene(gene, datasetName) {
 function requestGeneFailed(gene, datasetName) {
 	return {
 		type: REQUEST_GENE_FAILED,
-		gene,
+		fetchingGenes: { [gene]: false },
 		datasetName,
 	};
 }
@@ -168,6 +168,7 @@ function requestGeneFailed(gene, datasetName) {
 function receiveGene(gene, datasetName, list) {
 	return {
 		type: RECEIVE_GENE,
+		fetchingGenes: { [gene]: false },
 		fetchedGenes: { [gene]: list },
 		datasetName,
 		receivedAt: Date.now(),
@@ -185,8 +186,11 @@ export function fetchGene(dataSet, genes) {
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
 			const row = rowAttrs.Gene.indexOf(gene);
-			// If gene is already cached or not part of the dataset, skip
-			if (dataSet.fetchedGenes.hasOwnProperty(gene) || row === -1) { continue; }
+			// If gene is already cached, being fetched or
+			// not part of the dataset, skip fetching.
+			if (dataSet.fetchedGenes[gene] ||
+				dataSet.fetchingGenes[gene] ||
+				row === -1) { continue; }
 			// First, make known the fact that the request has been started
 			dispatch(requestGene(gene, dataSet.dataset));
 			// Second, perform the request (async)
