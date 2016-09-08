@@ -1,11 +1,11 @@
 import React from 'react';
 
 // import Router dependencies
-import { Router, Route, IndexRoute } from 'react-router';
+import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 
 // import Redux deps
 import { Provider } from 'react-redux';
-import { store, history } from '../store';
+import { store } from '../store';
 
 // Components
 import { NavbarView } from './navbar';
@@ -18,7 +18,7 @@ import { GenescapeView } from './genescape-view';
 // layout of the routes
 const Routes = (
 	<Provider store={store}>
-		<Router history={history}>
+		<Router history={browserHistory}>
 			<Route name='home' component={NavbarView}
 				path='/'>
 				<IndexRoute component={DataSetView} />
