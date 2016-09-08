@@ -39,13 +39,17 @@ const SparklineComponent = function (props) {
 		:
 		dataSet.colAttrs[sparklineState.orderByAttr];
 
+	// Because not all browsers use a stable algorithm,
+	// we force stability with this trick:
+	// http://blog.vjeux.com/2010/javascript/javascript-sorting-table.html
+	// This is important to maintain a consistent look across browsers.
 	if (compareArray) {
-		indices.sort(
-			(a, b) => {
-				return compareArray[a] < compareArray[b] ? -1 :
-					compareArray[a] > compareArray[b] ? 1 : 0;
-			}
-		);
+		indices = indices.slice(0).sort((a, b) => {
+			return compareArray[a] < compareArray[b] ? -1 :
+				compareArray[a] > compareArray[b] ? 1 : (
+					indices[a] < indices[b] ? -1 : 1
+				);
+		});
 		// Finally, order the column attribute values by the determined indices.
 		let temp = new Array(colData.length);
 		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
