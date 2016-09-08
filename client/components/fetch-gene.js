@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
-import { FormControl, FormGroup } from 'react-bootstrap';
+import { FormGroup } from 'react-bootstrap';
 import { fetchGene } from '../actions/actions.js';
-import { forEach, isEqual } from 'lodash';
+import { isEqual } from 'lodash';
 import Select from 'react-virtualized-select';
 import createFilterOptions from 'react-select-fast-filter-options';
 
