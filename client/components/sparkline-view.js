@@ -34,10 +34,23 @@ const SparklineComponent = function (props) {
 	// entry doesn't exist: if the string returned by orderByGene or
 	// orderByAttr is not present, compareArray will be undefined,
 	// and we don't re-arrange the indices.
-	const compareArray = (sparklineState.orderByAttr === '(gene)') ?
-		fetchedGenes[sparklineState.orderByGene]
+	const compareArray1 = (sparklineState.orderByAttr1 === '(gene)') ?
+		fetchedGenes[sparklineState.orderByGene1]
 		:
-		dataSet.colAttrs[sparklineState.orderByAttr];
+		dataSet.colAttrs[sparklineState.orderByAttr1];
+	const compareArray2 = (sparklineState.orderByAttr2 === '(gene)') ?
+		fetchedGenes[sparklineState.orderByGene2]
+		:
+		dataSet.colAttrs[sparklineState.orderByAttr3];
+	const compareArray3 = (sparklineState.orderByAttr3 === '(gene)') ?
+		fetchedGenes[sparklineState.orderByGene3]
+		:
+		dataSet.colAttrs[sparklineState.orderByAttr3];
+
+	let compareArray = [];
+	if (compareArray1) { compareArray.push(compareArray1); }
+	if (compareArray2) { compareArray.push(compareArray2); }
+	if (compareArray3) { compareArray.push(compareArray3); }
 
 	// Because not all browsers use a stable algorithm,
 	// we force stability with this trick:
@@ -45,10 +58,13 @@ const SparklineComponent = function (props) {
 	// This is important to maintain a consistent look across browsers.
 	if (compareArray) {
 		indices = indices.slice(0).sort((a, b) => {
-			return compareArray[a] < compareArray[b] ? -1 :
-				compareArray[a] > compareArray[b] ? 1 : (
-					indices[a] < indices[b] ? -1 : 1
-				);
+			let i = 0, v = 0;
+			while (v === 0 && i < compareArray.length){
+				v = compareArray[i][a] < compareArray[i][b] ? -1 :
+				compareArray[i][a] > compareArray[i][b] ? 1 : 0;
+				i++;
+			}
+			return v ? v : ( indices[a] < indices[b] ? -1 : 1 );
 		});
 		// Finally, order the column attribute values by the determined indices.
 		let temp = new Array(colData.length);
