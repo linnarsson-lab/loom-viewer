@@ -31,17 +31,19 @@ export class Scatterplot extends React.Component {
 		// Make room for color legend on right
 		width = (width - 200);
 
-		let x = this.props.x;
-		let y = this.props.y;
+		// avoid accidentally mutating source arrays
+		let x = this.props.x.slice(0);
+		let y = this.props.y.slice(0);
+
 		// Log transform if requested
 		if (this.props.logScaleX) {
 			for (let i = 0; i < x.length; i++) {
-				x[i] = Math.log2(x + Math.random() - 0.5);
+				x[i] = Math.log2(2 + x[i]) - 1;
 			}
 		}
 		if (this.props.logScaleY) {
 			for (let i = 0; i < y.length; i++) {
-				y[i] = Math.log2(y + Math.random() - 0.5);
+				y[i] = Math.log2(2 + y[i]) - 1;
 			}
 		}
 
@@ -54,26 +56,39 @@ export class Scatterplot extends React.Component {
 		const ymin = Math.min(...y);
 		const ymax = Math.max(...y);
 
+		// Scale to screen dimensions
+		if (this.props.logScaleX) {
+			for (let i = 0; i < x.length; i++) {
+				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+				// When using log-scale, jitter up to 3*radius for better visibility
+				x[i] = (xi + (Math.random() - 0.5) * 3*radius) | 0;
+			}
+		} else {
+			for (let i = 0; i < x.length; i++) {
+				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+				x[i] = xi | 0;
+			}
+		}
 
-		let xScaled = x.slice(0);
-		let yScaled = y.slice(0);
-		for (let i = 0; i < x.length; i++) {
-			const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-			xScaled[i] = xi | 0;
+		if (this.props.logScaleY) {
+			for (let i = 0; i < y.length; i++) {
+				// "1-" because Y needs to be flipped
+				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
+				y[i] = (yi + (Math.random() - 0.5) * 3*radius) | 0;
+			}
+		} else {
+			for (let i = 0; i < y.length; i++) {
+				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
+				y[i] = yi | 0;
+			}
 		}
-		for (let i = 0; i < y.length; i++) {
-			// "1-" because Y needs to be flipped
-			const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
-			yScaled[i] = yi | 0;
-		}
-		x = xScaled;
-		y = yScaled;
+
 
 		let color = this.props.color;
 		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
-		if (color === undefined || color.length === 0) {
+		if (!color.length) {
 			color = Array.from({ length: x.length }, () => { return 'grey'; });
 		} else {
 			// Do we need to categorize the color scale?
@@ -108,9 +123,9 @@ export class Scatterplot extends React.Component {
 					context.textStyle();
 					context.textSize(10 * pixelRatio);
 					if (i === -1) {
-						context.fillText('(all other categories)', xText, yDot + 5*pixelRatio);
+						context.fillText('(all other categories)', xText, yDot + 5 * pixelRatio);
 					} else {
-						context.fillText(cats[i], xText, yDot + 5*pixelRatio);
+						context.fillText(cats[i], xText, yDot + 5 * pixelRatio);
 					}
 				}
 			} else {
@@ -144,10 +159,10 @@ export class Scatterplot extends React.Component {
 					context.textStyle();
 					context.textSize(10 * pixelRatio);
 					if (i === 0) {
-						context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + 5*pixelRatio);
+						context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + 5 * pixelRatio);
 					}
 					if (i === palette.length - 1) {
-						context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + 5*pixelRatio);
+						context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + 5 * pixelRatio);
 					}
 				}
 			}
