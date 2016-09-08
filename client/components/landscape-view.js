@@ -14,7 +14,7 @@ const LandscapeComponent = function (props) {
 	const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene} = landscapeState;
 
 	const makeData = (attr, gene) => {
-		if (attr === '(gene)' && fetchedGenes.hasOwnProperty(gene)) {
+		if (attr === '(gene)' && fetchedGenes[gene]) {
 			return fetchedGenes[gene];
 		}
 		return dataSet.colAttrs[attr];
@@ -26,9 +26,7 @@ const LandscapeComponent = function (props) {
 	return (
 		<div className='view'>
 			<LandscapeSidepanel
-				landscapeState={landscapeState}
 				dataSet={dataSet}
-				fetchedGenes={fetchedGenes}
 				dispatch={dispatch}
 				/>
 			<Scatterplot
