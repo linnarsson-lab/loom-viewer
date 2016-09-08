@@ -5,6 +5,11 @@ import { nMostFrequent } from '../js/util';
 
 import { Canvas } from './canvas';
 
+// Crude normal curve approximation by taking the average of 8 random values
+function rndNorm() {
+	return ((Math.random() + Math.random() + Math.random() + Math.random() +
+	Math.random() + Math.random() + Math.random() + Math.random()) - 4)*0.25;
+}
 
 export class Scatterplot extends React.Component {
 
@@ -36,14 +41,25 @@ export class Scatterplot extends React.Component {
 		let y = this.props.y.slice(0);
 
 		// Log transform if requested
-		if (this.props.logScaleX) {
+		if (this.props.logScaleX && this.props.logScaleY) {
+			// if both log scales are required, jitter in a
+			// circle around the data, instead of a box
 			for (let i = 0; i < x.length; i++) {
-				x[i] = Math.log2(2 + x[i]) - 1;
+				const r = rndNorm();
+				const t = Math.PI * 2 * Math.random();
+				x[i] = Math.log2(2 + x[i]) + r*Math.sin(t);
+				y[i] = Math.log2(2 + y[i]) + r*Math.cos(t);
 			}
-		}
-		if (this.props.logScaleY) {
-			for (let i = 0; i < y.length; i++) {
-				y[i] = Math.log2(2 + y[i]) - 1;
+		} else {
+			if (this.props.logScaleX) {
+				for (let i = 0; i < x.length; i++) {
+					x[i] = Math.log2(2 + x[i]) + rndNorm();
+				}
+			}
+			if (this.props.logScaleY) {
+				for (let i = 0; i < y.length; i++) {
+					y[i] = Math.log2(2 + y[i]) + rndNorm();
+				}
 			}
 		}
 
@@ -57,30 +73,13 @@ export class Scatterplot extends React.Component {
 		const ymax = Math.max(...y);
 
 		// Scale to screen dimensions
-		if (this.props.logScaleX) {
-			for (let i = 0; i < x.length; i++) {
-				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-				// When using log-scale, jitter up to 3*radius for better visibility
-				x[i] = (xi + (Math.random() - 0.5) * 3*radius) | 0;
-			}
-		} else {
-			for (let i = 0; i < x.length; i++) {
-				const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
-				x[i] = xi | 0;
-			}
+		for (let i = 0; i < x.length; i++) {
+			const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+			x[i] = xi | 0;
 		}
-
-		if (this.props.logScaleY) {
-			for (let i = 0; i < y.length; i++) {
-				// "1-" because Y needs to be flipped
-				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
-				y[i] = (yi + (Math.random() - 0.5) * 3*radius) | 0;
-			}
-		} else {
-			for (let i = 0; i < y.length; i++) {
-				const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
-				y[i] = yi | 0;
-			}
+		for (let i = 0; i < y.length; i++) {
+			const yi = (1 - (y[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
+			y[i] = yi | 0;
 		}
 
 
