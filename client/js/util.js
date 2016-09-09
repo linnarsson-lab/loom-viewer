@@ -31,3 +31,12 @@ export function nMostFrequent(array, n) {
 	// });
 	// return result[0] === '' ? result.slice(1, n + 1) : result.slice(0, n);
 }
+
+
+// Crude normal curve approximation by taking the average of 8 random values
+// random value between [-1, 1)
+export function rndNorm() {
+	return ((Math.random() + Math.random() + Math.random() + Math.random() +
+		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.25;
+}
+

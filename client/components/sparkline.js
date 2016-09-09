@@ -1,16 +1,25 @@
-import React, {PropTypes} from 'react';
 import { nMostFrequent } from '../js/util';
 import * as colors from '../js/colors';
-import { Canvas } from './canvas';
 
-export class Sparkline extends React.Component {
-	constructor(props) {
-		super(props);
-		this.paint = this.paint.bind(this);
+export function sparkline(data, mode, dataRange, label, orientation) {
+	// Determine actual plotter
+	let painter = null;
+	switch (mode) {
+		case 'Categorical':
+			painter = new CategoriesPainter(data);
+			break;
+		case 'Bars':
+			painter = new BarPainter(data, label);
+			break;
+		case 'Heatmap':
+			painter = new HeatmapPainter(data, label);
+			break;
+		default:
+			painter = new TextPainter();
 	}
 
-	paint(context) {
-		if (this.props.data === undefined) {
+	return (context) => {
+		if (data === undefined) {
 			return;
 		}
 
@@ -18,7 +27,7 @@ export class Sparkline extends React.Component {
 		// To get a vertical plot, we simply rotate the canvas
 		// before invoking them. To not mess up the context
 		// settings, we save before and restore at the end
-		if (this.props.orientation !== 'horizontal') {
+		if (orientation === 'vertical') {
 			context.save();
 			context.translate(context.width, 0);
 			context.rotate(90 * Math.PI / 180);
@@ -50,9 +59,7 @@ export class Sparkline extends React.Component {
 		// and point 6 will only be 0.3 times the width.
 
 		// If dataRange is undefined, use the whole dataset.
-		const data = this.props.data;
-		const dataRange = this.props.dataRange ?
-			this.props.dataRange : [0, data.length];
+		dataRange = dataRange ? dataRange : [0, data.length];
 
 		let leftRange = dataRange[0];
 		let rightRange = dataRange[1];
@@ -89,64 +96,17 @@ export class Sparkline extends React.Component {
 			rangeData[i] = data[i0 + i];
 		}
 
-		// Determine actual plotter
-		let painter = null;
-		switch (this.props.mode) {
-			case 'Categorical':
-				painter = new CategoriesPainter(this.props.data);
-				break;
-			case 'Bars':
-				painter = new BarPainter(this.props.data, this.props.label);
-				break;
-			case 'Heatmap':
-				painter = new HeatmapPainter(this.props.data, this.props.label);
-				break;
-			default:
-				painter = new TextPainter();
-		}
-		if (painter) {
-			painter.paint(context, rangeData, xOffset, rangeWidth);
-		}
+		painter.paint(context, rangeData, xOffset, rangeWidth);
 
 		// Make sure our rotation from before is undone
-		if (this.props.orientation !== 'horizontal') {
+		if (orientation === 'vertical') {
 			context.restore();
 			let t = context.width;
 			context.width = context.height;
 			context.height = t;
 		}
-	}
-
-	render() {
-		// If not given a width or height prop, make these fill their parent div
-		// This will implicitly set the size of the <Canvas> component, which
-		// will then call the passed paint function with the right dimensions.
-		const style = {};
-		if (this.props.width) {
-			style['minWidth'] = (this.props.width | 0) + 'px';
-			style['maxWidth'] = (this.props.width | 0) + 'px';
-		}
-		if (this.props.height) {
-			style['minHeight'] = (this.props.height | 0) + 'px';
-			style['maxHeight'] = (this.props.height | 0) + 'px';
-		}
-		return (
-			<div className='view' style={style}>
-				<Canvas paint={this.paint} clear />
-			</div>
-		);
-	}
+	};
 }
-
-Sparkline.propTypes = {
-	orientation: PropTypes.string.isRequired,
-	mode: PropTypes.string.isRequired,
-	width: PropTypes.number,
-	height: PropTypes.number,
-	data: PropTypes.array,
-	label: PropTypes.string,
-	dataRange: PropTypes.arrayOf(PropTypes.number),
-};
 
 // Plotting functions. The plotters assume a horizontal plot.
 // To draw vertically we rotate/translate the context before

@@ -1,8 +1,9 @@
 import React, { Component, PropTypes } from 'react';
 
 import { LandscapeSidepanel } from './landscape-sidepanel';
-import { Scatterplot } from './scatterplot';
 import { FetchDatasetComponent } from './fetch-dataset';
+import { Canvas } from './canvas';
+import { scatterplot } from './scatterplot';
 
 import { SET_LANDSCAPE_PROPS } from '../actions/actionTypes';
 
@@ -11,7 +12,7 @@ import JSURL from 'jsurl';
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { fetchedGenes, landscapeState } = dataSet;
-	const { colorAttr, colorGene, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
+	const { colorAttr, colorGene, colorMode, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
 
 	const makeData = (attr, gene) => {
 		const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
@@ -31,21 +32,21 @@ const LandscapeComponent = function (props) {
 		y = y ? y.filter(data) : null;
 	}
 
+	const logColor = colorAttr === 'gene';
+	const logX = xCoordinate === 'gene';
+	const logY = yCoordinate === 'gene';
+
+	const paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
 	return (
 		<div className='view'>
 			<LandscapeSidepanel
 				dataSet={dataSet}
 				dispatch={dispatch}
 				/>
-			<Scatterplot
-				x={x}
-				y={y}
-				color={color}
-				colorMode={landscapeState.colorMode}
-				logScaleColor={landscapeState.colorAttr === '(gene)'}
-				logScaleX={landscapeState.xCoordinate === '(gene)'}
-				logScaleY={landscapeState.yCoordinate === '(gene)'}
+			<Canvas
+				paint={paint}
 				style={{ margin: '20px' }}
+				clear
 				/>
 		</div>
 	);

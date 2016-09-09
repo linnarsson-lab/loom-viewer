@@ -1,8 +1,9 @@
 import React, { Component, PropTypes } from 'react';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
-import { Sparkline } from './sparkline';
 import { FetchDatasetComponent } from './fetch-dataset';
+import { Canvas } from './canvas';
+import { sparkline } from './sparkline';
 
 import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
 
@@ -10,167 +11,208 @@ import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
 
-const SparklineComponent = function (props) {
-	const { dataSet, dispatch } = props;
-	const { sparklineState, fetchedGenes } = dataSet;
+class SparklineViewComponent extends Component {
 
-	// The column attribute values that we want to display in the "legend"
-	let colData = dataSet.colAttrs[sparklineState.colAttr];
-	// if colAttr does not exist (for example, the default values
-	// in the Loom interface is not present), pick the first column
-	if (colData === undefined) {
-		let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
-		colData = dataSet.colAttrs[properties[0]];
+	constructor(props) {
+		super(props);
+		this.sortIndices = this.sortIndices.bind(this);
 	}
 
-	// Indices that we want to sort the data by. Default to sorted "as is"
-	let indices = new Array(colData.length);
-	for (let i = 0; i < indices.length; ++i) {
-		indices[i] = i;
+	componentWillMount() {
+		const { dataSet } = this.props;
+		const sl = dataSet.sparklineState;
+		// The old column attribute values that we displayed in the "legend"
+		let colData = dataSet.colAttrs[sl.colAttr];
+		// if colAttr does not exist (for example, the default values
+		// in the Loom interface is not present), pick the first column
+		if (colData === undefined) {
+			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
+			colData = dataSet.colAttrs[properties[0]];
+		}
+		this.sortIndices(sl, colData, dataSet);
 	}
 
-	// Determine which array we want to sort colData by. Note that we abuse
-	// the JS dictionary behavior of returning "undefined" when an
-	// entry doesn't exist: if the string returned by orderByGene or
-	// orderByAttr is not present, compareArray will be undefined,
-	// and we don't re-arrange the indices.
-	const compareArray1 = (sparklineState.orderByAttr1 === '(gene)') ?
-		fetchedGenes[sparklineState.orderByGene1]
-		:
-		dataSet.colAttrs[sparklineState.orderByAttr1];
-	const compareArray2 = (sparklineState.orderByAttr2 === '(gene)') ?
-		fetchedGenes[sparklineState.orderByGene2]
-		:
-		dataSet.colAttrs[sparklineState.orderByAttr3];
-	const compareArray3 = (sparklineState.orderByAttr3 === '(gene)') ?
-		fetchedGenes[sparklineState.orderByGene3]
-		:
-		dataSet.colAttrs[sparklineState.orderByAttr3];
+	componentWillUpdate(nextProps) {
+		const nextDS = nextProps.dataSet;
+		const nextSL = nextDS.sparklineState;
 
-	let compareArray = [];
-	if (compareArray1) { compareArray.push(compareArray1); }
-	if (compareArray2) { compareArray.push(compareArray2); }
-	if (compareArray3) { compareArray.push(compareArray3); }
-
-	// Because not all browsers use a stable algorithm,
-	// we force stability with this trick:
-	// http://stackoverflow.com/a/2085225
-	// This is important to maintain a consistent look across browsers.
-	if (compareArray) {
-		indices = indices.slice(0).sort((a, b) => {
-			let i = 0, v = 0;
-			while (v === 0 && i < compareArray.length){
-				v = compareArray[i][a] < compareArray[i][b] ? -1 :
-				compareArray[i][a] > compareArray[i][b] ? 1 : 0;
-				i++;
-			}
-			return v ? v : ( indices[a] < indices[b] ? -1 : 1 );
-		});
-		// Finally, order the column attribute values by the determined indices.
-		let temp = new Array(colData.length);
-		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
-		colData = temp;
-	} else {
-		colData = colData.slice(0);
-	}
-
-	let selectedGenesList = sparklineState.genes.trim().split(/[ ,\r\n]+/);
-	const selectableGenes = dataSet.rowAttrs.Gene;
-	if (selectableGenes) {
-		selectedGenesList = _.intersection(selectedGenesList, dataSet.rowAttrs.Gene);
-	}
-
-	// Sidepanel
-	const sidepanel = (
-		<SparklineSidepanel
-			sparklineState={sparklineState}
-			dataSet={dataSet}
-			dispatch={dispatch}
-			/>
-	);
-
-	// "Show cell attribute"
-	// Showing the scrollbar is ugly, but otherwise lining up will be *really hard*
-	// because browsers do not allow for direct access to scrollbar size
-	const legend = (
-		<div style={{
-			flex: '0 0 auto',
-			minHeight: '20px',
-			overflowY: 'scroll',
-		}}>
-			<Sparkline
-				orientation='horizontal'
-				height={20}
-				data={colData}
-				mode={sparklineState.colMode}
-				/>
-		</div>
-	);
-
-	// Actual sparklines
-	let geneSparklines = [];
-	if (selectedGenesList.length !== 0 && selectedGenesList[0] !== '') {
-		for (let i = 0; i < selectedGenesList.length; i++) {
-			const gene = selectedGenesList[i];
-			const fetchedGene = fetchedGenes[gene];
-
-			let geneData = [0];
-			let label = `Fetching gene data for ${gene}`;
-			let mode = 'Bars';
-			if (fetchedGene) {
-				geneData = new Array(colData.length);
-				for (let j = 0; j < geneData.length; ++j) {
-					geneData[j] = fetchedGenes[gene][indices[j]];
-				}
-				label = gene;
-				mode = sparklineState.geneMode;
-			}
-			let dataRange = [0, geneData.length];
-			geneSparklines[i] = (
-				<div
-					key={gene}
-					style={{
-						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-						display: 'flex',
-						flexDirection: 'column',
-						minHeight: '30px',
-						maxHeight: '30px',
-					}}>
-					<Sparkline
-						orientation='horizontal'
-						data={geneData}
-						label={label}
-						dataRange={dataRange}
-						mode={mode}
-						style={{ minHeight: '30px', maxHeight: '30px' }}
-						/>
-				</div>
-			);
-
+		// The column attribute values that we want to display in the "legend"
+		let nextColData = nextDS.colAttrs[nextSL.colAttr];
+		// if colAttr does not exist (for example, the default values
+		// in the Loom interface is not present), pick the first column
+		if (nextColData === undefined) {
+			let properties = Object.getOwnPropertyNames(nextDS.colAttrs);
+			nextColData = nextDS.colAttrs[properties[0]].slice(0);
+		}
+		const ds = this.props.dataSet;
+		const sl = ds.sparklineState;
+		if (nextSL.colAttr !== sl.colAttr ||
+			nextSL.orderByAttr1 !== sl.orderByAttr1 ||
+			nextSL.orderByAttr2 !== sl.orderByAttr2 ||
+			nextSL.orderByAttr3 !== sl.orderByAttr3 ||
+			nextDS.fetchedGenes[nextSL.orderByGene1] !== ds.fetchedGenes[sl.orderByGene1] ||
+			nextDS.fetchedGenes[nextSL.orderByGene2] !== ds.fetchedGenes[sl.orderByGene2] ||
+			nextDS.fetchedGenes[nextSL.orderByGene3] !== ds.fetchedGenes[sl.orderByGene3]
+		) {
+			this.sortIndices(nextSL, nextColData, nextDS);
 		}
 	}
 
-	return (
-		<div className='view' style={{ overflowX: 'hidden' }}>
-			{sidepanel}
-			<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
-				{legend}
-				<div style={{ display: 'flex', flex: 1, overflowY: 'scroll', overflowX: 'hidden' }}>
-					<div style={{
-						display: 'flex',
-						flexDirection: 'column',
-						width: '100%',
-					}}>
-						{geneSparklines}
-					</div>
-				</div>
-				{legend}
-			</div>
-		</div >
-	);
-};
+	sortIndices(slState, colData, dataSet) {
+		console.log("test");
+		// Indices that we want to sort the data by. Default to sorted "as is"
+		let indices = new Array(colData.length);
+		for (let i = 0; i < indices.length; ++i) {
+			indices[i] = i;
+		}
 
-SparklineComponent.propTypes = {
+		// Determine which array we want to sort colData by. Note that we abuse
+		// the JS dictionary behavior of returning "undefined" when an
+		// entry doesn't exist: if the string returned by orderByGene or
+		// orderByAttr is not present, compArr will be undefined,
+		// and we don't re-arrange the indices.
+		const { orderByAttr1, orderByAttr2, orderByAttr3 } = slState;
+
+		const compArr1 = (orderByAttr1 === '(gene)') ?
+			dataSet.fetchedGenes[slState.orderByGene1]
+			:
+			dataSet.colAttrs[orderByAttr1];
+		const compArr2 = (orderByAttr2 === '(gene)') ?
+			dataSet.fetchedGenes[slState.orderByGene2]
+			:
+			dataSet.colAttrs[orderByAttr3];
+		const compArr3 = (orderByAttr3 === '(gene)') ?
+			dataSet.fetchedGenes[slState.orderByGene3]
+			:
+			dataSet.colAttrs[orderByAttr3];
+		console.log('comp arrays', compArr1, compArr2, compArr3);
+		let compArr = [];
+		if (compArr1) { compArr.push(compArr1); }
+		if (compArr2) { compArr.push(compArr2); }
+		if (compArr3) { compArr.push(compArr3); }
+
+		// Because not all browsers use a stable algorithm,
+		// we force stability with this trick:
+		// http://stackoverflow.com/a/2085225
+		// This is important to maintain a consistent look across browsers.
+		if (compArr) {
+			indices = indices.slice(0).sort((a, b) => {
+				let i = 0, v = 0;
+				while (v === 0 && i < compArr.length) {
+					v = compArr[i][a] < compArr[i][b] ? -1 :
+						compArr[i][a] > compArr[i][b] ? 1 : 0;
+					i++;
+				}
+				return v ? v : (indices[a] < indices[b] ? -1 : 1);
+			});
+		}
+
+		// Finally, order the column attribute values by the determined indices.
+		let temp = new Array(colData.length);
+		for (let i = 0; i < colData.length; ++i) { temp[i] = colData[indices[i]]; }
+
+		this.setState({ indices, colData: temp });
+	}
+
+	render() {
+		const { dataSet, dispatch } = this.props;
+		const { sparklineState, fetchedGenes } = dataSet;
+		const { colData, indices } = this.state;
+
+		let selectedGenesList = sparklineState.genes.trim().split(/[ ,\r\n]+/);
+		const selectableGenes = dataSet.rowAttrs.Gene;
+		if (selectableGenes) {
+			selectedGenesList = _.intersection(selectedGenesList, dataSet.rowAttrs.Gene);
+		}
+
+		// Sidepanel
+		const sidepanel = (
+			<SparklineSidepanel
+				sparklineState={sparklineState}
+				dataSet={dataSet}
+				dispatch={dispatch}
+				/>
+		);
+
+		// "Show cell attribute"
+		// Showing the scrollbar is ugly, but otherwise lining up will be *really hard*
+		// because browsers do not allow for direct access to scrollbar size
+		const legend = (
+			<div style={{
+				flex: '0 0 auto',
+				minHeight: '20px',
+				overflowY: 'scroll',
+			}}>
+				<Canvas
+					height={20}
+					paint={ sparkline(colData, sparklineState.colMode) }
+					clear
+					/>
+			</div>
+		);
+
+		// Actual sparklines
+		let geneSparklines = [];
+		if (selectedGenesList.length !== 0 && selectedGenesList[0] !== '') {
+			for (let i = 0; i < selectedGenesList.length; i++) {
+				const gene = selectedGenesList[i];
+				const fetchedGene = fetchedGenes[gene];
+
+				let geneData = [0];
+				let label = `Fetching gene data for ${gene}`;
+				let mode = 'Bars';
+				if (fetchedGene) {
+					geneData = new Array(colData.length);
+					for (let j = 0; j < geneData.length; ++j) {
+						geneData[j] = fetchedGenes[gene][indices[j]];
+					}
+					label = gene;
+					mode = sparklineState.geneMode;
+				}
+				let dataRange = [0, geneData.length];
+				geneSparklines[i] = (
+					<div
+						key={gene}
+						style={{
+							background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+							display: 'flex',
+							flexDirection: 'column',
+							minHeight: '30px',
+							maxHeight: '30px',
+						}}>
+						<Canvas
+							height={30}
+							paint={sparkline(geneData, mode, dataRange, label) }
+							clear
+							/>
+					</div>
+				);
+
+			}
+		}
+
+		return (
+			<div className='view' style={{ overflowX: 'hidden' }}>
+				{sidepanel}
+				<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
+					{legend}
+					<div style={{ display: 'flex', flex: 1, overflowY: 'scroll', overflowX: 'hidden' }}>
+						<div style={{
+							display: 'flex',
+							flexDirection: 'column',
+							width: '100%',
+						}}>
+							{geneSparklines}
+						</div>
+					</div>
+					{legend}
+				</div>
+			</div >
+		);
+	}
+}
+
+SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -187,8 +229,12 @@ class SparklineStateInitialiser extends Component {
 				dataSet.sparklineState
 				:
 				({ // Initialise sparklineState for this dataset
-					orderByAttr: '(original order)',	// meaning, original order
-					orderByGene: '',
+					orderByAttr1: '(original order)',
+					orderByGene1: '',
+					orderByAttr2: '',
+					orderByGene2: '',
+					orderByAttr3: '',
+					orderByGene3: '',
 					colAttr: dataSet.colAttrs[0],
 					colMode: 'Categorical',
 					geneMode: 'Bars',
@@ -208,7 +254,7 @@ class SparklineStateInitialiser extends Component {
 	render() {
 		const { dispatch, dataSet } = this.props;
 		return dataSet.sparklineState ? (
-			<SparklineComponent
+			<SparklineViewComponent
 				dispatch={dispatch}
 				dataSet={dataSet}
 				/>

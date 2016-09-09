@@ -1,8 +1,9 @@
 import React, { Component, PropTypes } from 'react';
 
 import { GenescapeSidepanel } from './genescape-sidepanel';
-import { Scatterplot } from './scatterplot';
 import { FetchDatasetComponent } from './fetch-dataset';
+import { Canvas } from './canvas';
+import { scatterplot } from './scatterplot';
 
 import { SET_GENESCAPE_PROPS } from '../actions/actionTypes';
 
@@ -14,6 +15,7 @@ const GenescapeComponent = function (props) {
 	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
 	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
 	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
+	const paint = scatterplot(x, y, color, genescapeState.colorMode);
 	return (
 		<div className='view' >
 			<GenescapeSidepanel
@@ -21,15 +23,10 @@ const GenescapeComponent = function (props) {
 				dataSet={dataSet}
 				dispatch={dispatch}
 				/>
-			<Scatterplot
-				x={x}
-				y={y}
-				color={color}
-				colorMode={genescapeState.colorMode}
-				logScaleColor={false}
-				logScaleX={false}
-				logScaleY={false}
+			<Canvas
+				paint={paint}
 				style={{ margin: '20px' }}
+				clear
 				/>
 		</div>
 	);

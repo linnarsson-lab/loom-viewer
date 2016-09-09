@@ -1,31 +1,18 @@
-import React, {PropTypes} from 'react';
 import * as colors from '../js/colors';
 import * as _ from 'lodash';
-import { nMostFrequent } from '../js/util';
+import { nMostFrequent, rndNorm } from '../js/util';
 
-import { Canvas } from './canvas';
-
-// Crude normal curve approximation by taking the average of 8 random values
-// random value between [-1, 1)
-function rndNorm() {
-	return ((Math.random() + Math.random() + Math.random() + Math.random() +
-		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.25;
-}
-
-export class Scatterplot extends React.Component {
-
-	constructor(props) {
-		super(props);
-		this.paint = this.paint.bind(this);
-	}
-
-
-	paint(context) {
-		if (!(Array.isArray(this.props.x) &&
-			Array.isArray(this.props.y) &&
-			Array.isArray(this.props.color))) {
+export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, logScaleY) {
+	return (context) => {
+		if (!(Array.isArray(x) &&
+			Array.isArray(y) &&
+			Array.isArray(color))) {
 			return;
 		}
+		// avoid accidentally mutating source arrays
+		x = x.slice(0);
+		y = y.slice(0);
+		color = color.slice(0);
 		let { width, height, pixelRatio } = context;
 
 		// Erase previous paint
@@ -37,10 +24,6 @@ export class Scatterplot extends React.Component {
 		// Make room for color legend on right
 		width = (width - 200);
 
-		// avoid accidentally mutating source arrays
-		let x = this.props.x.slice(0);
-		let y = this.props.y.slice(0);
-
 		// Scale of data
 		let xmin = Math.min(...x);
 		let xmax = Math.max(...x);
@@ -48,7 +31,7 @@ export class Scatterplot extends React.Component {
 		let ymax = Math.max(...y);
 
 		// Log transform if requested
-		if (this.props.logScaleX && this.props.logScaleY) {
+		if (logScaleX && logScaleY) {
 			// if both axes are log scales, jitter in a
 			// circle around the data instead of a box
 			for (let i = 0; i < x.length; i++) {
@@ -62,14 +45,14 @@ export class Scatterplot extends React.Component {
 			ymin = Math.log2(2 + ymin) - 1;
 			ymax = Math.log2(2 + ymax) + 1;
 		} else {
-			if (this.props.logScaleX) {
+			if (logScaleX) {
 				for (let i = 0; i < x.length; i++) {
 					x[i] = Math.log2(2 + x[i]) + rndNorm();
 				}
 				xmin = Math.log2(1 + xmin) - 1;
 				xmax = Math.log2(1 + xmax) + 1;
 			}
-			if (this.props.logScaleY) {
+			if (logScaleY) {
 				for (let i = 0; i < y.length; i++) {
 					y[i] = Math.log2(2 + y[i]) + rndNorm();
 				}
@@ -92,16 +75,14 @@ export class Scatterplot extends React.Component {
 			y[i] = yi | 0;
 		}
 
-
-		let color = this.props.color;
-		const palette = (this.props.colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
+		const palette = (colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
 		if (Array.isArray(color) === false) {
 			color = Array.from({ length: x.length }, () => { return 'grey'; });
 		} else {
 			// Do we need to categorize the color scale?
-			if (this.props.colorMode === 'Categorical' || !_.every(color, (c) => { return isFinite(c); })) {
+			if (colorMode === 'Categorical' || !_.every(color, (c) => { return isFinite(c); })) {
 
 				// Reserve palette[0] for all uncategorized items
 				let cats = nMostFrequent(color, palette.length - 1);
@@ -141,7 +122,7 @@ export class Scatterplot extends React.Component {
 				let original_cmin = Math.min(...color);
 				let original_cmax = Math.max(...color);
 				// Log transform if requested
-				if (this.props.logScaleColor) {
+				if (logScaleColor) {
 					color = color.map((c) => { return Math.log2(c + 1); });
 				}
 				// Map to the range of colors
@@ -195,27 +176,5 @@ export class Scatterplot extends React.Component {
 			context.fill();
 		});
 		context.restore();
-	}
-
-	render() {
-		return (
-			<Canvas
-				paint={this.paint}
-				style={this.props.style}
-				clear />
-		);
-	}
+	};
 }
-
-Scatterplot.propTypes = {
-	x: PropTypes.arrayOf(PropTypes.number).isRequired,
-	y: PropTypes.arrayOf(PropTypes.number).isRequired,
-	color: PropTypes.arrayOf(
-		PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-	).isRequired,
-	colorMode: PropTypes.string.isRequired,
-	logScaleColor: PropTypes.bool.isRequired,
-	logScaleX: PropTypes.bool.isRequired,
-	logScaleY: PropTypes.bool.isRequired,
-	style: PropTypes.object,
-};

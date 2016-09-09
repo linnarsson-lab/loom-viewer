@@ -129,6 +129,18 @@ CanvasEnhancer.propTypes = {
 };
 
 export const Canvas = function (props) {
+	// If not given a width or height prop, make these fill their parent div
+	// This will implicitly set the size of the <Canvas> component, which
+	// will then call the passed paint function with the right dimensions.
+	let style = props.style ? props.style : {};
+	if (props.width) {
+		style['minWidth'] = (props.width | 0) + 'px';
+		style['maxWidth'] = (props.width | 0) + 'px';
+	}
+	if (props.height) {
+		style['minHeight'] = (props.height | 0) + 'px';
+		style['maxHeight'] = (props.height | 0) + 'px';
+	}
 	return (
 		<RemountOnResize
 			/* Since canvas interferes with CSS layouting,
@@ -139,7 +151,7 @@ export const Canvas = function (props) {
 				clear={props.clear}
 				loop={props.loop}
 				className={props.className}
-				style={props.style}
+				style={style}
 				/>
 		</RemountOnResize>
 	);
@@ -147,6 +159,8 @@ export const Canvas = function (props) {
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
+	width: PropTypes.number,
+	height: PropTypes.number,
 	clear: PropTypes.bool,
 	loop: PropTypes.bool,
 	className: PropTypes.string,

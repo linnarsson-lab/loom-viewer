@@ -2,9 +2,10 @@ import React, { Component, PropTypes } from 'react';
 
 import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
-import { Sparkline } from './sparkline';
 import { RemountOnResize } from './remount-on-resize';
 import { FetchDatasetComponent } from './fetch-dataset';
+import { Canvas } from './canvas';
+import { sparkline } from './sparkline';
 
 import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
 
@@ -57,14 +58,14 @@ class HeatmapMapComponent extends Component {
 
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
-					<Sparkline
-						orientation='horizontal'
+					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
-						data={colData}
-						dataRange={[dataBounds[0], dataBounds[2]]}
-						mode={heatmapState.colMode}
+						paint={
+							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]])
+						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
+						clear
 						/>
 					<div className='view'>
 						<div style={heatmapSize}>
@@ -81,13 +82,17 @@ class HeatmapMapComponent extends Component {
 									}
 								} />
 						</div>
-						<Sparkline
-							orientation='vertical'
+						<Canvas
 							width={sparklineHeight}
 							height={heatmapHeight}
-							data={rowData}
-							dataRange={[dataBounds[1], dataBounds[3]]}
-							mode={heatmapState.rowAttr === '(gene positions)' ? 'TextAlways' : heatmapState.rowMode}
+							paint={sparkline(
+								rowData,
+								heatmapState.rowAttr === '(gene positions)' ?
+									'TextAlways' : heatmapState.rowMode,
+								[dataBounds[1], dataBounds[3]],
+								null,
+								'vertical') }
+							clear
 							/>
 					</div>
 				</div >
