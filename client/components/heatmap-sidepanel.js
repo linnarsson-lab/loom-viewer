@@ -23,29 +23,33 @@ export const HeatmapSidepanel = function (props) {
 	colAttrOptions.push('(gene)');
 	const colAttrHC = handleChangeFactory('colAttr');
 	const colModeHC = handleChangeFactory('colMode');
-	const colGeneHC = handleChangeFactory('colGene');
-	const fetchColGene = heatmapState.colAttr === '(gene)' ? (
-		<FetchGeneComponent
-			dataSet={dataSet}
-			dispatch={dispatch}
-			onChange={colGeneHC}
-			value={heatmapState.colGene} />) : null;
-
+	if (heatmapState.colAttr === '(gene)') {
+		// abusing JS' weird function scoping
+		var colGeneHC = handleChangeFactory('colGene');
+		var fetchColGene = (
+			<FetchGeneComponent
+				dataSet={dataSet}
+				dispatch={dispatch}
+				onChange={colGeneHC}
+				value={heatmapState.colGene} />
+		);
+	}
 	let rowAttrOptions = Object.keys(dataSet.rowAttrs);
 	rowAttrOptions.sort();
 	rowAttrOptions.push('(gene positions)');
 	const rowAttrHC = handleChangeFactory('rowAttr');
 	const rowModeHC = handleChangeFactory('rowMode');
-	const rowGeneHC = handleChangeFactory('rowGene');
-
-	const fetchRowGene = (heatmapState.rowAttr === '(gene positions)') ? (
-		<FetchGeneComponent
-			dataSet={dataSet}
-			dispatch={dispatch}
-			onChange={rowGeneHC}
-			value={heatmapState.rowGene}
-			multi clearable />) : null;
-
+	if (heatmapState.rowAttr === '(gene positions)') {
+		var rowGeneHC = handleChangeFactory('rowGene');
+		var fetchRowGene = (
+			<FetchGeneComponent
+				dataSet={dataSet}
+				dispatch={dispatch}
+				onChange={rowGeneHC}
+				value={heatmapState.rowGene}
+				multi clearable />
+		);
+	}
 	let optionNames = ['Text', 'Bars', 'Heatmap', 'Categorical'];
 
 	return (

@@ -55,6 +55,8 @@ class HeatmapMapComponent extends Component {
 					rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
 				}
 			}
+			const rowMode = (heatmapState.rowAttr === '(gene positions)') ?
+				'TextAlways' : heatmapState.rowMode;
 
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
@@ -87,8 +89,7 @@ class HeatmapMapComponent extends Component {
 							height={heatmapHeight}
 							paint={sparkline(
 								rowData,
-								heatmapState.rowAttr === '(gene positions)' ?
-									'TextAlways' : heatmapState.rowMode,
+								rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
 								'vertical') }
