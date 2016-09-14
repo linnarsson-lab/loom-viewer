@@ -1,55 +1,52 @@
 import React, {PropTypes} from 'react';
 import { RemountOnResize } from './remount-on-resize';
 
-// A simple helper component, wrapping retina logic for canvas and
-// auto-resizing the canvas to fill its parent container.
-// To determine size/layout, we just use CSS on the div containing
-// the Canvas component (we're using this with flexbox, for example).
-// Expects a "paint" function that takes a "context" to draw on
-// Whenever this component updates it will call this paint function
-// to draw on the canvas. For convenience, pixel dimensions are stored
-// in context.width, context.height and contex.pixelRatio.
-class CanvasEnhancer extends React.Component {
+
+// Attach helper functions to context prototype
+function enhanceCanvasRenderingContext2D() {
+	let prototype = CanvasRenderingContext2D.prototype;
+	if (!prototype.circle) {
+		prototype.circle = function (x, y, radius) {
+			this.moveTo(x + radius, y);
+			this.arc(x, y, radius, 0, 2 * Math.PI);
+		};
+	}
+	if (!prototype.textSize) {
+		prototype.textSize = function (size = 10) {
+			// will return an array with [ size, font ] as strings
+			const fontArgs = this.font.split(' ');
+			const font = fontArgs[fontArgs.length - 1];
+			switch (typeof size) {
+				case 'number':
+					this.font = size + 'px ' + font;
+					break;
+				case 'string':
+					this.font = size + font;
+					break;
+			}
+		};
+	}
+	if (!prototype.textStyle) {
+		prototype.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
+			this.fillStyle = fill;
+			this.strokeStyle = stroke;
+			this.lineWidth = lineWidth;
+		};
+	}
+	if (!prototype.drawText) {
+		prototype.drawText = function (text, x, y) {
+			this.strokeText(text, x, y);
+			this.fillText(text, x, y);
+		};
+	}
+}
+
+class CanvasComponent extends React.Component {
 	constructor(props) {
 		super(props);
 		this.draw = this.draw.bind(this);
 
-		// Attach helper functions to context prototype
-		let prototype = CanvasRenderingContext2D.prototype;
-		if (!prototype.circle) {
-			prototype.circle = function (x, y, radius) {
-				this.moveTo(x + radius, y);
-				this.arc(x, y, radius, 0, 2 * Math.PI);
-			};
-		}
-		if (!prototype.textSize) {
-			prototype.textSize = function (size = 10) {
-				// will return an array with [ size, font ] as strings
-				const fontArgs = this.font.split(' ');
-				const font = fontArgs[fontArgs.length - 1];
-				switch (typeof size) {
-					case 'number':
-						this.font = size + 'px ' + font;
-						break;
-					case 'string':
-						this.font = size + font;
-						break;
-				}
-			};
-		}
-		if (!prototype.textStyle) {
-			prototype.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
-				this.fillStyle = fill;
-				this.strokeStyle = stroke;
-				this.lineWidth = lineWidth;
-			};
-		}
-		if (!prototype.drawText) {
-			prototype.drawText = function (text, x, y) {
-				this.strokeText(text, x, y);
-				this.fillText(text, x, y);
-			};
-		}
+		enhanceCanvasRenderingContext2D();
 	}
 
 	// Make sure we get a sharp canvas on Retina displays
@@ -120,7 +117,7 @@ class CanvasEnhancer extends React.Component {
 	}
 }
 
-CanvasEnhancer.propTypes = {
+CanvasComponent.propTypes = {
 	paint: PropTypes.func.isRequired,
 	clear: PropTypes.bool,
 	loop: PropTypes.bool,
@@ -128,7 +125,16 @@ CanvasEnhancer.propTypes = {
 	style: PropTypes.object,
 };
 
-export const Canvas = function (props) {
+
+// A simple helper component, wrapping retina logic for canvas and
+// auto-resizing the canvas to fill its parent container.
+// To determine size/layout, we just use CSS on the div containing
+// the Canvas component (we're using this with flexbox, for example).
+// Expects a "paint" function that takes a "context" to draw on
+// Whenever this component updates it will call this paint function
+// to draw on the canvas. For convenience, pixel dimensions are stored
+// in context.width, context.height and contex.pixelRatio.
+export function Canvas(props) {
 	// If not given a width or height prop, make these fill their parent div
 	// This will implicitly set the size of the <Canvas> component, which
 	// will then call the passed paint function with the right dimensions.
@@ -146,7 +152,7 @@ export const Canvas = function (props) {
 			/* Since canvas interferes with CSS layouting,
 			we unmount and remount it on resize events */
 			>
-			<CanvasEnhancer
+			<CanvasComponent
 				paint={props.paint}
 				clear={props.clear}
 				loop={props.loop}
@@ -155,7 +161,7 @@ export const Canvas = function (props) {
 				/>
 		</RemountOnResize>
 	);
-};
+}
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
