@@ -40,3 +40,8 @@ export function rndNorm() {
 		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.25;
 }
 
+// Until we get that spread object operator to work
+// we might as well create a helper-function
+export function merge(...args) {
+	return Object.assign({}, ...args);
+}
