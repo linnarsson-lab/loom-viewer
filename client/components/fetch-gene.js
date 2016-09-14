@@ -12,20 +12,20 @@ export class FetchGeneComponent extends Component {
 		this.handleChange = this.handleChange.bind(this);
 	}
 
-	componentWillMount(){
+	componentWillMount() {
 		this.setState(this.createOptions(this.props.dataSet.rowAttrs.Gene));
 		if (this.props.value) {
-			let value = null;
+			let values = null;
 			if (this.props.multi) {
-				const genes = this.props.value.trim().split(/[ ,\r\n]+/);
-				value = new Array(genes.length);
+				const genes = this.props.value;
+				values = new Array(genes.length);
 				for (let i = 0; i < genes.length; i++) {
-					value[i] = { value: genes[i], label: genes[i] };
+					values[i] = { value: genes[i], label: genes[i] };
 				}
 			} else {
-				value = { value: this.props.value, label: this.props.value };
+				values = { value: this.props.value, label: this.props.value };
 			}
-			this.handleChange(value);
+			this.handleChange(values);
 		}
 	}
 
@@ -57,24 +57,27 @@ export class FetchGeneComponent extends Component {
 	}
 
 	handleChange(value) {
-		const { dataSet, dispatch, onChange } = this.props;
 		this.setState({ value });
+		let { dataSet, dispatch, onChange, multi, clearable } = this.props;
+		// If multi is set, use an array of gene name strings.
+		// Otherwise, send a single string.
+		let genes = multi ? [] : '';
 		if (value) {
-			if (this.props.multi) {
-				let geneString = '';
-				let values = new Array(value.length);
+			if (multi) {
 				for (let i = 0; i < value.length; i++) {
-					geneString += value[i].value + ' ';
-					values[i] = value[i].value;
+					genes.push(value[i].value);
 				}
-				dispatch(fetchGene(dataSet, values));
-				onChange ? onChange(geneString) : null;
+				dispatch(fetchGene(dataSet, genes));
 			} else {
-				dispatch(fetchGene(dataSet, [value.value]));
-				onChange ? onChange(value.value) : null;
+				genes = value.value;
+				// fetchGene always expects an array of strings
+				dispatch(fetchGene(dataSet, [genes]));
 			}
+			onChange ? onChange(genes) : null;
 		} else {
-			onChange ? onChange('') : null;
+			// We also call onChange if there is no value,
+			// to handle "resetting" gene lists.
+			onChange && clearable ? onChange(genes) : null;
 		}
 	}
 
@@ -99,7 +102,7 @@ export class FetchGeneComponent extends Component {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	value: PropTypes.string,
+	value: PropTypes.arrayOf(PropTypes.string),
 	onChange: PropTypes.func,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
