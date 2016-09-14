@@ -1,10 +1,12 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Panel, ListGroup, ListGroupItem,
+	Button } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, sparklineState, dataSet } = props;
+	const { dispatch, dataSet } = props;
+	const { sparklineState } = dataSet;
 
 	const handleChangeFactory = (field) => {
 		return (value) => {
@@ -36,6 +38,10 @@ export const SparklineSidepanel = function (props) {
 
 	const geneModeOptions = ['Bars', 'Heatmap'];
 	const geneModeHC = handleChangeFactory('geneMode');
+
+	const showLabels = handleChangeFactory('showLabels');
+	const showLabelsHC = () => { showLabels(!sparklineState.showLabels); };
+
 
 	return (
 		<Panel
@@ -109,14 +115,19 @@ export const SparklineSidepanel = function (props) {
 						options={geneModeOptions}
 						onChange={geneModeHC}
 						/>
+					<Button
+						bsStyle={ sparklineState.showLabels ? 'success' : 'default' }
+						onClick={showLabelsHC}
+						>
+						Show labels
+					</Button>
 				</ListGroupItem>
 			</ListGroup>
 		</Panel>
-			);
+	);
 };
 
 SparklineSidepanel.propTypes = {
-	sparklineState: PropTypes.object.isRequired,
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
