@@ -11,11 +11,11 @@ import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
 
+// TODO: Don't re-render every sparkline on every re-render. Cache stuff.
 class SparklineViewComponent extends Component {
 
 	constructor(props) {
 		super(props);
-
 		this.sortIndices = this.sortIndices.bind(this);
 		this.generateSparklines = this.generateSparklines.bind(this);
 		this.createSortedBy = this.createSortedBy.bind(this);
@@ -51,7 +51,26 @@ class SparklineViewComponent extends Component {
 		}
 		const sparklines = genes.length ? this.generateSparklines(genes, data, sl.geneMode, sl.showLabels) : null;
 		const legendSparkline = sparkline(this.createSortedBy(legendData, indices), sl.colMode);
-		return { legendSparkline, sparklines };
+
+		// "Show cell attribute"
+		const legend = (
+			<div style={{
+				flex: '0 0 auto',
+				minHeight: '20px',
+				/* Showing the scrollbar is ugly, but otherwise
+				lining up will be *really hard* because browsers
+				do not allow for direct access to scrollbar size */
+				overflowY: 'scroll',
+			}}>
+				<Canvas
+					height={20}
+					paint={legendSparkline}
+					redraw
+					clear
+					/>
+			</div>
+		);
+		return { legend, sparklines };
 	}
 
 	sortIndices(length, slState, dataSet) {
@@ -131,6 +150,7 @@ class SparklineViewComponent extends Component {
 					<Canvas
 						height={30}
 						paint={sparkline(geneData[i], mode, dataRange, showLabels ? gene : null) }
+						redraw
 						clear
 						/>
 				</div>
@@ -140,27 +160,7 @@ class SparklineViewComponent extends Component {
 	}
 
 	render() {
-		const { legendSparkline, sparklines } = this.update(this.props.dataSet);
-
-		// "Show cell attribute"
-		const legend = (
-			<div style={{
-				flex: '0 0 auto',
-				minHeight: '20px',
-				/* Showing the scrollbar is ugly, but otherwise
-				lining up will be *really hard* because browsers
-				do not allow for direct access to scrollbar size */
-				overflowY: 'scroll',
-			}}>
-				<Canvas
-					height={20}
-					paint={legendSparkline}
-					clear
-					/>
-			</div>
-		);
-
-
+		const { legend, sparklines } = this.update(this.props.dataSet);
 		return (
 			<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
 				{legend}

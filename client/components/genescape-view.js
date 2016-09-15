@@ -26,6 +26,7 @@ const GenescapeComponent = function (props) {
 			<Canvas
 				paint={paint}
 				style={{ margin: '20px' }}
+				redraw
 				clear
 				/>
 		</div>
