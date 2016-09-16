@@ -45,3 +45,13 @@ export function rndNorm() {
 export function merge(...args) {
 	return Object.assign({}, ...args);
 }
+
+// expects two number arrays of [xmin, ymin, xmax, ymax].
+export function inBounds(r1, r2) {
+	return (
+		r1[0] < r2[2] && // r1.xmin < r2.xmax
+		r2[2] < r1[2] && // r2.xmin < r1.xmax
+		r1[1] < r2[3] && // r1.ymin < r2.ymax
+		r2[1] < r1[3]    // r2.ymin < r1.ymax
+	);
+}
