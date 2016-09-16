@@ -100,7 +100,10 @@ export class FetchGeneComponent extends Component {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataSet: PropTypes.object.isRequired,
-	value: PropTypes.arrayOf(PropTypes.string),
+	value: PropTypes.oneOfType([
+		PropTypes.arrayOf(PropTypes.string),
+		PropTypes.string,
+	]),
 	onChange: PropTypes.func,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
