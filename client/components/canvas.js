@@ -1,5 +1,6 @@
 import React, {PropTypes} from 'react';
 import { RemountOnResize } from './remount-on-resize';
+import { inBounds } from '../js/util';
 
 
 // Attach helper functions to context prototype
@@ -175,8 +176,8 @@ Canvas.propTypes = {
  * an array of sketch objects instead of a paint function
  * Each sketch contains:
  * - a paint function
- * - an x and y position
- * - a width and a height field
+ * - an x and y position (if none given, zero is assumed)
+ * - a width and a height field (if none given, context size is used)
  * Later we might expand this with other functions for
  * capturing mouse, touch and keyboard events.
  */
@@ -194,8 +195,11 @@ class CanvasGridComponent extends React.Component {
 		const ratio = window.devicePixelRatio || 1;
 		const width = (view.clientWidth * ratio) | 0;
 		const height = (view.clientHeight * ratio) | 0;
-		this.setState({ width, height, ratio });
+		const x = this.props.x ? this.props.x : 0;
+		const y = this.props.y ? this.props.y : 0;
+		this.setState({ x, y, width, height, ratio });
 	}
+
 
 	componentDidUpdate() {
 		if (this.props.redraw) {
@@ -208,27 +212,37 @@ class CanvasGridComponent extends React.Component {
 	// when canvas element has been rendered!
 	draw() {
 		if (this.state) {
-			const { width, height, ratio } = this.state;
+			const { x, y, width, height, ratio } = this.state;
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');
 			if (this.props.clear) { context.clearRect(0, 0, width, width); }
 
 			context.pixelRatio = ratio;
+			context.translate(-x, -y);
 			const { sketches } = this.props;
 			for (let i = 0; i < sketches.length; i++) {
 				const sketch = sketches[i];
-				// move to (x,y) position
-				context.translate(sketch.x, sketch.y);
-				// store width, height and ratio in context for paint functions
-				context.width = sketch.width;
-				context.height = sketch.height;
-				// should we clear the canvas every redraw?
-				if (sketch.clear) { context.clearRect(0, 0, context.width, context.width); }
-				// draw sketch within given boundary
-				sketch.paint(context);
-				// undo translation
-				context.translate(-sketch.x, -sketch.y);
+				const sketchX = sketch.x ? sketch.x : 0;
+				const sketchY = sketch.y ? sketch.y : 0;
+				const sketchW = sketch.width ? sketch.width : width;
+				const sketchH = sketch.height ? sketch.height : height;
+				const sketchBounds = [sketchX, sketchY, sketchX + sketchW, sketchY + sketchH];
+				if (inBounds(this.props.bounds, sketchBounds)) {
+					// set (sketchX, sketchY) as origin
+					context.translate(sketchX, sketchY);
+					// store width, height and ratio in context for paint functions
+					context.width = sketchW;
+					context.height = sketchH;
+					// should we clear the canvas every redraw?
+					if (sketch.clear) { context.clearRect(0, 0, sketchW, sketchH); }
+					// draw sketch within given boundary
+					sketch.paint(context);
+					// undo (sketchX, sketchY) translation
+					context.translate(-sketchX, -sketchY);
+				}
 			}
+			context.translate(x, y);
+
 		}
 	}
 
@@ -252,7 +266,7 @@ class CanvasGridComponent extends React.Component {
 			<div
 				ref='view'
 				className={this.props.className ? this.props.className : 'view'}
-				style={this.props.style}>
+				style={this.props.style} >
 				{canvas}
 			</div>
 		);
@@ -261,6 +275,8 @@ class CanvasGridComponent extends React.Component {
 
 CanvasGridComponent.propTypes = {
 	sketches: PropTypes.arrayOf(PropTypes.object).isRequired,
+	// [xmin, ymin, xmax, ymax]
+	bounds: PropTypes.arrayOf(PropTypes.number).isRequired,
 	clear: PropTypes.bool,
 	redraw: PropTypes.bool,
 	className: PropTypes.string,
@@ -287,6 +303,7 @@ export function CanvasGrid(props) {
 			>
 			<CanvasGridComponent
 				sketches={props.sketches}
+				bounds={props.bounds}
 				clear={props.clear}
 				redraw={props.redraw}
 				className={props.className}
@@ -298,6 +315,7 @@ export function CanvasGrid(props) {
 
 CanvasGrid.propTypes = {
 	sketches: PropTypes.arrayOf(PropTypes.object).isRequired,
+	bounds: PropTypes.arrayOf(PropTypes.number).isRequired,
 	width: PropTypes.number,
 	height: PropTypes.number,
 	clear: PropTypes.bool,
