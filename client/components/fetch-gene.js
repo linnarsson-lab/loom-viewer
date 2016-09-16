@@ -1,5 +1,4 @@
 import React, { Component, PropTypes } from 'react';
-import { FormGroup } from 'react-bootstrap';
 import { fetchGene } from '../actions/actions.js';
 import { isEqual } from 'lodash';
 import Select from 'react-virtualized-select';
@@ -84,16 +83,15 @@ export class FetchGeneComponent extends Component {
 	render() {
 		const { options, filterOptions, value } = this.state;
 		return (
-			<FormGroup>
-				<Select
-					options={options}
-					filterOptions={filterOptions}
-					onChange={this.handleChange}
-					value={value}
-					multi={this.props.multi}
-					clearable={this.props.clearable === true}
-					/>
-			</FormGroup>
+			<Select
+				options={options}
+				filterOptions={filterOptions}
+				onChange={this.handleChange}
+				value={value}
+				multi={this.props.multi}
+				clearable={this.props.clearable === true}
+				style={this.props.style}
+				/>
 		);
 	}
 }
@@ -106,4 +104,5 @@ FetchGeneComponent.propTypes = {
 	onChange: PropTypes.func,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
+	style: PropTypes.object,
 };

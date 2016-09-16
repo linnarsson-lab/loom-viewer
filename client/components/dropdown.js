@@ -1,5 +1,4 @@
 import React, { Component, PropTypes } from 'react';
-import { FormGroup, ControlLabel } from 'react-bootstrap';
 import Select from 'react-select';
 
 
@@ -13,45 +12,55 @@ export class DropdownMenu extends Component {
 	}
 
 	componentWillMount() {
-		let { buttonName, multi } = this.props;
-		this.setButtonName(buttonName, multi);
+		let { value, multi } = this.props;
+		this.setButtonName(value, multi);
 	}
 
 	componentWillReceiveProps(nextProps) {
-		let { buttonName, multi } = nextProps;
-		this.setButtonName(buttonName, multi);
+		let { value, multi } = nextProps;
+		this.setButtonName(value, multi);
 	}
 
-	setButtonName(buttonName, multi) {
-		const val = { value: buttonName, label: buttonName };
+	setButtonName(value, multi) {
+		let newState = {};
 		if (multi) {
-			this.setState({ value: [val] });
+			if (value) {
+				const genes = value;
+				newState.values = new Array(genes.length);
+				for (let i = 0; i < genes.length; i++) {
+					newState.values[i] = { value: genes[i], label: genes[i] };
+				}
+			}
 		} else {
-			this.setState(val);
+			if (value) {
+				newState = { value: value, label: value };
+			} else {
+				newState = { value: undefined, label: undefined };
+			}
 		}
+		this.setState(newState);
 	}
 
 	handleChange(event) {
+		this.setState(event);
 		if (event !== undefined && event !== null) {
 			const { onChange } = this.props;
-
 			if (this.props.multi) {
-				let values = [];
+				let value = [];
 				for (let i = 0; i < event.length; i++) {
-					values.push(event[i].value);
+					value.push(event[i].value);
 				}
-				onChange(values);
+				onChange(value);
 			} else {
 				onChange(event.value);
 			}
 		}
-		this.setState({value: event.value});
 	}
 
 	render() {
-		const { options, buttonLabel } = this.props;
+		const { options, unsorted } = this.props;
 
-		const sorted = options.slice(0).sort();
+		const sorted = unsorted ? options : options.slice(0).sort();
 		let sortedOptions = new Array(sorted.length);
 		for (let i = 0; i <= sorted.length; i++) {
 			sortedOptions[i] = {
@@ -61,25 +70,27 @@ export class DropdownMenu extends Component {
 		}
 
 		return (
-			<FormGroup>
-				{ buttonLabel ? <ControlLabel>{buttonLabel}</ControlLabel> : null }
-				<Select
-					value={this.state}
-					options={sortedOptions}
-					onChange={this.handleChange}
-					multi={this.props.multi}
-					clearable={this.props.clearable === true}
-					/>
-			</FormGroup>
+			<Select
+				value={this.state}
+				options={sortedOptions}
+				onChange={this.handleChange}
+				multi={this.props.multi}
+				clearable={this.props.clearable === true}
+				style={this.props.style}
+				/>
 		);
 	}
 }
 
 DropdownMenu.propTypes = {
-	buttonName: PropTypes.string,
-	buttonLabel: PropTypes.string,
+	value: PropTypes.oneOfType([
+		PropTypes.arrayOf(PropTypes.string),
+		PropTypes.string,
+	]),
 	options: PropTypes.array.isRequired,
 	onChange: PropTypes.func.isRequired,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
+	unsorted: PropTypes.bool,
+	style: PropTypes.object,
 };
