@@ -18,12 +18,12 @@ function enhanceCanvasRenderingContext2D() {
 			const fontArgs = this.font.split(' ');
 			const font = fontArgs[fontArgs.length - 1];
 			switch (typeof size) {
-				case 'number':
-					this.font = size + 'px ' + font;
-					break;
-				case 'string':
-					this.font = size + font;
-					break;
+			case 'number':
+				this.font = size + 'px ' + font;
+				break;
+			case 'string':
+				this.font = size + font;
+				break;
 			}
 		};
 	}
@@ -195,9 +195,7 @@ class CanvasGridComponent extends React.Component {
 		const ratio = window.devicePixelRatio || 1;
 		const width = (view.clientWidth * ratio) | 0;
 		const height = (view.clientHeight * ratio) | 0;
-		const x = this.props.x ? this.props.x : 0;
-		const y = this.props.y ? this.props.y : 0;
-		this.setState({ x, y, width, height, ratio });
+		this.setState({ x: 0, y : 0, width, height, ratio });
 	}
 
 
@@ -218,7 +216,7 @@ class CanvasGridComponent extends React.Component {
 			if (this.props.clear) { context.clearRect(0, 0, width, width); }
 
 			context.pixelRatio = ratio;
-			context.translate(-x, -y);
+			const bounds = [x, y, width, height];
 			const { sketches } = this.props;
 			for (let i = 0; i < sketches.length; i++) {
 				const sketch = sketches[i];
@@ -227,7 +225,7 @@ class CanvasGridComponent extends React.Component {
 				const sketchW = sketch.width ? sketch.width : width;
 				const sketchH = sketch.height ? sketch.height : height;
 				const sketchBounds = [sketchX, sketchY, sketchX + sketchW, sketchY + sketchH];
-				if (inBounds(this.props.bounds, sketchBounds)) {
+				if (inBounds(bounds, sketchBounds)) {
 					// set (sketchX, sketchY) as origin
 					context.translate(sketchX, sketchY);
 					// store width, height and ratio in context for paint functions
@@ -241,7 +239,6 @@ class CanvasGridComponent extends React.Component {
 					context.translate(-sketchX, -sketchY);
 				}
 			}
-			context.translate(x, y);
 
 		}
 	}
@@ -275,8 +272,6 @@ class CanvasGridComponent extends React.Component {
 
 CanvasGridComponent.propTypes = {
 	sketches: PropTypes.arrayOf(PropTypes.object).isRequired,
-	// [xmin, ymin, xmax, ymax]
-	bounds: PropTypes.arrayOf(PropTypes.number).isRequired,
 	clear: PropTypes.bool,
 	redraw: PropTypes.bool,
 	className: PropTypes.string,
@@ -323,5 +318,3 @@ CanvasGrid.propTypes = {
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
-
-
