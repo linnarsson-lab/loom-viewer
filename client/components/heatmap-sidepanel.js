@@ -1,7 +1,8 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
+import { PrintSettings } from './print-settings';
+import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 export const HeatmapSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -60,36 +61,40 @@ export const HeatmapSidepanel = function (props) {
 			bsStyle='default'>
 			<ListGroup fill>
 				<ListGroupItem>
-
+					<label>Cell attribute to show</label>
 					<DropdownMenu
-						buttonLabel={'Cell attribute to show'}
-						buttonName={heatmapState.colAttr}
+						value={heatmapState.colAttr}
 						options={colAttrOptions}
 						onChange={colAttrHC}
 						/>
 					{fetchColGene}
+					<label>Show cell attribute as</label>
 					<DropdownMenu
-						buttonLabel={'Show cell attribute as'}
-						buttonName={heatmapState.colMode}
+						value={heatmapState.colMode}
 						options={optionNames}
 						onChange={colModeHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Gene attribute to display</label>
 					<DropdownMenu
-						buttonLabel={'Gene attribute to display'}
-						buttonName={heatmapState.rowAttr}
+						value={heatmapState.rowAttr}
 						options={rowAttrOptions}
 						onChange={rowAttrHC}
 						/>
 					{fetchRowGene}
+					<label>Display gene attribute as</label>
 					<DropdownMenu
-						buttonLabel={'Display gene attribute as'}
-						buttonName={heatmapState.rowMode}
+						value={heatmapState.rowMode}
 						options={optionNames}
 						onChange={rowModeHC}
 						/>
 				</ListGroupItem>
+				<PrintSettings
+					dispatch={dispatch}
+					dataSet={dataSet}
+					stateName={'heatmapState'}
+					actionType={'SET_HEATMAP_PROPS'} />
 			</ListGroup>
 		</Panel>
 	);

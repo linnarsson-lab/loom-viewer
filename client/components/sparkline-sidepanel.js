@@ -1,8 +1,9 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { Panel, ListGroup, ListGroupItem,
-	Button } from 'react-bootstrap';
 import { FetchGeneComponent } from './fetch-gene';
+import { PrintSettings } from './print-settings';
+import { Panel, Button, Glyphicon,
+	ListGroup, ListGroupItem } from 'react-bootstrap';
 
 export const SparklineSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -51,9 +52,9 @@ export const SparklineSidepanel = function (props) {
 			bsStyle='default'>
 			<ListGroup fill>
 				<ListGroupItem>
+					<label><Glyphicon glyph='sort' /> Order by</label>
 					<DropdownMenu
-						buttonLabel={'Order by'}
-						buttonName={sparklineState.orderByAttr1}
+						value={sparklineState.orderByAttr1}
 						options={orderByOptions}
 						onChange={orderBy1HC}
 						/>
@@ -62,9 +63,10 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene1HC}
-							value={sparklineState.orderByGene1} /> : null }
+							value={sparklineState.orderByGene1}
+							style={{ marginLeft: '2em' }} /> : null }
 					<DropdownMenu
-						buttonName={sparklineState.orderByAttr2}
+						value={sparklineState.orderByAttr2}
 						options={orderByOptions}
 						onChange={orderBy2HC}
 						/>
@@ -73,9 +75,10 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene2HC}
-							value={sparklineState.orderByGene2} /> : null }
+							value={sparklineState.orderByGene2}
+							style={{ marginLeft: '2em' }} /> : null }
 					<DropdownMenu
-						buttonName={sparklineState.orderByAttr3}
+						value={sparklineState.orderByAttr3}
 						options={orderByOptions}
 						onChange={orderBy3HC}
 						/>
@@ -84,17 +87,18 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene3HC}
-							value={sparklineState.orderByGene3} /> : null }
+							value={sparklineState.orderByGene3}
+							style={{ marginLeft: '2em' }} /> : null }
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Show cell attribute</label>
 					<DropdownMenu
-						buttonLabel={'Show cell attribute'}
-						buttonName={sparklineState.colAttr}
+						value={sparklineState.colAttr}
 						options={colAttrsOptions}
 						onChange={colAttrsHC}
 						/>
 					<DropdownMenu
-						buttonName={sparklineState.colMode}
+						value={sparklineState.colMode}
 						options={colModeOptions}
 						onChange={colModeHC}
 						/>
@@ -109,9 +113,9 @@ export const SparklineSidepanel = function (props) {
 						multi
 						clearable
 						/>
+					<label>Show genes as</label>
 					<DropdownMenu
-						buttonLabel={'Show genes as'}
-						buttonName={sparklineState.geneMode}
+						value={sparklineState.geneMode}
 						options={geneModeOptions}
 						onChange={geneModeHC}
 						/>
@@ -122,8 +126,13 @@ export const SparklineSidepanel = function (props) {
 						Show labels
 					</Button>
 				</ListGroupItem>
-			</ListGroup>
-		</Panel>
+				<PrintSettings
+					dispatch={dispatch}
+					dataSet={dataSet}
+					stateName={'sparklineState'}
+					actionType={'SET_SPARKLINE_PROPS'} />
+			</ListGroup >
+		</Panel >
 	);
 };
 

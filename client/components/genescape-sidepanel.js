@@ -1,5 +1,6 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
+import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem,
 	ButtonGroup, Button } from 'react-bootstrap';
 
@@ -72,25 +73,25 @@ export const GenescapeSidepanel = function (props) {
 					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>X Coordinate</label>
 					<DropdownMenu
-						buttonLabel={'X Coordinate'}
-						buttonName={xCoordinate}
+						value={xCoordinate}
 						options={rowAttrOptions}
 						onChange={xCoordinateHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Y Coordinate</label>
 					<DropdownMenu
-						buttonLabel={'Y Coordinate'}
-						buttonName={yCoordinate}
+						value={yCoordinate}
 						options={rowAttrOptions}
 						onChange={yCoordinateHC}
 						/>
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Color</label>
 					<DropdownMenu
-						buttonLabel={'Color'}
-						buttonName={colorAttr}
+						value={colorAttr}
 						options={rowAttrOptions}
 						onChange={colorAttrHC}
 						/>
@@ -125,6 +126,11 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
+				<PrintSettings
+					dispatch={dispatch}
+					dataSet={dataSet}
+					stateName={'genescapeState'}
+					actionType={'SET_GENESCAPE_PROPS'} />
 			</ListGroup>
 		</Panel>
 	);

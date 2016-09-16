@@ -7,6 +7,8 @@ import { sparkline } from './sparkline';
 
 import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
 
+import { defaultPrintSettings } from './print-settings';
+
 import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
@@ -17,60 +19,8 @@ class SparklineViewComponent extends Component {
 	constructor(props) {
 		super(props);
 		this.sortIndices = this.sortIndices.bind(this);
-		this.generateSparklines = this.generateSparklines.bind(this);
+		this.generateSparklinePainters = this.generateSparklinePainters.bind(this);
 		this.createSortedBy = this.createSortedBy.bind(this);
-		this.update = this.update.bind(this);
-	}
-
-	update(dataSet) {
-		const sl = dataSet.sparklineState;
-		// The old column attribute values that we displayed in the "legend"
-		let legendData = dataSet.colAttrs[sl.colAttr];
-		// if colAttr does not exist (for example, the default values
-		// in the Loom interface is not present), pick the first column
-		if (legendData === undefined) {
-			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
-			legendData = dataSet.colAttrs[properties[0]];
-		}
-
-		const indices = this.sortIndices(legendData.length, sl, dataSet);
-
-		// selected genes in state
-		const selection = dataSet.rowAttrs.Gene ?
-			_.intersection(sl.genes, dataSet.rowAttrs.Gene)
-			:
-			sl.genes;
-		let genes = [], data = [];
-		for (let i = 0; i < selection.length; i++) {
-			let geneData = dataSet.fetchedGenes[selection[i]];
-			// no point trying to generate genes without data
-			if (geneData) {
-				genes.push(selection[i]);
-				data.push(this.createSortedBy(geneData, indices));
-			}
-		}
-		const sparklines = genes.length ? this.generateSparklines(genes, data, sl.geneMode, sl.showLabels) : null;
-		const legendSparkline = sparkline(this.createSortedBy(legendData, indices), sl.colMode);
-
-		// "Show cell attribute"
-		const legend = (
-			<div style={{
-				flex: '0 0 auto',
-				minHeight: '20px',
-				/* Showing the scrollbar is ugly, but otherwise
-				lining up will be *really hard* because browsers
-				do not allow for direct access to scrollbar size */
-				overflowY: 'scroll',
-			}}>
-				<Canvas
-					height={20}
-					paint={legendSparkline}
-					redraw
-					clear
-					/>
-			</div>
-		);
-		return { legend, sparklines };
 	}
 
 	sortIndices(length, slState, dataSet) {
@@ -132,14 +82,52 @@ class SparklineViewComponent extends Component {
 		return sortedArr;
 	}
 
-	generateSparklines(genes, geneData, mode, showLabels) {
+	generateSparklinePainters(genes, geneData, mode, showLabels) {
 		let newSL = []; // new sparklines
 		let dataRange = [0, geneData[0].length];
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
-			newSL[i] = (
+			newSL[i] = sparkline(geneData[i], mode, dataRange, showLabels ? gene : null);
+		}
+		return newSL;
+	}
+
+	render() {
+		const { dataSet } = this.props;
+		const sl = dataSet.sparklineState;
+		// The old column attribute values that we displayed in the "legend"
+		let legendData = dataSet.colAttrs[sl.colAttr];
+		// if colAttr does not exist (for example, the default values
+		// in the Loom interface is not present), pick the first column
+		if (legendData === undefined) {
+			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
+			legendData = dataSet.colAttrs[properties[0]];
+		}
+
+		const indices = this.sortIndices(legendData.length, sl, dataSet);
+
+		// selected genes in state
+		const selection = dataSet.rowAttrs.Gene ?
+			_.intersection(sl.genes, dataSet.rowAttrs.Gene)
+			:
+			sl.genes;
+
+		let genes = [], data = [];
+		for (let i = 0; i < selection.length; i++) {
+			let geneData = dataSet.fetchedGenes[selection[i]];
+			// no point trying to generate genes without data
+			if (geneData) {
+				genes.push(selection[i]);
+				data.push(this.createSortedBy(geneData, indices));
+			}
+		}
+
+		let sparklinePainters = genes.length ? this.generateSparklinePainters(genes, data, sl.geneMode, sl.showLabels) : [];
+		let sparklines = new Array(sparklinePainters.length);
+		for (let i = 0; i < sparklinePainters.length; i++) {
+			sparklines[i] = (
 				<div
-					key={gene}
+					key={genes[i]}
 					style={{
 						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
 						display: 'flex',
@@ -149,22 +137,42 @@ class SparklineViewComponent extends Component {
 					}}>
 					<Canvas
 						height={30}
-						paint={sparkline(geneData[i], mode, dataRange, showLabels ? gene : null) }
+						paint={sparklinePainters[i]}
 						redraw
 						clear
 						/>
 				</div>
 			);
 		}
-		return newSL;
-	}
 
-	render() {
-		const { legend, sparklines } = this.update(this.props.dataSet);
+
+		const legendPainter = sparkline(this.createSortedBy(legendData, indices), sl.colMode);
+		const legend = (
+			<div style={{
+				flex: '0 0 auto',
+				minHeight: '20px',
+				overflowY: 'scroll',
+				overflowX: 'hidden',
+			}}>
+				<Canvas
+					height={20}
+					paint={legendPainter}
+					redraw
+					clear
+					/>
+			</div>
+		);
+
+
 		return (
 			<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
 				{legend}
-				<div style={{ display: 'flex', flex: 1, overflowY: 'scroll', overflowX: 'hidden' }}>
+				<div style={{
+					display: 'flex',
+					flex: 1,
+					overflowY: 'scroll',
+					overflowX: 'hidden',
+				}}>
 					<div style={{
 						display: 'flex',
 						flexDirection: 'column',
@@ -181,7 +189,6 @@ class SparklineViewComponent extends Component {
 
 SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
 };
 
 
@@ -206,6 +213,8 @@ class SparklineStateInitialiser extends Component {
 					colMode: 'Categorical',
 					geneMode: 'Bars',
 					genes: '',
+					showLabels: true,
+					printSettings: defaultPrintSettings,
 				})
 			);
 
@@ -222,12 +231,13 @@ class SparklineStateInitialiser extends Component {
 		const { dispatch, dataSet } = this.props;
 		return dataSet.sparklineState ? (
 			<div className='view' style={{ overflowX: 'hidden' }}>
-				<SparklineSidepanel
-					dataSet={dataSet}
-					dispatch={dispatch}
-					/>
+				<div style={{ overflowY: 'auto' }}>
+					<SparklineSidepanel
+						dataSet={dataSet}
+						dispatch={dispatch}
+						/>
+				</div>
 				<SparklineViewComponent
-					dispatch={dispatch}
 					dataSet={dataSet}
 					/>
 			</div>
