@@ -5,17 +5,17 @@ export function sparkline(data, mode, dataRange, label, orientation) {
 	// Determine plotter
 	let paint = null;
 	switch (mode) {
-	case 'Categorical':
-		paint = categoriesPainter(data);
-		break;
-	case 'Bars':
-		paint = barPainter(data, label);
-		break;
-	case 'Heatmap':
-		paint = heatmapPainter(data, label);
-		break;
-	default:
-		paint = textPaint;
+		case 'Categorical':
+			paint = categoriesPainter(data);
+			break;
+		case 'Bars':
+			paint = barPainter(data, label);
+			break;
+		case 'Heatmap':
+			paint = heatmapPainter(data, label);
+			break;
+		default:
+			paint = textPaint;
 	}
 
 	return (context) => {
@@ -137,14 +137,18 @@ function calcMeans(rangeData, rangeWidth) {
 	while (rangeData[end] === undefined && end > start) { end--; }
 
 	let barWidth = 0;
-	let means = null;
+	// visMax = visually most relevant datapoint
+	let means = null, visMax = null;
 	if (rangeData.length <= rangeWidth) {
 		// more pixels than data
 		means = rangeData;
+		visMax= rangeData;
 		barWidth = rangeWidth / rangeData.length;
 	} else {
 		// more data than pixels
 		barWidth = 1;
+
+		// calculate means
 		means = new Array(rangeWidth);
 		for (let i = 0; i < rangeWidth; i++) {
 			let i0 = (i * rangeData.length / rangeWidth) | 0;
@@ -161,8 +165,35 @@ function calcMeans(rangeData, rangeWidth) {
 			const mean = (i1 - i0) !== 0 ? sum / (i1 - i0) : sum;
 			means[i] = mean;
 		}
+
+		// Variant of the Largest Triangle Three Buckets algorithm
+		// by Sven Steinnarson. Essentially: keep the value with
+		// the largest difference to the surrounding averages.
+		visMax = new Array(rangeWidth);
+		for (let i = 0; i < rangeWidth; i++) {
+			let i0 = (i * rangeData.length / rangeWidth) | 0;
+			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
+			if (i0 < start || i0 >= end) {
+				visMax[i] = 0;
+				continue;
+			}
+			i1 = i1 < end ? i1 : end;
+
+			// this distorts the values at the edges,
+			// but keeps the code fast.
+			const meanPrev = means[i - 1] | 0;
+			const meanNext = means[i + 1] | 0;
+			let mean = (meanPrev + meanNext) * 0.5;
+
+			let max = rangeData[i0];
+			for (let j = i0; j < i1; j++) {
+				// largest difference to the surrounding averages
+				max = Math.max(max, Math.abs(rangeData[j] - mean));
+			}
+			visMax[i] = max;
+		}
 	}
-	return { means, barWidth };
+	return { means, visMax, barWidth };
 }
 
 // Plotting functions. The plotters assume a horizontal plot.
@@ -225,13 +256,13 @@ function barPainter(data, label) {
 
 function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
 
-	const { means, barWidth } = calcMeans(rangeData, rangeWidth);
+	const { visMax, barWidth } = calcMeans(rangeData, rangeWidth);
 	// factor to multiply the mean values by, to calculate bar height
 	const scaleMean = context.height / max;
 	context.fillStyle = '#404040';
-	for (let i = 0, x = xOffset; i < means.length; i++) {
-		// Even if means[i] is non a number, OR-masking forces it to 0
-		let barHeight = (means[i] * scaleMean) | 0;
+	for (let i = 0, x = xOffset; i < visMax.length; i++) {
+		// Even if visMax[i] is non a number, OR-masking forces it to 0
+		let barHeight = (visMax[i] * scaleMean) | 0;
 		// canvas defaults to positive y going *down*, so to
 		// draw from bottom to top we start at height and
 		// subtract the height.
@@ -264,11 +295,11 @@ function heatmapPainter(data, label) {
 }
 
 function heatmapPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
-	const { means, barWidth } = calcMeans(rangeData, rangeWidth);
+	const { visMax, barWidth } = calcMeans(rangeData, rangeWidth);
 	const colorIdxScale = (colors.solar9.length / (max - min) || 1);
-	for (let i = 0, x = xOffset; i < means.length; i++) {
-		// Even if means[i] is non a number, OR-masking forces it to 0
-		let colorIdx = (means[i] * colorIdxScale) | 0;
+	for (let i = 0, x = xOffset; i < visMax.length; i++) {
+		// Even if visMax[i] is not a number, OR-masking forces it to 0
+		let colorIdx = (visMax[i] * colorIdxScale) | 0;
 		context.fillStyle = colors.solar9[colorIdx];
 		context.fillRect(x, 0, barWidth, context.height);
 		x += barWidth;
