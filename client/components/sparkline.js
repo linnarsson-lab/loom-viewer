@@ -185,11 +185,11 @@ function calcMeans(rangeData, rangeWidth) {
 			const meanNext = means[i + 1] | 0;
 			let mean = (meanPrev + meanNext) * 0.5;
 
+			// find largest difference to the surrounding averages
 			let max = rangeData[i0];
-			let diff = Math.abs(rangeData[i0] - mean);
-			for (let j = i0; j < i1; j++) {
-				// largest difference to the surrounding averages
-				let newDiff = Math.max(diff, Math.abs(rangeData[j] - mean));
+			let diff = Math.abs(max - mean);
+			for (let j = i0+1; j < i1; j++) {
+				let newDiff = Math.abs(rangeData[j] - mean);
 				if (newDiff > diff){
 					diff = newDiff;
 					max = rangeData[j];
