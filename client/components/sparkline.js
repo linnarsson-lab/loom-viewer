@@ -186,9 +186,14 @@ function calcMeans(rangeData, rangeWidth) {
 			let mean = (meanPrev + meanNext) * 0.5;
 
 			let max = rangeData[i0];
+			let diff = Math.max(max, Math.abs(rangeData[i0] - mean));
 			for (let j = i0; j < i1; j++) {
 				// largest difference to the surrounding averages
-				max = Math.max(max, Math.abs(rangeData[j] - mean));
+				let newDiff = Math.max(max, Math.abs(rangeData[j] - mean));
+				if (newDiff > diff){
+					diff = newDiff;
+					max = rangeData[j];
+				}
 			}
 			visMax[i] = max;
 		}
@@ -258,7 +263,8 @@ function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
 
 	const { visMax, barWidth } = calcMeans(rangeData, rangeWidth);
 	// factor to multiply the mean values by, to calculate bar height
-	const scaleMean = context.height / max;
+	// Scaled down a tiny bit to keep vertical space between sparklines
+	const scaleMean = context.height / (max*1.1);
 	context.fillStyle = '#404040';
 	for (let i = 0, x = xOffset; i < visMax.length; i++) {
 		// Even if visMax[i] is non a number, OR-masking forces it to 0
