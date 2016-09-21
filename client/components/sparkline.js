@@ -186,10 +186,10 @@ function calcMeans(rangeData, rangeWidth) {
 			let mean = (meanPrev + meanNext) * 0.5;
 
 			let max = rangeData[i0];
-			let diff = Math.max(max, Math.abs(rangeData[i0] - mean));
+			let diff = Math.abs(rangeData[i0] - mean);
 			for (let j = i0; j < i1; j++) {
 				// largest difference to the surrounding averages
-				let newDiff = Math.max(max, Math.abs(rangeData[j] - mean));
+				let newDiff = Math.max(diff, Math.abs(rangeData[j] - mean));
 				if (newDiff > diff){
 					diff = newDiff;
 					max = rangeData[j];
