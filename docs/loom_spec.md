@@ -15,7 +15,7 @@ Furthermore, current and future datasets can have tens of thousands of rows (gen
 designed `.loom` for efficient access to arbitrary rows and columns. 
 
 Finally, the annotated matrix format lends itself to very natural representation of common analysis tasks. For example, the result
-of a clustering algorihtm can be stored simply as another attribute that gives the cluser ID for each cell. Dimensionality 
+of a clustering algorithm can be stored simply as another attribute that gives the cluser ID for each cell. Dimensionality 
 reduction such as PCA or t-SNE, similarly, can be stored as two attributes giving the projection coordinates of each cell.
 
 ## HDF5 concepts
