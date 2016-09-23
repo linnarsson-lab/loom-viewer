@@ -7,6 +7,8 @@ import { scatterplot } from './scatterplot';
 
 import { SET_GENESCAPE_PROPS } from '../actions/actionTypes';
 
+import { defaultPrintSettings } from './print-settings';
+
 import JSURL from 'jsurl';
 
 const GenescapeComponent = function (props) {
@@ -26,6 +28,7 @@ const GenescapeComponent = function (props) {
 			<Canvas
 				paint={paint}
 				style={{ margin: '20px' }}
+				redraw
 				clear
 				/>
 		</div>
@@ -53,6 +56,7 @@ class GenescapeStateInitialiser extends Component {
 					yCoordinate: '_tSNE2',
 					colorAttr: dataSet.rowAttrs[0],
 					colorMode: 'Heatmap',
+					printSettings: defaultPrintSettings,
 				})
 			);
 

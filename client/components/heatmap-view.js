@@ -9,6 +9,8 @@ import { sparkline } from './sparkline';
 
 import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
 
+import { defaultPrintSettings } from './print-settings';
+
 import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
@@ -55,6 +57,8 @@ class HeatmapMapComponent extends Component {
 					rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
 				}
 			}
+			const rowMode = (heatmapState.rowAttr === '(gene positions)') ?
+				'TextAlways' : heatmapState.rowMode;
 
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
@@ -65,6 +69,7 @@ class HeatmapMapComponent extends Component {
 							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]])
 						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
+						redraw
 						clear
 						/>
 					<div className='view'>
@@ -87,11 +92,11 @@ class HeatmapMapComponent extends Component {
 							height={heatmapHeight}
 							paint={sparkline(
 								rowData,
-								heatmapState.rowAttr === '(gene positions)' ?
-									'TextAlways' : heatmapState.rowMode,
+								rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
 								'vertical') }
+							redraw
 							clear
 							/>
 					</div>
@@ -158,6 +163,7 @@ class HeatmapStateInitialiser extends Component {
 					colAttr: dataSet.colAttrs[0],
 					colMode: 'Text',
 					colGene: '',
+					printSettings: defaultPrintSettings,
 				})
 			);
 

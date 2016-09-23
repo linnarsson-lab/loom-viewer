@@ -7,23 +7,26 @@ import { scatterplot } from './scatterplot';
 
 import { SET_LANDSCAPE_PROPS } from '../actions/actionTypes';
 
+import { defaultPrintSettings } from './print-settings';
+
 import JSURL from 'jsurl';
+
+function makeData(attr, gene, fetchedGenes, colAttrs) {
+	const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
+		fetchedGenes[gene] : colAttrs[attr]);
+	// don't mutate data from the redux store
+	return data ? data.slice(0) : null;
+}
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { fetchedGenes, landscapeState } = dataSet;
 	const { colorAttr, colorGene, colorMode, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
 
-	const makeData = (attr, gene) => {
-		const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
-			fetchedGenes[gene] : dataSet.colAttrs[attr]);
-		// don't mutate data from the redux store
-		return data ? data.slice(0) : null;
-	};
+	let color = makeData(colorAttr, colorGene, fetchedGenes, dataSet.colAttrs);
+	let x = makeData(xCoordinate, xGene, fetchedGenes, dataSet.colAttrs);
+	let y = makeData(yCoordinate, yGene, fetchedGenes, dataSet.colAttrs);
 
-	let color = makeData(colorAttr, colorGene);
-	let x = makeData(xCoordinate, xGene);
-	let y = makeData(yCoordinate, yGene);
 	if (filterZeros && color) {
 		const filterData = color.slice(0);
 		const data = (v, i) => { return filterData[i]; };
@@ -32,9 +35,9 @@ const LandscapeComponent = function (props) {
 		y = y ? y.filter(data) : null;
 	}
 
-	const logColor = colorAttr === 'gene';
-	const logX = xCoordinate === 'gene';
-	const logY = yCoordinate === 'gene';
+	const logColor = colorAttr === '(gene)';
+	const logX = xCoordinate === '(gene)';
+	const logY = yCoordinate === '(gene)';
 
 	const paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
 	return (
@@ -46,6 +49,7 @@ const LandscapeComponent = function (props) {
 			<Canvas
 				paint={paint}
 				style={{ margin: '20px' }}
+				redraw
 				clear
 				/>
 		</div>
@@ -76,6 +80,7 @@ class LandscapeStateInitialiser extends Component {
 					colorAttr: 'CellID',
 					colorMode: 'Heatmap',
 					colorGene: '',
+					printSettings: defaultPrintSettings,
 				})
 			);
 

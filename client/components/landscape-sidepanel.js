@@ -1,8 +1,9 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
+import { FetchGeneComponent } from './fetch-gene';
+import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup } from 'react-bootstrap';
-import { FetchGeneComponent } from './fetch-gene';
 
 
 export const LandscapeSidepanel = function (props) {
@@ -82,9 +83,9 @@ export const LandscapeSidepanel = function (props) {
 					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>X Coordinate</label>
 					<DropdownMenu
-						buttonLabel={'X Coordinate'}
-						buttonName={xCoordinate}
+						value={xCoordinate}
 						options={colAttrsOptions}
 						onChange={xCoordinateHC}
 						/>
@@ -97,9 +98,9 @@ export const LandscapeSidepanel = function (props) {
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Y Coordinate</label>
 					<DropdownMenu
-						buttonLabel={'Y Coordinate'}
-						buttonName={yCoordinate}
+						value={yCoordinate}
 						options={colAttrsOptions}
 						onChange={yCoordinateHC}
 						/>
@@ -112,9 +113,9 @@ export const LandscapeSidepanel = function (props) {
 							/> : null }
 				</ListGroupItem>
 				<ListGroupItem>
+					<label>Color</label>
 					<DropdownMenu
-						buttonLabel={'Color'}
-						buttonName={colorAttr}
+						value={colorAttr}
 						options={colAttrsOptions}
 						onChange={colorAttrHC}
 						/>
@@ -163,6 +164,11 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
+				<PrintSettings
+					dispatch={dispatch}
+					dataSet={dataSet}
+					stateName={'landscapeState'}
+					actionType={'SET_LANDSCAPE_PROPS'} />
 			</ListGroup>
 		</Panel >
 	);

@@ -17,11 +17,7 @@ import {
 	SET_SPARKLINE_PROPS,
 } from '../actions/actionTypes';
 
-// Until we get that spread object operator to work
-// we might as well create some helper-functions
-function merge(...args) {
-	return Object.assign({}, ...args);
-}
+import { merge } from '../js/util';
 
 // pattern used for merging various view states
 // and fetchedGenes with their respective datasets
