@@ -647,7 +647,7 @@ class LoomConnection(object):
 				values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]				
 			self.set_attr(name, values, axis = 1, dtype=new_dtype)
 
-	def map(self, f, axis = 0, chunksize = 10000):
+	def map(self, f, axis = 0, chunksize = 10000, selection=None):
 		"""
 		Apply a function along an axis without loading the entire dataset in memory.
 
@@ -657,6 +657,8 @@ class LoomConnection(object):
 			axis (int):		Axis along which to apply the function (0 = rows, 1 = columns)
 			
 			chunksize (int): Number of rows (columns) to load per chunk
+
+			selection (array of bool): Columns (rows) to include
 
 		Returns:
 			numpy.ndarray result of function application
@@ -676,7 +678,10 @@ class LoomConnection(object):
 			ix = 0
 			while ix < self.shape[0]:
 				rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
-				chunk = self[ix:ix + rows_per_chunk,:]
+				if selection != None:
+					chunk = self[ix:ix + rows_per_chunk,:][:,selection]
+				else:
+					chunk = self[ix:ix + rows_per_chunk,:]
 				for i in xrange(len(f_list)):
 					result[i][ix:ix + rows_per_chunk] = np.apply_along_axis(f_list[i], 1, chunk)
 				ix = ix + rows_per_chunk
@@ -687,7 +692,10 @@ class LoomConnection(object):
 			ix = 0
 			while ix < self.shape[1]:
 				cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
-				chunk = self[:,ix:ix + cols_per_chunk]
+				if selection != None:
+					chunk = self[:,ix:ix + cols_per_chunk][selection,:]
+				else:
+					chunk = self[:,ix:ix + cols_per_chunk]
 				for i in xrange(len(f_list)):
 					result[i][ix:ix + cols_per_chunk] = np.apply_along_axis(f_list[i], 0, chunk)
 				ix = ix + cols_per_chunk
@@ -846,19 +854,20 @@ class LoomConnection(object):
 	#####################
 
 
-	def feature_selection(self, n_genes, method="SVR"):
+	def feature_selection(self, n_genes, method="SVR", cells=None):
 		"""
 		Fits a noise model (CV vs mean)
 		
 		Args:
 			n_genes (int):	number of genes to include
+			cells (array of bool): cells to include when computing mean and CV (or None)
 
 		Returns:
 			Nothing.
 		
 		This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
 		"""
-		(mu,std) = self.map((np.mean,np.std),axis=0)
+		(mu,std) = self.map((np.mean,np.std),axis=0, selection=cells)
 		cv = std/mu
 		log2_m = np.log2(mu)
 		excluded = (log2_m == float("-inf"))
