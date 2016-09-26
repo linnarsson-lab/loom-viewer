@@ -137,30 +137,40 @@ function calcMeans(rangeData, rangeWidth) {
 	while (rangeData[end] === undefined && end > start) { end--; }
 
 	let barWidth = 0;
-	// visMax = visually most relevant datapoint
-	let means = null, visMax = null;
+	// outlier = visually most relevant datapoint
+	let means, minima, maxima, outliers;
 	if (rangeData.length <= rangeWidth) {
 		// more pixels than data
-		means = rangeData;
-		visMax= rangeData;
 		barWidth = rangeWidth / rangeData.length;
+		means = rangeData;
+		minima = rangeData;
+		maxima = rangeData;
+		outliers = rangeData;
 	} else {
 		// more data than pixels
 		barWidth = 1;
 
-		// calculate means
+		// calculate means, find minima and maxima
 		means = new Array(rangeWidth);
+		minima = new Array(rangeWidth);
+		maxima = new Array(rangeWidth);
 		for (let i = 0; i < rangeWidth; i++) {
 			let i0 = (i * rangeData.length / rangeWidth) | 0;
 			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
+			// skip the zero-padding on both sides
 			if (i0 < start || i0 >= end) {
 				means[i] = 0;
 				continue;
 			}
 			i1 = i1 < end ? i1 : end;
 			let sum = 0;
+			minima[i0] = rangeData[i0];
+			maxima[i0] = rangeData[i0];
 			for (let j = i0; j < i1; j++) {
-				sum += rangeData[j];
+				let val = rangeData[j];
+				sum += val;
+				minima[j] = val < minima[j] ? val : minima[j];
+				maxima[j] = val > maxima[j] ? val : maxima[j];
 			}
 			const mean = (i1 - i0) !== 0 ? sum / (i1 - i0) : sum;
 			means[i] = mean;
@@ -169,12 +179,13 @@ function calcMeans(rangeData, rangeWidth) {
 		// Variant of the Largest Triangle Three Buckets algorithm
 		// by Sven Steinnarson. Essentially: keep the value with
 		// the largest difference to the surrounding averages.
-		visMax = new Array(rangeWidth);
+		outliers = new Array(rangeWidth);
 		for (let i = 0; i < rangeWidth; i++) {
 			let i0 = (i * rangeData.length / rangeWidth) | 0;
 			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
 			if (i0 < start || i0 >= end) {
-				visMax[i] = 0;
+				// skip zero-padding
+				outliers[i] = 0;
 				continue;
 			}
 			i1 = i1 < end ? i1 : end;
@@ -188,17 +199,17 @@ function calcMeans(rangeData, rangeWidth) {
 			// find largest difference to the surrounding averages
 			let max = rangeData[i0];
 			let diff = Math.abs(max - mean);
-			for (let j = i0+1; j < i1; j++) {
+			for (let j = i0 + 1; j < i1; j++) {
 				let newDiff = Math.abs(rangeData[j] - mean);
-				if (newDiff > diff){
+				if (newDiff > diff) {
 					diff = newDiff;
 					max = rangeData[j];
 				}
 			}
-			visMax[i] = max;
+			outliers[i] = max;
 		}
 	}
-	return { means, visMax, barWidth };
+	return { means, minima, maxima, outliers, barWidth };
 }
 
 // Plotting functions. The plotters assume a horizontal plot.
@@ -261,14 +272,14 @@ function barPainter(data, label) {
 
 function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
 
-	const { visMax, barWidth } = calcMeans(rangeData, rangeWidth);
+	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
 	// factor to multiply the mean values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
-	const scaleMean = context.height / (max*1.1);
+	const scaleMean = context.height / (max * 1.1);
 	context.fillStyle = '#404040';
-	for (let i = 0, x = xOffset; i < visMax.length; i++) {
-		// Even if visMax[i] is non a number, OR-masking forces it to 0
-		let barHeight = (visMax[i] * scaleMean) | 0;
+	for (let i = 0, x = xOffset; i < outliers.length; i++) {
+		// Even if outliers[i] is non a number, OR-masking forces it to 0
+		let barHeight = (outliers[i] * scaleMean) | 0;
 		// canvas defaults to positive y going *down*, so to
 		// draw from bottom to top we start at height and
 		// subtract the height.
@@ -301,11 +312,11 @@ function heatmapPainter(data, label) {
 }
 
 function heatmapPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
-	const { visMax, barWidth } = calcMeans(rangeData, rangeWidth);
+	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
 	const colorIdxScale = (colors.solar9.length / (max - min) || 1);
-	for (let i = 0, x = xOffset; i < visMax.length; i++) {
-		// Even if visMax[i] is not a number, OR-masking forces it to 0
-		let colorIdx = (visMax[i] * colorIdxScale) | 0;
+	for (let i = 0, x = xOffset; i < outliers.length; i++) {
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		let colorIdx = (outliers[i] * colorIdxScale) | 0;
 		context.fillStyle = colors.solar9[colorIdx];
 		context.fillRect(x, 0, barWidth, context.height);
 		x += barWidth;
