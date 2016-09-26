@@ -161,10 +161,10 @@ export function Canvas(props) {
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
-	width: PropTypes.number,
-	height: PropTypes.number,
 	clear: PropTypes.bool,
 	redraw: PropTypes.bool,
+	width: PropTypes.number,
+	height: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
