@@ -63,8 +63,7 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene1HC}
-							value={sparklineState.orderByGene1}
-							style={{ marginLeft: '2em' }} /> : null }
+							value={sparklineState.orderByGene1} /> : null }
 					<DropdownMenu
 						value={sparklineState.orderByAttr2}
 						options={orderByOptions}
@@ -75,8 +74,7 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene2HC}
-							value={sparklineState.orderByGene2}
-							style={{ marginLeft: '2em' }} /> : null }
+							value={sparklineState.orderByGene2} /> : null }
 					<DropdownMenu
 						value={sparklineState.orderByAttr3}
 						options={orderByOptions}
@@ -87,8 +85,7 @@ export const SparklineSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={orderByGene3HC}
-							value={sparklineState.orderByGene3}
-							style={{ marginLeft: '2em' }} /> : null }
+							value={sparklineState.orderByGene3} /> : null }
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Show cell attribute</label>
