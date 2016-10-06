@@ -11,8 +11,8 @@ export class Heatmap extends React.Component {
 		const map = L.map(
 			this.refs.mapContainer,
 			{
-				maxZoom: zoomRange[2],
 				minZoom: zoomRange[0] + 1,
+				maxZoom: zoomRange[2],
 				crs: L.CRS.Simple,
 				attributionControl: false,
 			}
@@ -21,8 +21,9 @@ export class Heatmap extends React.Component {
 		L.tileLayer(
 			`/loom/${project}/${dataset}/tiles/{z}/{x}_{y}.png`,
 			{
-				maxZoom: zoomRange[2],
 				minZoom: zoomRange[0] + 1,
+				maxZoom: zoomRange[2],
+				maxNativeZoom: zoomRange[2] - 8,
 				continuousWorld: false,
 				noWrap: true,
 				attribution: '',
