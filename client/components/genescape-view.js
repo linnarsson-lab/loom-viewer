@@ -14,9 +14,18 @@ import JSURL from 'jsurl';
 const GenescapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { genescapeState } = dataSet;
-	const color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
-	const x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
-	const y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
+	let color = dataSet.rowAttrs[genescapeState.colorAttr ? genescapeState.colorAttr : 0];
+	let x = dataSet.rowAttrs[genescapeState.xCoordinate ? genescapeState.xCoordinate : 0];
+	let y = dataSet.rowAttrs[genescapeState.yCoordinate ? genescapeState.yCoordinate : 0];
+
+	if (genescapeState.filterZeros && color) {
+		const filterData = color.slice(0);
+		const data = (v, i) => { return filterData[i]; };
+		color = color.filter(data);
+		x = x ? x.filter(data) : null;
+		y = y ? y.filter(data) : null;
+	}
+
 	const paint = scatterplot(x, y, color, genescapeState.colorMode);
 	return (
 		<div className='view' >

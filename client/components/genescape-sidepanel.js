@@ -24,6 +24,8 @@ export const GenescapeSidepanel = function (props) {
 	const xCoordinateHC = handleChangeFactory('xCoordinate');
 	const yCoordinateHC = handleChangeFactory('yCoordinate');
 	const colorAttrHC = handleChangeFactory('colorAttr');
+	const filterZeros = handleChangeFactory('filterZeros');
+	const filterZerosHC = () => { filterZeros(!genescapeState.filterZeros); };
 
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
@@ -95,6 +97,13 @@ export const GenescapeSidepanel = function (props) {
 						options={rowAttrOptions}
 						onChange={colorAttrHC}
 						/>
+					<Button
+						bsStyle={ genescapeState.filterZeros ? 'success' : 'default' }
+						onClick={filterZerosHC}
+						>
+						Filter zeros
+					</Button>
+
 				</ListGroupItem>
 				<ListGroupItem>
 					<ButtonGroup justified>
