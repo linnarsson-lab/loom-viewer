@@ -7,6 +7,9 @@ fi
 if [ -a ./python/build ]; then
   rm -r ./python/build
 fi
+if [ -a ./python/dist ]; then
+  rm -r ./python/dist
+fi
 
 set -o nounset
 set -o errexit
