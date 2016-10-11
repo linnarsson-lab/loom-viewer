@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react';
 import { RemountOnResize } from './remount-on-resize';
-import {createClassFromSpec} from 'react-vega';
+import { Vega } from './vega';
 
 function makeViolinPlotSpec(width, height) {
 	return {
@@ -70,8 +70,7 @@ class ViolinPlotComponent extends React.Component {
 		const width = (view.clientWidth) | 0;
 		const height = (view.clientHeight) | 0;
 		const spec = makeViolinPlotSpec(width, height);
-		const plot = createClassFromSpec('plot', spec);
-		this.setState({ plot });
+		this.setState({ spec });
 	}
 
 	render() {
@@ -81,7 +80,7 @@ class ViolinPlotComponent extends React.Component {
 		// the layout of the parent container, we only render it after
 		// mounting, after CSS layouting is done.
 		const { className, style, violinData } = this.props;
-		const plot = this.state ? (<this.state.plot data={violinData} />) : null;
+		const plot = this.state ? (<Vega spec={this.state.spec} data={violinData} />) : null;
 		return (
 			<div
 				ref='view'
@@ -127,3 +126,46 @@ ViolinPlot.propTypes = {
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
+
+/*
+// Mental note: you *can* use vega to generate only a legend quite easily.
+// All that is required is "scales" and "legends"
+{
+  "width": 0,
+  "height": 0,
+  "data": [
+    {
+      "name": "iris",
+      "url": "data/iris.json"
+    },
+    {
+      "name": "fields",
+      "values": ["petalWidth", "petalLength", "sepalWidth", "sepalLength"]
+    }
+  ],
+  "scales": [
+    {
+      "name": "c",
+      "type": "ordinal",
+      "domain": {"data": "iris", "field": "species"},
+      "range": "category10"
+    }
+  ],
+  "legends": [
+    {
+      "fill": "c",
+      "title": "Species",
+      "offset": 0,
+      "properties": {
+        "symbols": {
+          "fillOpacity": {"value": 0.5},
+          "stroke": {"value": "transparent"}
+        }
+      }
+    }
+  ],
+  "marks": [
+  ]
+}
+
+*/
