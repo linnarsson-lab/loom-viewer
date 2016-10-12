@@ -14,7 +14,7 @@ import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
 import { GenescapeView } from './genescape-view';
-import { ViolinPlotView } from './violinplot-view';
+//import { ViolinPlotView } from './violinplot-view';
 
 // layout of the routes
 const Routes = (
@@ -33,8 +33,10 @@ const Routes = (
 					path='/dataset/cells/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
 					path='/dataset/genes/:project/:dataset(/:viewsettings)' />
+				{/*
 				<Route name='data-set-genescape' component={ViolinPlotView}
 					path='/dataset/violin/:project/:dataset(/:viewsettings)' />
+				*/}
 			</Route>
 		</Router>
 	</Provider>
