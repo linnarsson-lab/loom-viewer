@@ -9,7 +9,7 @@ import { store } from '../store';
 
 // Components
 import { NavbarView } from './navbar';
-import { DataSetView } from './dataset-view';
+import { DataSetView } from './dataset-table-view';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';

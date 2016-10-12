@@ -5,6 +5,7 @@ import {
 	REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
+	SEARCH_PROJECTS,
 	REQUEST_DATASET,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
@@ -89,6 +90,9 @@ function data(state = initialData, action) {
 
 	case REQUEST_PROJECTS_FAILED:
 		return merge(state, { isFetchingData: false, errorFetchingData: true });
+
+	case SEARCH_PROJECTS:
+		return merge( state, { search: action.search } );
 
 		//===DATASET ACTIONS===
 	case REQUEST_DATASET:
