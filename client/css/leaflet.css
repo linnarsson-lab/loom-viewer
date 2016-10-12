@@ -39,10 +39,10 @@
 .leaflet-container img {
 	max-width: none !important;
 	/* Preserve crisp pixels with scaled up images */
-	image-rendering: -moz-pixelated;         /* Firefox */
-	image-rendering:   -o-pixelated;         /* Opera */
-	image-rendering: pixelated;
-	-ms-interpolation-mode: nearest-neighbor;  /* IE (non-standard property) */
+	image-rendering: -moz-crisp-edges !important;         /* Firefox */
+	image-rendering:   -o-crisp-edges !important;         /* Opera */
+	image-rendering: crisp-edges !important;
+	-ms-interpolation-mode: nearest-neighbor !important;  /* IE (non-standard property) */
 }
 	}
 /* stupid Android 2 doesn't understand "max-width: none" properly */
