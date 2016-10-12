@@ -92,7 +92,7 @@ function data(state = initialData, action) {
 		return merge(state, { isFetchingData: false, errorFetchingData: true });
 
 	case SEARCH_PROJECTS:
-		return merge( state, { search: action.search } );
+		return merge( state, { search: merge ( state.search, { [action.field]: action.search }) } );
 
 		//===DATASET ACTIONS===
 	case REQUEST_DATASET:

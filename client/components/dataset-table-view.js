@@ -2,7 +2,7 @@ import React, { Component, PropTypes } from 'react';
 import {
 	Grid, Col, Row,
 	Button, Glyphicon,
-	FormControl,
+	FormGroup, FormControl, InputGroup,
 } from 'react-bootstrap';
 import { Link } from 'react-router';
 
@@ -108,17 +108,6 @@ ProjectList.propTypes = {
 
 
 class DataSetViewComponent extends Component {
-	constructor(props) {
-		super(props);
-		this.handleChange = this.handleChange.bind(this);
-	}
-
-	handleChange(event) {
-		this.props.dispatch({
-			type: SEARCH_PROJECTS,
-			search: event.target.value,
-		});
-	}
 
 	componentDidMount() {
 		const { dispatch, projects } = this.props;
@@ -129,24 +118,69 @@ class DataSetViewComponent extends Component {
 		const { projects, search } = this.props;
 		let allProjects = [];
 		if (projects) {
-			const keys = Object.keys(projects);
-			keys.sort();
-			keys.map((p) => { allProjects = allProjects.concat(projects[p]); });
-			const options = { keys: ['project', 'title', 'dataset', 'description'] };
-			let fuse = new Fuse(allProjects, options);
-			allProjects = search ? fuse.search(search) : allProjects;
+
+			// merge all projects into one list
+			Object.keys(projects).map(
+				(p) => { allProjects = allProjects.concat(projects[p]); }
+			);
+
+			if (search) {
+				// apply fuzzy search
+				let keys = ['project', 'title', 'dataset', 'description'];
+				for (let i = 0; i < keys.length; i++) {
+					let key = keys[i];
+					let query = search[key];
+					if (query) {
+						let fuse = new Fuse(allProjects, { keys: [key] });
+						allProjects = fuse.search(query);
+					}
+				}
+			}
 		}
+		const handleChangeFactory = (field) => {
+			return (event) => {
+				let searchVal = event.target.value ? event.target.value : '';
+				this.props.dispatch({
+					type: SEARCH_PROJECTS,
+					field,
+					search: searchVal,
+				});
+			};
+		};
+
 		return (
 			<Grid>
 				<Row>
 					<Col>
 						<h1>Datasets</h1>
 						<h2>Search Dataset List</h2>
-						<FormControl
-							type='text'
-							value={search ? search : ''}
-							onChange={this.handleChange}
-							/>
+						<FormGroup>
+							<InputGroup>
+								<InputGroup.Addon>Project</InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='..'
+									onChange={handleChangeFactory('project')} />
+								<InputGroup.Addon>Title</InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='..'
+									onChange={handleChangeFactory('title')} />
+								<InputGroup.Addon>Dataset</InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='..'
+									onChange={handleChangeFactory('dataset')} />
+								<InputGroup.Addon>Description</InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='..'
+									onChange={handleChangeFactory('description')} />
+								<InputGroup.Addon><Glyphicon glyph='file' /></InputGroup.Addon>
+								<InputGroup.Addon><Glyphicon glyph='globe' /></InputGroup.Addon>
+								<InputGroup.Addon><Glyphicon glyph='cloud-download' /></InputGroup.Addon>
+							</InputGroup>
+						</FormGroup>
 						<ProjectList projects={allProjects} />
 					</Col>
 				</Row>
@@ -158,7 +192,7 @@ class DataSetViewComponent extends Component {
 DataSetViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	projects: PropTypes.object,
-	search: PropTypes.string,
+	search: PropTypes.object,
 };
 
 //connect DataSetViewComponent to store
