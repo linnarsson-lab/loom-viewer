@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
-import { PrintSettings } from './print-settings';
+//import { PrintSettings } from './print-settings';
 import { Panel, Button, Glyphicon,
 	ListGroup, ListGroupItem } from 'react-bootstrap';
 
@@ -123,11 +123,14 @@ export const SparklineSidepanel = function (props) {
 						Show labels
 					</Button>
 				</ListGroupItem>
+
+				{/*
 				<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
 					stateName={'sparklineState'}
 					actionType={'SET_SPARKLINE_PROPS'} />
+				*/}
 			</ListGroup >
 		</Panel >
 	);

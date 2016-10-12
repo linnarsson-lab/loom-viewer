@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { PrintSettings } from './print-settings';
+//import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem,
 	ButtonGroup, Button } from 'react-bootstrap';
 
@@ -135,11 +135,13 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
+				{/*
 				<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
 					stateName={'genescapeState'}
 					actionType={'SET_GENESCAPE_PROPS'} />
+				*/}
 			</ListGroup>
 		</Panel>
 	);

@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
-import { PrintSettings } from './print-settings';
+//import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 export const HeatmapSidepanel = function (props) {
@@ -90,11 +90,13 @@ export const HeatmapSidepanel = function (props) {
 						onChange={rowModeHC}
 						/>
 				</ListGroupItem>
+				{/*
 				<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
 					stateName={'heatmapState'}
 					actionType={'SET_HEATMAP_PROPS'} />
+				*/}
 			</ListGroup>
 		</Panel>
 	);

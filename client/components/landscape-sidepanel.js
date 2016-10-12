@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
-import { PrintSettings } from './print-settings';
+//import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup } from 'react-bootstrap';
 
@@ -164,11 +164,11 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
-				<PrintSettings
+				{/*<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
 					stateName={'landscapeState'}
-					actionType={'SET_LANDSCAPE_PROPS'} />
+					actionType={'SET_LANDSCAPE_PROPS'} />*/}
 			</ListGroup>
 		</Panel >
 	);
