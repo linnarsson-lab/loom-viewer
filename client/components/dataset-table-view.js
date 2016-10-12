@@ -17,8 +17,8 @@ import Fuse from 'fuse.js';
 window.React = React;
 
 const columns = [
-	{ header: 'PROJECT', key: 'project', defaultSorting: 'DESC' },
-	{ header: 'TITLE', key: 'title' },
+	{ header: 'PROJECT', key: 'project', defaultSorting: 'ASC' },
+	{ header: 'TITLE', key: 'title', defaultSorting: 'ASC' },
 	{ header: 'DATASET', key: 'dataset' },
 	{ header: 'DESCRIPTION', key: 'description' },
 	{ header: <Glyphicon glyph='file' />, key: 'doi', sortable: false },
@@ -141,7 +141,7 @@ class DataSetViewComponent extends Component {
 				<Row>
 					<Col>
 						<h1>Datasets</h1>
-						<h2>Filter Dataset List</h2>
+						<h2>Search Dataset List</h2>
 						<FormControl
 							type='text'
 							value={search ? search : ''}
