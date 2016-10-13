@@ -1,6 +1,9 @@
 # Mac OSX hidden folder
 .DS_Store
 
+# KDE folder files
+.directory
+
 # Build folder for static files, and cache for loom files
 python/static/
 python/cache/
