@@ -229,7 +229,7 @@ class DataSetViewComponent extends Component {
 					}
 					return datasets.length ? (
 						<div>
-							<h3>{project}</h3>
+							<h2>{project}</h2>
 							<DatasetList datasets={datasets} />
 						</div>
 					) : undefined;
@@ -242,41 +242,35 @@ class DataSetViewComponent extends Component {
 				<Row>
 					<Col>
 						<h1>Available Datasets</h1>
-						<h2>Filter list</h2>
-						<FormGroup>
-							<InputGroup>
-								<InputGroup.Addon>Project</InputGroup.Addon>
-								<FormControl
-									type='text'
-									placeholder='..'
-									onChange={this.handleChangeFactory('project')} />
-							</InputGroup>
+						<FormGroup style={{ width: '100%', paddingLeft: '8px' }}>
+							<FormControl
+								type='text'
+								placeholder='Filter Projects..'
+								style={{ width: '45%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '8px'}}
+								onChange={this.handleChangeFactory('project')} />
 						</FormGroup>
-						<FormGroup>
-							<InputGroup>
-								<InputGroup.Addon>Title</InputGroup.Addon>
+						<FormGroup style={{ width: '100%' }}>
+							<InputGroup style={{ width: '100%' }}>
 								<FormControl
 									type='text'
-									placeholder='..'
+									placeholder='FILTER TITLES..'
+									style={{ width: '35%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('title')} />
-								<InputGroup.Addon>Dataset</InputGroup.Addon>
 								<FormControl
 									type='text'
-									placeholder='..'
+									placeholder='FILTER DATASETS..'
+									style={{ width: '14%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('dataset')} />
-								<InputGroup.Addon>Date</InputGroup.Addon>
 								<FormControl
 									type='text'
-									placeholder='..'
-									onChange={this.handleChangeFactory('lastModified')} />
-								<InputGroup.Addon>Description</InputGroup.Addon>
-								<FormControl
-									type='text'
-									placeholder='..'
+									placeholder='FILTER DESCRIPTIONS..'
+									style={{ width: '35%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('description')} />
-								<InputGroup.Addon><Glyphicon glyph='file' /></InputGroup.Addon>
-								<InputGroup.Addon><Glyphicon glyph='globe' /></InputGroup.Addon>
-								<InputGroup.Addon><Glyphicon glyph='cloud-download' /></InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='FILTER DATE..'
+									style={{ width: '10%', fontSize: '10px', padding: '8px' }}
+									onChange={this.handleChangeFactory('lastModified')} />
 							</InputGroup>
 						</FormGroup>
 						{datasetlists}

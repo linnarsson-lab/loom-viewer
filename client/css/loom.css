@@ -92,15 +92,16 @@ h1 {
   font-weight: bold;
 }
 h2 {
-  font-size: 1.3em;
+  font-size: 1.2em;
   margin-top: 1em;
-  margin-bottom: 1em;
+  margin-bottom: 0.5em;
+  padding-left: 16px;
   font-weight: bold;
+  font-style: italic;
 }
 h3 {
   font-size: 1.2em;
   margin-top: 1em;
-  margin-bottom: 1em;
-  font-weight: bold;
-  font-style: italic;
+  margin-bottom: 0.5em;
+  padding-left: 16px;
 }
