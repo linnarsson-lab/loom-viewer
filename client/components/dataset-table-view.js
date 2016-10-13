@@ -242,11 +242,11 @@ class DataSetViewComponent extends Component {
 				<Row>
 					<Col>
 						<h1>Available Datasets</h1>
-						<FormGroup style={{ width: '100%', paddingLeft: '8px' }}>
+						<FormGroup style={{ width: '100%' }}>
 							<FormControl
 								type='text'
 								placeholder='Filter Projects..'
-								style={{ width: '45%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '8px'}}
+								style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px'}}
 								onChange={this.handleChangeFactory('project')} />
 						</FormGroup>
 						<FormGroup style={{ width: '100%' }}>
