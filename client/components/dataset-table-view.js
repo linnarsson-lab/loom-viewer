@@ -20,6 +20,7 @@ const columns = [
 	{ header: 'PROJECT', key: 'project', defaultSorting: 'ASC' },
 	{ header: 'TITLE', key: 'title', defaultSorting: 'ASC' },
 	{ header: 'DATASET', key: 'dataset' },
+	{ header: 'DATE', key: 'lastModified' },
 	{ header: 'DESCRIPTION', key: 'description' },
 	{ header: <Glyphicon glyph='file' />, key: 'doi', sortable: false },
 	{ header: <Glyphicon glyph='globe' />, key: 'url', sortable: false },
@@ -135,6 +136,17 @@ class DataSetViewComponent extends Component {
 						allProjects = fuse.search(query);
 					}
 				}
+				// give date a special (exact) treatment
+				let date = search.lastModified;
+				if (date){
+					let filtered = [];
+					for (let i = 0; i < allProjects.length; i++){
+						if (allProjects[i].lastModified.indexOf(date) !== -1){
+							filtered.push(allProjects[i]);
+						}
+					}
+					allProjects = filtered;
+				}
 			}
 		}
 		const handleChangeFactory = (field) => {
@@ -171,6 +183,11 @@ class DataSetViewComponent extends Component {
 									type='text'
 									placeholder='..'
 									onChange={handleChangeFactory('dataset')} />
+								<InputGroup.Addon>Date</InputGroup.Addon>
+								<FormControl
+									type='text'
+									placeholder='..'
+									onChange={handleChangeFactory('lastModified')} />
 								<InputGroup.Addon>Description</InputGroup.Addon>
 								<FormControl
 									type='text'
