@@ -17,24 +17,51 @@ import Fuse from 'fuse.js';
 window.React = React;
 
 const columns = [
-	{ header: 'PROJECT', key: 'project', defaultSorting: 'ASC' },
-	{ header: 'TITLE', key: 'title', defaultSorting: 'ASC' },
+	{ header: 'TITLE', key: 'title' },
 	{ header: 'DATASET', key: 'dataset' },
-	{ header: 'DATE', key: 'lastModified' },
 	{ header: 'DESCRIPTION', key: 'description' },
-	{ header: <Glyphicon glyph='file' />, key: 'doi', sortable: false },
-	{ header: <Glyphicon glyph='globe' />, key: 'url', sortable: false },
-	{ header: <Glyphicon glyph='cloud-download' />, key: 'download', sortable: false },
+	{ header: 'DATE', key: 'lastModified', defaultSorting: 'DESC' },
+	{
+		header: (
+			<div
+				style={{ textAlign: 'center' }}
+				title={'Original Reference'} >
+				<Glyphicon glyph='file' />
+			</div>
+		),
+		key: 'doi',
+		sortable: false,
+	},
+	{
+		header: (
+			<div
+				style={{ textAlign: 'center' }}
+				title={'External Webpage'} >
+				<Glyphicon glyph='globe' />
+			</div>
+		),
+		key: 'url',
+		sortable: false,
+	},
+	{
+		header: (
+			<div
+				style={{ textAlign: 'center' }}
+				title={'Download Loom File'} >
+				<Glyphicon glyph='cloud-download' />
+			</div>
+		),
+		key: 'download', sortable: false,
+	},
 ];
 
 
-// Generates a list of projects, each with a list
-// of datasets associated with the project.
-const ProjectList = function (props) {
-	const { projects } = props;
-	if (projects) {
-		for (let i = 0; i < projects.length; i++) {
-			let proj = projects[i];
+// Generates a list of datasets
+const DatasetList = function (props) {
+	const { datasets } = props;
+	if (datasets) {
+		for (let i = 0; i < datasets.length; i++) {
+			let proj = datasets[i];
 			const { project, title, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
 			const titleURL = (
@@ -45,41 +72,44 @@ const ProjectList = function (props) {
 			);
 			const downloadURL = '/clone/' + path;
 			const downloadButton = (
-				<Button
-					className='pull-right'
-					bsSize='xsmall'
-					bsStyle='link'
-					href={downloadURL}
-					title={'Download ' + path}
-					>
-					<Glyphicon glyph='cloud-download' />
-				</Button>
+				<div style={{ textAlign: 'center' }}>
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={downloadURL}
+						title={'Download ' + path}
+						>
+						<Glyphicon glyph='cloud-download' />
+					</Button>
+				</div>
 			);
 			const paperButton = doi === '' ? null : (
-				<Button
-					className='pull-right'
-					bsSize='xsmall'
-					bsStyle='link'
-					href={'http://dx.doi.org/' + doi}
-					title='Original reference'
-					>
-					<Glyphicon glyph='file' />
-				</Button>
+				<div style={{ textAlign: 'center' }}>
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title='Original reference'
+						>
+						<Glyphicon glyph='file' />
+					</Button>
+				</div>
 			);
 			const urlButton = url === '' ? null : (
-				<Button
-					className='pull-right'
-					bsSize='xsmall'
-					bsStyle='link'
-					href={url}
-					title='External web page'
-					>
-					<Glyphicon glyph='globe' />
-				</Button>
+				<div style={{ textAlign: 'center' }}>
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title='External web page'
+						>
+						<Glyphicon glyph='globe' />
+					</Button>
+				</div>
 			);
-			// create new projects object with proper tags
-			projects[i] = merge(
-				projects[i],
+			// create new datasets object with proper tags
+			datasets[i] = merge(
+				datasets[i],
 				{
 					title: titleURL,
 					doi: paperButton,
@@ -90,9 +120,8 @@ const ProjectList = function (props) {
 		}
 		return (
 			<div>
-				<h2>Available Datasets</h2>
 				<SortableTable
-					data={projects}
+					data={datasets}
 					columns={columns}
 					/>
 			</div>
@@ -103,8 +132,8 @@ const ProjectList = function (props) {
 	}
 };
 
-ProjectList.propTypes = {
-	projects: PropTypes.array,
+DatasetList.propTypes = {
+	datasets: PropTypes.array,
 };
 
 
@@ -115,90 +144,112 @@ class DataSetViewComponent extends Component {
 		dispatch(fetchProjects(projects));
 	}
 
+	handleChangeFactory(field) {
+		return (event) => {
+			let searchVal = event.target.value ? event.target.value : '';
+			this.props.dispatch({
+				type: SEARCH_PROJECTS,
+				field,
+				search: searchVal,
+			});
+		};
+	}
+
 	render() {
 		const { projects, search } = this.props;
-		let allProjects = [];
+
+		let datasetlists = null;
+
 		if (projects) {
-
-			// merge all projects into one list
-			Object.keys(projects).map(
-				(p) => { allProjects = allProjects.concat(projects[p]); }
-			);
-
+			// create an array of search actions to perform
+			let searches = [];
 			if (search) {
-				// apply fuzzy search
+				// generate fuzzy text search
 				let keys = ['project', 'title', 'dataset', 'description'];
 				for (let i = 0; i < keys.length; i++) {
 					let key = keys[i];
 					let query = search[key];
 					if (query) {
-						let fuse = new Fuse(allProjects, { keys: [key] });
-						allProjects = fuse.search(query);
+						searches.push((datasets) => {
+							let fuse = new Fuse(datasets, { keys: [key], treshold: 0.1 });
+							return fuse.search(query);
+						});
 					}
 				}
 				// give date a special (exact) treatment
 				let date = search.lastModified;
-				if (date){
-					let filtered = [];
-					for (let i = 0; i < allProjects.length; i++){
-						if (allProjects[i].lastModified.indexOf(date) !== -1){
-							filtered.push(allProjects[i]);
+				if (date) {
+					searches.push((datasets) => {
+						let filtered = [];
+						for (let i = 0; i < datasets.length; i++) {
+							if (datasets[i].lastModified.indexOf(date) !== -1) {
+								filtered.push(datasets[i]);
+							}
 						}
-					}
-					allProjects = filtered;
+						return filtered;
+					});
 				}
 			}
+
+			datasetlists = Object.keys(projects).map(
+				(project) => {
+					let datasets = projects[project].slice(0);
+					for (let i = 0; i < searches.length && datasets.length; i++) {
+						datasets = searches[i](datasets);
+					}
+					return datasets.length ? (
+						<div>
+							<h3>{project}</h3>
+							<DatasetList datasets={datasets} />
+						</div>
+					) : undefined;
+				}
+			);
 		}
-		const handleChangeFactory = (field) => {
-			return (event) => {
-				let searchVal = event.target.value ? event.target.value : '';
-				this.props.dispatch({
-					type: SEARCH_PROJECTS,
-					field,
-					search: searchVal,
-				});
-			};
-		};
 
 		return (
 			<Grid>
 				<Row>
 					<Col>
-						<h1>Datasets</h1>
-						<h2>Search Dataset List</h2>
+						<h1>Available Datasets</h1>
+						<h2>Filter list</h2>
 						<FormGroup>
 							<InputGroup>
 								<InputGroup.Addon>Project</InputGroup.Addon>
 								<FormControl
 									type='text'
 									placeholder='..'
-									onChange={handleChangeFactory('project')} />
+									onChange={this.handleChangeFactory('project')} />
+							</InputGroup>
+						</FormGroup>
+						<FormGroup>
+							<InputGroup>
 								<InputGroup.Addon>Title</InputGroup.Addon>
 								<FormControl
 									type='text'
 									placeholder='..'
-									onChange={handleChangeFactory('title')} />
+									onChange={this.handleChangeFactory('title')} />
 								<InputGroup.Addon>Dataset</InputGroup.Addon>
 								<FormControl
 									type='text'
 									placeholder='..'
-									onChange={handleChangeFactory('dataset')} />
+									onChange={this.handleChangeFactory('dataset')} />
 								<InputGroup.Addon>Date</InputGroup.Addon>
 								<FormControl
 									type='text'
 									placeholder='..'
-									onChange={handleChangeFactory('lastModified')} />
+									onChange={this.handleChangeFactory('lastModified')} />
 								<InputGroup.Addon>Description</InputGroup.Addon>
 								<FormControl
 									type='text'
 									placeholder='..'
-									onChange={handleChangeFactory('description')} />
+									onChange={this.handleChangeFactory('description')} />
 								<InputGroup.Addon><Glyphicon glyph='file' /></InputGroup.Addon>
 								<InputGroup.Addon><Glyphicon glyph='globe' /></InputGroup.Addon>
 								<InputGroup.Addon><Glyphicon glyph='cloud-download' /></InputGroup.Addon>
 							</InputGroup>
 						</FormGroup>
-						<ProjectList projects={allProjects} />
+						{datasetlists}
 					</Col>
 				</Row>
 			</Grid>
