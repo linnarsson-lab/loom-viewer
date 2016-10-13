@@ -89,7 +89,7 @@ const DatasetList = function (props) {
 						bsSize='xsmall'
 						bsStyle='link'
 						href={'http://dx.doi.org/' + doi}
-						title='Original reference'
+						title={'Original reference: http://dx.doi.org/' + doi}
 						>
 						<Glyphicon glyph='file' />
 					</Button>
@@ -101,7 +101,7 @@ const DatasetList = function (props) {
 						bsSize='xsmall'
 						bsStyle='link'
 						href={url}
-						title='External web page'
+						title={'External web page: ' + url}
 						>
 						<Glyphicon glyph='globe' />
 					</Button>
