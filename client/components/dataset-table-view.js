@@ -18,28 +18,34 @@ window.React = React;
 
 const columns = [
 	{
+		header: 'PROJECT ',
+		key: 'project',
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '18%', fontSize: '12px', padding: '8px', verticalAlign: 'middle' },
+	},
+	{
 		header: 'TITLE ',
 		key: 'title',
-		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
-		dataStyle: { fontWeight: 'bold', width: '35%', verticalAlign: 'middle' },
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '20%', fontSize: '12px', padding: '8px', fontWeight: 'bold', verticalAlign: 'middle' },
 	},
 	{
 		header: 'DATASET ',
 		key: 'dataset',
-		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
-		dataStyle: { width: '14%', fontSize: '10px', verticalAlign: 'middle' },
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '20%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
 	},
 	{
 		header: 'DESCRIPTION ',
 		key: 'description',
-		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
-		dataStyle: { width: '35%', fontStyle: 'italic', verticalAlign: 'middle' },
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '28%', fontSize: '12px', padding: '8px', fontStyle: 'italic', verticalAlign: 'middle' },
 	},
 	{
 		header: 'DATE ',
 		key: 'lastModified',
-		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
-		dataStyle: { width: '10%', fontSize: '10px', verticalAlign: 'middle' },
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '8%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
 		defaultSorting: 'DESC',
 	},
 	{
@@ -188,53 +194,44 @@ class DataSetViewComponent extends Component {
 	render() {
 		const { projects, search } = this.props;
 
-		let datasetlists = null;
+		let allDatasets = null;
 
 		if (projects) {
-			// create an array of search actions to perform
-			let searches = [];
+			// merge all projects
+			allDatasets = [];
+			for (let keys = Object.keys(projects), i = 0; i < keys.length; i++) {
+				allDatasets = allDatasets.concat(projects[keys[i]]);
+			}
+
 			if (search) {
-				// generate fuzzy text search
-				let keys = ['project', 'title', 'dataset', 'description'];
-				for (let i = 0; i < keys.length; i++) {
-					let key = keys[i];
-					let query = search[key];
-					if (query) {
-						searches.push((datasets) => {
-							let fuse = new Fuse(datasets, { keys: [key], treshold: 0.1 });
-							return fuse.search(query);
-						});
-					}
-				}
 				// give date a special (exact) treatment
 				let date = search.lastModified;
 				if (date) {
-					searches.push((datasets) => {
-						let filtered = [];
-						for (let i = 0; i < datasets.length; i++) {
-							if (datasets[i].lastModified.indexOf(date) !== -1) {
-								filtered.push(datasets[i]);
-							}
+					let filtered = [];
+					for (let i = 0; i < allDatasets.length; i++) {
+						if (allDatasets[i].lastModified.indexOf(date) !== -1) {
+							filtered.push(allDatasets[i]);
 						}
-						return filtered;
-					});
+					}
+					allDatasets = filtered;
+				}
+
+				// fuzzy text search per field
+				let keys = ['project', 'title', 'dataset', 'description'];
+				for (let i = 0; allDatasets.length && i < keys.length; i++) {
+					let key = keys[i];
+					let query = search[key];
+					if (query) {
+						let fuse = new Fuse(allDatasets, { keys: [key], treshold: 0.1 });
+						allDatasets = fuse.search(query);
+					}
+				}
+				// generic search on whatever remains
+				if (search.all && allDatasets.length) {
+					let fuse = new Fuse(allDatasets, { keys: ['project', 'title', 'dataset', 'description'], treshold: 0.1 });
+					allDatasets = fuse.search(search.all);
 				}
 			}
-
-			datasetlists = Object.keys(projects).map(
-				(project) => {
-					let datasets = projects[project].slice(0);
-					for (let i = 0; i < searches.length && datasets.length; i++) {
-						datasets = searches[i](datasets);
-					}
-					return datasets.length ? (
-						<div>
-							<h2>{project}</h2>
-							<DatasetList datasets={datasets} />
-						</div>
-					) : undefined;
-				}
-			);
 		}
 
 		return (
@@ -245,35 +242,40 @@ class DataSetViewComponent extends Component {
 						<FormGroup style={{ width: '100%' }}>
 							<FormControl
 								type='text'
-								placeholder='Filter Projects..'
-								style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px'}}
-								onChange={this.handleChangeFactory('project')} />
+								placeholder='Search all fields..'
+								style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px' }}
+								onChange={this.handleChangeFactory('all')} />
 						</FormGroup>
 						<FormGroup style={{ width: '100%' }}>
 							<InputGroup style={{ width: '100%' }}>
 								<FormControl
 									type='text'
+									placeholder='FILTER PROJECTS..'
+									style={{ width: '18%', fontSize: '10px', padding: '8px' }}
+									onChange={this.handleChangeFactory('project')} />
+								<FormControl
+									type='text'
 									placeholder='FILTER TITLES..'
-									style={{ width: '35%', fontSize: '10px', padding: '8px' }}
+									style={{ width: '20%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('title')} />
 								<FormControl
 									type='text'
 									placeholder='FILTER DATASETS..'
-									style={{ width: '14%', fontSize: '10px', padding: '8px' }}
+									style={{ width: '20%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('dataset')} />
 								<FormControl
 									type='text'
 									placeholder='FILTER DESCRIPTIONS..'
-									style={{ width: '35%', fontSize: '10px', padding: '8px' }}
+									style={{ width: '28%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('description')} />
 								<FormControl
 									type='text'
-									placeholder='FILTER DATE..'
-									style={{ width: '10%', fontSize: '10px', padding: '8px' }}
+									placeholder='DATE..'
+									style={{ width: '8%', fontSize: '10px', padding: '8px' }}
 									onChange={this.handleChangeFactory('lastModified')} />
 							</InputGroup>
 						</FormGroup>
-						{datasetlists}
+						<DatasetList datasets={allDatasets} />
 					</Col>
 				</Row>
 			</Grid>
