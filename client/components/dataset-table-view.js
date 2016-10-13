@@ -17,10 +17,31 @@ import Fuse from 'fuse.js';
 window.React = React;
 
 const columns = [
-	{ header: 'TITLE', key: 'title' },
-	{ header: 'DATASET', key: 'dataset' },
-	{ header: 'DESCRIPTION', key: 'description' },
-	{ header: 'DATE', key: 'lastModified', defaultSorting: 'DESC' },
+	{
+		header: 'TITLE ',
+		key: 'title',
+		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
+		dataStyle: { fontWeight: 'bold', width: '35%', verticalAlign: 'middle' },
+	},
+	{
+		header: 'DATASET ',
+		key: 'dataset',
+		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
+		dataStyle: { width: '14%', fontSize: '10px', verticalAlign: 'middle' },
+	},
+	{
+		header: 'DESCRIPTION ',
+		key: 'description',
+		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
+		dataStyle: { width: '35%', fontStyle: 'italic', verticalAlign: 'middle' },
+	},
+	{
+		header: 'DATE ',
+		key: 'lastModified',
+		headerStyle: { fontSize: '10px', verticalAlign: 'middle' },
+		dataStyle: { width: '10%', fontSize: '10px', verticalAlign: 'middle' },
+		defaultSorting: 'DESC',
+	},
 	{
 		header: (
 			<div
@@ -30,6 +51,8 @@ const columns = [
 			</div>
 		),
 		key: 'doi',
+		headerStyle: { margin: 0, padding: 0, fontSize: '12px', verticalAlign: 'middle' },
+		dataStyle: { margin: 0, padding: 0, width: '2%', verticalAlign: 'middle' },
 		sortable: false,
 	},
 	{
@@ -41,6 +64,8 @@ const columns = [
 			</div>
 		),
 		key: 'url',
+		headerStyle: { margin: 0, padding: 0, fontSize: '12px', verticalAlign: 'middle' },
+		dataStyle: { margin: 0, padding: 0, width: '2%', verticalAlign: 'middle' },
 		sortable: false,
 	},
 	{
@@ -51,7 +76,10 @@ const columns = [
 				<Glyphicon glyph='cloud-download' />
 			</div>
 		),
-		key: 'download', sortable: false,
+		key: 'download',
+		headerStyle: { margin: 0, padding: 0, fontSize: '12px', verticalAlign: 'middle' },
+		dataStyle: { margin: 0, padding: 0, width: '2%', verticalAlign: 'middle' },
+		sortable: false,
 	},
 ];
 
@@ -65,7 +93,9 @@ const DatasetList = function (props) {
 			const { project, title, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
 			const titleURL = (
-				<Link to={'dataset/genes/' + path} title={'Open ' + path}>
+				<Link
+					to={'dataset/genes/' + path}
+					title={'Open ' + path}>
 					{title}
 				</Link>
 
@@ -79,7 +109,7 @@ const DatasetList = function (props) {
 						href={downloadURL}
 						title={'Download ' + path}
 						>
-						<Glyphicon glyph='cloud-download' />
+						<Glyphicon style={{ fontSize: '12px' }} glyph='cloud-download' />
 					</Button>
 				</div>
 			);
@@ -91,7 +121,7 @@ const DatasetList = function (props) {
 						href={'http://dx.doi.org/' + doi}
 						title={'Original reference: http://dx.doi.org/' + doi}
 						>
-						<Glyphicon glyph='file' />
+						<Glyphicon style={{ fontSize: '12px' }} glyph='file' />
 					</Button>
 				</div>
 			);
@@ -103,7 +133,7 @@ const DatasetList = function (props) {
 						href={url}
 						title={'External web page: ' + url}
 						>
-						<Glyphicon glyph='globe' />
+						<Glyphicon style={{ fontSize: '12px' }} glyph='globe' />
 					</Button>
 				</div>
 			);
