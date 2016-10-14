@@ -110,7 +110,7 @@ td {
   border-top-style: solid;
   border-top-width: thin;
   border-top-color: lightgray;
-  font-size: 12px;
+  font-size: 14px;
   margin: 0;
   padding: 8px;
   vertical-align: middle;
@@ -120,7 +120,7 @@ th {
   border-bottom-style: solid;
   border-bottom-width: thin;
   border-bottom-color: lightgray;
-  font-size: 12px;
+  font-size: 14px;
   margin: 0;
   padding: 8px;
   vertical-align: middle;

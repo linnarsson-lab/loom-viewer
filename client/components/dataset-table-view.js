@@ -16,47 +16,48 @@ const columns = [
 	{
 		header: 'DATE ',
 		key: 'lastModified',
-		headerStyle: { fontSize: '10px' },
-		dataStyle: { width: '8%', fontSize: '10px' },
-		defaultSorting: 'DESC',
+		sortIcon: 'sort-by-order',
+		dataStyle: { width: '8%' },
+		sortable: true,
 	},
 	{
 		header: 'TITLE ',
 		key: 'title',
-		headerStyle: { fontSize: '10px' },
+		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '18%', fontWeight: 'bold' },
+		sortable: true,
 	},
 	{
 		header: 'DESCRIPTION ',
 		key: 'description',
-		headerStyle: { fontSize: '10px' },
+		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '28%', fontStyle: 'italic' },
+		sortable: true,
 	},
 	{
 		header: 'PROJECT ',
 		key: 'project',
-		headerStyle: { fontSize: '10px' },
+		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '18%' },
+		sortable: true,
 	},
 	{
 		header: 'DATASET ',
 		key: 'dataset',
-		headerStyle: { fontSize: '10px' },
-		dataStyle: { width: '16%', fontSize: '10px' },
+		sortIcon: 'sort-by-alphabet',
+		dataStyle: { width: '16%' },
+		sortable: true,
 	},
 	{
 		header: 'CELL SAMPLE SIZE ',
 		key: 'totalCells',
-		headerStyle: { fontSize: '10px' },
-		dataStyle: { width: '6%', fontSize: '10px' },
+		sortIcon: 'sort-by-attributes',
+		dataStyle: { width: '6%' },
+		sortable: true,
 	},
 	{
 		header: (
-			<div
-				style={{ textAlign: 'center' }}
-				title={'Original Reference'} >
-				<Glyphicon glyph='file' />
-			</div>
+			<div style={{ textAlign: 'center' }}><Glyphicon glyph='file' title={'Original Reference'} /></div>
 		),
 		key: 'doi',
 		headerStyle: { padding: 0 },
@@ -65,11 +66,7 @@ const columns = [
 	},
 	{
 		header: (
-			<div
-				style={{ textAlign: 'center' }}
-				title={'External Webpage'} >
-				<Glyphicon glyph='globe' />
-			</div>
+			<div style={{ textAlign: 'center' }}><Glyphicon glyph='globe' title={'External Webpage'} /></div>
 		),
 		key: 'url',
 		headerStyle: { padding: 0 },
@@ -78,11 +75,7 @@ const columns = [
 	},
 	{
 		header: (
-			<div
-				style={{ textAlign: 'center' }}
-				title={'Download Loom File'} >
-				<Glyphicon glyph='cloud-download' />
-			</div>
+			<div style={{ textAlign: 'center' }}><Glyphicon glyph='cloud-download' title={'Download Loom File'} /></div>
 		),
 		key: 'download',
 		headerStyle: { padding: 0 },
@@ -98,17 +91,13 @@ const Table = function (props) {
 	const headerCells = [];
 	for (let i = 0; i < columns.length; i++) {
 		const column = columns[i];
-		const { key } = column;
-		const handleClick = () => {
+		const { key, sortable } = column;
+		const handleClick = sortable ? () => {
 			dispatch({ type: SORT_DATASETS, key });
-		};
+		} : undefined;
 		const sortIcon = sortKey && key === sortKey.key ? (
 			<Glyphicon
-				glyph={
-					sortKey.ascending ?
-						'sort-by-attributes' :
-						'sort-by-attributes-alt'
-				} />
+				glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
 		) : undefined;
 		headerCells.push(
 			<th
@@ -126,7 +115,7 @@ const Table = function (props) {
 		const row = sortedData[i];
 		let rowCells = [];
 		for (let j = 0; j < columns.length; j++) {
-			const { dataStyle, key } = columns[j];
+			const {dataStyle, key } = columns[j];
 			rowCells.push(<td style={dataStyle} key={key} >{row[key]}</td>);
 		}
 		dataRows.push(<tr key={i} >{rowCells}</tr>);
@@ -157,12 +146,12 @@ Table.propTypes = {
 
 // Generates tabular list of datasets
 const DatasetList = function (props) {
-	const { datasets, dispatch, sortKey } = props;
+	const {datasets, dispatch, sortKey } = props;
 
 	if (datasets) {
 		for (let i = 0; i < datasets.length; i++) {
 			let proj = datasets[i];
-			const { project, title, dataset, url, doi } = proj;
+			const {project, title, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
 			const titleURL = (
 				<Link
@@ -181,7 +170,7 @@ const DatasetList = function (props) {
 						href={downloadURL}
 						title={'Download ' + path}
 						>
-						<Glyphicon style={{ fontSize: '12px' }} glyph='cloud-download' />
+						<Glyphicon glyph='cloud-download' style={{ fontSize: '14px' }} />
 					</Button>
 				</div>
 			);
@@ -193,7 +182,7 @@ const DatasetList = function (props) {
 						href={'http://dx.doi.org/' + doi}
 						title={'Original reference: http://dx.doi.org/' + doi}
 						>
-						<Glyphicon style={{ fontSize: '12px' }} glyph='file' />
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
 					</Button>
 				</div>
 			);
@@ -205,7 +194,7 @@ const DatasetList = function (props) {
 						href={url}
 						title={'External web page: ' + url}
 						>
-						<Glyphicon style={{ fontSize: '12px' }} glyph='globe' />
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
 					</Button>
 				</div>
 			);
@@ -252,7 +241,7 @@ class DataSetViewComponent extends Component {
 	}
 
 	componentDidMount() {
-		const { dispatch, projects } = this.props;
+		const {dispatch, projects } = this.props;
 		dispatch(fetchProjects(projects));
 	}
 
@@ -273,7 +262,7 @@ class DataSetViewComponent extends Component {
 		let filtered = undefined;
 		if (projects) {
 
-			const { sortKey, search } = nextProps;
+			const {sortKey, search } = nextProps;
 
 			// (stable!) sort projects if we have a new key to sort by
 			// nasty object comparison hack, but it works.
@@ -288,13 +277,23 @@ class DataSetViewComponent extends Component {
 
 				const v = sortKey.ascending ? 1 : -1;
 				const k = sortKey.key;
-				indices.sort((a, b) => {
+				let compare = (a, b) => {
 					let pa = projects[a][k];
 					let pb = projects[b][k];
 					return pa < pb ? -v :
 						pa > pb ? v :
 							indices[a] < indices[b] ? -1 : 1;
-				});
+				};
+				if ((typeof projects[0][k]) === 'string') {
+					compare = (a, b) => {
+						let pa = projects[a][k].toLowerCase();
+						let pb = projects[b][k].toLowerCase();
+						return pa < pb ? -v :
+							pa > pb ? v :
+								indices[a] < indices[b] ? -1 : 1;
+					};
+				}
+				indices.sort(compare);
 
 				// re-arrange projects
 				let t = new Array(projects.length);
@@ -361,8 +360,8 @@ class DataSetViewComponent extends Component {
 	}
 
 	render() {
-		const { filtered } = this.state;
-		const { dispatch, sortKey } = this.props;
+		const {filtered} = this.state;
+		const {dispatch, sortKey } = this.props;
 
 		const searchAll = (
 			<Form inline>
@@ -377,7 +376,7 @@ class DataSetViewComponent extends Component {
 					<FormControl
 						type='text'
 						placeholder='All fields..'
-						style={{ width: '80%', fontSize: '12px', paddingLeft: '8px' }}
+						style={{ width: '80%', paddingLeft: '8px' }}
 						onChange={this.handleChangeFactory('all')} />
 				</FormGroup>
 			</Form>
@@ -390,27 +389,27 @@ class DataSetViewComponent extends Component {
 						<FormControl
 							type='text'
 							placeholder='Date..'
-							style={{ width: '8%', fontSize: '12px', padding: '8px' }}
+							style={{ width: '8%', paddingLeft: '8px' }}
 							onChange={this.handleChangeFactory('lastModified')} />
 						<FormControl
 							type='text'
 							placeholder='Title..'
-							style={{ width: '18%', fontSize: '12px', padding: '8px' }}
+							style={{ width: '18%', paddingLeft: '8px' }}
 							onChange={this.handleChangeFactory('title')} />
 						<FormControl
 							type='text'
 							placeholder='Descriptions..'
-							style={{ width: '28%', fontSize: '12px', padding: '8px' }}
+							style={{ width: '28%', paddingLeft: '8px' }}
 							onChange={this.handleChangeFactory('description')} />
 						<FormControl
 							type='text'
 							placeholder='Projects..'
-							style={{ width: '18%', fontSize: '12px', padding: '8px' }}
+							style={{ width: '18%', paddingLeft: '8px' }}
 							onChange={this.handleChangeFactory('project')} />
 						<FormControl
 							type='text'
 							placeholder='Datasets..'
-							style={{ width: '16%', fontSize: '12px', padding: '8px' }}
+							style={{ width: '16%', paddingLeft: '8px' }}
 							onChange={this.handleChangeFactory('dataset')} />
 					</InputGroup>
 				</FormGroup>
