@@ -96,9 +96,13 @@ class LoomCache(object):
 						descr = ds.attrs.get("description", "")
 						url = ds.attrs.get("url", "")
 						doi = ds.attrs.get("doi", "")
+						# get arbitrary col/row attribute, they're all lists
+						# of equal size. The length equals total cells/genes
+						totalCells = len(next(ds.col_attrs.itervalues()))
+						totalGenes = len(next(ds.row_attrs.itervalues()))
 						#last time the file was modified, formatted year/month/day hour:minute:second
 						lastMod = time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(os.path.getmtime(os.path.join(self.dataset_path, proj, f))))
-						result.append({"project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi": doi, "lastModified": lastMod})
+						result.append({ "project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi": doi, "totalCells": totalCells, "totalGenes": totalGenes, "lastModified": lastMod})
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):

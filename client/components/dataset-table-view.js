@@ -1,6 +1,5 @@
 import React, { Component, PropTypes } from 'react';
 import {
-	Grid, Col, Row,
 	Button, Glyphicon,
 	FormGroup, FormControl, InputGroup,
 } from 'react-bootstrap';
@@ -18,22 +17,17 @@ window.React = React;
 
 const columns = [
 	{
-		header: 'PROJECT ',
-		key: 'project',
+		header: 'DATE ',
+		key: 'lastModified',
 		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '18%', fontSize: '12px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '8%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		defaultSorting: 'DESC',
 	},
 	{
 		header: 'TITLE ',
 		key: 'title',
 		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '20%', fontSize: '12px', padding: '8px', fontWeight: 'bold', verticalAlign: 'middle' },
-	},
-	{
-		header: 'DATASET ',
-		key: 'dataset',
-		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '20%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '18%', fontSize: '12px', padding: '8px', fontWeight: 'bold', verticalAlign: 'middle' },
 	},
 	{
 		header: 'DESCRIPTION ',
@@ -42,11 +36,22 @@ const columns = [
 		dataStyle: { width: '28%', fontSize: '12px', padding: '8px', fontStyle: 'italic', verticalAlign: 'middle' },
 	},
 	{
-		header: 'DATE ',
-		key: 'lastModified',
+		header: 'PROJECT ',
+		key: 'project',
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '18%', fontSize: '12px', padding: '8px', verticalAlign: 'middle' },
+	},
+	{
+		header: 'DATASET ',
+		key: 'dataset',
+		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '14%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+	},
+	{
+		header: 'CELL SAMPLE SIZE ',
+		key: 'totalCells',
 		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
 		dataStyle: { width: '8%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		defaultSorting: 'DESC',
 	},
 	{
 		header: (
@@ -235,50 +240,46 @@ class DataSetViewComponent extends Component {
 		}
 
 		return (
-			<Grid>
-				<Row>
-					<Col>
-						<h1>Available Datasets</h1>
-						<FormGroup style={{ width: '100%' }}>
-							<FormControl
-								type='text'
-								placeholder='Search all fields..'
-								style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px' }}
-								onChange={this.handleChangeFactory('all')} />
-						</FormGroup>
-						<FormGroup style={{ width: '100%' }}>
-							<InputGroup style={{ width: '100%' }}>
-								<FormControl
-									type='text'
-									placeholder='FILTER PROJECTS..'
-									style={{ width: '18%', fontSize: '10px', padding: '8px' }}
-									onChange={this.handleChangeFactory('project')} />
-								<FormControl
-									type='text'
-									placeholder='FILTER TITLES..'
-									style={{ width: '20%', fontSize: '10px', padding: '8px' }}
-									onChange={this.handleChangeFactory('title')} />
-								<FormControl
-									type='text'
-									placeholder='FILTER DATASETS..'
-									style={{ width: '20%', fontSize: '10px', padding: '8px' }}
-									onChange={this.handleChangeFactory('dataset')} />
-								<FormControl
-									type='text'
-									placeholder='FILTER DESCRIPTIONS..'
-									style={{ width: '28%', fontSize: '10px', padding: '8px' }}
-									onChange={this.handleChangeFactory('description')} />
-								<FormControl
-									type='text'
-									placeholder='DATE..'
-									style={{ width: '8%', fontSize: '10px', padding: '8px' }}
-									onChange={this.handleChangeFactory('lastModified')} />
-							</InputGroup>
-						</FormGroup>
-						<DatasetList datasets={allDatasets} />
-					</Col>
-				</Row>
-			</Grid>
+			<div className='view-vertical' style={{ margin: '2em' }}>
+				<h1>Available Datasets</h1>
+				<FormGroup style={{ width: '100%' }}>
+					<FormControl
+						type='text'
+						placeholder='Search all fields..'
+						style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px' }}
+						onChange={this.handleChangeFactory('all')} />
+				</FormGroup>
+				<FormGroup style={{ width: '100%' }}>
+					<InputGroup style={{ width: '100%' }}>
+						<FormControl
+							type='text'
+							placeholder='DATE..'
+							style={{ width: '8%', fontSize: '10px', padding: '8px' }}
+							onChange={this.handleChangeFactory('lastModified')} />
+						<FormControl
+							type='text'
+							placeholder='FILTER TITLES..'
+							style={{ width: '18%', fontSize: '10px', padding: '8px' }}
+							onChange={this.handleChangeFactory('title')} />
+						<FormControl
+							type='text'
+							placeholder='FILTER DESCRIPTIONS..'
+							style={{ width: '28%', fontSize: '10px', padding: '8px' }}
+							onChange={this.handleChangeFactory('description')} />
+						<FormControl
+							type='text'
+							placeholder='FILTER PROJECTS..'
+							style={{ width: '18%', fontSize: '10px', padding: '8px' }}
+							onChange={this.handleChangeFactory('project')} />
+						<FormControl
+							type='text'
+							placeholder='FILTER DATASETS..'
+							style={{ width: '14%', fontSize: '10px', padding: '8px' }}
+							onChange={this.handleChangeFactory('dataset')} />
+					</InputGroup>
+				</FormGroup>
+				<DatasetList datasets={allDatasets} />
+			</div>
 		);
 	}
 }
