@@ -5,7 +5,8 @@ import {
 	REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
-	SEARCH_PROJECTS,
+	SEARCH_DATASETS,
+	SORT_DATASETS,
 	REQUEST_DATASET,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
@@ -91,8 +92,13 @@ function data(state = initialData, action) {
 	case REQUEST_PROJECTS_FAILED:
 		return merge(state, { isFetchingData: false, errorFetchingData: true });
 
-	case SEARCH_PROJECTS:
+	case SEARCH_DATASETS:
 		return merge( state, { search: merge ( state.search, { [action.field]: action.search }) } );
+
+	case SORT_DATASETS:
+		let ascending = (state.sortKey && state.sortKey.key === action.key) ?
+			!state.sortKey.ascending : true;
+		return merge( state, { sortKey: { key: action.key, ascending }});
 
 		//===DATASET ACTIONS===
 	case REQUEST_DATASET:
