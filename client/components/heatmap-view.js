@@ -9,8 +9,6 @@ import { sparkline } from './sparkline';
 
 import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
 
-import { defaultPrintSettings } from './print-settings';
-
 import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
@@ -163,7 +161,6 @@ class HeatmapStateInitialiser extends Component {
 					colAttr: dataSet.colAttrs[0],
 					colMode: 'Text',
 					colGene: '',
-					printSettings: defaultPrintSettings,
 				})
 			);
 

@@ -7,8 +7,6 @@ import { scatterplot } from './scatterplot';
 
 import { SET_LANDSCAPE_PROPS } from '../actions/actionTypes';
 
-import { defaultPrintSettings } from './print-settings';
-
 import JSURL from 'jsurl';
 
 function makeData(attr, gene, fetchedGenes, colAttrs) {
@@ -80,7 +78,6 @@ class LandscapeStateInitialiser extends Component {
 					colorAttr: 'CellID',
 					colorMode: 'Heatmap',
 					colorGene: '',
-					printSettings: defaultPrintSettings,
 				})
 			);
 

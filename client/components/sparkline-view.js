@@ -7,8 +7,6 @@ import { sparkline } from './sparkline';
 
 import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
 
-import { defaultPrintSettings } from './print-settings';
-
 import * as _ from 'lodash';
 
 import JSURL from 'jsurl';
@@ -214,7 +212,6 @@ class SparklineStateInitialiser extends Component {
 					geneMode: 'Bars',
 					genes: '',
 					showLabels: true,
-					printSettings: defaultPrintSettings,
 				})
 			);
 
