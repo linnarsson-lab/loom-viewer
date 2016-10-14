@@ -1,7 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import {
 	Button, Glyphicon,
-	FormGroup, FormControl, InputGroup,
+	Form, FormGroup, FormControl, InputGroup, ControlLabel
 } from 'react-bootstrap';
 import { Link } from 'react-router';
 
@@ -45,13 +45,13 @@ const columns = [
 		header: 'DATASET ',
 		key: 'dataset',
 		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '14%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '16%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
 	},
 	{
 		header: 'CELL SAMPLE SIZE ',
 		key: 'totalCells',
 		headerStyle: { fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '8%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '6%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
 	},
 	{
 		header: (
@@ -242,42 +242,47 @@ class DataSetViewComponent extends Component {
 		return (
 			<div className='view-vertical' style={{ margin: '2em' }}>
 				<h1>Available Datasets</h1>
-				<FormGroup style={{ width: '100%' }}>
-					<FormControl
-						type='text'
-						placeholder='Search all fields..'
-						style={{ width: '94%', fontSize: '1.2em', fontStyle: 'italic', paddingLeft: '16px' }}
-						onChange={this.handleChangeFactory('all')} />
-				</FormGroup>
-				<FormGroup style={{ width: '100%' }}>
-					<InputGroup style={{ width: '100%' }}>
+				<Form inline>
+					<FormGroup style={{ width: '100%' }}>
+						<ControlLabel style={{ width: '8%', paddingRight: '12px', verticalAlign: 'middle', textAlign: 'right' }}>SEARCH</ControlLabel>
 						<FormControl
 							type='text'
-							placeholder='DATE..'
-							style={{ width: '8%', fontSize: '10px', padding: '8px' }}
-							onChange={this.handleChangeFactory('lastModified')} />
-						<FormControl
-							type='text'
-							placeholder='FILTER TITLES..'
-							style={{ width: '18%', fontSize: '10px', padding: '8px' }}
-							onChange={this.handleChangeFactory('title')} />
-						<FormControl
-							type='text'
-							placeholder='FILTER DESCRIPTIONS..'
-							style={{ width: '28%', fontSize: '10px', padding: '8px' }}
-							onChange={this.handleChangeFactory('description')} />
-						<FormControl
-							type='text'
-							placeholder='FILTER PROJECTS..'
-							style={{ width: '18%', fontSize: '10px', padding: '8px' }}
-							onChange={this.handleChangeFactory('project')} />
-						<FormControl
-							type='text'
-							placeholder='FILTER DATASETS..'
-							style={{ width: '14%', fontSize: '10px', padding: '8px' }}
-							onChange={this.handleChangeFactory('dataset')} />
-					</InputGroup>
-				</FormGroup>
+							placeholder='All fields..'
+							style={{ width: '80%', fontSize: '12px', paddingLeft: '8px' }}
+							onChange={this.handleChangeFactory('all')} />
+					</FormGroup>
+				</Form>
+				<Form inline>
+					<FormGroup style={{ width: '100%' }}>
+						<InputGroup style={{ width: '100%' }}>
+							<FormControl
+								type='text'
+								placeholder='Date..'
+								style={{ width: '8%', fontSize: '12px', padding: '8px' }}
+								onChange={this.handleChangeFactory('lastModified')} />
+							<FormControl
+								type='text'
+								placeholder='Title..'
+								style={{ width: '18%', fontSize: '12px', padding: '8px' }}
+								onChange={this.handleChangeFactory('title')} />
+							<FormControl
+								type='text'
+								placeholder='Descriptions..'
+								style={{ width: '28%', fontSize: '12px', padding: '8px' }}
+								onChange={this.handleChangeFactory('description')} />
+							<FormControl
+								type='text'
+								placeholder='Projects..'
+								style={{ width: '18%', fontSize: '12px', padding: '8px' }}
+								onChange={this.handleChangeFactory('project')} />
+							<FormControl
+								type='text'
+								placeholder='Datasets..'
+								style={{ width: '16%', fontSize: '12px', padding: '8px' }}
+								onChange={this.handleChangeFactory('dataset')} />
+						</InputGroup>
+					</FormGroup>
+				</Form>
 				<DatasetList datasets={allDatasets} />
 			</div>
 		);
