@@ -4,6 +4,8 @@ import { FetchGeneComponent } from './fetch-gene';
 //import { PrintSettings } from './print-settings';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
+
 export const HeatmapSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const { heatmapState } = dataSet;
@@ -11,7 +13,8 @@ export const HeatmapSidepanel = function (props) {
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
-				type: 'SET_HEATMAP_PROPS',
+				type: SET_VIEW_PROPS,
+				fieldName: 'heatmapState',
 				datasetName: dataSet.dataset,
 				heatmapState: { [field]: value },
 			});
@@ -41,6 +44,7 @@ export const HeatmapSidepanel = function (props) {
 	const rowAttrHC = handleChangeFactory('rowAttr');
 	const rowModeHC = handleChangeFactory('rowMode');
 	if (heatmapState.rowAttr === '(gene positions)') {
+		// var is on purpose here; abusing function-scope
 		var rowGeneHC = handleChangeFactory('rowGene');
 		var fetchRowGene = (
 			<FetchGeneComponent
@@ -90,13 +94,6 @@ export const HeatmapSidepanel = function (props) {
 						onChange={rowModeHC}
 						/>
 				</ListGroupItem>
-				{/*
-				<PrintSettings
-					dispatch={dispatch}
-					dataSet={dataSet}
-					stateName={'heatmapState'}
-					actionType={'SET_HEATMAP_PROPS'} />
-				*/}
 			</ListGroup>
 		</Panel>
 	);

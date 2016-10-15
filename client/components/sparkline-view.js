@@ -5,7 +5,7 @@ import { FetchDatasetComponent } from './fetch-dataset';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
-import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import * as _ from 'lodash';
 
@@ -218,7 +218,8 @@ class SparklineStateInitialiser extends Component {
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
 		dispatch({
-			type: SET_SPARKLINE_PROPS,
+			type: SET_VIEW_PROPS,
+			fieldName: 'sparklineState',
 			datasetName: dataSet.dataset,
 			sparklineState,
 		});

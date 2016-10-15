@@ -7,7 +7,7 @@ import { FetchDatasetComponent } from './fetch-dataset';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
-import { SET_HEATMAP_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import * as _ from 'lodash';
 
@@ -78,7 +78,8 @@ class HeatmapMapComponent extends Component {
 									(val) => {
 										const { dataBounds, zoom, center } = val;
 										dispatch({
-											type: 'SET_HEATMAP_PROPS',
+											type: SET_VIEW_PROPS,
+											fieldName: 'heatmapState',
 											datasetName: dataSet.dataset,
 											heatmapState: { dataBounds, zoom, center },
 										});
@@ -93,7 +94,7 @@ class HeatmapMapComponent extends Component {
 								rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
-								'vertical') }
+								'vertical')}
 							redraw
 							clear
 							/>
@@ -167,7 +168,8 @@ class HeatmapStateInitialiser extends Component {
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
 		dispatch({
-			type: SET_HEATMAP_PROPS,
+			type: SET_VIEW_PROPS,
+			fieldName: 'heatmapState',
 			datasetName: dataSet.dataset,
 			heatmapState,
 		});

@@ -5,7 +5,7 @@ import { FetchDatasetComponent } from './fetch-dataset';
 import { Canvas } from './canvas';
 import { scatterplot } from './scatterplot';
 
-import { SET_GENESCAPE_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import JSURL from 'jsurl';
 
@@ -69,7 +69,8 @@ class GenescapeStateInitialiser extends Component {
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
 		dispatch({
-			type: SET_GENESCAPE_PROPS,
+			type: SET_VIEW_PROPS,
+			fieldName: 'genescapeState',
 			datasetName: dataSet.dataset,
 			genescapeState,
 		});

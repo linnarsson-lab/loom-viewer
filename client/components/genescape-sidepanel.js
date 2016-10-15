@@ -1,8 +1,12 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 //import { PrintSettings } from './print-settings';
-import { Panel, ListGroup, ListGroupItem,
-	ButtonGroup, Button } from 'react-bootstrap';
+import {
+	Panel, ListGroup, ListGroupItem,
+	ButtonGroup, Button,
+} from 'react-bootstrap';
+
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -12,7 +16,8 @@ export const GenescapeSidepanel = function (props) {
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
-				type: 'SET_GENESCAPE_PROPS',
+				type: SET_VIEW_PROPS,
+				fieldName: 'genescapeState',
 				datasetName: dataSet.dataset,
 				genescapeState: { [field]: value },
 			});
@@ -42,10 +47,11 @@ export const GenescapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isTSNE ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isTSNE ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: {
 											xCoordinate: '_tSNE1',
@@ -58,10 +64,11 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isPCA ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isPCA ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: {
 											xCoordinate: '_PC1',
@@ -98,7 +105,7 @@ export const GenescapeSidepanel = function (props) {
 						onChange={colorAttrHC}
 						/>
 					<Button
-						bsStyle={ genescapeState.filterZeros ? 'success' : 'default' }
+						bsStyle={genescapeState.filterZeros ? 'success' : 'default'}
 						onClick={filterZerosHC}
 						>
 						Filter zeros
@@ -109,10 +116,11 @@ export const GenescapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Heatmap' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Heatmap' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: { colorMode: 'Heatmap' },
 									});
@@ -122,10 +130,11 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Categorical' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Categorical' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: { colorMode: 'Categorical' },
 									});
@@ -139,7 +148,7 @@ export const GenescapeSidepanel = function (props) {
 				<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
-					stateName={'genescapeState'}
+					fieldName={'genescapeState'}
 					actionType={'SET_GENESCAPE_PROPS'} />
 				*/}
 			</ListGroup>

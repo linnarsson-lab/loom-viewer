@@ -2,9 +2,12 @@ import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
 //import { PrintSettings } from './print-settings';
-import { Panel, ListGroup, ListGroupItem,
-	Button, ButtonGroup } from 'react-bootstrap';
+import {
+	Panel, ListGroup, ListGroupItem,
+	Button, ButtonGroup,
+} from 'react-bootstrap';
 
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -14,7 +17,8 @@ export const LandscapeSidepanel = function (props) {
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
-				type: 'SET_LANDSCAPE_PROPS',
+				type: SET_VIEW_PROPS,
+				fieldName: 'landscapeState',
 				datasetName: dataSet.dataset,
 				landscapeState: { [field]: value },
 			});
@@ -50,10 +54,11 @@ export const LandscapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isTSNE ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isTSNE ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'landscapeState',
 										datasetName: dataSet.dataset,
 										landscapeState: {
 											xCoordinate: '_tSNE1',
@@ -66,10 +71,11 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isPCA ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isPCA ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'landscapeState',
 										datasetName: dataSet.dataset,
 										landscapeState: {
 											xCoordinate: '_PC1',
@@ -89,13 +95,13 @@ export const LandscapeSidepanel = function (props) {
 						options={colAttrsOptions}
 						onChange={xCoordinateHC}
 						/>
-					{ xCoordinate === '(gene)' ?
+					{xCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={xGeneHC}
 							value={landscapeState.xGene}
-							/> : null }
+							/> : null}
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Y Coordinate</label>
@@ -104,13 +110,13 @@ export const LandscapeSidepanel = function (props) {
 						options={colAttrsOptions}
 						onChange={yCoordinateHC}
 						/>
-					{ yCoordinate === '(gene)' ?
+					{yCoordinate === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={yGeneHC}
 							value={landscapeState.yGene}
-							/> : null }
+							/> : null}
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Color</label>
@@ -119,16 +125,16 @@ export const LandscapeSidepanel = function (props) {
 						options={colAttrsOptions}
 						onChange={colorAttrHC}
 						/>
-					{ colorAttr === '(gene)' ?
+					{colorAttr === '(gene)' ?
 						<FetchGeneComponent
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={colorGeneHC}
 							value={landscapeState.colorGene}
 							/>
-						: null }
+						: null}
 					<Button
-						bsStyle={ landscapeState.filterZeros ? 'success' : 'default' }
+						bsStyle={landscapeState.filterZeros ? 'success' : 'default'}
 						onClick={filterZerosHC}
 						>
 						Filter zeros
@@ -138,10 +144,11 @@ export const LandscapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Heatmap' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Heatmap' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'landscapeState',
 										datasetName: dataSet.dataset,
 										landscapeState: { colorMode: 'Heatmap' },
 									});
@@ -151,10 +158,11 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Categorical' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Categorical' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_LANDSCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'landscapeState',
 										datasetName: dataSet.dataset,
 										landscapeState: { colorMode: 'Categorical' },
 									});
@@ -164,11 +172,6 @@ export const LandscapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
-				{/*<PrintSettings
-					dispatch={dispatch}
-					dataSet={dataSet}
-					stateName={'landscapeState'}
-					actionType={'SET_LANDSCAPE_PROPS'} />*/}
 			</ListGroup>
 		</Panel >
 	);

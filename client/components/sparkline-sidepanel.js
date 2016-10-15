@@ -5,6 +5,8 @@ import { FetchGeneComponent } from './fetch-gene';
 import { Panel, Button, Glyphicon,
 	ListGroup, ListGroupItem } from 'react-bootstrap';
 
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
+
 export const SparklineSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const { sparklineState } = dataSet;
@@ -12,7 +14,8 @@ export const SparklineSidepanel = function (props) {
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
-				type: 'SET_SPARKLINE_PROPS',
+				type: SET_VIEW_PROPS,
+				fieldName: 'sparklineState',
 				datasetName: dataSet.dataset,
 				sparklineState: { [field]: value },
 			});
@@ -123,14 +126,6 @@ export const SparklineSidepanel = function (props) {
 						Show labels
 					</Button>
 				</ListGroupItem>
-
-				{/*
-				<PrintSettings
-					dispatch={dispatch}
-					dataSet={dataSet}
-					stateName={'sparklineState'}
-					actionType={'SET_SPARKLINE_PROPS'} />
-				*/}
 			</ListGroup >
 		</Panel >
 	);
