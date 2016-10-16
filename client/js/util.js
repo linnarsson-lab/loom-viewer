@@ -2,6 +2,7 @@ export function nMostFrequent(array, n) {
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
 	const sorted = array.slice(0).sort();
+
 	// linearly run through the array, track the
 	// unique entries and count how often they show up
 	let uniques = [sorted[0]];
@@ -17,10 +18,24 @@ export function nMostFrequent(array, n) {
 	const result = uniques.sort((a, b) => {
 		return frequency[b] - frequency[a];
 	});
-	return result[0] === '' ? result.slice(1, n + 1) : result.slice(0, n);
+	frequency.sort();
 
+	// if n is undefined or zero, return the whole array
+	n = n ? n : sorted.length;
+	// remove empty strings
+	if (result[0] === '') {
+		return {
+			val: result.slice(1, n + 1),
+			count: frequency.slice(1, n + 1),
+		};
+	} else {
+		return {
+			values: result.slice(0, n),
+			count: frequency.slice(0, n),
+		};
+	}
 	// // Sten's functional, elegant but slower original:
-	// // (also not sure if it handles undefined)
+	// // (also not sure if it handles undefined values)
 	// let frequence = {};
 	// array.forEach((value) => { frequency[value] = 0; });
 	// const uniques = array.filter((value) => {

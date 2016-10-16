@@ -228,7 +228,7 @@ function calcMeans(rangeData, rangeWidth) {
 
 
 function categoriesPainter(data) {
-	const categories = nMostFrequent(data, 20);
+	const categories = nMostFrequent(data, 20).values;
 	return (context, rangeData, xOffset, rangeWidth) => {
 		categoriesPaint(context, rangeData, xOffset, rangeWidth, categories);
 	};
@@ -251,7 +251,7 @@ function categoriesPaint(context, rangeData, xOffset, rangeWidth, categories) {
 			const i0 = (i * rangeData.length / rangeWidth) | 0;
 			const i1 = ((i + 1) * rangeData.length / rangeWidth) | 0;
 			const slice = rangeData.slice(i0, i1);
-			const commonest = nMostFrequent(slice, 1)[0];
+			const commonest = nMostFrequent(slice, 1).values[0];
 			if (commonest !== undefined) {
 				const color = categories.indexOf(commonest) + 1;
 				context.fillStyle = colors.category20[color];
