@@ -51,6 +51,9 @@ function setViewStateURL(state, action) {
 		case 'genescapeState':
 			view = 'genes';
 			break;
+		case 'metadataState':
+			view = 'metadata';
+			break;
 	}
 	const datasetName = action.datasetName;
 	const dataSet = state.dataSets[datasetName];

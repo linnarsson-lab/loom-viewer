@@ -6,6 +6,8 @@ import {
 } from 'react-bootstrap';
 import { Link } from 'react-router';
 
+import { SortableTable } from './sortabletable';
+
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
 import { merge } from '../js/util';
@@ -18,42 +20,42 @@ const columns = [
 		key: 'lastModified',
 		sortIcon: 'sort-by-order',
 		dataStyle: { width: '8%' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'lastModified' },
 	},
 	{
 		header: 'TITLE ',
 		key: 'title',
 		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '18%', fontWeight: 'bold' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'title' },
 	},
 	{
 		header: 'DESCRIPTION ',
 		key: 'description',
 		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '28%', fontStyle: 'italic' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'desciption' },
 	},
 	{
 		header: 'PROJECT ',
 		key: 'project',
 		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '18%' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'project' },
 	},
 	{
 		header: 'DATASET ',
 		key: 'dataset',
 		sortIcon: 'sort-by-alphabet',
 		dataStyle: { width: '16%' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'dataset' },
 	},
 	{
 		header: 'CELL SAMPLE SIZE ',
 		key: 'totalCells',
 		sortIcon: 'sort-by-attributes',
 		dataStyle: { width: '6%' },
-		sortable: true,
+		onDispatch: { type: SORT_DATASETS, key: 'totalCells' },
 	},
 	{
 		header: (
@@ -62,7 +64,6 @@ const columns = [
 		key: 'doi',
 		headerStyle: { padding: 0 },
 		dataStyle: { padding: 0, width: '2%' },
-		sortable: false,
 	},
 	{
 		header: (
@@ -71,7 +72,6 @@ const columns = [
 		key: 'url',
 		headerStyle: { padding: 0 },
 		dataStyle: { padding: 0, width: '2%' },
-		sortable: false,
 	},
 	{
 		header: (
@@ -80,69 +80,8 @@ const columns = [
 		key: 'download',
 		headerStyle: { padding: 0 },
 		dataStyle: { padding: 0, width: '2%' },
-		sortable: false,
 	},
 ];
-
-const Table = function (props) {
-	const { data, columns, dispatch, sortKey } = props;
-
-
-	const headerCells = [];
-	for (let i = 0; i < columns.length; i++) {
-		const column = columns[i];
-		const { key, sortable } = column;
-		const handleClick = sortable ? () => {
-			dispatch({ type: SORT_DATASETS, key });
-		} : undefined;
-		const sortIcon = sortKey && key === sortKey.key ? (
-			<Glyphicon
-				glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
-		) : undefined;
-		headerCells.push(
-			<th
-				key={key}
-				style={column.headerStyle}
-				onClick={handleClick} >
-				{sortIcon}{column.header}
-			</th>
-		);
-	}
-
-	const sortedData = data.slice(0);
-	let dataRows = [];
-	for (let i = 0; i < sortedData.length; i++) {
-		const row = sortedData[i];
-		let rowCells = [];
-		for (let j = 0; j < columns.length; j++) {
-			const {dataStyle, key } = columns[j];
-			rowCells.push(<td style={dataStyle} key={key} >{row[key]}</td>);
-		}
-		dataRows.push(<tr key={i} >{rowCells}</tr>);
-	}
-	return (
-		<table style={{ width: '100%' }}>
-			<thead>
-				<tr>
-					{headerCells}
-				</tr>
-			</thead>
-			<tbody>
-				{dataRows}
-			</tbody>
-		</table>
-	);
-};
-
-Table.propTypes = {
-	data: PropTypes.array,
-	columns: PropTypes.array,
-	dispatch: PropTypes.func.isRequired,
-	sortKey: PropTypes.shape({
-		key: PropTypes.string,
-		ascending: PropTypes.bool,
-	}),
-};
 
 // Generates tabular list of datasets
 const DatasetList = function (props) {
@@ -155,7 +94,7 @@ const DatasetList = function (props) {
 			let path = project + '/' + dataset;
 			const titleURL = (
 				<Link
-					to={'dataset/genes/' + path}
+					to={'dataset/metadata/' + path}
 					title={'Open ' + path}>
 					{title}
 				</Link>
@@ -211,7 +150,7 @@ const DatasetList = function (props) {
 		}
 
 		return (
-			<Table
+			<SortableTable
 				data={datasets}
 				columns={columns}
 				dispatch={dispatch}
@@ -417,7 +356,7 @@ class DataSetViewComponent extends Component {
 		);
 
 		return (
-			<div className='view-vertical' style={{ margin: '3em' }}>
+			<div className='view-vertical' style={{ margin: '0em 3em 1em 3em' }}>
 				<h1>Datasets</h1>
 				{searchAll}
 				{searchFields}
