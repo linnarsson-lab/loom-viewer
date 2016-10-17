@@ -6,10 +6,10 @@ export const NavbarView = function (props) {
 	const { project, dataset } = props.params;
 	let viewLinks = null;
 	if (dataset) {
-		viewLinks = [ 'heatmap', 'sparklines', 'cells', 'genes', 'metadata'].map(
+		viewLinks = ['heatmap', 'sparklines', 'cells', 'genes', 'metadata'].map(
 			(view) => {
 				const link = `/dataset/${view}/${project}/${dataset}`;
-				return(
+				return (
 					<LinkContainer to={link} key={view}>
 						<NavItem eventKey={view}>
 							{view.charAt(0).toUpperCase() + view.slice(1)}
@@ -22,14 +22,14 @@ export const NavbarView = function (props) {
 	}
 	const navbarInstance = (
 		<Navbar>
-			<Navbar.Header>
-				<LinkContainer to='/'>
+			<LinkContainer to='/'>
+				<Navbar.Header>
 					<Navbar.Brand>
 						Loom
 					</Navbar.Brand>
-				</LinkContainer>
-				<Navbar.Toggle />
-			</Navbar.Header>
+					<Navbar.Toggle />
+				</Navbar.Header>
+			</LinkContainer>
 			<Navbar.Collapse>
 				<Nav>
 					{viewLinks}

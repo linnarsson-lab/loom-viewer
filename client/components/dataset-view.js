@@ -146,8 +146,8 @@ class DataSetViewComponent extends Component {
 		return (
 			<Grid>
 				<Row>
-					<Col xs={12} md={8}>
-						<h3>Available datasets</h3>
+					<Col xs={12} md={12} lg={12}>
+						<h1>Datasets (<Link to='/dataset/search' title={'Search Datasets...'}>search</Link>)</h1>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />
 						</PanelGroup>

@@ -1,4 +1,4 @@
-import { nMostFrequent } from '../js/util';
+import { nMostFrequent, calcMinMax } from '../js/util';
 import * as colors from '../js/colors';
 
 export function sparkline(data, mode, dataRange, label, orientation) {
@@ -113,20 +113,6 @@ function sparklinePainter(context, paint, data, mode, dataRange, orientation) {
 }
 
 // Helper functions
-
-function calcMinMax(data) {
-	let min = 0;
-	let max = 0;
-	if (typeof data[0] === 'number') {
-		min = Number.MAX_VALUE;
-		max = Number.MIN_VALUE;
-		for (let i = 0; i < data.length; i++) {
-			min = min < data[i] ? min : data[i];
-			max = max > data[i] ? max : data[i];
-		}
-	}
-	return { min, max };
-}
 
 function calcMeans(rangeData, rangeWidth) {
 	// determine real start and end of range,

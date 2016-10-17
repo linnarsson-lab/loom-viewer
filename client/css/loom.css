@@ -111,9 +111,9 @@ td {
   border-top-width: thin;
   border-top-color: lightgray;
   font-size: 14px;
-  margin: 0;
+  margin: 0px;
   padding: 8px;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 th {
@@ -121,8 +121,8 @@ th {
   border-bottom-width: thin;
   border-bottom-color: lightgray;
   font-size: 14px;
-  margin: 0;
+  margin: 0px;
   padding: 8px;
-  vertical-align: middle;
+  vertical-align: top;
   cursor: pointer;
 }

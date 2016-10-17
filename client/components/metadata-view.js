@@ -3,30 +3,21 @@ import { FetchDatasetComponent } from './fetch-dataset';
 import { SortableTable } from './sortabletable';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
-import { merge, nMostFrequent } from '../js/util';
+import { nMostFrequent } from '../js/util';
 
-import {
-	Button, Glyphicon,
-	Form, FormGroup, FormControl,
-	InputGroup, ControlLabel,
-} from 'react-bootstrap';
-
-import Fuse from 'fuse.js';
+//import Fuse from 'fuse.js';
 import JSURL from 'jsurl';
-
 
 const columns = [
 	{
-		header: 'ATTRIBUTE ',
+		headers: ['ATTRIBUTE'],
 		key: 'name',
-		headerStyle: { fontSize: '14px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '10%', fontSize: '12px', padding: '8px', fontWeight: 'bold', verticalAlign: 'middle' },
+		dataStyle: { width: '10%', fontWeight: 'bold' },
 	},
 	{
-		header: 'DATA ',
+		headers: ['DATA'],
 		key: 'val',
-		headerStyle: { fontSize: '14px', padding: '8px', verticalAlign: 'middle' },
-		dataStyle: { width: '90%', fontSize: '10px', padding: '8px', verticalAlign: 'middle' },
+		dataStyle: { width: '90%', fontStyle: 'italic' },
 	},
 ];
 
@@ -37,6 +28,10 @@ class MetadataComponent extends Component {
 	// everything and store it in the state
 	constructor(props) {
 		super(props);
+
+		this.createTableData = this.createTableData.bind(this);
+		this.createHistogram = this.createHistogram.bind(this);
+		this.createStringCell = this.createStringCell.bind(this);
 
 		// todo
 		// - Gene metadata (rowAttrs)
@@ -52,49 +47,72 @@ class MetadataComponent extends Component {
 		const { dataSet } = props;
 		const { rowAttrs, colAttrs, schema } = dataSet;
 
-		let geneData = [];
-		for (let keys = Object.keys(schema.rowAttrs), i = 0; i < keys.length; i++) {
-			const key = keys[i];
-			let tableRow = { name: key };
-			switch (schema.rowAttrs[key]) {
-				case 'float32':
-				case 'float64':
-				case 'integer':
-				case 'number':
-					tableRow.val = 'numerical';
-					break;
-				case 'string':
-					tableRow.val = 'string';
-					break;
-				default:
-					tableRow.val = 'unknown';
-			}
-			geneData.push(tableRow);
-		}
-
-
-		let cellData = [];
-		for (let keys = Object.keys(schema.colAttrs), i = 0; i < keys.length; i++) {
-			const key = keys[i];
-			let tableRow = { name: key };
-			switch (schema.colAttrs[key]) {
-				case 'float32':
-				case 'float64':
-				case 'integer':
-				case 'number':
-					tableRow.val = 'numerical';
-					break;
-				case 'string':
-					tableRow.val = 'string';
-					break;
-				default:
-					tableRow.val = 'unknown';
-			}
-			cellData.push(tableRow);
-		}
-
-		this.state = { geneData, cellData };
+		this.state = {
+			geneData: this.createTableData(rowAttrs, schema.rowAttrs),
+			cellData: this.createTableData(colAttrs, schema.colAttrs),
+		};
 	}
+
+	createTableData(data, schema) {
+		let tableData = [];
+		for (let keys = Object.keys(schema), i = 0; i < keys.length; i++) {
+			const key = keys[i];
+			let tableRow = { name: key };
+			switch (schema[key]) {
+				case 'float32':
+				case 'float64':
+				case 'integer':
+				case 'number':
+					tableRow.val = this.createHistogram(data[key]);
+					break;
+				case 'string':
+					tableRow.val = this.createStringCell(data[key]);
+					break;
+				default:
+					tableRow.val = 'unknown';
+			}
+			tableData.push(tableRow);
+		}
+		return tableData;
+	}
+
+	createStringCell(stringArray) {
+		let { values, count } = nMostFrequent(stringArray);
+		if (count[0] === 1 || count.length === 1) {
+			// unique strings, or only one string
+			let list = values[0];
+			const l = Math.min(count.length, 20);
+			for (let i = 1; i < l; i++) {
+				list += `, ${values[i]}`;
+			}
+			if (count.length > 20) {
+				list += ', ...';
+			}
+			return <span>{list}</span>;
+		} else { // show a mini-table of up to ten items
+			let l = Math.min(values.length, 10);
+			let valuesRow = [], countRow = [];
+			for (let i = 0; i < l; i++) {
+				valuesRow.push(<td style={{ border: '0px none' }}>{values[i]}</td>);
+				countRow.push(<td>{count[i]}</td>);
+			}
+			if (l < values.length) {
+				let rest = 0;
+				while (l < values.length) { rest += count[l++]; }
+				valuesRow.push(<td style={{ border: '0px none' }}>(other)</td>);
+				countRow.push(<td>{rest}</td>);
+
+			}
+			return (
+				<table>
+					<tr>{valuesRow}</tr>
+					<tr>{countRow}</tr>
+				</table>
+			);
+		}
+	}
+
+	createHistogram(numberArray) { return '<todo: number plot>'; }
 
 	componentWillMount() {
 
@@ -106,7 +124,7 @@ class MetadataComponent extends Component {
 		const { geneData, cellData } = this.state;
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
-				<h1>Metadata of {dataSet.dataset}</h1>
+				<h1>(WIP) Metadata of {dataSet.dataset}</h1>
 				<h2>Genes</h2>
 				<SortableTable
 					data={geneData}

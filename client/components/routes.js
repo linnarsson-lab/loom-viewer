@@ -9,7 +9,8 @@ import { store } from '../store';
 
 // Components
 import { NavbarView } from './navbar';
-import { DataSetView } from './dataset-table-view';
+import { DataSetView } from './dataset-view';
+import { SearchDataSetView } from './search-datasets';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
@@ -26,6 +27,8 @@ const Routes = (
 				<IndexRoute component={DataSetView} />
 				<Route name='data-set-list' component={DataSetView}
 					path='/dataset' />
+				<Route name='data-set-list' component={SearchDataSetView}
+					path='/dataset/search' />
 				<Route name='data-set-heatmap' component={HeatmapView}
 					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparklines' component={SparklineView}

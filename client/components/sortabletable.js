@@ -3,25 +3,37 @@ import { Glyphicon } from 'react-bootstrap';
 
 export const SortableTable = function (props) {
 	const { data, columns, dispatch, sortKey } = props;
-	const headerCells = [];
+
+	let headerRows = [];
+	let maxHeaders = 0;
 	for (let i = 0; i < columns.length; i++) {
-		const column = columns[i];
-		const { key, onDispatch } = column;
-		const handleClick = onDispatch ? () => {
-			dispatch(onDispatch);
-		} : undefined;
-		const sortIcon = sortKey && key === sortKey.key ? (
-			<Glyphicon
-				glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
-		) : undefined;
-		headerCells.push(
-			<th
-				key={key}
-				style={column.headerStyle}
-				onClick={handleClick} >
-				{sortIcon}{column.header}
-			</th>
-		);
+		maxHeaders = Math.max(maxHeaders, columns[i].headers.length);
+	}
+	for (let i = 0; i < maxHeaders; i++) {
+		let headerCells = [];
+		for (let j = 0; j < columns.length; j++) {
+			const column = columns[j];
+			const { key, onDispatch, headers, headerStyles } = column;
+			let handleClick, sortIcon;
+			if (!i) {
+				handleClick = onDispatch ? () => {
+					dispatch(onDispatch);
+				} : undefined;
+				sortIcon = sortKey && key === sortKey.key ? (
+					<Glyphicon
+						glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
+				) : undefined;
+			}
+			headerCells.push(
+				<th
+					key={key}
+					style={headerStyles ? headerStyles[i] : null }
+					onClick={handleClick} >
+					{sortIcon}{headers[i]}
+				</th>
+			);
+		}
+		headerRows.push(<tr>{headerCells}</tr>);
 	}
 
 	const sortedData = data.slice(0);
@@ -38,9 +50,7 @@ export const SortableTable = function (props) {
 	return (
 		<table style={{ width: '100%' }}>
 			<thead>
-				<tr>
-					{headerCells}
-				</tr>
+				{headerRows}
 			</thead>
 			<tbody>
 				{dataRows}
