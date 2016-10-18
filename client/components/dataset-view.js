@@ -46,7 +46,7 @@ const DataSetListItem = function (props) {
 		</Button>
 	);
 
-	const path = 'dataset/genes/' + props.dataSetPath;
+	const path = 'dataset/cellmetadata/' + props.dataSetPath;
 
 	return (
 		<ListGroupItem key={dataset + '_buttons'}>
@@ -146,7 +146,10 @@ class DataSetViewComponent extends Component {
 		return (
 			<Grid>
 				<Row>
-					<Col xs={12} md={12} lg={12}>
+					<Col
+						xs={12}
+						md={12}
+						lg={12}>
 						<h1>Datasets (<Link to='/dataset/search' title={'Search Datasets...'}>search</Link>)</h1>
 						<PanelGroup>
 							<ProjectList projects={this.props.projects} />

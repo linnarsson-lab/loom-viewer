@@ -1,5 +1,6 @@
 import React, { PropTypes } from 'react';
 import { Glyphicon } from 'react-bootstrap';
+import { isEqual } from 'lodash';
 
 export const SortableTable = function (props) {
 	const { data, columns, dispatch, sortKey } = props;
@@ -7,13 +8,18 @@ export const SortableTable = function (props) {
 	let headerRows = [];
 	let maxHeaders = 0;
 	for (let i = 0; i < columns.length; i++) {
-		maxHeaders = Math.max(maxHeaders, columns[i].headers.length);
+		const { headers } = columns[i];
+		if (headers) {
+			maxHeaders = Math.max(maxHeaders, columns[i].headers.length);
+		}
 	}
 	for (let i = 0; i < maxHeaders; i++) {
+
+		// Header
 		let headerCells = [];
 		for (let j = 0; j < columns.length; j++) {
 			const column = columns[j];
-			const { key, onDispatch, headers, headerStyles } = column;
+			const { key, keys, header, headers, headerStyles, onDispatch } = column;
 			let handleClick, sortIcon;
 			if (!i) {
 				handleClick = onDispatch ? () => {
@@ -24,29 +30,64 @@ export const SortableTable = function (props) {
 						glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
 				) : undefined;
 			}
-			headerCells.push(
-				<th
-					key={key}
-					style={headerStyles ? headerStyles[i] : null }
-					onClick={handleClick} >
-					{sortIcon}{headers[i]}
-				</th>
-			);
+			if (headers) {
+				headerCells.push(
+					<th
+						key={keys ? keys.join(' ') : key}
+						style={headerStyles ? headerStyles[i] : null}
+						onClick={handleClick}>
+						{headers[i]}{sortIcon}
+					</th>
+				);
+			} else if (!i) {
+				headerCells.push(
+					<th
+						key={keys ? keys.join(' ') : key}
+						style={headerStyles ? headerStyles[0] : null}
+						onClick={handleClick}
+						rowSpan={maxHeaders}>
+						{header}{sortIcon}
+					</th>
+				);
+			}
 		}
-		headerRows.push(<tr>{headerCells}</tr>);
+		headerRows.push(<tr key={i} >{headerCells}</tr>);
 	}
 
+	const mapToRow = (row, key, keys) => {
+		return row ? (
+			keys ? keys.map((k) => { return row[k]; }) : row[key]
+		) : null;
+	};
+
+	// Data
 	const sortedData = data.slice(0);
 	let dataRows = [];
 	for (let i = 0; i < sortedData.length; i++) {
-		const row = sortedData[i];
 		let rowCells = [];
 		for (let j = 0; j < columns.length; j++) {
-			const {dataStyle, key } = columns[j];
-			rowCells.push(<td style={dataStyle} key={key} >{row[key]}</td>);
+			const {dataStyle, key, keys, mergeRows } = columns[j];
+			const cell = mapToRow(sortedData[i], key, keys);
+			let rowSpan = 1;
+			if (mergeRows) {
+				if (isEqual(cell, mapToRow(sortedData[i - 1], key, keys))) {
+					continue;
+				} else {
+					while (isEqual(cell, mapToRow(sortedData[i + rowSpan], key, keys))) { rowSpan++; }
+				}
+			}
+			rowCells.push(
+				<td
+					style={dataStyle}
+					rowSpan={rowSpan}
+					key={keys ? keys.join(' ') : key} >
+					{cell}
+				</td>
+			);
 		}
 		dataRows.push(<tr key={i} >{rowCells}</tr>);
 	}
+
 	return (
 		<table style={{ width: '100%' }}>
 			<thead>
@@ -60,8 +101,8 @@ export const SortableTable = function (props) {
 };
 
 SortableTable.propTypes = {
-	data: PropTypes.array,
-	columns: PropTypes.array,
+	data: PropTypes.array.isRequired,
+	columns: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	sortKey: PropTypes.shape({
 		key: PropTypes.string,

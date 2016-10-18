@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { Grid, Row, Col, Button, Glyphicon, FormControl } from 'react-bootstrap';
 import { Link } from 'react-router';
-
 import { SortableTable } from './sortabletable';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
@@ -44,19 +43,12 @@ const DatasetList = function (props) {
 
 	const columns = [
 		{
-			headers: ['DATE', dateSearch],
-			key: 'lastModified',
-			sortIcon: 'sort-by-order',
-			headerStyles,
-			dataStyle: { width: '6%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'lastModified' },
-		},
-		{
 			headers: ['PROJECT', projectSearch],
 			key: 'project',
+			mergeRows: true,
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
-			dataStyle: { width: '16%' },
+			dataStyle: { width: '16%', fontSize: '16px', fontWeight: 'bold', fontStyle: 'normal' },
 			onDispatch: { type: SORT_DATASETS, key: 'project' },
 		},
 		{
@@ -72,42 +64,44 @@ const DatasetList = function (props) {
 			key: 'description',
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
-			dataStyle: { width: '30%', fontStyle: 'italic' },
+			dataStyle: { width: '32%', fontStyle: 'italic' },
 			onDispatch: { type: SORT_DATASETS, key: 'description' },
 		},
 		{
-			headers: ['DATASET', datasetSearch],
+			headers: ['DATE', dateSearch],
+			key: 'lastModified',
+			sortIcon: 'sort-by-order',
+			headerStyles,
+			dataStyle: { width: '4%', fontSize: '10px' },
+			onDispatch: { type: SORT_DATASETS, key: 'lastModified' },
+		},
+		{
+			headers: ['FILE', datasetSearch],
 			key: 'dataset',
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
-			dataStyle: { width: '12%', fontSize: '10px' },
+			dataStyle: { width: '8%', fontSize: '10px' },
 			onDispatch: { type: SORT_DATASETS, key: 'dataset' },
 		},
 		{
-			headers: ['SAMPLES'],
+			header: 'SIZE',
 			key: 'totalCells',
 			sortIcon: 'sort-by-attributes',
 			headerStyles,
-			dataStyle: { width: '3%', fontSize: '10px' },
+			dataStyle: { width: '2%', fontSize: '10px' },
 			onDispatch: { type: SORT_DATASETS, key: 'totalCells' },
 		},
 		{
-			headers: [<div style={{ textAlign: 'center' }}><Glyphicon glyph='file' title={'Original Reference'} /></div>],
-			key: 'doi',
-			headerStyles: [{ border: 'none 0px', padding: '8px 0px 8px 0px' }, { padding: '0px' }],
-			dataStyle: { width: '1%', padding: '0px' },
-		},
-		{
-			headers: [<div style={{ textAlign: 'center' }}><Glyphicon glyph='globe' title={'External Webpage'} /></div>],
-			key: 'url',
-			headerStyles: [{ border: 'none 0px', padding: '8px 0px 8px 0px' }, { padding: '0px' }],
-			dataStyle: { width: '1%', padding: '0px' },
-		},
-		{
-			headers: [<div style={{ textAlign: 'center' }}><Glyphicon glyph='cloud-download' title={'Download Loom File'} /></div>],
-			key: 'download',
-			headerStyles: [{ border: 'none 0px', padding: '8px 0px 8px 0px' }, { padding: '0px' }],
-			dataStyle: { width: '1%', padding: '0px' },
+			header: (
+				<div style={{ textAlign: 'center' }}>
+					<Glyphicon glyph='file' title={'Original Reference'} />
+					<Glyphicon glyph='globe' title={'External Webpage'} />
+					<Glyphicon glyph='cloud-download' title={'Download Loom File'} />
+				</div>
+			),
+			key: 'buttons',
+			headerStyles: [{ border: 'none 0px', padding: '8px 0px' }, { padding: '0px' }],
+			dataStyle: { width: '8%', padding: '8px 0px' },
 		},
 	];
 
@@ -118,7 +112,7 @@ const DatasetList = function (props) {
 			let path = project + '/' + dataset;
 			const titleURL = (
 				<Link
-					to={'dataset/genes/' + path}
+					to={'dataset/cellmetadata/' + path}
 					title={'Open ' + path}>
 					{title}
 				</Link>
@@ -126,50 +120,61 @@ const DatasetList = function (props) {
 			);
 			const downloadURL = '/clone/' + path;
 			const downloadButton = (
-				<div style={{ textAlign: 'center' }}>
-					<Button
-						bsSize='xsmall'
-						bsStyle='link'
-						href={downloadURL}
-						title={'Download ' + path}
-						>
-						<Glyphicon glyph='cloud-download' style={{ fontSize: '14px' }} />
-					</Button>
-				</div>
+				<Button
+					bsSize='xsmall'
+					bsStyle='link'
+					href={downloadURL}
+					title={'Download ' + path}
+					style={{ padding: 0 }}
+					>
+					<Glyphicon glyph='cloud-download' style={{ fontSize: '14px' }} />
+				</Button>
 			);
-			const paperButton = doi === '' ? null : (
-				<div style={{ textAlign: 'center' }}>
-					<Button
-						bsSize='xsmall'
-						bsStyle='link'
-						href={'http://dx.doi.org/' + doi}
-						title={'Original reference: http://dx.doi.org/' + doi}
-						>
-						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-					</Button>
-				</div>
+			const paperButton = doi === '' ? (
+				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
+			) : (
+				<Button
+					bsSize='xsmall'
+					bsStyle='link'
+					href={'http://dx.doi.org/' + doi}
+					title={'Original reference: http://dx.doi.org/' + doi}
+					style={{ padding: 0 }}
+					>
+					<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+				</Button>
 			);
-			const urlButton = url === '' ? null : (
-				<div style={{ textAlign: 'center' }}>
-					<Button
-						bsSize='xsmall'
-						bsStyle='link'
-						href={url}
-						title={'External web page: ' + url}
-						>
-						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-					</Button>
-				</div>
+			const urlButton = url === '' ? (
+				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
+			) : (
+				<Button
+					bsSize='xsmall'
+					bsStyle='link'
+					href={url}
+					title={'External web page: ' + url}
+					style={{ padding: 0 }}
+					>
+					<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+				</Button>
 			);
 			// create new datasets object with proper tags
+			// strip '.loom' ending
+			let fileName = dataset.substr(0, dataset.length - 5);
+			if (fileName.length > 8) {
+				fileName = fileName.substr(0, 7) + '…';
+			}
 			datasets[i] = merge(
 				datasets[i],
 				{
 					title: titleURL,
-					dataset: (<code>{dataset}</code>),
+					dataset: (<code title={dataset}>{fileName}</code>),
 					doi: paperButton,
 					url: urlButton,
 					download: downloadButton,
+					buttons: (
+						<div style={{ textAlign: 'center' }}>
+							{[paperButton, urlButton, downloadButton]}
+						</div>
+					),
 				}
 			);
 		}
@@ -341,7 +346,10 @@ class SearchDataSetViewComponent extends Component {
 		return (
 			<Grid>
 				<Row>
-					<Col xs={12} md={12} lg={12}>
+					<Col
+						xs={12}
+						md={12}
+						lg={12}>
 						<div className='view-vertical'>
 							<h1><Link to='/dataset/' title={'List view'}>Datasets</Link> > Search</h1>
 							<FormControl

@@ -1,13 +1,9 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 
 import { LandscapeSidepanel } from './landscape-sidepanel';
-import { FetchDatasetComponent } from './fetch-dataset';
+import { ViewInitialiser } from './view-initialiser';
 import { Canvas } from './canvas';
 import { scatterplot } from './scatterplot';
-
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
-
-import JSURL from 'jsurl';
 
 function makeData(attr, gene, fetchedGenes, colAttrs) {
 	const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
@@ -18,12 +14,12 @@ function makeData(attr, gene, fetchedGenes, colAttrs) {
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
-	const { fetchedGenes, landscapeState } = dataSet;
+	const { fetchedGenes, landscapeState, colAttrs } = dataSet;
 	const { colorAttr, colorGene, colorMode, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
 
-	let color = makeData(colorAttr, colorGene, fetchedGenes, dataSet.colAttrs);
-	let x = makeData(xCoordinate, xGene, fetchedGenes, dataSet.colAttrs);
-	let y = makeData(yCoordinate, yGene, fetchedGenes, dataSet.colAttrs);
+	let color = makeData(colorAttr, colorGene, fetchedGenes, colAttrs);
+	let x = makeData(xCoordinate, xGene, fetchedGenes, colAttrs);
+	let y = makeData(yCoordinate, yGene, fetchedGenes, colAttrs);
 
 	if (filterZeros && color) {
 		const filterData = color.slice(0);
@@ -59,84 +55,34 @@ LandscapeComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-
-class LandscapeStateInitialiser extends Component {
-
-	componentWillMount() {
-		const { dispatch, dataSet, viewsettings } = this.props;
-
-		const landscapeState = viewsettings ?
-			JSURL.parse(viewsettings) :
-			(dataSet.landscapeState ?
-				dataSet.landscapeState
-				:
-				({ // Initialise landscapeState for this dataset
-					xCoordinate: '_tSNE1',
-					xGene: '',
-					yCoordinate: '_tSNE2',
-					yGene: '',
-					colorAttr: 'CellID',
-					colorMode: 'Heatmap',
-					colorGene: '',
-				})
-			);
-
-		// We dispatch even in case of existing state,
-		// to synchronise the view-settings URL
-		dispatch({
-			type: SET_VIEW_PROPS,
-			fieldName: 'landscapeState',
-			datasetName: dataSet.dataset,
-			landscapeState,
-		});
-	}
-
-	render() {
-		const { dispatch, dataSet } = this.props;
-		return dataSet.landscapeState ? (
-			<LandscapeComponent
-				dispatch={dispatch}
-				dataSet={dataSet}
-				/>
-		) : <div className='view'>Initialising Landscape View Settings</div>;
-	}
-}
-
-
-LandscapeStateInitialiser.propTypes = {
-	dataSet: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-	viewsettings: PropTypes.string,
+const initialState = { // Initialise landscapeState for this dataset
+	xCoordinate: '_tSNE1',
+	xGene: '',
+	yCoordinate: '_tSNE2',
+	yGene: '',
+	colorAttr: 'CellID',
+	colorMode: 'Heatmap',
+	colorGene: '',
 };
 
-const LandscapeDatasetFetcher = function (props) {
-	const { dispatch, data, params } = props;
-	const { dataset, project, viewsettings } = params;
-	const dataSet = data.dataSets[dataset];
-	return (dataSet === undefined ?
-		<FetchDatasetComponent
-			dispatch={dispatch}
-			dataSets={data.dataSets}
-			dataset={dataset}
-			project={project} />
-		:
-		<LandscapeStateInitialiser
-			dataSet={dataSet}
-			dispatch={dispatch}
-			viewsettings={viewsettings} />
+export const LandscapeViewInitialiser = function (props) {
+	return (
+		<ViewInitialiser
+			View={LandscapeComponent}
+			viewStateName={'landscapeState'}
+			initialState={initialState}
+			dispatch={props.dispatch}
+			params={props.params}
+			data={props.data} />
 	);
 };
 
-LandscapeDatasetFetcher.propTypes = {
-	// Passed down by react-router-redux
+LandscapeViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	// Passed down by react-redux
 	data: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-
-//connect LandscapeDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -149,4 +95,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export const LandscapeView = connect(mapStateToProps)(LandscapeDatasetFetcher);
+export const LandscapeView = connect(mapStateToProps)(LandscapeViewInitialiser);

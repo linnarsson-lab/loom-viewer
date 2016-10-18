@@ -5,11 +5,16 @@ import {
 	REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
-	SEARCH_DATASETS,
-	SORT_DATASETS,
 	REQUEST_DATASET,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
+	SEARCH_DATASETS,
+	SORT_DATASETS,
+
+	SORT_GENE_METADATA,
+	FILTER_GENE_METADATA,
+	SORT_CELL_METADATA,
+	FILTER_CELL_METADATA,
 	REQUEST_GENE,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
@@ -39,21 +44,23 @@ function setViewStateURL(state, action) {
 	const fieldName = action.fieldName;
 	let view = '';
 	switch (fieldName) {
-		case 'heatmapState':
-			view = 'heatmap';
-			break;
-		case 'sparklineState':
-			view = 'sparklines';
-			break;
-		case 'landscapeState':
-			view = 'cells';
-			break;
-		case 'genescapeState':
-			view = 'genes';
-			break;
-		case 'metadataState':
-			view = 'metadata';
-			break;
+	case 'heatmapState':
+		view = 'heatmap';
+		break;
+	case 'sparklineState':
+		view = 'sparklines';
+		break;
+	case 'landscapeState':
+		view = 'cells';
+		break;
+	case 'genescapeState':
+		view = 'genes';
+		break;
+	case 'geneMetadataState':
+		view = 'genemetadata';
+		break;
+	case 'cellMetadataState':
+		view = 'cellmetadata';
 	}
 	const datasetName = action.datasetName;
 	const dataSet = state.dataSets[datasetName];
@@ -79,61 +86,72 @@ const initialData = {
 };
 
 function data(state = initialData, action) {
+	let ascending, dataSet;
 	switch (action.type) {
 		//===PROJECT ACTIONS===
-		case REQUEST_PROJECTS:
-			return merge(state, { isFetchingData: true, errorFetchingData: false });
+	case REQUEST_PROJECTS:
+		return merge(state, { isFetchingData: true, errorFetchingData: false });
 
-		case RECEIVE_PROJECTS:
-			return merge(state, {
-				isFetchingData: false,
-				projects: action.projects,
-			});
+	case RECEIVE_PROJECTS:
+		return merge(state, {
+			isFetchingData: false,
+			projects: action.projects,
+		});
 
-		case REQUEST_PROJECTS_FAILED:
-			return merge(state, { isFetchingData: false, errorFetchingData: true });
-
-		case SEARCH_DATASETS:
-			return merge(state, { search: merge(state.search, { [action.field]: action.search }) });
-
-		case SORT_DATASETS:
-			let ascending = (state.sortKey && state.sortKey.key === action.key) ?
-				!state.sortKey.ascending : true;
-			return merge(state, { sortKey: { key: action.key, ascending } });
+	case REQUEST_PROJECTS_FAILED:
+		return merge(state, { isFetchingData: false, errorFetchingData: true });
 
 		//===DATASET ACTIONS===
-		case REQUEST_DATASET:
-			return merge(state, { isFetchingData: true, errorFetchingData: false });
+	case REQUEST_DATASET:
+		return merge(state, { isFetchingData: true, errorFetchingData: false });
 
-		case RECEIVE_DATASET:
+	case RECEIVE_DATASET:
 			// initialise empty fetchedGenes cache
-			const dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
-			return merge(state, {
-				isFetchingData: false,
-				hasDataset: true,
-				dataSets: merge(state.dataSets, { [dataSet.dataset]: dataSet }),
-			});
+		dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
+		return merge(state, {
+			isFetchingData: false,
+			hasDataset: true,
+			dataSets: merge(state.dataSets, { [dataSet.dataset]: dataSet }),
+		});
 
-		case REQUEST_DATASET_FAILED:
-			return merge(state, { isFetchingData: false, errorFetchingData: true });
+	case REQUEST_DATASET_FAILED:
+		return merge(state, { isFetchingData: false, errorFetchingData: true });
+
+	case SEARCH_DATASETS:
+		return merge(state, { search: merge(state.search, { [action.field]: action.search }) });
+
+	case SORT_DATASETS:
+		ascending = (state.sortKey && state.sortKey.key === action.key) ?
+				!state.sortKey.ascending : true;
+		return merge(state, { sortKey: { key: action.key, ascending } });
+
+	case SORT_GENE_METADATA:
+		ascending = (state.geneSortKey && state.geneSortKey.key === action.key) ?
+				!state.geneSortKey.ascending : true;
+		return merge(state, { geneSortKey: { key: action.key, ascending } });
+
+	case SORT_CELL_METADATA:
+		ascending = (state.cellSortKey && state.cellSortKey.key === action.key) ?
+				!state.cellSortKey.ascending : true;
+		return merge(state, { cellSortKey: { key: action.key, ascending } });
 
 		//===GENE ACTIONS===
-		case REQUEST_GENE:
-			return mergeDataSetState(state, action, 'fetchingGenes');
+	case REQUEST_GENE:
+		return mergeDataSetState(state, action, 'fetchingGenes');
 
-		case RECEIVE_GENE:
-			return mergeDataSetState(state, action, 'fetchingGenes', 'fetchedGenes');
+	case RECEIVE_GENE:
+		return mergeDataSetState(state, action, 'fetchingGenes', 'fetchedGenes');
 
-		case REQUEST_GENE_FAILED:
-			return mergeDataSetState(state, action, 'fetchingGenes');
+	case REQUEST_GENE_FAILED:
+		return mergeDataSetState(state, action, 'fetchingGenes');
 
 		//===VIEW ACTIONS===
-		case SET_VIEW_PROPS:
-			setViewStateURL(state, action, action.fieldName);
-			return mergeDataSetState(state, action, action.fieldName);
+	case SET_VIEW_PROPS:
+		setViewStateURL(state, action, action.fieldName);
+		return mergeDataSetState(state, action, action.fieldName);
 
-		default:
-			return state;
+	default:
+		return state;
 	}
 }
 

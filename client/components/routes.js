@@ -15,7 +15,9 @@ import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
 import { GenescapeView } from './genescape-view';
-import { MetadataView } from './metadata-view';
+import { GeneMetadataView } from './geneMD-view';
+import { CellMetadataView } from './cellMD-view';
+
 //import { ViolinPlotView } from './violinplot-view';
 
 // layout of the routes
@@ -37,8 +39,10 @@ const Routes = (
 					path='/dataset/cells/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
 					path='/dataset/genes/:project/:dataset(/:viewsettings)' />
-				<Route name='data-set-metadata' component={MetadataView}
-					path='/dataset/metadata/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-gene-metadata' component={GeneMetadataView}
+					path='/dataset/genemetadata/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-cell-metadata' component={CellMetadataView}
+					path='/dataset/cellmetadata/:project/:dataset(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>

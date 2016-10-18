@@ -2,16 +2,15 @@ import React, { Component, PropTypes } from 'react';
 
 import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
+import { ViewInitialiser } from './view-initialiser';
+
 import { RemountOnResize } from './remount-on-resize';
-import { FetchDatasetComponent } from './fetch-dataset';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import * as _ from 'lodash';
-
-import JSURL from 'jsurl';
 
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
@@ -143,82 +142,32 @@ HeatmapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-
-class HeatmapStateInitialiser extends Component {
-
-	componentWillMount() {
-		const { dispatch, dataSet, viewsettings } = this.props;
-
-		const heatmapState = viewsettings ?
-			JSURL.parse(viewsettings) :
-			(dataSet.heatmapState ?
-				dataSet.heatmapState
-				:
-				({ // Initialise heatmapState for this dataset
-					dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-					rowAttr: dataSet.rowAttrs[0],
-					rowMode: 'Text',
-					rowGenes: '',
-					colAttr: dataSet.colAttrs[0],
-					colMode: 'Text',
-					colGene: '',
-				})
-			);
-
-		// We dispatch even in case of existing state,
-		// to synchronise the view-settings URL
-		dispatch({
-			type: SET_VIEW_PROPS,
-			fieldName: 'heatmapState',
-			datasetName: dataSet.dataset,
-			heatmapState,
-		});
-	}
-
-	render() {
-		const { dispatch, dataSet } = this.props;
-		return dataSet.heatmapState ? (
-			<HeatmapComponent
-				dispatch={dispatch}
-				dataSet={dataSet}
-				/>
-		) : <div className='view'>Initialising Heatmap Settings</div>;
-	}
-}
-
-HeatmapStateInitialiser.propTypes = {
-	dataSet: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-	viewsettings: PropTypes.string,
+const initialState = { // Initialise heatmapState for this dataset
+	dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
+	rowMode: 'Text',
+	rowGenes: '',
+	colMode: 'Text',
+	colGene: '',
 };
 
-
-const HeatmapDatasetFetcher = function (props) {
-	const { dispatch, data, params } = props;
-	const { dataset, project, viewsettings } = params;
-	const dataSet = data.dataSets[dataset];
-	return (dataSet === undefined ? (
-		<FetchDatasetComponent
-			dispatch={dispatch}
-			dataSets={data.dataSets}
-			dataset={dataset}
-			project={project} />
-	) : <HeatmapStateInitialiser
-			dispatch={dispatch}
-			dataSet={dataSet}
-			viewsettings={viewsettings} />
+export const HeatmapViewInitialiser = function (props) {
+	return (
+		<ViewInitialiser
+			View={HeatmapComponent}
+			viewStateName={'heatmapState'}
+			initialState={initialState}
+			dispatch={props.dispatch}
+			params={props.params}
+			data={props.data} />
 	);
 };
 
-HeatmapDatasetFetcher.propTypes = {
-			// Passed down by react-router-redux
+HeatmapViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-			// Passed down by react-redux
 	data: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-//connect HeatmapDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -231,4 +180,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export const HeatmapView = connect(mapStateToProps)(HeatmapDatasetFetcher);
+export const HeatmapView = connect(mapStateToProps)(HeatmapViewInitialiser);

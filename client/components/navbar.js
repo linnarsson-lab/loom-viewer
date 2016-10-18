@@ -6,7 +6,7 @@ export const NavbarView = function (props) {
 	const { project, dataset } = props.params;
 	let viewLinks = null;
 	if (dataset) {
-		viewLinks = ['heatmap', 'sparklines', 'cells', 'genes', 'metadata'].map(
+		viewLinks = ['heatmap', 'sparklines', 'cells', 'cellmetadata', 'genes', 'genemetadata'].map(
 			(view) => {
 				const link = `/dataset/${view}/${project}/${dataset}`;
 				return (
