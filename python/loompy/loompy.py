@@ -479,9 +479,10 @@ class LoomConnection(object):
 				if not np.isfinite(vals).all():
 					raise ValueError, "INF and NaN not allowed in numeric attribute"
 
-			temp = self.file['/col_attrs/' + key]
+			temp = self.file['/col_attrs/' + key][:]
 			temp.resize((n_cols,))
 			temp[self.shape[1]:] = vals
+			del self.file['/col_attrs/' + key]
 			self.file['/col_attrs/' + key] = temp
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
 		self.file['/matrix'].resize(n_cols, axis = 1)
