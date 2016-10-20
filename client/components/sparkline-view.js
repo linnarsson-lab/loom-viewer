@@ -1,17 +1,12 @@
 import React, { Component, PropTypes } from 'react';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
-import { FetchDatasetComponent } from './fetch-dataset';
+import { ViewInitialiser } from './view-initialiser';
+
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
-import { SET_SPARKLINE_PROPS } from '../actions/actionTypes';
-
-import { defaultPrintSettings } from './print-settings';
-
 import * as _ from 'lodash';
-
-import JSURL from 'jsurl';
 
 // TODO: Don't re-render every sparkline on every re-render. Cache stuff.
 class SparklineViewComponent extends Component {
@@ -93,7 +88,7 @@ class SparklineViewComponent extends Component {
 	}
 
 	render() {
-		const { dataSet } = this.props;
+		const { dataSet, dispatch } = this.props;
 		const sl = dataSet.sparklineState;
 		// The old column attribute values that we displayed in the "legend"
 		let legendData = dataSet.colAttrs[sl.colAttr];
@@ -163,8 +158,7 @@ class SparklineViewComponent extends Component {
 			</div>
 		);
 
-
-		return (
+		const sparklineview = (
 			<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
 				{legend}
 				<div style={{
@@ -184,52 +178,9 @@ class SparklineViewComponent extends Component {
 				{legend}
 			</div>
 		);
-	}
-}
-
-SparklineViewComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
-};
 
 
-class SparklineStateInitialiser extends Component {
-
-	componentWillMount() {
-		const { dispatch, dataSet, viewsettings } = this.props;
-
-		const sparklineState = viewsettings ?
-			JSURL.parse(viewsettings) :
-			(dataSet.sparklineState ?
-				dataSet.sparklineState
-				:
-				({ // Initialise sparklineState for this dataset
-					orderByAttr1: '(original order)',
-					orderByGene1: '',
-					orderByAttr2: '',
-					orderByGene2: '',
-					orderByAttr3: '',
-					orderByGene3: '',
-					colAttr: dataSet.colAttrs[0],
-					colMode: 'Categorical',
-					geneMode: 'Bars',
-					genes: '',
-					showLabels: true,
-					printSettings: defaultPrintSettings,
-				})
-			);
-
-		// We dispatch even in case of existing state,
-		// to synchronise the view-settings URL
-		dispatch({
-			type: SET_SPARKLINE_PROPS,
-			datasetName: dataSet.dataset,
-			sparklineState,
-		});
-	}
-
-	render() {
-		const { dispatch, dataSet } = this.props;
-		return dataSet.sparklineState ? (
+		return (
 			<div className='view' style={{ overflowX: 'hidden' }}>
 				<div style={{ overflowY: 'auto' }}>
 					<SparklineSidepanel
@@ -237,49 +188,48 @@ class SparklineStateInitialiser extends Component {
 						dispatch={dispatch}
 						/>
 				</div>
-				<SparklineViewComponent
-					dataSet={dataSet}
-					/>
+				{sparklineview}
 			</div>
-		) : <div className='view'>Initialising Sparkline View Settings</div>;
+		);
 	}
 }
 
-SparklineStateInitialiser.propTypes = {
+SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	viewsettings: PropTypes.string,
 };
 
+const initialState = { // Initialise sparklineState for this dataset
+	orderByAttr1: '(original order)',
+	orderByGene1: '',
+	orderByAttr2: '',
+	orderByGene2: '',
+	orderByAttr3: '',
+	orderByGene3: '',
+	colMode: 'Categorical',
+	geneMode: 'Bars',
+	genes: '',
+	showLabels: true,
+};
 
-const SparklineDatasetFetcher = function (props) {
-	const { dispatch, data, params } = props;
-	const { dataset, project, viewsettings } = params;
-	const dataSet = data.dataSets[dataset];
-	return (dataSet === undefined ?
-		<FetchDatasetComponent
-			dispatch={dispatch}
-			dataSets={data.dataSets}
-			dataset={dataset}
-			project={project} />
-		:
-		<SparklineStateInitialiser
-			dataSet={dataSet}
-			dispatch={dispatch}
-			viewsettings={viewsettings} />
-
+export const SparklineViewInitialiser = function (props) {
+	return (
+		<ViewInitialiser
+			View={SparklineViewComponent}
+			viewStateName={'sparklineState'}
+			initialState={initialState}
+			dispatch={props.dispatch}
+			params={props.params}
+			data={props.data} />
 	);
 };
 
-SparklineDatasetFetcher.propTypes = {
-	// Passed down by react-router-redux
+SparklineViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	// Passed down by react-redux
 	data: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-//connect SparklineDatasetFetcher to store
 import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
@@ -292,4 +242,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export const SparklineView = connect(mapStateToProps)(SparklineDatasetFetcher);
+export const SparklineView = connect(mapStateToProps)(SparklineViewInitialiser);

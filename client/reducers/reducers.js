@@ -8,13 +8,17 @@ import {
 	REQUEST_DATASET,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
+	SEARCH_DATASETS,
+	SORT_DATASETS,
+
+	SORT_GENE_METADATA,
+	FILTER_GENE_METADATA,
+	SORT_CELL_METADATA,
+	FILTER_CELL_METADATA,
 	REQUEST_GENE,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
-	SET_HEATMAP_PROPS,
-	SET_GENESCAPE_PROPS,
-	SET_LANDSCAPE_PROPS,
-	SET_SPARKLINE_PROPS,
+	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
 import { merge } from '../js/util';
@@ -36,9 +40,10 @@ function mergeDataSetState(state, action, ...stateNames) {
 import { browserHistory } from 'react-router';
 import JSURL from 'jsurl';
 
-function setViewStateURL(state, action, stateName){
+function setViewStateURL(state, action) {
+	const fieldName = action.fieldName;
 	let view = '';
-	switch(stateName){
+	switch (fieldName) {
 	case 'heatmapState':
 		view = 'heatmap';
 		break;
@@ -51,11 +56,16 @@ function setViewStateURL(state, action, stateName){
 	case 'genescapeState':
 		view = 'genes';
 		break;
+	case 'geneMetadataState':
+		view = 'genemetadata';
+		break;
+	case 'cellMetadataState':
+		view = 'cellmetadata';
 	}
 	const datasetName = action.datasetName;
 	const dataSet = state.dataSets[datasetName];
 	const project = dataSet.project;
-	const viewState = merge(dataSet[stateName], action[stateName]);
+	const viewState = merge(dataSet[fieldName], action[fieldName]);
 	const viewSettings = JSURL.stringify(viewState);
 	browserHistory.replace(`/dataset/${view}/${project}/${datasetName}/${viewSettings}`);
 }
@@ -76,6 +86,7 @@ const initialData = {
 };
 
 function data(state = initialData, action) {
+	let ascending, dataSet;
 	switch (action.type) {
 		//===PROJECT ACTIONS===
 	case REQUEST_PROJECTS:
@@ -95,8 +106,8 @@ function data(state = initialData, action) {
 		return merge(state, { isFetchingData: true, errorFetchingData: false });
 
 	case RECEIVE_DATASET:
-		// initialise empty fetchedGenes cache
-		const dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
+			// initialise empty fetchedGenes cache
+		dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
 		return merge(state, {
 			isFetchingData: false,
 			hasDataset: true,
@@ -106,35 +117,38 @@ function data(state = initialData, action) {
 	case REQUEST_DATASET_FAILED:
 		return merge(state, { isFetchingData: false, errorFetchingData: true });
 
+	case SEARCH_DATASETS:
+		return merge(state, { search: merge(state.search, { [action.field]: action.search }) });
+
+	case SORT_DATASETS:
+		ascending = (state.sortKey && state.sortKey.key === action.key) ?
+				!state.sortKey.ascending : true;
+		return merge(state, { sortKey: { key: action.key, ascending } });
+
+	case SORT_GENE_METADATA:
+		ascending = (state.geneSortKey && state.geneSortKey.key === action.key) ?
+				!state.geneSortKey.ascending : true;
+		return merge(state, { geneSortKey: { key: action.key, ascending } });
+
+	case SORT_CELL_METADATA:
+		ascending = (state.cellSortKey && state.cellSortKey.key === action.key) ?
+				!state.cellSortKey.ascending : true;
+		return merge(state, { cellSortKey: { key: action.key, ascending } });
+
 		//===GENE ACTIONS===
 	case REQUEST_GENE:
-		//return merge(state, { isFetchingData: true, errorFetchingData: false });
 		return mergeDataSetState(state, action, 'fetchingGenes');
 
 	case RECEIVE_GENE:
 		return mergeDataSetState(state, action, 'fetchingGenes', 'fetchedGenes');
 
 	case REQUEST_GENE_FAILED:
-		//return merge(state, { isFetchingData: false, errorFetchingData: true });
 		return mergeDataSetState(state, action, 'fetchingGenes');
 
 		//===VIEW ACTIONS===
-
-	case SET_HEATMAP_PROPS:
-		setViewStateURL(state, action, 'heatmapState');
-		return mergeDataSetState(state, action, 'heatmapState');
-
-	case SET_SPARKLINE_PROPS:
-		setViewStateURL(state, action, 'sparklineState');
-		return mergeDataSetState(state, action, 'sparklineState');
-
-	case SET_LANDSCAPE_PROPS:
-		setViewStateURL(state, action, 'landscapeState');
-		return mergeDataSetState(state, action, 'landscapeState');
-
-	case SET_GENESCAPE_PROPS:
-		setViewStateURL(state, action, 'genescapeState');
-		return mergeDataSetState(state, action, 'genescapeState');
+	case SET_VIEW_PROPS:
+		setViewStateURL(state, action, action.fieldName);
+		return mergeDataSetState(state, action, action.fieldName);
 
 	default:
 		return state;

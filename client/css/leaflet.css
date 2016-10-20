@@ -38,6 +38,12 @@
 /* map is broken in FF if you have max-width: 100% on tiles */
 .leaflet-container img {
 	max-width: none !important;
+	/* Preserve crisp pixels with scaled up images */
+	image-rendering: -moz-crisp-edges;         /* Firefox */
+	image-rendering:   -o-pixelated;         /* Opera */
+	image-rendering: pixelated;
+	-ms-interpolation-mode: nearest-neighbor;  /* IE (non-standard property) */
+}
 	}
 /* stupid Android 2 doesn't understand "max-width: none" properly */
 .leaflet-container img.leaflet-image-layer {

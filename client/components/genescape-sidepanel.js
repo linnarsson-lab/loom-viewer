@@ -1,8 +1,12 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { PrintSettings } from './print-settings';
-import { Panel, ListGroup, ListGroupItem,
-	ButtonGroup, Button } from 'react-bootstrap';
+//import { PrintSettings } from './print-settings';
+import {
+	Panel, ListGroup, ListGroupItem,
+	ButtonGroup, Button,
+} from 'react-bootstrap';
+
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -12,7 +16,8 @@ export const GenescapeSidepanel = function (props) {
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
-				type: 'SET_GENESCAPE_PROPS',
+				type: SET_VIEW_PROPS,
+				fieldName: 'genescapeState',
 				datasetName: dataSet.dataset,
 				genescapeState: { [field]: value },
 			});
@@ -24,6 +29,8 @@ export const GenescapeSidepanel = function (props) {
 	const xCoordinateHC = handleChangeFactory('xCoordinate');
 	const yCoordinateHC = handleChangeFactory('yCoordinate');
 	const colorAttrHC = handleChangeFactory('colorAttr');
+	const filterZeros = handleChangeFactory('filterZeros');
+	const filterZerosHC = () => { filterZeros(!genescapeState.filterZeros); };
 
 
 	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
@@ -40,10 +47,11 @@ export const GenescapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isTSNE ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isTSNE ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: {
 											xCoordinate: '_tSNE1',
@@ -56,10 +64,11 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ isPCA ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={isPCA ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: {
 											xCoordinate: '_PC1',
@@ -95,15 +104,23 @@ export const GenescapeSidepanel = function (props) {
 						options={rowAttrOptions}
 						onChange={colorAttrHC}
 						/>
+					<Button
+						bsStyle={genescapeState.filterZeros ? 'success' : 'default'}
+						onClick={filterZerosHC}
+						>
+						Filter zeros
+					</Button>
+
 				</ListGroupItem>
 				<ListGroupItem>
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Heatmap' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Heatmap' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: { colorMode: 'Heatmap' },
 									});
@@ -113,10 +130,11 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={ colorMode === 'Categorical' ? 'success' : 'default' }
-								onClick={ () => {
+								bsStyle={colorMode === 'Categorical' ? 'success' : 'default'}
+								onClick={() => {
 									dispatch({
-										type: 'SET_GENESCAPE_PROPS',
+										type: SET_VIEW_PROPS,
+										fieldName: 'genescapeState',
 										datasetName: dataSet.dataset,
 										genescapeState: { colorMode: 'Categorical' },
 									});
@@ -126,11 +144,13 @@ export const GenescapeSidepanel = function (props) {
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
+				{/*
 				<PrintSettings
 					dispatch={dispatch}
 					dataSet={dataSet}
-					stateName={'genescapeState'}
+					fieldName={'genescapeState'}
 					actionType={'SET_GENESCAPE_PROPS'} />
+				*/}
 			</ListGroup>
 		</Panel>
 	);

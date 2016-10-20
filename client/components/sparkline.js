@@ -1,4 +1,4 @@
-import { nMostFrequent } from '../js/util';
+import { nMostFrequent, calcMinMax } from '../js/util';
 import * as colors from '../js/colors';
 
 export function sparkline(data, mode, dataRange, label, orientation) {
@@ -114,20 +114,6 @@ function sparklinePainter(context, paint, data, mode, dataRange, orientation) {
 
 // Helper functions
 
-function calcMinMax(data) {
-	let min = 0;
-	let max = 0;
-	if (typeof data[0] === 'number') {
-		min = Number.MAX_VALUE;
-		max = Number.MIN_VALUE;
-		for (let i = 0; i < data.length; i++) {
-			min = min < data[i] ? min : data[i];
-			max = max > data[i] ? max : data[i];
-		}
-	}
-	return { min, max };
-}
-
 function calcMeans(rangeData, rangeWidth) {
 	// determine real start and end of range,
 	// skipping undefined padding if present.
@@ -228,7 +214,7 @@ function calcMeans(rangeData, rangeWidth) {
 
 
 function categoriesPainter(data) {
-	const categories = nMostFrequent(data, 20);
+	const categories = nMostFrequent(data, 20).values;
 	return (context, rangeData, xOffset, rangeWidth) => {
 		categoriesPaint(context, rangeData, xOffset, rangeWidth, categories);
 	};
@@ -251,7 +237,7 @@ function categoriesPaint(context, rangeData, xOffset, rangeWidth, categories) {
 			const i0 = (i * rangeData.length / rangeWidth) | 0;
 			const i1 = ((i + 1) * rangeData.length / rangeWidth) | 0;
 			const slice = rangeData.slice(i0, i1);
-			const commonest = nMostFrequent(slice, 1)[0];
+			const commonest = nMostFrequent(slice, 1).values[0];
 			if (commonest !== undefined) {
 				const color = categories.indexOf(commonest) + 1;
 				context.fillStyle = colors.category20[color];

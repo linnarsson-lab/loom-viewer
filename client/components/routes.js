@@ -10,11 +10,15 @@ import { store } from '../store';
 // Components
 import { NavbarView } from './navbar';
 import { DataSetView } from './dataset-view';
+import { SearchDataSetView } from './search-datasets';
 import { HeatmapView } from './heatmap-view';
 import { SparklineView } from './sparkline-view';
 import { LandscapeView } from './landscape-view';
 import { GenescapeView } from './genescape-view';
-import { ViolinPlotView } from './violinplot-view';
+import { GeneMetadataView } from './geneMD-view';
+import { CellMetadataView } from './cellMD-view';
+
+//import { ViolinPlotView } from './violinplot-view';
 
 // layout of the routes
 const Routes = (
@@ -25,6 +29,8 @@ const Routes = (
 				<IndexRoute component={DataSetView} />
 				<Route name='data-set-list' component={DataSetView}
 					path='/dataset' />
+				<Route name='data-set-list' component={SearchDataSetView}
+					path='/dataset/search' />
 				<Route name='data-set-heatmap' component={HeatmapView}
 					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-sparklines' component={SparklineView}
@@ -33,8 +39,10 @@ const Routes = (
 					path='/dataset/cells/:project/:dataset(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
 					path='/dataset/genes/:project/:dataset(/:viewsettings)' />
-				<Route name='data-set-genescape' component={ViolinPlotView}
-					path='/dataset/violin/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-gene-metadata' component={GeneMetadataView}
+					path='/dataset/genemetadata/:project/:dataset(/:viewsettings)' />
+				<Route name='data-set-cell-metadata' component={CellMetadataView}
+					path='/dataset/cellmetadata/:project/:dataset(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>

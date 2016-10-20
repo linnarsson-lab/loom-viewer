@@ -1,4 +1,4 @@
-import React, {PropTypes} from 'react';
+import React, { PropTypes } from 'react';
 import { RemountOnResize } from './remount-on-resize';
 import { inBounds } from '../js/util';
 
@@ -18,12 +18,12 @@ function enhanceCanvasRenderingContext2D() {
 			const fontArgs = this.font.split(' ');
 			const font = fontArgs[fontArgs.length - 1];
 			switch (typeof size) {
-			case 'number':
-				this.font = size + 'px ' + font;
-				break;
-			case 'string':
-				this.font = size + font;
-				break;
+				case 'number':
+					this.font = size + 'px ' + font;
+					break;
+				case 'string':
+					this.font = size + font;
+					break;
 			}
 		};
 	}
@@ -195,7 +195,7 @@ class CanvasGridComponent extends React.Component {
 		const ratio = window.devicePixelRatio || 1;
 		const width = (view.clientWidth * ratio) | 0;
 		const height = (view.clientHeight * ratio) | 0;
-		this.setState({ x: 0, y : 0, width, height, ratio });
+		this.setState({ x: 0, y: 0, width, height, ratio });
 	}
 
 

@@ -1,58 +1,58 @@
 import React, { PropTypes } from 'react';
 import { RemountOnResize } from './remount-on-resize';
-import {createClassFromSpec} from 'react-vega';
+import { Vega } from './vega';
 
 function makeViolinPlotSpec(width, height) {
 	return {
-		'width': (width - 60),
-		'height': (height - 60),
-		'padding': { 'top': 10, 'left': 30, 'bottom': 30, 'right': 10 },
-		'data': [{ 'name': 'table' }],
-		'signals': [
+		width: (width - 60),
+		height: (height - 60),
+		padding: { top: 10, left: 30, bottom: 30, right: 10 },
+		data: [{ name: 'table' }],
+		signals: [
 			{
-				'name': 'hover', 'init': null,
-				'streams': [
-					{ 'type': '@bar:mouseover', 'expr': 'datum' },
-					{ 'type': '@bar:mouseout', 'expr': 'null' },
+				name: 'hover', 'init': null,
+				streams: [
+					{ type: '@bar:mouseover', expr: 'datum' },
+					{ type: '@bar:mouseout', expr: 'null' },
 				],
 			},
 		],
-		'scales': [
+		scales: [
 			{
-				'name': 'x',
-				'type': 'ordinal',
-				'range': 'width',
-				'domain': { 'data': 'table', 'field': 'x' },
+				name: 'x',
+				type: 'ordinal',
+				range: 'width',
+				domain: { data: 'table', field: 'x' },
 			},
 			{
-				'name': 'y',
-				'type': 'linear',
-				'range': 'height',
-				'domain': { 'data': 'table', 'field': 'y' },
-				'nice': true,
+				name: 'y',
+				type: 'linear',
+				range: 'height',
+				domain: { data: 'table', field: 'y' },
+				nice: true,
 			},
 		],
-		'axes': [
-			{ 'type': 'x', 'scale': 'x' },
-			{ 'type': 'y', 'scale': 'y' },
+		axes: [
+			{ type: 'x', scale: 'x' },
+			{ type: 'y', scale: 'y' },
 		],
-		'marks': [
+		marks: [
 			{
-				'type': 'rect',
-				'name': 'bar',
-				'from': { 'data': 'table' },
-				'properties': {
-					'enter': {
-						'x': { 'scale': 'x', 'field': 'x' },
-						'width': { 'scale': 'x', 'band': true, 'offset': -1 },
-						'y': { 'scale': 'y', 'field': 'y' },
-						'y2': { 'scale': 'y', 'value': 0 },
+				type: 'rect',
+				name: 'bar',
+				from: { data: 'table' },
+				properties: {
+					enter: {
+						x: { scale: 'x', field: 'x' },
+						width: { scale: 'x', band: true, offset: -1 },
+						y: { scale: 'y', field: 'y' },
+						y2: { scale: 'y', value: 0 },
 					},
-					'update': {
-						'fill': { 'value': 'steelblue' },
+					update: {
+						fill:{ value: 'steelblue' },
 					},
-					'hover': {
-						'fill': { 'value': 'red' },
+					hover: {
+						fill:{ value: 'red' },
 					},
 				},
 			},
@@ -70,8 +70,7 @@ class ViolinPlotComponent extends React.Component {
 		const width = (view.clientWidth) | 0;
 		const height = (view.clientHeight) | 0;
 		const spec = makeViolinPlotSpec(width, height);
-		const plot = createClassFromSpec('plot', spec);
-		this.setState({ plot });
+		this.setState({ spec });
 	}
 
 	render() {
@@ -81,7 +80,7 @@ class ViolinPlotComponent extends React.Component {
 		// the layout of the parent container, we only render it after
 		// mounting, after CSS layouting is done.
 		const { className, style, violinData } = this.props;
-		const plot = this.state ? (<this.state.plot data={violinData} />) : null;
+		const plot = this.state ? (<Vega spec={this.state.spec} data={violinData} />) : null;
 		return (
 			<div
 				ref='view'
@@ -127,3 +126,46 @@ ViolinPlot.propTypes = {
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
+
+/*
+// Mental note: you *can* use vega to generate only a legend quite easily.
+// All that is required is "scales" and "legends"
+{
+  "width": 0,
+  "height": 0,
+  "data": [
+    {
+      "name": "iris",
+      "url": "data/iris.json"
+    },
+    {
+      "name": "fields",
+      "values": ["petalWidth", "petalLength", "sepalWidth", "sepalLength"]
+    }
+  ],
+  "scales": [
+    {
+      "name": "c",
+      "type": "ordinal",
+      "domain": {"data": "iris", "field": "species"},
+      "range": "category10"
+    }
+  ],
+  "legends": [
+    {
+      "fill": "c",
+      "title": "Species",
+      "offset": 0,
+      "properties": {
+        "symbols": {
+          "fillOpacity": {"value": 0.5},
+          "stroke": {"value": "transparent"}
+        }
+      }
+    }
+  ],
+  "marks": [
+  ]
+}
+
+*/

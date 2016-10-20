@@ -85,7 +85,7 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 			if (colorMode === 'Categorical' || !_.every(color, (c) => { return isFinite(c); })) {
 
 				// Reserve palette[0] for all uncategorized items
-				let cats = nMostFrequent(color, palette.length - 1);
+				let cats = nMostFrequent(color, palette.length - 1).values;
 
 				// Add one so the uncategorized become zero
 				color = color.map((c) => { return palette[cats.indexOf(c) + 1]; });

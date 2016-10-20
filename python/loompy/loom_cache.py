@@ -55,10 +55,10 @@ class LoomCache(object):
 			username (str): 	Username
 			password (str):		Password
 			mode (str):			"read" or "write"
-		
+
 		Read access will be allowed if the credentials are valid, or if there is no auth.txt file
 		in the project directory. Write access will only be allowed if the credentials match
-		an existing auth.txt file (with 'w' flag for the user). 
+		an existing auth.txt file (with 'w' flag for the user).
 		"""
 		users = {}
 		authfile = os.path.join(self.dataset_path, proj, "auth.txt")
@@ -78,7 +78,7 @@ class LoomCache(object):
 				return True
 		else:
 			if users.has_key(username) and users[username][0] == password and users[username][1] == "w":
-				return True			
+				return True
 		return False
 
 	def list_datasets(self, username=None, password=None):
@@ -92,11 +92,17 @@ class LoomCache(object):
 				for f in os.listdir(os.path.join(self.dataset_path, proj)):
 					if f.endswith(".loom"):
 						ds = self.connect_dataset_locally(proj, f, username, password)
-						title = ds.attrs.get("title", f) 
-						descr = ds.attrs.get("description", "") 
+						title = ds.attrs.get("title", f)
+						descr = ds.attrs.get("description", "")
 						url = ds.attrs.get("url", "")
 						doi = ds.attrs.get("doi", "")
-						result.append({"project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi":doi})
+						# get arbitrary col/row attribute, they're all lists
+						# of equal size. The length equals total cells/genes
+						totalCells = len(next(ds.col_attrs.itervalues()))
+						totalGenes = len(next(ds.row_attrs.itervalues()))
+						#last time the file was modified, formatted year/month/day hour:minute:second
+						lastMod = time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(os.path.getmtime(os.path.join(self.dataset_path, proj, f))))
+						result.append({ "project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi": doi, "totalCells": totalCells, "totalGenes": totalGenes, "lastModified": lastMod})
 		return result
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):
@@ -110,7 +116,7 @@ class LoomCache(object):
 			password (string):		Password or None
 
 		Returns:
-			A loom file connection, or None if not authorized or file does not exist.	
+			A loom file connection, or None if not authorized or file does not exist.
 		"""
 
 		# Authorize and get path
@@ -129,7 +135,7 @@ class LoomCache(object):
 	def close(self):
 		for ds in self.looms.itervalues():
 			ds.close()
-			
+
 	def get_absolute_path(self, project, filename, username=None, password=None, check_exists=True):
 		"""
 		Return the absolute path to the dataset, if authorized.
@@ -142,7 +148,7 @@ class LoomCache(object):
 			check_exists (bool):	If true, return None if the file does not exist
 
 		Returns:
-			An absolute path string, or None if not authorized or file does not exist.	
+			An absolute path string, or None if not authorized or file does not exist.
 		"""
 
 		if not self.authorize(project, username, password):
