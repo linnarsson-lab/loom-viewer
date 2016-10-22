@@ -15,9 +15,9 @@ export const SparklineSidepanel = function (props) {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				fieldName: 'sparklineState',
+				viewStateName: 'sparklineState',
 				datasetName: dataSet.dataset,
-				sparklineState: { [field]: value },
+				viewState: { [field]: value },
 			});
 		};
 	};

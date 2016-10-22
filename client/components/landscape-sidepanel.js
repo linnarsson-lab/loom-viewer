@@ -18,9 +18,9 @@ export const LandscapeSidepanel = function (props) {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				fieldName: 'landscapeState',
+				viewStateName: 'landscapeState',
 				datasetName: dataSet.dataset,
-				landscapeState: { [field]: value },
+				viewState: { [field]: value },
 			});
 		};
 	};
@@ -58,9 +58,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'landscapeState',
+										viewStateName: 'landscapeState',
 										datasetName: dataSet.dataset,
-										landscapeState: {
+										viewState: {
 											xCoordinate: '_tSNE1',
 											yCoordinate: '_tSNE2',
 										},
@@ -75,9 +75,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'landscapeState',
+										viewStateName: 'landscapeState',
 										datasetName: dataSet.dataset,
-										landscapeState: {
+										viewState: {
 											xCoordinate: '_PC1',
 											yCoordinate: '_PC2',
 										},
@@ -148,9 +148,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'landscapeState',
+										viewStateName: 'landscapeState',
 										datasetName: dataSet.dataset,
-										landscapeState: { colorMode: 'Heatmap' },
+										viewState: { colorMode: 'Heatmap' },
 									});
 								} }>
 								Heatmap
@@ -162,9 +162,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'landscapeState',
+										viewStateName: 'landscapeState',
 										datasetName: dataSet.dataset,
-										landscapeState: { colorMode: 'Categorical' },
+										viewState: { colorMode: 'Categorical' },
 									});
 								} }>
 								Categorical

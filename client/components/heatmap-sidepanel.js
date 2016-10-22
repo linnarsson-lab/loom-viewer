@@ -14,9 +14,9 @@ export const HeatmapSidepanel = function (props) {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				fieldName: 'heatmapState',
+				viewStateName: 'heatmapState',
 				datasetName: dataSet.dataset,
-				heatmapState: { [field]: value },
+				viewState: { [field]: value },
 			});
 		};
 	};

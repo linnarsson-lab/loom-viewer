@@ -78,9 +78,9 @@ class HeatmapMapComponent extends Component {
 										const { dataBounds, zoom, center } = val;
 										dispatch({
 											type: SET_VIEW_PROPS,
-											fieldName: 'heatmapState',
+											viewStateName: 'heatmapState',
 											datasetName: dataSet.dataset,
-											heatmapState: { dataBounds, zoom, center },
+											viewState: { dataBounds, zoom, center },
 										});
 									}
 								} />

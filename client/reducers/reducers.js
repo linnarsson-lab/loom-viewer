@@ -10,30 +10,28 @@ import {
 	RECEIVE_DATASET,
 	SEARCH_DATASETS,
 	SORT_DATASETS,
-
 	SORT_GENE_METADATA,
-	FILTER_GENE_METADATA,
+	// FILTER_GENE_METADATA,
 	SORT_CELL_METADATA,
-	FILTER_CELL_METADATA,
+	// FILTER_CELL_METADATA,
 	REQUEST_GENE,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
-import { merge } from '../js/util';
+import { merge, prune } from '../js/util';
 
-// pattern used for merging various view states
-// and fetchedGenes with their respective datasets
-function mergeDataSetState(state, action, ...stateNames) {
-	const prevDataSet = state.dataSets[action.datasetName];
-	const newDataSets = stateNames.map((name) => {
-		const newState = merge(prevDataSet[name], action[name]);
-		return { [name]: newState };
-	});
-	const dataSet = merge(prevDataSet, ...newDataSets);
-	const dataSets = merge(state.dataSets, { [action.datasetName]: dataSet });
-	return merge(state, { dataSets });
+// Usage: action must have a "state" field and an optional
+// "prune" field.
+// action.prune is a tree of values of the old state tree to remove
+// action.state is a tree of values to merge into the old state tree
+// If an object is both pruned and in the new state, it means it is
+// replaced as a whole.
+function update(state, action) {
+	let newState = action.prune ? prune(state, action.prune) : state;
+	newState = action.state ? merge(newState, action.state) : newState;
+	return newState;
 }
 
 // used for writing view state to the browser URL
@@ -41,9 +39,9 @@ import { browserHistory } from 'react-router';
 import JSURL from 'jsurl';
 
 function setViewStateURL(state, action) {
-	const fieldName = action.fieldName;
-	let view = '';
-	switch (fieldName) {
+	const { viewStateName, datasetName, viewState } = action;
+	let view = 'unknown';
+	switch (viewStateName) {
 	case 'heatmapState':
 		view = 'heatmap';
 		break;
@@ -62,19 +60,20 @@ function setViewStateURL(state, action) {
 	case 'cellMetadataState':
 		view = 'cellmetadata';
 	}
-	const datasetName = action.datasetName;
 	const dataSet = state.dataSets[datasetName];
 	const project = dataSet.project;
-	const viewState = merge(dataSet[fieldName], action[fieldName]);
-	const viewSettings = JSURL.stringify(viewState);
-	browserHistory.replace(`/dataset/${view}/${project}/${datasetName}/${viewSettings}`);
+	const newViewState = merge(dataSet[viewStateName], viewState);
+	const url = `/dataset/${view}/${project}/${datasetName}/${JSURL.stringify(newViewState)}`;
+	browserHistory.replace(url);
+	return {
+		dataSets: {
+			[datasetName]: { [viewStateName]: newViewState },
+		},
+	};
 }
 
 // Keeps track of projects and datasets, including managing asynchronous fetching
 const initialData = {
-	isFetchingData: false,
-	errorFetchingData: false,
-
 	//	{
 	//		'Midbrain': [{ 'dataset': 'mouse_midbrain.loom', 'isCached': false}, ... ],
 	// 	'Cortex': ...
@@ -86,36 +85,19 @@ const initialData = {
 };
 
 function data(state = initialData, action) {
-	let ascending, dataSet;
+	let ascending;
 	switch (action.type) {
-		//===PROJECT ACTIONS===
-	case REQUEST_PROJECTS:
-		return merge(state, { isFetchingData: true, errorFetchingData: false });
 
+	case REQUEST_PROJECTS:			//===PROJECT ACTIONS===
 	case RECEIVE_PROJECTS:
-		return merge(state, {
-			isFetchingData: false,
-			projects: action.projects,
-		});
-
 	case REQUEST_PROJECTS_FAILED:
-		return merge(state, { isFetchingData: false, errorFetchingData: true });
-
-		//===DATASET ACTIONS===
-	case REQUEST_DATASET:
-		return merge(state, { isFetchingData: true, errorFetchingData: false });
-
-	case RECEIVE_DATASET:
-			// initialise empty fetchedGenes cache
-		dataSet = merge(action.dataSet, { fetchedGenes: {}, fetchingGenes: {} });
-		return merge(state, {
-			isFetchingData: false,
-			hasDataset: true,
-			dataSets: merge(state.dataSets, { [dataSet.dataset]: dataSet }),
-		});
-
+	case REQUEST_DATASET:			//===DATASET ACTIONS===
 	case REQUEST_DATASET_FAILED:
-		return merge(state, { isFetchingData: false, errorFetchingData: true });
+	case RECEIVE_DATASET:
+	case REQUEST_GENE:				//===GENE ACTIONS===
+	case RECEIVE_GENE:
+	case REQUEST_GENE_FAILED:
+		return update(state, action);
 
 	case SEARCH_DATASETS:
 		return merge(state, { search: merge(state.search, { [action.field]: action.search }) });
@@ -135,20 +117,11 @@ function data(state = initialData, action) {
 				!state.cellSortKey.ascending : true;
 		return merge(state, { cellSortKey: { key: action.key, ascending } });
 
-		//===GENE ACTIONS===
-	case REQUEST_GENE:
-		return mergeDataSetState(state, action, 'fetchingGenes');
-
-	case RECEIVE_GENE:
-		return mergeDataSetState(state, action, 'fetchingGenes', 'fetchedGenes');
-
-	case REQUEST_GENE_FAILED:
-		return mergeDataSetState(state, action, 'fetchingGenes');
 
 		//===VIEW ACTIONS===
 	case SET_VIEW_PROPS:
-		setViewStateURL(state, action, action.fieldName);
-		return mergeDataSetState(state, action, action.fieldName);
+		let newViewState = setViewStateURL(state, action);
+		return merge(state, newViewState);
 
 	default:
 		return state;

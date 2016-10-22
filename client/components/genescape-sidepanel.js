@@ -17,9 +17,9 @@ export const GenescapeSidepanel = function (props) {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				fieldName: 'genescapeState',
+				viewStateName: 'genescapeState',
 				datasetName: dataSet.dataset,
-				genescapeState: { [field]: value },
+				viewState: { [field]: value },
 			});
 		};
 	};
@@ -51,9 +51,9 @@ export const GenescapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'genescapeState',
+										viewStateName: 'genescapeState',
 										datasetName: dataSet.dataset,
-										genescapeState: {
+										viewState: {
 											xCoordinate: '_tSNE1',
 											yCoordinate: '_tSNE2',
 										},
@@ -68,9 +68,9 @@ export const GenescapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'genescapeState',
+										viewStateName: 'genescapeState',
 										datasetName: dataSet.dataset,
-										genescapeState: {
+										viewState: {
 											xCoordinate: '_PC1',
 											yCoordinate: '_PC2',
 										},
@@ -120,9 +120,9 @@ export const GenescapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'genescapeState',
+										viewStateName: 'genescapeState',
 										datasetName: dataSet.dataset,
-										genescapeState: { colorMode: 'Heatmap' },
+										viewState: { colorMode: 'Heatmap' },
 									});
 								} }>
 								Heatmap
@@ -134,9 +134,9 @@ export const GenescapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										fieldName: 'genescapeState',
+										viewStateName: 'genescapeState',
 										datasetName: dataSet.dataset,
-										genescapeState: { colorMode: 'Categorical' },
+										viewState: { colorMode: 'Categorical' },
 									});
 								} }>
 								Categorical

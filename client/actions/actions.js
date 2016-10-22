@@ -2,17 +2,23 @@ import 'whatwg-fetch';
 
 import {
 	REQUEST_PROJECTS,
+	REQUEST_PROJECTS_FETCH,
+	REQUEST_PROJECTS_CACHED,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	REQUEST_DATASET,
+	REQUEST_DATASET_FETCH,
 	REQUEST_DATASET_CACHED,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
 	REQUEST_GENE,
+	REQUEST_GENE_FETCH,
+	REQUEST_GENE_CACHED,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 } from './actionTypes';
 
+import { merge } from '../js/util';
 import { groupBy } from 'lodash';
 
 
@@ -29,6 +35,18 @@ function requestProjects() {
 	};
 }
 
+function requestProjectsFetch() {
+	return {
+		type: REQUEST_PROJECTS_FETCH,
+	};
+}
+
+function requestProjectsCached() {
+	return {
+		type: REQUEST_PROJECTS_CACHED,
+	};
+}
+
 function requestProjectsFailed() {
 	return {
 		type: REQUEST_PROJECTS_FAILED,
@@ -38,7 +56,7 @@ function requestProjectsFailed() {
 function receiveProjects(projects) {
 	return {
 		type: RECEIVE_PROJECTS,
-		projects: projects,
+		state: { projects },
 	};
 }
 
@@ -48,11 +66,17 @@ function receiveProjects(projects) {
 
 export function fetchProjects(projects) {
 	return (dispatch) => {
-		// First, make known the fact that the request has been started
+		// Announce that the request has been started
 		dispatch(requestProjects());
-		// Second, check if projects already exists in the store.
+		// Second, check if projects already exists in the store
+		// If so, notify it is cached and return.
 		// If not, perform a fetch request (async)
-		if (projects === undefined) {
+		if (projects) {
+			// Announce we are retrieving from cache
+			return dispatch(requestProjectsCached());
+		} else {
+			// Announce we are fetching from server
+			dispatch(requestProjectsFetch());
 			return (
 				fetch('/loom')
 					.then((response) => { return response.json(); })
@@ -65,12 +89,10 @@ export function fetchProjects(projects) {
 					})
 					// Or, if it failed, dispatch an action to set the error flag
 					.catch((err) => {
-						console.log(err);
+						console.log({err});
 						dispatch(requestProjectsFailed());
 					})
 			);
-		} else {
-			return dispatch(receiveProjects(projects));
 		}
 	};
 }
@@ -82,30 +104,47 @@ export function fetchProjects(projects) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestDataSet(dataSet) {
+function requestDataSet(datasetName) {
 	return {
 		type: REQUEST_DATASET,
-		dataSet: dataSet,
+		datasetName: datasetName,
 	};
 }
 
-function requestDataSetCached(dataSet) {
+function requestDataSetFetch(datasetName) {
+	return {
+		type: REQUEST_DATASET_FETCH,
+		datasetName: datasetName,
+	};
+}
+
+
+function requestDataSetCached(datasetName) {
 	return {
 		type: REQUEST_DATASET_CACHED,
-		dataSet: dataSet,
+		datasetName: datasetName,
+	};
+
+}
+
+function requestDataSetFailed(datasetName) {
+	return {
+		type: REQUEST_DATASET_FAILED,
+		datasetName: datasetName,
 	};
 }
 
-function requestDataSetFailed() {
-	return {
-		type: REQUEST_DATASET_FAILED,
-	};
-}
 
 function receiveDataSet(dataSet) {
 	return {
 		type: RECEIVE_DATASET,
-		dataSet,
+		state: {
+			dataSets: {
+				[dataSet.dataset]: merge(
+					dataSet, { fetchedGenes: {}, fetchingGenes: {} }
+				),
+			},
+		},
 	};
 }
 
@@ -115,30 +154,33 @@ function receiveDataSet(dataSet) {
 
 export function fetchDataSet(data) {
 	const { project, dataset, dataSets } = data;
-	// no need to fetch a cached dataset
-	if (dataSets[dataset] !== undefined) {
-		return (dispatch) => {
+	return (dispatch) => {
+		// Announce that the request has been started
+		dispatch(requestDataSet(dataset));
+		// See if the dataset already exists in the store
+		// If so, signal we use cached version.
+		// If not, perform the request (async)
+		if (dataSets[dataset]) {
+			// Announce that the we are retrieving from cache
 			dispatch(requestDataSetCached(dataset));
-		};
-	} else {
-		return (dispatch) => {
-			// First, make known the fact that the request has been started
-			dispatch(requestDataSet(dataset));
-			// Second, see if the dataset already exists in the store
-			// If so, return it. If not, perform the request (async)
+		} else {
+			//Announce that we are fetching from server
+			dispatch(requestDataSetFetch(dataset));
 			return (fetch(`/loom/${project}/${dataset}`)
 				.then((response) => { return response.json(); })
 				.then((ds) => {
-					// This goes last, to ensure the above defaults are set when the views are rendered
-					dispatch(receiveDataSet(ds, dataset));
+					// This goes last, to ensure the above defaults
+					// are set when the views are rendered
+					dispatch(receiveDataSet(ds));
 				})
 				.catch((err) => {
-					// Or, if it failed, dispatch an action to set the error flag
-					console.log(err);
+					// Or, if fetch request failed, dispatch
+					// an action to set the error flag
+					console.log({err});
 					dispatch(requestDataSetFailed(dataset));
 				}));
-		};
-	}
+		}
+	};
 }
 
 
@@ -152,7 +194,23 @@ export function fetchDataSet(data) {
 function requestGene(gene, datasetName) {
 	return {
 		type: REQUEST_GENE,
-		fetchingGenes: { [gene]: true },
+		gene,
+		datasetName,
+	};
+}
+
+function requestGeneFetch(gene, datasetName) {
+	return {
+		type: REQUEST_GENE_FETCH,
+		gene,
+		datasetName,
+	};
+}
+
+function requestGeneCached(gene, datasetName) {
+	return {
+		type: REQUEST_GENE_CACHED,
+		gene,
 		datasetName,
 	};
 }
@@ -160,7 +218,7 @@ function requestGene(gene, datasetName) {
 function requestGeneFailed(gene, datasetName) {
 	return {
 		type: REQUEST_GENE_FAILED,
-		fetchingGenes: { [gene]: false },
+		gene,
 		datasetName,
 	};
 }
@@ -168,10 +226,16 @@ function requestGeneFailed(gene, datasetName) {
 function receiveGene(gene, datasetName, list) {
 	return {
 		type: RECEIVE_GENE,
-		fetchingGenes: { [gene]: false },
-		fetchedGenes: { [gene]: list },
+		gene,
 		datasetName,
 		receivedAt: Date.now(),
+		state: {
+			dataSets: {
+				[datasetName]: {
+					fetchedGenes: { [gene]: list },
+				},
+			},
+		},
 	};
 }
 
@@ -180,19 +244,24 @@ function receiveGene(gene, datasetName, list) {
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataSet, genes) {
-	const rowAttrs = dataSet.rowAttrs;
+	const { rowAttrs } = dataSet;
 	return (dispatch) => {
 		if (rowAttrs.Gene === undefined) { return; }
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
 			const row = rowAttrs.Gene.indexOf(gene);
+			dispatch(requestGene(gene, dataSet.dataset));
 			// If gene is already cached, being fetched or
 			// not part of the dataset, skip fetching.
 			if (dataSet.fetchedGenes[gene] ||
 				dataSet.fetchingGenes[gene] ||
-				row === -1) { continue; }
-			// First, make known the fact that the request has been started
-			dispatch(requestGene(gene, dataSet.dataset));
+				row === -1) {
+				// Announce gene retrieved from cache
+				dispatch(requestGeneCached(gene, dataSet.dataset));
+				continue;
+			}
+			// Announce gene request from server
+			dispatch(requestGeneFetch(gene, dataSet.dataset));
 			// Second, perform the request (async)
 			fetch(`/loom/${dataSet.project}/${dataSet.filename}/row/${row}`)
 				.then((response) => { return response.json(); })
@@ -202,7 +271,7 @@ export function fetchGene(dataSet, genes) {
 				})
 				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {
-					console.log(err);
+					console.log({err});
 					dispatch(requestGeneFailed(gene, dataSet.dataset));
 				});
 		}

@@ -6,19 +6,23 @@ import { SET_VIEW_PROPS } from '../actions/actionTypes';
 class ViewStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataSet, viewsettings, viewStateName, initialState } = this.props;
+		const { dispatch, dataSet,
+			viewsettings, viewStateName,
+			initialState } = this.props;
 
+		// URL-encoded state >> existing state >> initial state
 		const viewState = viewsettings ? JSURL.parse(viewsettings) : (
 			dataSet[viewStateName] ? dataSet[viewStateName] : initialState
 		);
 
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
+		let datasetName = dataSet.dataset;
 		dispatch({
 			type: SET_VIEW_PROPS,
-			fieldName: viewStateName,
-			datasetName: dataSet.dataset,
-			[viewStateName]: viewState,
+			viewStateName,
+			datasetName,
+			viewState,
 		});
 	}
 
@@ -57,12 +61,12 @@ export const ViewInitialiser = function (props) {
 			project={project} />
 		:
 		<ViewStateInitialiser
-			dataSet={dataSet}
-			dispatch={dispatch}
-			viewsettings={viewsettings}
 			View={View}
 			viewStateName={viewStateName}
-			initialState={initialState} />
+			initialState={initialState}
+			dataSet={dataSet}
+			dispatch={dispatch}
+			viewsettings={viewsettings} />
 	);
 };
 
