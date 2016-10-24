@@ -141,8 +141,8 @@ def send_fileinfo(project, filename):
 		"zoomRange": ds.dz_zoom_range(),
 		"fullZoomHeight": dims[1],
 		"fullZoomWidth": dims[0],
-		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.iteritems()]),
-		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.iteritems()]),
+		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
+		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
 		"schema": {
 			"matrix": ds.schema["matrix"],
 			"rowAttrs": ds.schema["row_attrs"],
