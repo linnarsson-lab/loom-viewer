@@ -83,12 +83,12 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 	
 	for key, vals in row_attrs.iteritems():
 		if not row_attr_types.has_key(key):
-			raise ValueError("Type information missing for row attribute " + key)		
+			raise ValueError("Type information missing for row attribute " + key)
 		ds.set_attr(key, vals, axis = 0, dtype=row_attr_types[key])
 
 	for key, vals in col_attrs.iteritems():
 		if not col_attr_types.has_key(key):
-			raise ValueError("Type information missing for column attribute " + key)		
+			raise ValueError("Type information missing for column attribute " + key)
 		ds.set_attr(key, vals, axis = 1, dtype=col_attr_types[key])
 
 	ds.close()
@@ -304,6 +304,7 @@ class LoomConnection(object):
 
 		Row and column attributes are loaded into memory for fast access.		
 		"""
+		logging.info("Connecting to " + filename)
 		self.file = h5py.File(filename,'r+')
 		self.shape = self.file['matrix'].shape
 
