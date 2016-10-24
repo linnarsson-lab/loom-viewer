@@ -7,10 +7,9 @@ from functools import wraps, update_wrapper
 import os
 import os.path
 import sys
-import StringIO
+from io import StringIO
 import json
 from datetime import datetime, timedelta
-from loom_cache import LoomCache
 import argparse
 import errno
 from socket import error as socket_error
@@ -24,44 +23,44 @@ from wsgiref.handlers import format_date_time
 
 
 def cache(expires=None, round_to_minute=False):
-    """
-    Add Flask cache response headers based on expires in seconds.
-    
-    If expires is None, caching will be disabled.
-    Otherwise, caching headers are set to expire in now + expires seconds
-    If round_to_minute is True, then it will always expire at the start of a minute (seconds = 0)
-    
-    Example usage:
-    
-    @app.route('/map')
-    @cache(expires=60)
-    def index():
-      return render_template('index.html')
-    
-    """
-    def cache_decorator(view):
-        @wraps(view)
-        def cache_func(*args, **kwargs):
-            now = datetime.now()
- 
-            response = make_response(view(*args, **kwargs))
-            response.headers['Last-Modified'] = format_date_time(time.mktime(now.timetuple()))
-            
-            if expires is None:
-                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-                response.headers['Expires'] = '-1'
-            else:
-                expires_time = now + timedelta(seconds=expires)
+	"""
+	Add Flask cache response headers based on expires in seconds.
 
-                if round_to_minute:
-                    expires_time = expires_time.replace(second=0, microsecond=0)
+	If expires is None, caching will be disabled.
+	Otherwise, caching headers are set to expire in now + expires seconds
+	If round_to_minute is True, then it will always expire at the start of a minute (seconds = 0)
 
-                response.headers['Cache-Control'] = 'public'
-                response.headers['Expires'] = format_date_time(time.mktime(expires_time.timetuple()))
+	Example usage:
+
+	@app.route('/map')
+	@cache(expires=60)
+	def index():
+	  return render_template('index.html')
+
+	"""
+	def cache_decorator(view):
+		@wraps(view)
+		def cache_func(*args, **kwargs):
+			now = datetime.now()
+
+			response = make_response(view(*args, **kwargs))
+			response.headers['Last-Modified'] = format_date_time(time.mktime(now.timetuple()))
+
+			if expires is None:
+				response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+				response.headers['Expires'] = '-1'
+			else:
+				expires_time = now + timedelta(seconds=expires)
+
+				if round_to_minute:
+					expires_time = expires_time.replace(second=0, microsecond=0)
+
+				response.headers['Cache-Control'] = 'public'
+				response.headers['Expires'] = format_date_time(time.mktime(expires_time.timetuple()))
  
-            return response
-        return cache_func
-    return cache_decorator
+			return response
+		return cache_func
+	return cache_decorator
 
 
 
@@ -120,15 +119,15 @@ def get_auth(request):
 @app.route('/loom', methods=['GET'])
 @cache(expires=None)
 def send_dataset_list():
-	(u,p) = get_auth(request)
-	result = json.dumps(app.cache.list_datasets(u,p))
+	(u, p) = get_auth(request)
+	result = json.dumps(app.cache.list_datasets(u, p))
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
 @app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
 @cache(expires=None)
 def send_fileinfo(project, filename):
-	(u,p) = get_auth(request)
+	(u, p) = get_auth(request)
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
@@ -254,4 +253,4 @@ def start_server(dataset_path, show_browser, port, debug):
 	except socket_error as serr:
 		logging.error(serr)
 		if port < 1024:
-			print "You may need to invoke the server with sudo: sudo python loom_server.py ..."
+			print("You may need to invoke the server with sudo: sudo python loom_server.py ...")

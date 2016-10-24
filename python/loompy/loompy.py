@@ -23,10 +23,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import division
+from __future__ import print_function
 import math
 import numpy as np
 import h5py
-#from cmdstan import CmdStan
 import os.path
 import pandas as pd
 import scipy
@@ -40,10 +40,15 @@ from sklearn.manifold import TSNE
 from sklearn.svm import SVR
 from shutil import copyfile
 import logging
-import __builtin__
-from backspin import loom_backspin
 import requests
 import json
+
+_numpy_types = {
+		"string": str,
+		"float64": "float64",
+		"int": int,
+		"float32": "float32"
+	}
 
 def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
 	"""
@@ -61,7 +66,7 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 		Nothing. To work with the file, use loom.connect(filename).
 	"""
 	if not np.isfinite(matrix).all():
-		raise ValueError, "INF and NaN not allowed in loom matrix"
+		raise ValueError("INF and NaN not allowed in loom matrix")
 
 	# Create the file
 	f = h5py.File(filename, 'w')
@@ -78,16 +83,15 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 	
 	for key, vals in row_attrs.iteritems():
 		if not row_attr_types.has_key(key):
-			raise ValueError, "Type information missing for row attribute " + key		
+			raise ValueError("Type information missing for row attribute " + key)		
 		ds.set_attr(key, vals, axis = 0, dtype=row_attr_types[key])
 
 	for key, vals in col_attrs.iteritems():
 		if not col_attr_types.has_key(key):
-			raise ValueError, "Type information missing for column attribute " + key		
+			raise ValueError("Type information missing for column attribute " + key)		
 		ds.set_attr(key, vals, axis = 1, dtype=col_attr_types[key])
 
 	ds.close()
-
 
 def create_from_cef(cef_file, loom_file):
 	"""
@@ -129,13 +133,13 @@ def create_from_pandas(df, loom_file):
 	for attr in df.index.names:		
 		try:
 			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float64')
-		except ValueError, e:
-			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('string')
+		except ValueError(e):
+			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype(str)
 	for attr in df.columns.names:		
 		try:
 			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype('float64')
-		except ValueError, e:
-			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype('string')
+		except ValueError(e):
+			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype(str)
 	f.close()	
 	pass
 
@@ -203,7 +207,7 @@ def combine(files, output_file):
 	exactly the same sets of row and column attributes. 
 	"""
 	if len(files) == 0:
-		raise ValueError, "The input file list was empty"
+		raise ValueError("The input file list was empty")
 	
 	copyfile(files[0], output_file)
 
@@ -261,26 +265,26 @@ def upload(path, server, project, filename, username, password):
 
 
 class LoomAttributeManager():
-    def __init__(self, f):
-        self.f = f
+	def __init__(self, f):
+		self.f = f
 		
-    def __contains__(self, name):
+	def __contains__(self, name):
 		return self.f.attrs.__contains__(name)
 
-    def __setitem__(self, name, value):
+	def __setitem__(self, name, value):
 		if name == "schema":
-			raise KeyError, "Attribute 'schema' is protected and cannot be set"
+			raise KeyError("Attribute 'schema' is protected and cannot be set")
 
 		self.f.attrs[name] = str(value)
 		self.f.flush()
 
-    def __getitem__(self, name):
+	def __getitem__(self, name):
 		return str(self.f.attrs[name])
 
-    def __len__(self):
-        return len(self.f.attrs)
+	def __len__(self):
+		return len(self.f.attrs)
 
-    def get(self, name, default=None):
+	def get(self, name, default=None):
 		if self.__contains__(name):
 			return self[name]
 		else:
@@ -314,7 +318,7 @@ class LoomConnection(object):
 				"col_attrs": {}
 			}
 		else:
-			self.schema = json.loads(self.file.attrs["schema"])
+			self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
 
 		self.row_attrs = {}
 		for key in self.file['row_attrs'].keys():
@@ -324,11 +328,11 @@ class LoomConnection(object):
 					vals = vals.astype("float64")
 					self.schema["row_attrs"][key] = "float64"
 				else:
-					vals = vals.astype("string")
+					vals = vals.astype(str)
 					self.schema["row_attrs"][key] = "string"
 			else:
-				vals = vals.astype(self.schema["row_attrs"][key])
-
+				vals = vals.astype(_numpy_types[self.schema["row_attrs"][key]])
+					
 			self.row_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
 				setattr(self, key, self.row_attrs[key])
@@ -341,10 +345,10 @@ class LoomConnection(object):
 					vals = vals.astype("float64")
 					self.schema["col_attrs"][key] = "float64"
 				else:
-					vals = vals.astype("string")
+					vals = vals.astype(str)
 					self.schema["col_attrs"][key] = "string"
 			else:
-				vals = vals.astype(self.schema["col_attrs"][key])
+				vals = vals.astype(_numpy_types[self.schema["col_attrs"][key]])
 
 			self.col_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
@@ -386,14 +390,14 @@ class LoomConnection(object):
 		for ra in self.row_attrs.keys():
 			html += "<td><strong>" + ra + ":" + self.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name 
 		html += "<td>&nbsp;</td>"  # Space for col attrs 
-		for v in xrange(cm):
+		for v in range(cm):
 			html += "<td>&nbsp;</td>"
 		if self.shape[1] > cm:
 			html += "<td>...</td>"
 		html += "</tr>"
 
 		# Emit row attr values and matrix values
-		for row in xrange(rm):
+		for row in range(rm):
 			html += "<tr>"
 			for ra in self.row_attrs.keys():
 				html += "<td>" + str(self.row_attrs[ra][row]) + "</td>"
@@ -407,7 +411,7 @@ class LoomConnection(object):
 		# Emit ellipses
 		if self.shape[0] > rm:
 			html += "<tr>"
-			for v in xrange(rm + 1 + len(self.row_attrs.keys())):
+			for v in range(rm + 1 + len(self.row_attrs.keys())):
 				html += "<td>...</td>"
 			if self.shape[1] > cm:
 				html += "<td>...</td>"
@@ -453,31 +457,31 @@ class LoomConnection(object):
 		Note that this will modify the underlying HDF5 file, which will interfere with any concurrent readers.
 		"""
 		if not np.isfinite(submatrix).all():
-			raise ValueError, "INF and NaN not allowed in loom matrix"
+			raise ValueError("INF and NaN not allowed in loom matrix")
 
 		if submatrix.shape[0] != self.shape[0]:
-			raise ValueError, "New submatrix must have same number of rows as existing matrix"
+			raise ValueError("New submatrix must have same number of rows as existing matrix")
 
 		submatrix = submatrix.astype("float32")
 
 		for key in self.col_attrs.iterkeys():
 			if not col_attrs.has_key(key):
-				raise KeyError, "Every column attribute must be provided ('%s' is missing)" % key
+				raise KeyError("Every column attribute must be provided ('%s' is missing)" % key)
 
 		for key,vals in col_attrs.iteritems():
 			if not self.col_attrs.has_key(key):
-				raise KeyError, "Extra column attributes are not allowed ('%s' is not in file)" % key
+				raise KeyError("Extra column attributes are not allowed ('%s' is not in file)" % key)
 			if len(vals) != submatrix.shape[1]:
-				raise ValueError, "Each column attribute must have exactly %s values" % submatrix.shape[1]
+				raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key,vals in col_attrs.iteritems():
 			vals = np.array(vals)
 			dtype = self.schema["col_attrs"][key]
-			vals = vals.astype(dtype)
+			vals = vals.astype(_numpy_types[dtype])
 			if dtype == "float64" or dtype == "int":
 				if not np.isfinite(vals).all():
-					raise ValueError, "INF and NaN not allowed in numeric attribute"
+					raise ValueError("INF and NaN not allowed in numeric attribute")
 
 			temp = self.file['/col_attrs/' + key][:]
 			temp.resize((n_cols,))
@@ -506,15 +510,15 @@ class LoomConnection(object):
 
 		# Sanity checks
 		if other.shape[0] != self.shape[0]:
-			raise ValueError, "The two loom files have different numbers of rows"
+			raise ValueError("The two loom files have different numbers of rows")
 		
 		for ca in other.col_attrs.keys():
 			if not self.col_attrs.has_key(ca):
-				raise ValueError, "The other loom file has column attribute %s which is not in this file" % ca
+				raise ValueError("The other loom file has column attribute %s which is not in this file" % ca)
 		
 		for ca in self.col_attrs.keys():
 			if not other.col_attrs.has_key(ca):
-				raise ValueError, "Column attribute %s is missing in the other loom file" % ca
+				raise ValueError("Column attribute %s is missing in the other loom file" % ca)
 
 		self.add_columns(other[:,:], other.col_attrs)				
 
@@ -532,7 +536,7 @@ class LoomConnection(object):
 		"""
 		if axis == 0:
 			if not self.row_attrs.has_key(name):
-				raise KeyError, "Row attribute " + name + " does not exist"
+				raise KeyError("Row attribute " + name + " does not exist")
 			
 			del self.row_attrs[name]
 			del self.file['/row_attrs/' + name]
@@ -540,14 +544,14 @@ class LoomConnection(object):
 
 		elif axis == 1:
 			if not self.col_attrs.has_key(name):
-				raise KeyError, "Column attribute " + name + " does not exist"
+				raise KeyError("Column attribute " + name + " does not exist")
 			
 			del self.col_attrs[name]
 			del self.file['/col_attrs/' + name]
 			del self.schema["col_attrs"][name]
 
 		else:
-			raise ValueError, "Axis must be 0 or 1"
+			raise ValueError("Axis must be 0 or 1")
 
 		self.file.attrs["schema"] = json.dumps(self.schema)
 		self.file.flush()
@@ -568,18 +572,18 @@ class LoomConnection(object):
 		This will overwrite any existing attribute of the same name.
 		"""
 		if dtype == None:
-			raise TypeError, "Data type must be provided"
+			raise TypeError("Data type must be provided")
 
-		values = values.astype(dtype)
+		values = values.astype(_numpy_types[dtype])
 
 		if dtype != "int" and dtype != "float64" and dtype != "string":
-			raise TypeError, "Invalid loom data type: " + dtype
+			raise TypeError("Invalid loom data type: " + dtype)
 
 		if dtype == "float64":
 			if not np.isfinite(values).all():
 				raise ValueError("INF, NaN not allowed in .loom attributes")
 
-		values = values.astype(dtype)
+		values = values.astype(_numpy_types[dtype])
 
 		
 		# Add annotation along the indicated axis
@@ -674,7 +678,7 @@ class LoomConnection(object):
 		result = []
 		if axis == 0:
 			rows_per_chunk = chunksize
-			for i in xrange(len(f_list)):
+			for i in range(len(f_list)):
 				result.append(np.zeros(self.shape[0]))
 			ix = 0
 			while ix < self.shape[0]:
@@ -683,12 +687,12 @@ class LoomConnection(object):
 					chunk = self[ix:ix + rows_per_chunk,:][:,selection]
 				else:
 					chunk = self[ix:ix + rows_per_chunk,:]
-				for i in xrange(len(f_list)):
+				for i in range(len(f_list)):
 					result[i][ix:ix + rows_per_chunk] = np.apply_along_axis(f_list[i], 1, chunk)
 				ix = ix + rows_per_chunk
 		elif axis == 1:
 			cols_per_chunk = chunksize
-			for i in xrange(len(f_list)):
+			for i in range(len(f_list)):
 				result.append(np.zeros(self.shape[1]))
 			ix = 0
 			while ix < self.shape[1]:
@@ -697,7 +701,7 @@ class LoomConnection(object):
 					chunk = self[:,ix:ix + cols_per_chunk][selection,:]
 				else:
 					chunk = self[:,ix:ix + cols_per_chunk]
-				for i in xrange(len(f_list)):
+				for i in range(len(f_list)):
 					result[i][ix:ix + cols_per_chunk] = np.apply_along_axis(f_list[i], 0, chunk)
 				ix = ix + cols_per_chunk
 		if hasattr(f, '__call__'):
@@ -735,8 +739,8 @@ class LoomConnection(object):
 				jx = 0
 				while jx < self.shape[0]:
 					b = self[jx:jx + rows_per_chunk,:]				
-					for i in xrange(a.shape[0]):
-						for j in xrange(b.shape[0]):
+					for i in range(a.shape[0]):
+						for j in range(b.shape[0]):
 							if pass_attrs:
 								attr1 = {key: v[ix + i] for (key,v) in self.row_attrs.iteritems()}
 								attr2 = {key: v[jx + j] for (key,v) in self.row_attrs.iteritems()}
@@ -761,8 +765,8 @@ class LoomConnection(object):
 				jx = 0
 				while jx < self.shape[1]:
 					b = self[:,jx:jx + cols_per_chunk]				
-					for i in xrange(a.shape[1]):
-						for j in xrange(b.shape[1]):
+					for i in range(a.shape[1]):
+						for j in range(b.shape[1]):
 							if pass_attrs:
 								attr1 = {key: v[ix + i] for (key,v) in self.col_attrs.iteritems()}
 								attr2 = {key: v[jx + j] for (key,v) in self.col_attrs.iteritems()}
@@ -801,7 +805,7 @@ class LoomConnection(object):
 			data = self[selection,:]
 
 		if axis == 1:
-		    data = data.T
+			data = data.T
 		N = data.shape[1]
 		if log:
 			data = np.log(data + 1)
@@ -1103,7 +1107,7 @@ class LoomConnection(object):
 			logging.debug("Removing previous tile pyramid")
 			del self.file['tiles']
 		self.dz_get_zoom_image(0,0,8)
-        
+		
 	def dz_get_max_byrow(self):
 		"""
 		Calculate maximal values by row and cache in the file.
@@ -1198,13 +1202,13 @@ class LoomConnection(object):
 		logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if z < zmin:
-			raise ValueError, ("z cannot be less than %s" % zmin)
+			raise ValueError("z cannot be less than %s" % zmin)
 		if z > zmax:
-			raise ValueError, ("z cannot be greater than %s" % zmax)
+			raise ValueError("z cannot be greater than %s" % zmax)
 		if x < 0:
-			raise ValueError, ("x cannot be less than zero")
+			raise ValueError("x cannot be less than zero")
 		if y < 0:
-			raise ValueError, ("y cannot be less than zero")
+			raise ValueError("y cannot be less than zero")
 
 		if z == zmid:
 			# Get the right tile from the matrix
@@ -1234,7 +1238,7 @@ class LoomConnection(object):
 			y = y - y//scale*scale
 			tile = x1_tile[y*256//scale:y*256//scale + 256//scale, x*256//scale:x*256//scale + 256//scale]
 			# Resample
-			for ix in xrange(z - zmid):
+			for ix in range(z - zmid):
 				temp = np.empty((tile.shape[0]*2, tile.shape[1]*2) , dtype='float32')
 				temp[0::2,0::2] = tile
 				temp[1::2,1::2] = tile
@@ -1283,11 +1287,11 @@ class _CEF(object):
 
 	def export_as_loom(self, filename):
 		row_types = {}
-		for ix in xrange(len(self.row_attr_names)):
+		for ix in range(len(self.row_attr_names)):
 			row_types[self.row_attr_names[ix]] = "float64" if np.issubdtype(self.row_attr_values[ix].dtype, np.number) else "string" 
 
 		col_types = {}
-		for ix in xrange(len(self.col_attr_names)):
+		for ix in range(len(self.col_attr_names)):
 			col_types[self.col_attr_names[ix]] = "float64" if np.issubdtype(self.col_attr_values[ix].dtype, np.number) else "string" 
 
 		create(filename, self.matrix, dict(zip(self.row_attr_names, self.row_attr_values)), dict(zip(self.col_attr_names, self.col_attr_values)), row_types, col_types)
@@ -1312,7 +1316,7 @@ class _CEF(object):
 		#Delete all the stored information
 		self.__init__()
 		#Start parsing
-		with __builtin__.open(filepath, 'rbU') as fin:
+		with open(filepath, 'rbU') as fin:
 			# Read cef file first line
 			self.header, self.row_attr, self.col_attr, self.rows,\
 			self.cols, self.flags = fin.readline().rstrip('\n').split('\t')[1:7]
@@ -1322,7 +1326,7 @@ class _CEF(object):
 			self.rows = int(self.rows)
 			self.cols = int(self.cols)
 			self.flags = int(self.flags)
-			self.row_attr_values = [[] for _ in xrange(self.row_attr)]
+			self.row_attr_values = [[] for _ in range(self.row_attr)]
 			self.matrix = np.empty([self.rows, self.cols], dtype='float32')
 
 			# Read header
@@ -1337,14 +1341,14 @@ class _CEF(object):
 				self.col_attr_values.append( line_col_attr[1:] ) 
 			#Read row attr and matrix
 			self.row_attr_names += fin.readline().rstrip('\n').split('\t')[:self.row_attr]
-			for ix in xrange(self.rows):
+			for ix in range(self.rows):
 				linelist = fin.readline().rstrip('\n').split('\t')
 				for n, entry in enumerate( linelist[:self.row_attr] ):
 					self.row_attr_values[n].append( entry )
 				try:
 					self.matrix[ix] = [float(el) for el in linelist[self.row_attr+1:self.row_attr+1+self.cols]]
 				except ValueError:
-					print repr(el), ' is invalid at row ', ix
+					print(repr(el), ' is invalid at row ', ix)
 
 
 

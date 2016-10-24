@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 
 # pylint: disable=exec-used
+__version__ = '0.0.0'
 exec(open('loompy/_version.py').read())
 
 setup(
@@ -9,7 +10,7 @@ setup(
     packages = find_packages(),
     install_requires = [
         'scikit-learn',
-        'h5py', 
+        'h5py',
         'pandas', 
         'scipy<=0.17.1',
         'numpy', 

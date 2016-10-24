@@ -23,11 +23,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os.path
-import csv
-import loompy
-import re
-import json
 import time
+import loompy
 
 class LoomCache(object):
 	"""
@@ -68,16 +65,16 @@ class LoomCache(object):
 			try:
 				with open(authfile) as f:
 					lines = [x.split(",") for x in f.read().splitlines()]
-					users = {x[0]: (x[1],x[2]) for x in lines }
+					users = {x[0]: (x[1], x[2]) for x in lines}
 			except IndexError:
 				return False
 		if mode == "read":
-			if users.has_key("*"):
+			if '*' in users:
 				return True
-			if users.has_key(username) and users[username][0] == password:
+			if username in users and users[username][0] == password:
 				return True
 		else:
-			if users.has_key(username) and users[username][0] == password and users[username][1] == "w":
+			if username in users and users[username][0] == password and users[username][1] == "w":
 				return True
 		return False
 
@@ -98,8 +95,8 @@ class LoomCache(object):
 						doi = ds.attrs.get("doi", "")
 						# get arbitrary col/row attribute, they're all lists
 						# of equal size. The length equals total cells/genes
-						totalCells = len(next(ds.col_attrs.itervalues()))
-						totalGenes = len(next(ds.row_attrs.itervalues()))
+						totalCells = ds.shape[1]
+						totalGenes = ds.shape[0]
 						#last time the file was modified, formatted year/month/day hour:minute:second
 						lastMod = time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(os.path.getmtime(os.path.join(self.dataset_path, proj, f))))
 						result.append({ "project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi": doi, "totalCells": totalCells, "totalGenes": totalGenes, "lastModified": lastMod})
@@ -125,7 +122,7 @@ class LoomCache(object):
 			return None
 
 		key = project + "/" + filename
-		if self.looms.has_key(key):
+		if key in self.looms:
 			return self.looms[key]
 
 		result = loompy.connect(absolute_path)
@@ -133,7 +130,7 @@ class LoomCache(object):
 		return result
 
 	def close(self):
-		for ds in self.looms.itervalues():
+		for ds in self.looms.values():
 			ds.close()
 
 	def get_absolute_path(self, project, filename, username=None, password=None, check_exists=True):
