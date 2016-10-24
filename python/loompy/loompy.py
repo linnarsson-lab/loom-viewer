@@ -318,8 +318,11 @@ class LoomConnection(object):
 				"col_attrs": {}
 			}
 		else:
-			self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
-
+			if type(self.file.attrs["schema"]) is bytes:
+				self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
+			else:
+				self.schema = json.loads(self.file.attrs["schema"])
+				
 		self.row_attrs = {}
 		for key in self.file['row_attrs'].keys():
 			vals = self.file['row_attrs'][key][:]
