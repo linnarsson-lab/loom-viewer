@@ -147,7 +147,7 @@ class LoomPipeline(object):
 
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
 
-		transcriptome_headers = map(lambda x: x[0],cursor.description)
+		transcriptome_headers = list(map(lambda x: x[0],cursor.description))
 		rows = cursor.fetchall()
 		row_attrs = {}
 		for i in range(len(transcriptome_headers)):
@@ -234,7 +234,7 @@ class LoomPipeline(object):
 				break
 
 			# List the headers
-			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
+			headers = list(map(lambda x: x[0], cursor.description)[:-2]) # -2 because we don't want to include "Data"
 			# Rename custom fields to avoid collisions
 			for ix in range(len(headers)):
 				if ix >= N_STD_FIELDS:
