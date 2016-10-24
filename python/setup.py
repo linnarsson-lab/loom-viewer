@@ -13,7 +13,7 @@ setup(
         'pandas', 
         'scipy<=0.17.1',
         'numpy', 
-        'progressbar',
+        'progressbar2',
         'requests',
         'flask-compress',
         'PyMySQL'
