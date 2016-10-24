@@ -19,6 +19,7 @@ import logging
 import signal
 import inspect
 import time
+from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
 
