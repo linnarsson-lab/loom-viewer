@@ -6,9 +6,9 @@ import argparse
 import logging
 import requests
 try:
-    from urllib.parse import urlparse
+	from urllib.parse import urlparse
 except ImportError:
-     from urlparse import urlparse
+	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
 from io import StringIO

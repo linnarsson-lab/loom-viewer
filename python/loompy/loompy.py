@@ -44,11 +44,11 @@ import requests
 import json
 
 _numpy_types = {
-		"string": str,
-		"float64": "float64",
-		"int": int,
-		"float32": "float32"
-	}
+				"string": "unicode",
+				"float64": "float64",
+				"int": int,
+				"float32": "float32"
+			}
 
 def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
 	"""
@@ -304,7 +304,7 @@ class LoomConnection(object):
 
 		Row and column attributes are loaded into memory for fast access.		
 		"""
-		logging.info("Connecting to " + filename)
+		logging.info("Connecting to: " + filename)
 		self.file = h5py.File(filename,'r+')
 		self.shape = self.file['matrix'].shape
 
@@ -325,7 +325,10 @@ class LoomConnection(object):
 				self.schema = json.loads(self.file.attrs["schema"])
 				
 		self.row_attrs = {}
+		logging.info("Schema: " + json.dumps(self.schema))
+		
 		for key in self.file['row_attrs'].keys():
+			logging.info("Row key: " + key)
 			vals = self.file['row_attrs'][key][:]
 			if inferring:
 				if np.issubdtype(vals.dtype, np.number):
@@ -335,7 +338,9 @@ class LoomConnection(object):
 					vals = vals.astype(str)
 					self.schema["row_attrs"][key] = "string"
 			else:
-				vals = vals.astype(_numpy_types[self.schema["row_attrs"][key]])
+				dtype = _numpy_types[self.schema["row_attrs"][key]]
+				if dtype != "unicode":
+					vals = vals.astype(dtype)
 					
 			self.row_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
@@ -343,6 +348,7 @@ class LoomConnection(object):
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
+			logging.info("Col key: " + key)
 			vals = self.file['col_attrs'][key][:]
 			if inferring:
 				if np.issubdtype(vals.dtype, np.number):
@@ -352,7 +358,9 @@ class LoomConnection(object):
 					vals = vals.astype(str)
 					self.schema["col_attrs"][key] = "string"
 			else:
-				vals = vals.astype(_numpy_types[self.schema["col_attrs"][key]])
+				dtype = _numpy_types[self.schema["col_attrs"][key]]
+				if dtype != "unicode":
+					vals = vals.astype(dtype)
 
 			self.col_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
