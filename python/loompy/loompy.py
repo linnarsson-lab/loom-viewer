@@ -108,28 +108,28 @@ def create_from_pandas(df, loom_file):
 	Create a .loom file from a Pandas DataFrame.
 
 	Args:
-		df (pd.DataFrame):	Pandas DataFrame		
+		df (pd.DataFrame):	Pandas DataFrame
 		loom_file (str):	Name of the output .loom file (will be created)
 
 	Returns:
 		Nothing.
 
-	The DataFrame can contain multi-indexes on both axes, which will be turned into row and column attributes
-	of the .loom file. The main matrix of the DataFrame must contain only float values. The datatypes of the
-	attributes will be inferred as either float or string. 
+	The DataFrame can contain multi-indexes on both axes, which will be turned into row and
+	column attributes of the .loom file. The main matrix of the DataFrame must contain only
+	float values. The datatypes of the attributes will be inferred as either float or string.
 	"""
 
 	n_rows = df.shape[0]
 	f = h5py.File(loom_file, "w")
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
-	f.create_dataset('matrix', data=df.values.astype('float32'), compression='gzip', maxshape=(n_rows, None), chunks=(100,100))
-	for attr in df.index.names:		
+	f.create_dataset('matrix', data=df.values.astype('float32'), compression='gzip', maxshape=(n_rows, None), chunks=(100, 100))
+	for attr in df.index.names:
 		try:
 			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float64')
 		except ValueError(e):
 			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype(str)
-	for attr in df.columns.names:		
+	for attr in df.columns.names:
 		try:
 			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype('float64')
 		except ValueError(e):
@@ -137,7 +137,7 @@ def create_from_pandas(df, loom_file):
 	f.close()	
 	pass
 
-def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotation = {}, schema={}, genome='mm10'):
+def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotation = {}, schema={}, genome='mm10'):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
@@ -166,19 +166,19 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='',sample_annotatio
 		col_attrs[key] = np.array([sample_annotation[key]]*matrix.shape[1])
 		col_types[key] = schema[key]
 
-	tsne = np.loadtxt(os.path.join(folder, "analysis","tsne","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
-	col_attrs["_tSNE1"] = tsne[:,0]
-	col_attrs["_tSNE2"] = tsne[:,1]
+	tsne = np.loadtxt(os.path.join(folder, "analysis", "tsne", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
+	col_attrs["_tSNE1"] = tsne[:, 0]
+	col_attrs["_tSNE2"] = tsne[:, 1]
 	col_types["_tSNE1"] = "float64"
 	col_types["_tSNE2"] = "float64"
 
-	pca = np.loadtxt(os.path.join(folder, "analysis","pca","projection.csv"), usecols=(1,2), delimiter=',', skiprows=1)
-	col_attrs["_PC1"] = pca[:,0]
-	col_attrs["_PC2"] = pca[:,1]
+	pca = np.loadtxt(os.path.join(folder, "analysis", "pca", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
+	col_attrs["_PC1"] = pca[:, 0]
+	col_attrs["_PC2"] = pca[:, 1]
 	col_types["_PC1"] = "float64"
 	col_types["_PC2"] = "float64"
 
-	kmeans = np.loadtxt(os.path.join(folder, "analysis","kmeans","10_clusters","clusters.csv"), usecols=(1,), delimiter=',', skiprows=1)
+	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans
 	col_types["_KMeans_10"] = "float64"
 
@@ -273,7 +273,11 @@ class LoomAttributeManager():
 		self.f.flush()
 
 	def __getitem__(self, name):
-		return str(self.f.attrs[name])
+		val = self.f.attrs[name]
+		if type(val) == bytes:
+			return val.decode('utf-8')
+		else:
+			return str(val)
 
 	def __len__(self):
 		return len(self.f.attrs)
