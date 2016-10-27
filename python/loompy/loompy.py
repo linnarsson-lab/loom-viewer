@@ -317,7 +317,7 @@ class LoomConnection(object):
 			dtype = self.schema["row_attrs"][key]
 			if dtype == "string":
 				if type(vals[0]==bytes):
-					vals = [x.decode("utf-8") for x in vals]
+					vals = np.array([x.decode("utf-8") for x in vals])
 			else:
 				vals = vals.astype(dtype)
 
@@ -331,7 +331,7 @@ class LoomConnection(object):
 			dtype = self.schema["col_attrs"][key]
 			if dtype == "string":
 				if type(vals[0]==bytes):
-					vals = [x.decode("utf-8") for x in vals]
+					vals = np.array([x.decode("utf-8") for x in vals])
 			else:
 				vals = vals.astype(dtype)
 
