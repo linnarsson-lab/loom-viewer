@@ -43,12 +43,6 @@ import logging
 import requests
 import json
 
-_numpy_types = {
-				"string": "unicode",
-				"float64": "float64",
-				"int": int,
-				"float32": "float32"
-			}
 
 def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
 	"""
@@ -216,7 +210,7 @@ def combine(files, output_file):
 		for f in files[1:]:
 			ds.add_loom(f)
 
-def connect(filename, infer=False):
+def connect(filename):
 	"""
 	Establish a connection to a .loom file.
 
@@ -227,7 +221,7 @@ def connect(filename, infer=False):
 	Returns:
 		A LoomConnection instance.
 	"""
-	return LoomConnection(filename, infer)
+	return LoomConnection(filename)
 
 def upload(path, server, project, filename, username, password):
 	"""
@@ -291,13 +285,12 @@ class LoomAttributeManager():
 			return default		
 
 class LoomConnection(object):
-	def __init__(self, filename, infer=False):
+	def __init__(self, filename):
 		"""
 		Establish a connection to a .loom file.
 
 		Args:
 			filename (str):		Name of the .loom file to open
-			infer (bool):		Infer data types for attributes
 
 		Returns:
 			Nothing.
@@ -308,59 +301,39 @@ class LoomConnection(object):
 		self.file = h5py.File(filename,'r+')
 		self.shape = self.file['matrix'].shape
 
-		# This is for backwards compatibility
-		inferring = infer or not self.file.attrs.__contains__("schema")
-		if inferring:
-			logging.warn("Inferring schema for " + filename)
-			inferring = True
-			self.schema = {
-				"matrix": "float32",
-				"row_attrs": {},
-				"col_attrs": {}
-			}
+		if not self.file.attrs.__contains__("schema"):
+			raise ValueError("No schema found in " + filename)
+
+		# This is for backwards compatibility with files generated from Python 2
+		if type(self.file.attrs["schema"]) is bytes:
+			self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
 		else:
-			if type(self.file.attrs["schema"]) is bytes:
-				self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
-			else:
-				self.schema = json.loads(self.file.attrs["schema"])
+			self.schema = json.loads(self.file.attrs["schema"])
 				
 		self.row_attrs = {}
-		logging.info("Schema: " + json.dumps(self.schema))
-		
+
 		for key in self.file['row_attrs'].keys():
-			logging.info("Row key: " + key)
 			vals = self.file['row_attrs'][key][:]
-			if inferring:
-				if np.issubdtype(vals.dtype, np.number):
-					vals = vals.astype("float64")
-					self.schema["row_attrs"][key] = "float64"
-				else:
-					vals = vals.astype(str)
-					self.schema["row_attrs"][key] = "string"
+			dtype = self.schema["row_attrs"][key]
+			if dtype == "string":
+				if type(vals[0]==bytes):
+					vals = [x.decode("utf-8") for x in vals]
 			else:
-				dtype = _numpy_types[self.schema["row_attrs"][key]]
-				if dtype != "unicode":
-					vals = vals.astype(dtype)
-					
+				vals = vals.astype(dtype)
+
 			self.row_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
 				setattr(self, key, self.row_attrs[key])
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
-			logging.info("Col key: " + key)
 			vals = self.file['col_attrs'][key][:]
-			if inferring:
-				if np.issubdtype(vals.dtype, np.number):
-					vals = vals.astype("float64")
-					self.schema["col_attrs"][key] = "float64"
-				else:
-					vals = vals.astype(str)
-					self.schema["col_attrs"][key] = "string"
+			dtype = self.schema["col_attrs"][key]
+			if dtype == "string":
+				if type(vals[0]==bytes):
+					vals = [x.decode("utf-8") for x in vals]
 			else:
-				dtype = _numpy_types[self.schema["col_attrs"][key]]
-				if dtype != "unicode":
-					vals = vals.astype(dtype)
+				vals = vals.astype(dtype)
 
 			self.col_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
@@ -368,8 +341,6 @@ class LoomConnection(object):
 
 		self.attrs = LoomAttributeManager(self.file)
 
-		if inferring:
-			self.file.attrs["schema"] = json.dumps(self.schema)
 
 	def _repr_html_(self):
 		"""
