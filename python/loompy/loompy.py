@@ -283,6 +283,8 @@ class LoomAttributeManager():
 		if val[0:2] == "b'" and val[-1] == "'":
 			val = val[2:-1]
 
+		return val
+
 	def __len__(self):
 		return len(self.f.attrs)
 
