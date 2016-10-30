@@ -567,17 +567,19 @@ class LoomConnection(object):
 		if dtype == None:
 			raise TypeError("Data type must be provided")
 
-		values = values.astype(_numpy_types[dtype])
-
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError("Invalid loom data type: " + dtype)
 
 		if dtype == "float64":
 			if not np.isfinite(values).all():
 				raise ValueError("INF, NaN not allowed in .loom attributes")
-
-		values = values.astype(_numpy_types[dtype])
-
+		
+		if dtype == "string":
+			values = values.astype("unicode")
+		if dtype == "float64":
+			values = values.astype("float64")
+		if dtype == "int":
+			values = values.astype("int")
 
 		# Add annotation along the indicated axis
 		if axis == 0:
@@ -677,7 +679,7 @@ class LoomConnection(object):
 			while ix < self.shape[0]:
 				rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
 				if selection != None:
-					chunk = self[ix:ix + rows_per_chunk,:][:,selection]
+					chunk = self[ix:ix + rows_per_chunk, :][:, selection]
 				else:
 					chunk = self[ix:ix + rows_per_chunk, :]
 				for i in range(len(f_list)):
@@ -691,7 +693,7 @@ class LoomConnection(object):
 			while ix < self.shape[1]:
 				cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
 				if selection != None:
-					chunk = self[:,ix:ix + cols_per_chunk][selection, :]
+					chunk = self[:, ix:ix + cols_per_chunk][selection, :]
 				else:
 					chunk = self[:, ix:ix + cols_per_chunk]
 				for i in range(len(f_list)):
