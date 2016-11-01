@@ -571,6 +571,7 @@ class LoomConnection(object):
 		if dtype == None:
 			raise TypeError("Data type must be provided")
 
+
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError("Invalid loom data type: " + dtype)
 
@@ -1293,11 +1294,11 @@ class _CEF(object):
 	def export_as_loom(self, filename):
 		row_types = {}
 		for ix in range(len(self.row_attr_names)):
-			row_types[self.row_attr_names[ix]] = "float64" if np.issubdtype(self.row_attr_values[ix].dtype, np.number) else "string"
+			row_types[self.row_attr_names[ix]] = "float64" if np.issubdtype(np.array(self.row_attr_values[ix]).dtype, np.number) else "string"
 
 		col_types = {}
 		for ix in range(len(self.col_attr_names)):
-			col_types[self.col_attr_names[ix]] = "float64" if np.issubdtype(self.col_attr_values[ix].dtype, np.number) else "string"
+			col_types[self.col_attr_names[ix]] = "float64" if np.issubdtype(np.array(self.col_attr_values[ix]).dtype, np.number) else "string"
 
 		create(filename, self.matrix, dict(zip(self.row_attr_names, self.row_attr_values)), dict(zip(self.col_attr_names, self.col_attr_values)), row_types, col_types)
 
