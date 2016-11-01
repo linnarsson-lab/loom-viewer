@@ -43,6 +43,10 @@ import logging
 import requests
 import json
 
+def strip(s):
+	if s[0:2] == "b'" and s[-1] == "'":
+		return s[2:-1]
+	return s
 
 def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
 	"""
@@ -75,13 +79,13 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 
 	ds = connect(filename)
 
-	for key, vals in row_attrs.iteritems():
-		if not row_attr_types.has_key(key):
+	for key, vals in row_attrs.items():
+		if not key in row_attr_types:
 			raise ValueError("Type information missing for row attribute " + key)
 		ds.set_attr(key, vals, axis = 0, dtype=row_attr_types[key])
 
-	for key, vals in col_attrs.iteritems():
-		if not col_attr_types.has_key(key):
+	for key, vals in col_attrs.items():
+		if not key in col_attr_types:
 			raise ValueError("Type information missing for column attribute " + key)
 		ds.set_attr(key, vals, axis = 1, dtype=col_attr_types[key])
 
@@ -155,10 +159,10 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 	matrix_folder = os.path.join(folder, 'filtered_gene_bc_matrices', genome)
 	matrix = mmread(os.path.join(matrix_folder, "matrix.mtx")).astype("float32").todense()
 
-	col_attrs = {"CellID": np.array([(cell_id_prefix + bc) for bc in np.loadtxt(os.path.join(matrix_folder, "barcodes.tsv"), delimiter="\t", dtype="string")])}
+	col_attrs = {"CellID": np.array([(cell_id_prefix + strip(bc)[2:-1]) for bc in np.loadtxt(os.path.join(matrix_folder, "barcodes.tsv"), delimiter="\t", dtype="unicode")])}
 	col_types = {"CellID": "string"}
 
-	temp = np.loadtxt(os.path.join(matrix_folder, "genes.tsv"), delimiter="\t", dtype="string")
+	temp = np.loadtxt(os.path.join(matrix_folder, "genes.tsv"), delimiter="\t", dtype="unicode")
 	row_attrs = {"Accession": temp[:, 0], "Gene": temp[:, 1]}
 	row_types = {"Accession": "string", "Gene": "string"}
 
@@ -167,19 +171,19 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		col_types[key] = schema[key]
 
 	tsne = np.loadtxt(os.path.join(folder, "analysis", "tsne", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
-	col_attrs["_tSNE1"] = tsne[:, 0]
-	col_attrs["_tSNE2"] = tsne[:, 1]
+	col_attrs["_tSNE1"] = tsne[:, 0].astype('float64')
+	col_attrs["_tSNE2"] = tsne[:, 1].astype('float64')
 	col_types["_tSNE1"] = "float64"
 	col_types["_tSNE2"] = "float64"
 
 	pca = np.loadtxt(os.path.join(folder, "analysis", "pca", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
-	col_attrs["_PC1"] = pca[:, 0]
-	col_attrs["_PC2"] = pca[:, 1]
+	col_attrs["_PC1"] = pca[:, 0].astype('float64')
+	col_attrs["_PC2"] = pca[:, 1].astype('float64')
 	col_types["_PC1"] = "float64"
 	col_types["_PC2"] = "float64"
 
 	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
-	col_attrs["_KMeans_10"] = kmeans
+	col_attrs["_KMeans_10"] = kmeans.astype('float64')
 	col_types["_KMeans_10"] = "float64"
 
 
@@ -269,7 +273,7 @@ class LoomAttributeManager():
 		if name == "schema":
 			raise KeyError("Attribute 'schema' is protected and cannot be set")
 
-		self.f.attrs[name] = str(value)
+		self.f.attrs[name] = value.encode('utf-8')
 		self.f.flush()
 
 	def __getitem__(self, name):
@@ -457,18 +461,18 @@ class LoomConnection(object):
 
 		submatrix = submatrix.astype("float32")
 
-		for key in self.col_attrs.iterkeys():
-			if not col_attrs.has_key(key):
+		for key in self.col_attrs.keys():
+			if not key in col_attrs:
 				raise KeyError("Every column attribute must be provided ('%s' is missing)" % key)
 
-		for key, vals in col_attrs.iteritems():
-			if not self.col_attrs.has_key(key):
+		for key, vals in col_attrs.items():
+			if not key in self.col_attrs:
 				raise KeyError("Extra column attributes are not allowed ('%s' is not in file)" % key)
 			if len(vals) != submatrix.shape[1]:
 				raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
 
 		n_cols = submatrix.shape[1] + self.shape[1]
-		for key, vals in col_attrs.iteritems():
+		for key, vals in col_attrs.items():
 			vals = np.array(vals)
 			dtype = self.schema["col_attrs"][key]
 			vals = vals.astype(_numpy_types[dtype])
@@ -506,11 +510,11 @@ class LoomConnection(object):
 			raise ValueError("The two loom files have different numbers of rows")
 
 		for ca in other.col_attrs.keys():
-			if not self.col_attrs.has_key(ca):
+			if not ca in self.col_attrs:
 				raise ValueError("The other loom file has column attribute %s which is not in this file" % ca)
 
 		for ca in self.col_attrs.keys():
-			if not other.col_attrs.has_key(ca):
+			if not ca in other.col_attrs:
 				raise ValueError("Column attribute %s is missing in the other loom file" % ca)
 
 		self.add_columns(other[:, :], other.col_attrs)
@@ -528,7 +532,7 @@ class LoomConnection(object):
 			Nothing.
 		"""
 		if axis == 0:
-			if not self.row_attrs.has_key(name):
+			if not name in self.row_attrs:
 				raise KeyError("Row attribute " + name + " does not exist")
 
 			del self.row_attrs[name]
@@ -536,7 +540,7 @@ class LoomConnection(object):
 			del self.schema["row_attrs"][name]
 
 		elif axis == 1:
-			if not self.col_attrs.has_key(name):
+			if not name in self.col_attrs:
 				raise KeyError("Column attribute " + name + " does not exist")
 
 			del self.col_attrs[name]
@@ -570,10 +574,6 @@ class LoomConnection(object):
 		if dtype != "int" and dtype != "float64" and dtype != "string":
 			raise TypeError("Invalid loom data type: " + dtype)
 
-		if dtype == "float64":
-			if not np.isfinite(values).all():
-				raise ValueError("INF, NaN not allowed in .loom attributes")
-		
 		if dtype == "string":
 			values = values.astype("unicode")
 		if dtype == "float64":
@@ -581,14 +581,21 @@ class LoomConnection(object):
 		if dtype == "int":
 			values = values.astype("int")
 
+		if dtype == "float64":
+			if not np.isfinite(values).all():
+				raise ValueError("INF, NaN not allowed in .loom attributes")
+
 		# Add annotation along the indicated axis
 		if axis == 0:
 			if len(values) != self.shape[0]:
 				raise ValueError("Row attribute must have %d values" % self.shape[0])
 			if self.file['/row_attrs'].__contains__(name):
 				del self.file['/row_attrs/' + name]
-			self.file['/row_attrs/' + name] = values
-			self.row_attrs[name] = self.file['/row_attrs/' + name][:]
+			if dtype == "string":
+				self.file['/row_attrs/' + name] = np.array([x.encode('utf-8') for x in values])
+			else:
+				self.file['/row_attrs/' + name] = values
+			self.row_attrs[name] = values
 			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.row_attrs[name])
 			self.schema["row_attrs"][name] = dtype
@@ -597,7 +604,10 @@ class LoomConnection(object):
 				raise ValueError("Column attribute must have %d values" % self.shape[1])
 			if self.file['/col_attrs'].__contains__(name):
 				del self.file['/col_attrs/' + name]
-			self.file['/col_attrs/' + name] = values
+			if dtype == "string":
+				self.file['/col_attrs/' + name] = np.array([x.encode('utf-8') for x in values])
+			else:
+				self.file['/col_attrs/' + name] = values
 			self.col_attrs[name] = self.file['/col_attrs/' + name][:]
 			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.col_attrs[name])
@@ -737,14 +747,14 @@ class LoomConnection(object):
 					for i in range(a.shape[0]):
 						for j in range(b.shape[0]):
 							if pass_attrs:
-								attr1 = {key: v[ix + i] for (key,v) in self.row_attrs.iteritems()}
-								attr2 = {key: v[jx + j] for (key,v) in self.row_attrs.iteritems()}
+								attr1 = {key: v[ix + i] for (key,v) in self.row_attrs.items()}
+								attr2 = {key: v[jx + j] for (key,v) in self.row_attrs.items()}
 								submatrix[jx + j, i] = f(a[i],b[j],attr1,attr2)
 							else:
 								submatrix[jx + j, i] = f(a[i], b[j])
 					jx += rows_per_chunk
 				# Get the subset of row attrs for this chunk
-				ca = {key: v[ix:ix + rows_per_chunk] for (key,v) in self.row_attrs.iteritems()}
+				ca = {key: v[ix:ix + rows_per_chunk] for (key,v) in self.row_attrs.items()}
 				if ds == None:
 					create(asfile, submatrix, self.row_attrs, ca)
 					ds = connect(asfile)
@@ -763,14 +773,14 @@ class LoomConnection(object):
 					for i in range(a.shape[1]):
 						for j in range(b.shape[1]):
 							if pass_attrs:
-								attr1 = {key: v[ix + i] for (key,v) in self.col_attrs.iteritems()}
-								attr2 = {key: v[jx + j] for (key,v) in self.col_attrs.iteritems()}
+								attr1 = {key: v[ix + i] for (key,v) in self.col_attrs.items()}
+								attr2 = {key: v[jx + j] for (key,v) in self.col_attrs.items()}
 								submatrix[jx + j, i] = f(a[i],b[j],attr1,attr2)
 							else:
 								submatrix[jx + j, i] = f(a[i], b[j])
 					jx += cols_per_chunk
 				# Get the subset of row attrs for this chunk
-				ca = {key: v[ix:ix + cols_per_chunk] for (key,v) in self.col_attrs.iteritems()}
+				ca = {key: v[ix:ix + cols_per_chunk] for (key,v) in self.col_attrs.items()}
 				if ds == None:
 					create(asfile, submatrix, self.col_attrs, ca)
 					ds = connect(asfile)
@@ -1194,7 +1204,7 @@ class LoomConnection(object):
 		Returns:
 			Numpy ndarray of shape (256,256)
 		"""
-		logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
+#		logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if z < zmin:
 			raise ValueError("z cannot be less than %s" % zmin)
