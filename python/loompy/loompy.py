@@ -475,10 +475,21 @@ class LoomConnection(object):
 		for key, vals in col_attrs.items():
 			vals = np.array(vals)
 			dtype = self.schema["col_attrs"][key]
-			vals = vals.astype(_numpy_types[dtype])
-			if dtype == "float64" or dtype == "int":
+
+			if dtype != "int" and dtype != "float64" and dtype != "string":
+				raise TypeError("Invalid loom data type: " + dtype)
+
+			if dtype == "string":
+				vals = vals.astype("unicode")
+				vals = np.array([x.encode('utf-8') for x in vals])
+			if dtype == "float64":
+				vals = vals.astype("float64")
+			if dtype == "int":
+				vals = vals.astype("int")
+
+			if dtype == "float64":
 				if not np.isfinite(vals).all():
-					raise ValueError("INF and NaN not allowed in numeric attribute")
+					raise ValueError("INF, NaN not allowed in .loom attributes")
 
 			temp = self.file['/col_attrs/' + key][:]
 			temp.resize((n_cols,))

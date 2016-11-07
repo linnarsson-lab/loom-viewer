@@ -214,7 +214,7 @@ def send_col(project, filename, col):
 #
 
 def serve_image(img):
-	img_io = StringIO.StringIO()
+	img_io = StringIO()
 	img.save(img_io, 'PNG')
 	img_io.seek(0)
 	return flask.send_file(img_io, mimetype='image/png')
