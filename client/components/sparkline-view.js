@@ -20,7 +20,7 @@ class SparklineViewComponent extends Component {
 
 	sortIndices(length, slState, dataSet) {
 		// Indices that we want to sort the data by. Default to sorted "as is"
-		let indices = new Array(length);
+		let indices = new Int32Array(length);
 		for (let i = 0; i < indices.length; ++i) {
 			indices[i] = i;
 		}
@@ -31,23 +31,22 @@ class SparklineViewComponent extends Component {
 		// returned by an orderByGeneN or orderByAttrN is not present,
 		// its compArrN will be undefined, thus ignored.
 		const { orderByAttr1, orderByAttr2, orderByAttr3 } = slState;
-		const compArr1 = (orderByAttr1 === '(gene)') ?
+		let compArr1 = (orderByAttr1 === '(gene)') ?
 			dataSet.fetchedGenes[slState.orderByGene1]
 			:
 			dataSet.colAttrs[orderByAttr1];
-		const compArr2 = (orderByAttr2 === '(gene)') ?
+		let compArr2 = (orderByAttr2 === '(gene)') ?
 			dataSet.fetchedGenes[slState.orderByGene2]
 			:
 			dataSet.colAttrs[orderByAttr3];
-		const compArr3 = (orderByAttr3 === '(gene)') ?
+		let compArr3 = (orderByAttr3 === '(gene)') ?
 			dataSet.fetchedGenes[slState.orderByGene3]
 			:
 			dataSet.colAttrs[orderByAttr3];
-
 		let compArr = [];
-		if (compArr1) { compArr.push(compArr1); }
-		if (compArr2) { compArr.push(compArr2); }
-		if (compArr3) { compArr.push(compArr3); }
+		if (compArr1) { compArr.push(compArr1.filteredData); }
+		if (compArr2) { compArr.push(compArr2.filteredData); }
+		if (compArr3) { compArr.push(compArr3.filteredData); }
 
 		// Because not all browsers use a stable algorithm,
 		// we force stability with this trick:
@@ -109,7 +108,7 @@ class SparklineViewComponent extends Component {
 
 		let genes = [], data = [];
 		for (let i = 0; i < selection.length; i++) {
-			let geneData = dataSet.fetchedGenes[selection[i]];
+			let geneData = dataSet.fetchedGenes[selection[i]].filteredData;
 			// no point trying to generate genes without data
 			if (geneData) {
 				genes.push(selection[i]);

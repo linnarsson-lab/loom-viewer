@@ -106,7 +106,7 @@ DataSetList.propTypes = {
 const ProjectList = function (props) {
 	const { projects } = props;
 	if (projects) {
-		const keys = Object.keys(projects);
+		const keys = Object.keys(projects.list);
 		keys.sort();
 		const panels = keys.map(
 			(project) => {
@@ -114,7 +114,7 @@ const ProjectList = function (props) {
 					<DataSetList
 						key={project}
 						project={project}
-						projectState={projects[project]}
+						projectState={projects.list[project]}
 						/>
 				);
 			}

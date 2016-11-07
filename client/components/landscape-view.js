@@ -9,7 +9,7 @@ function makeData(attr, gene, fetchedGenes, colAttrs) {
 	const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
 		fetchedGenes[gene] : colAttrs[attr]);
 	// don't mutate data from the redux store
-	return data ? data.slice(0) : null;
+	return data ? data.filteredData.slice(0) : null;
 }
 
 const LandscapeComponent = function (props) {
@@ -60,7 +60,7 @@ const initialState = { // Initialise landscapeState for this dataset
 	xGene: '',
 	yCoordinate: '_tSNE2',
 	yGene: '',
-	colorAttr: 'CellID',
+	colorAttr: '(original order)',
 	colorMode: 'Heatmap',
 	colorGene: '',
 };

@@ -14,11 +14,17 @@ function handleChangeFactory(field, dispatch) {
 		let searchVal = event.target.value ? event.target.value : '';
 		dispatch({
 			type: SEARCH_DATASETS,
-			field,
-			search: searchVal,
+			state: {
+				projects: {
+					search: {
+						[field]: searchVal,
+					},
+				},
+			},
 		});
 	};
 }
+
 
 // Generates tabular list of datasets
 const DatasetList = function (props) {
@@ -49,7 +55,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '16%', fontSize: '16px', fontWeight: 'bold', fontStyle: 'normal' },
-			onDispatch: { type: SORT_DATASETS, key: 'project' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'project' });},
 		},
 		{
 			headers: ['TITLE', titleSearch],
@@ -57,7 +63,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '30%', fontWeight: 'bold' },
-			onDispatch: { type: SORT_DATASETS, key: 'title' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'title' });},
 		},
 		{
 			headers: ['DESCRIPTION', descriptionSearch],
@@ -65,7 +71,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '32%', fontStyle: 'italic' },
-			onDispatch: { type: SORT_DATASETS, key: 'description' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'description' });},
 		},
 		{
 			headers: ['DATE', dateSearch],
@@ -73,7 +79,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-order',
 			headerStyles,
 			dataStyle: { width: '4%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'lastModified' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'lastModified' });},
 		},
 		{
 			headers: ['FILE', datasetSearch],
@@ -81,24 +87,24 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '8%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'dataset' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'dataset' });},
 		},
 		{
-			header: 'SIZE',
+			headers: ['SIZE'],
 			key: 'totalCells',
 			sortIcon: 'sort-by-attributes',
 			headerStyles,
 			dataStyle: { width: '2%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'totalCells' },
+			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'totalCells' });},
 		},
 		{
-			header: (
+			headers: [(
 				<div style={{ textAlign: 'center' }}>
 					<Glyphicon glyph='file' title={'Original Reference'} />
 					<Glyphicon glyph='globe' title={'External Webpage'} />
 					<Glyphicon glyph='cloud-download' title={'Download Loom File'} />
 				</div>
-			),
+			)],
 			key: 'buttons',
 			headerStyles: [{ border: 'none 0px', padding: '8px 0px' }, { padding: '0px' }],
 			dataStyle: { width: '8%', padding: '8px 0px' },
@@ -133,29 +139,29 @@ const DatasetList = function (props) {
 			const paperButton = doi === '' ? (
 				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={'http://dx.doi.org/' + doi}
-					title={'Original reference: http://dx.doi.org/' + doi}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-				</Button>
-			);
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
+				);
 			const urlButton = url === '' ? (
 				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={url}
-					title={'External web page: ' + url}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-				</Button>
-			);
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
+				);
 			// create new datasets object with proper tags
 			// strip '.loom' ending
 			let fileName = dataset.substr(0, dataset.length - 5);
@@ -184,7 +190,7 @@ const DatasetList = function (props) {
 				data={datasets}
 				columns={columns}
 				dispatch={dispatch}
-				sortKey={sortKey}
+				sortedKey={sortKey}
 				/>
 		);
 	} else {
@@ -388,9 +394,9 @@ import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
 	return {
-		projects: state.data.projects,
-		search: state.data.search,
-		sortKey: state.data.sortKey,
+		projects: state.data.projects.list,
+		search: state.data.projects.search,
+		sortKey: state.data.projects.sortKey,
 	};
 };
 export const SearchDataSetView = connect(mapStateToProps)(SearchDataSetViewComponent);

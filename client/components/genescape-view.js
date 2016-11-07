@@ -10,9 +10,9 @@ const GenescapeComponent = function (props) {
 	const { genescapeState } = dataSet;
 
 	const { colorAttr, xCoordinate, yCoordinate } = genescapeState;
-	let color = dataSet.rowAttrs[colorAttr];
-	let x = dataSet.rowAttrs[xCoordinate];
-	let y = dataSet.rowAttrs[yCoordinate];
+	let color = dataSet.rowAttrs[colorAttr].filteredData;
+	let x = dataSet.rowAttrs[xCoordinate].filteredData;
+	let y = dataSet.rowAttrs[yCoordinate].filteredData;
 
 	if (genescapeState.filterZeros && color) {
 		const filterData = color.slice(0);
@@ -51,6 +51,7 @@ const initialState = {
 	// Initialise genescapeState for this dataset
 	xCoordinate: '_tSNE1',
 	yCoordinate: '_tSNE2',
+	colorAttr: '(original order)',
 	colorMode: 'Heatmap',
 };
 

@@ -7,8 +7,8 @@ import {
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	REQUEST_DATASET,
-	REQUEST_DATASET_FETCH,
-	REQUEST_DATASET_CACHED,
+	// REQUEST_DATASET_FETCH,
+	// REQUEST_DATASET_CACHED,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
 	REQUEST_GENE,
@@ -18,8 +18,8 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { merge } from '../js/util';
 import { groupBy } from 'lodash';
+import { countElements } from '../js/util';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -53,10 +53,32 @@ function requestProjectsFailed() {
 	};
 }
 
-function receiveProjects(projects) {
+function receiveProjects(list) {
+	// Initialise sorting order state
+	let keys = Object.keys(list);
+	// we actually need the metadata keys of a project,
+	// since that's what we're sorting the list by
+	keys = Object.keys(list[keys[0]][0]);
+	let sortKeys = [];
+	for (let i = 0; i < keys.length; i++) {
+		sortKeys.push({ key: sortKeys[i], ascending: true });
+	}
+	// sort by date by default
+	for (let i = 0; i < keys.length; i++) {
+		if (sortKeys[i].key === 'lastModified') {
+			let date = sortKeys[i];
+			date.ascending = false; //show newest first
+			for (let j = i; j > 0; j--) {
+				sortKeys[j] = sortKeys[j - 1];
+			}
+			sortKeys[0] = date;
+			break;
+		}
+	}
+
 	return {
 		type: RECEIVE_PROJECTS,
-		state: { projects },
+		state: { projects: { list, sortKeys } },
 	};
 }
 
@@ -89,7 +111,7 @@ export function fetchProjects(projects) {
 					})
 					// Or, if it failed, dispatch an action to set the error flag
 					.catch((err) => {
-						console.log({err});
+						console.log({ err });
 						dispatch(requestProjectsFailed());
 					})
 			);
@@ -111,21 +133,21 @@ function requestDataSet(datasetName) {
 	};
 }
 
-function requestDataSetFetch(datasetName) {
-	return {
-		type: REQUEST_DATASET_FETCH,
-		datasetName: datasetName,
-	};
-}
+// function requestDataSetFetch(datasetName) {
+// 	return {
+// 		type: REQUEST_DATASET_FETCH,
+// 		datasetName: datasetName,
+// 	};
+// }
 
 
-function requestDataSetCached(datasetName) {
-	return {
-		type: REQUEST_DATASET_CACHED,
-		datasetName: datasetName,
-	};
+// function requestDataSetCached(datasetName) {
+// 	return {
+// 		type: REQUEST_DATASET_CACHED,
+// 		datasetName: datasetName,
+// 	};
 
-}
+// }
 
 function requestDataSetFailed(datasetName) {
 	return {
@@ -140,12 +162,128 @@ function receiveDataSet(dataSet) {
 		type: RECEIVE_DATASET,
 		state: {
 			dataSets: {
-				[dataSet.dataset]: merge(
-					dataSet, { fetchedGenes: {}, fetchingGenes: {} }
-				),
+				[dataSet.dataset]: prepData(dataSet),
 			},
 		},
 	};
+}
+
+// prep received dataset for actual usage.
+function prepData(dataSet){
+	// store original order of rowAttrs and colAttrs,
+	let origOrderKey = '(original order)';
+	let rowKeys = Object.keys(dataSet.rowAttrs).sort();
+	let colKeys = Object.keys(dataSet.colAttrs).sort();
+	dataSet.rowAttrs[origOrderKey] = originalOrder(dataSet.rowAttrs[rowKeys[0]]);
+	dataSet.colAttrs[origOrderKey] = originalOrder(dataSet.colAttrs[colKeys[0]]);
+	// Store all the keys
+	rowKeys.unshift(origOrderKey);
+	colKeys.unshift(origOrderKey);
+	dataSet.rowKeys = rowKeys;
+	dataSet.colKeys = colKeys;
+	// Initial sort order
+	dataSet.rowOrder = rowKeys.map((key) => { return {key, ascending: true}; });
+	dataSet.colOrder = colKeys.map((key) => { return {key, ascending: true}; });
+	// convert attribute arrays to objects with summary
+	// metadata (most frequent, filtered/visible)
+	// '(original order)' isn't part of the regular
+	// meta-data so we have to add it first
+	dataSet.schema.rowAttrs[origOrderKey] = 'integer';
+	dataSet.schema.colAttrs[origOrderKey] = 'integer';
+	let newRowAttrs = convertArrays(dataSet.rowAttrs, dataSet.schema.rowAttrs);
+	let newColAttrs = convertArrays(dataSet.colAttrs, dataSet.schema.colAttrs);
+	dataSet.rowAttrs = newRowAttrs;
+	dataSet.colAttrs = newColAttrs;
+	// Schema metadata is now part of the array objects
+	// in rowAttr/colAttr, so we can remove the field
+	// delete dataSet['schema'];
+	// add empty fields for filtering values
+	dataSet.rowFilters = {};
+	dataSet.colFilters = {};
+	// add empty fields for fetched genes
+	dataSet.fetchedGenes = {};
+	dataSet.fetchingGenes = {};
+	return dataSet;
+}
+
+function originalOrder(array) {
+	let indices = new Int32Array(array.length);
+	for (let i = 0; i < array.length; i++) {
+		indices[i] = i;
+	}
+	return indices;
+}
+
+
+// Convert plain arrays to typed/indexed arrays
+function convertArrays(attrs, schema) {
+	let keys = Object.keys(schema);
+	let newAttrs = {};
+	for (let i = 0; i < keys.length; i++) {
+		let key = keys[i];
+		let array = { data: attrs[key], arrayType: schema[key] };
+		let mostFrequent = countElements(array.data);
+		for (let i = 0; i < mostFrequent.length; i++){
+			mostFrequent[i].filtered = false;
+			mostFrequent[i].visible = true;
+		}
+		array.mostFrequent = mostFrequent;
+		// create lookup table to convert attribute values
+		// to color indices (so a look-up table for finding
+		// indices for another lookup table).
+		let colorIndices = {};
+		for (let i = 0; i < 20 && i < mostFrequent.length; i++){
+			colorIndices[mostFrequent[i].val] = i;
+		}
+		array.colorIndices = colorIndices;
+		// convert number values to typed arrays matching the schema,
+		// and string arrays with few unique values to indexedString
+		array.filteredData = Array.from(array.data);
+		switch (array.arrayType) {
+		case 'float32':
+			array.data = Float32Array.from(array.data);
+			array.filteredData = Float32Array.from(array.data);
+			break;
+		case 'number':
+		case 'float64':
+			array.data = Float64Array.from(array.data);
+			array.filteredData = Float64Array.from(array.data);
+			break;
+		case 'integer':
+			array.data = Int32Array.from(array.data);
+			array.filteredData = Int32Array.from(array.data);
+			break;
+		case 'string':
+			if (mostFrequent.length < 256){
+				array = IndexedStringArray(array, mostFrequent);
+				array.filteredData = Uint8Array.from(array.data);
+			}
+			break;
+		default:
+		}
+		newAttrs[key] = array;
+	}
+	return newAttrs;
+}
+
+// Using indexed strings can be much faster, since Uint8Arrays
+// are denser and smaller, and allow for quicker "string"
+// comparisons in the plotters.
+function IndexedStringArray(metaDataArray, mostFrequent){
+	let data = new Uint8Array(metaDataArray.data.length);
+	metaDataArray.arrayType = 'indexedString';
+	metaDataArray.stringVal = new Array(mostFrequent.length);
+	for (let i = 0; i < mostFrequent.length; i++){
+		const { val } = mostFrequent[i];
+		metaDataArray.stringVal[i] = val;
+		for (let j = 0; j < metaDataArray.data.length; j++){
+			if (metaDataArray.data[j] === val){
+				data[j] = i;
+			}
+		}
+	}
+	metaDataArray.data = data;
+	return metaDataArray;
 }
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -162,12 +300,16 @@ export function fetchDataSet(data) {
 		// If not, perform the request (async)
 		if (dataSets[dataset]) {
 			// Announce that the we are retrieving from cache
-			dispatch(requestDataSetCached(dataset));
+			// dispatch(requestDataSetCached(dataset));
 		} else {
 			//Announce that we are fetching from server
-			dispatch(requestDataSetFetch(dataset));
+			// dispatch(requestDataSetFetch(dataset));
 			return (fetch(`/loom/${project}/${dataset}`)
-				.then((response) => { return response.json(); })
+				.then((response) => {
+					// convert the JSON to a JS object, and
+					// do some prep-work
+					return response.json();
+				})
 				.then((ds) => {
 					// This goes last, to ensure the above defaults
 					// are set when the views are rendered
@@ -176,7 +318,7 @@ export function fetchDataSet(data) {
 				.catch((err) => {
 					// Or, if fetch request failed, dispatch
 					// an action to set the error flag
-					console.log({err});
+					console.log({ err });
 					dispatch(requestDataSetFailed(dataset));
 				}));
 		}
@@ -223,7 +365,7 @@ function requestGeneFailed(gene, datasetName) {
 	};
 }
 
-function receiveGene(gene, datasetName, list) {
+function receiveGene(gene, datasetName, data) {
 	return {
 		type: RECEIVE_GENE,
 		gene,
@@ -232,7 +374,7 @@ function receiveGene(gene, datasetName, list) {
 		state: {
 			dataSets: {
 				[datasetName]: {
-					fetchedGenes: { [gene]: list },
+					fetchedGenes: { [gene]: { data: Float64Array.from(data) } },
 				},
 			},
 		},
@@ -249,7 +391,7 @@ export function fetchGene(dataSet, genes) {
 		if (rowAttrs.Gene === undefined) { return; }
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
-			const row = rowAttrs.Gene.indexOf(gene);
+			const row = rowAttrs.Gene.data.indexOf(gene);
 			dispatch(requestGene(gene, dataSet.dataset));
 			// If gene is already cached, being fetched or
 			// not part of the dataset, skip fetching.
@@ -271,7 +413,7 @@ export function fetchGene(dataSet, genes) {
 				})
 				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {
-					console.log({err});
+					console.log({ err });
 					dispatch(requestGeneFailed(gene, dataSet.dataset));
 				});
 		}

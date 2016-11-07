@@ -1,7 +1,8 @@
 import React, { Component, PropTypes } from 'react';
+import { FormControl } from 'react-bootstrap';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
-import { SORT_GENE_METADATA, FILTER_GENE_METADATA } from '../actions/actionTypes';
+import { SEARCH_METADATA, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/actionTypes';
 
 class GeneMDComponent extends Component {
 	componentWillMount() {
@@ -17,33 +18,61 @@ class GeneMDComponent extends Component {
 			};
 		};
 		// Yeah, I know...
-		const onClickFilterFactory = (key) => {
-			return (value) => {
-				return () => {
-					dispatch({
-						type: FILTER_GENE_METADATA,
-						dataset,
-						key,
-						value,
-					});
-				};
+		const onClickFilterFactory = (key, val) => {
+			return () => {
+				dispatch({
+					type: FILTER_METADATA,
+					dataset,
+					attr: 'rowAttrs',
+					key,
+					val,
+				});
 			};
 		};
 
-		this.setState({ onClickAttrFactory, onClickFilterFactory});
+
+		const searchMetadata = (event) => {
+			let searchVal = event.target.value ? event.target.value : '';
+			dispatch({
+				type: SEARCH_METADATA,
+				state: {
+					dataSets: {
+						[dataset]: {
+							geneMetadataState: { searchVal },
+						},
+					},
+				},
+			});
+		};
+
+
+		this.setState({ onClickAttrFactory, onClickFilterFactory, searchMetadata });
 	}
 
 	render() {
 		const { dataSet, dispatch } = this.props;
+		const { onClickAttrFactory, onClickFilterFactory, searchMetadata } = this.state;
+		let { searchVal } = dataSet.geneMetadataState;
+		const searchField = (
+			<FormControl
+				type='text'
+				onChange={searchMetadata}
+				value={searchVal}
+				/>
+		);
+
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
 				<h1>Gene Metadata of {dataSet.dataset}</h1>
 				<MetadataComponent
 					attributes={dataSet.rowAttrs}
-					schema={dataSet.schema.rowAttrs}
+					attrKeys={dataSet.rowKeys}
+					indices={dataSet.rowIndicesFiltered}
 					dispatch={dispatch}
-					onClickAttrFactory={this.state.onClickAttrFactory}
-					onClickFilterFactory={this.state.onClickFilterFactory}
+					onClickAttrFactory={onClickAttrFactory}
+					onClickFilterFactory={onClickFilterFactory}
+					searchField={searchField}
+					searchVal={searchVal}
 					/>
 			</div>
 		);
@@ -55,7 +84,7 @@ GeneMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = {};
+const initialState = { searchVal : '' };
 
 const GeneMetadataViewInitialiser = function (props) {
 	// Initialise geneMetadataState for this dataset

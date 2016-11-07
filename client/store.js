@@ -1,4 +1,5 @@
-import { createStore, applyMiddleware, compose } from 'redux';
+import { createStore, applyMiddleware } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
 import thunk from 'redux-thunk';
 
 // import the root reducer
@@ -6,8 +7,8 @@ import loomAppReducer from './reducers/reducers';
 
 export const store = createStore(
 	loomAppReducer,
-	compose(
-		applyMiddleware(thunk),
-		window.devToolsExtension ? window.devToolsExtension() : (f) => { return f; }
-	)
+	composeWithDevTools(applyMiddleware(thunk))
 );
+
+// Uncomment when access from the console is required
+// window.store = store;

@@ -27,7 +27,6 @@ export const SparklineSidepanel = function (props) {
 
 	let orderByOptions = Object.keys(dataSet.colAttrs).sort();
 	orderByOptions.unshift('(gene)');
-	orderByOptions.unshift('(original order)');
 	const orderBy1HC = handleChangeFactory('orderByAttr1');
 	const orderByGene1HC = handleChangeFactory('orderByGene1');
 	const orderBy2HC = handleChangeFactory('orderByAttr2');

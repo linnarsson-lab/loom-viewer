@@ -2,8 +2,16 @@ import React, { PropTypes } from 'react';
 import { Glyphicon } from 'react-bootstrap';
 import { isEqual } from 'lodash';
 
+// we can map a single or multiple
+// keys from the data set to a cell.
+const mapToCell = (row, key, keys) => {
+	return row ? (
+		keys ? keys.map((k) => { return row[k]; }) : row[key]
+	) : null;
+};
+
 export const SortableTable = function (props) {
-	const { data, columns, dispatch, sortKey } = props;
+	const { data, columns, sortedKey } = props;
 
 	let headerRows = [];
 	let maxHeaders = 0;
@@ -14,51 +22,31 @@ export const SortableTable = function (props) {
 		}
 	}
 	for (let i = 0; i < maxHeaders; i++) {
-
 		// Header
 		let headerCells = [];
 		for (let j = 0; j < columns.length; j++) {
 			const column = columns[j];
-			const { key, keys, header, headers, headerStyles, onDispatch } = column;
-			let handleClick, sortIcon;
-			if (!i) {
-				handleClick = onDispatch ? () => {
-					dispatch(onDispatch);
-				} : undefined;
-				sortIcon = sortKey && key === sortKey.key ? (
+			const { key, keys, headers, headerStyles, onHeaderClick } = column;
+			let sortIcon;
+			if (i === 0) {
+				sortIcon = sortedKey && key === sortedKey.key ? (
 					<Glyphicon
-						glyph={column.sortIcon + (sortKey.ascending ? '' : '-alt')} />
-				) : undefined;
+						glyph={column.sortIcon + (sortedKey.ascending ? '' : '-alt')} />
+				) : null;
 			}
-			if (headers) {
-				headerCells.push(
-					<th
-						key={keys ? keys.join(' ') : key}
-						style={headerStyles ? headerStyles[i] : null}
-						onClick={handleClick}>
-						{headers[i]}{sortIcon}
-					</th>
-				);
-			} else if (!i) {
-				headerCells.push(
-					<th
-						key={keys ? keys.join(' ') : key}
-						style={headerStyles ? headerStyles[0] : null}
-						onClick={handleClick}
-						rowSpan={maxHeaders}>
-						{header}{sortIcon}
-					</th>
-				);
-			}
+			const header = headers ? headers[i] : null;
+			headerCells.push(
+				<th
+					key={keys ? keys.join(' ') : key}
+					style={Object.assign({ cursor: (header && onHeaderClick) ? 'pointer' : 'default' }, headerStyles ? headerStyles[i] : null)}
+					onClick={header ? onHeaderClick : null}>
+					{header}{sortIcon}
+				</th>
+			);
 		}
 		headerRows.push(<tr key={i} >{headerCells}</tr>);
 	}
 
-	const mapToRow = (row, key, keys) => {
-		return row ? (
-			keys ? keys.map((k) => { return row[k]; }) : row[key]
-		) : null;
-	};
 
 	// Data
 	const sortedData = data.slice(0);
@@ -67,13 +55,13 @@ export const SortableTable = function (props) {
 		let rowCells = [];
 		for (let j = 0; j < columns.length; j++) {
 			const {dataStyle, key, keys, mergeRows } = columns[j];
-			const cell = mapToRow(sortedData[i], key, keys);
+			const cell = mapToCell(sortedData[i], key, keys);
 			let rowSpan = 1;
 			if (mergeRows) {
-				if (isEqual(cell, mapToRow(sortedData[i - 1], key, keys))) {
+				if (isEqual(cell, mapToCell(sortedData[i - 1], key, keys))) {
 					continue;
 				} else {
-					while (isEqual(cell, mapToRow(sortedData[i + rowSpan], key, keys))) { rowSpan++; }
+					while (isEqual(cell, mapToCell(sortedData[i + rowSpan], key, keys))) { rowSpan++; }
 				}
 			}
 			rowCells.push(
@@ -103,8 +91,10 @@ export const SortableTable = function (props) {
 SortableTable.propTypes = {
 	data: PropTypes.array.isRequired,
 	columns: PropTypes.array.isRequired,
-	dispatch: PropTypes.func.isRequired,
-	sortKey: PropTypes.shape({
+	// Indicates to the table by which of the columns,
+	// if any, the data is sorted and whether it is
+	// ascending or descending
+	sortedKey: PropTypes.shape({
 		key: PropTypes.string,
 		ascending: PropTypes.bool,
 	}),

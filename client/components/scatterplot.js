@@ -1,12 +1,12 @@
 import * as colors from '../js/colors';
 import * as _ from 'lodash';
-import { nMostFrequent, rndNorm } from '../js/util';
+import { nMostFrequent, rndNorm, isArray } from '../js/util';
 
 export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, logScaleY) {
 	return (context) => {
-		if (!(Array.isArray(x) &&
-			Array.isArray(y) &&
-			Array.isArray(color))) {
+		if (!(isArray(x) &&
+			isArray(y) &&
+			isArray(color))) {
 			return;
 		}
 		// avoid accidentally mutating source arrays
@@ -64,8 +64,7 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		// Suitable radius of the markers
 		const radius = Math.max(3, Math.sqrt(x.length) / 60) * pixelRatio;
 
-
-		// Scale to screen dimensions
+		// Scale to screen dimensions and round to pixel position
 		for (let i = 0; i < x.length; i++) {
 			const xi = (x[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
 			x[i] = xi | 0;
@@ -78,85 +77,94 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		const palette = (colorMode === 'Heatmap' ? colors.solar9 : colors.category20);
 
 		// Calculate the color scale
-		if (Array.isArray(color) === false) {
-			color = Array.from({ length: x.length }, () => { return 'grey'; });
-		} else {
-			// Do we need to categorize the color scale?
-			if (colorMode === 'Categorical' || !_.every(color, (c) => { return isFinite(c); })) {
+		let mappedColor = Array.from(color);
+		// Do we need to categorize the color scale?
+		if (colorMode === 'Categorical' || !_.every(color, (c) => { return isFinite(c); })) {
 
-				// Reserve palette[0] for all uncategorized items
-				let cats = nMostFrequent(color, palette.length - 1).values;
+			// Reserve palette[0] for all uncategorized items
+			let cats = nMostFrequent(color, palette.length - 1).values;
 
+			for (let i = 0; i < color.length; i++) {
 				// Add one so the uncategorized become zero
-				color = color.map((c) => { return palette[cats.indexOf(c) + 1]; });
+				let idx = cats.indexOf(color[i]) + 1;
+				mappedColor[i] = palette[idx];
+			}
 
-				// Draw the figure legend
-				// Start at -1 which corresponds to
-				// the "(other)" category, i.e. those
-				// that didn't fit in the top 20
-				const dotRadius = 2 * radius;
-				const dotMargin = 10 * pixelRatio;
-				const xDot = width + dotMargin + dotRadius;
-				const xText = xDot + dotMargin + dotRadius;
-				for (let i = -1; i < cats.length; i++) {
-					let yDot = (i + 2) * (2 * dotRadius + dotMargin);
-					context.beginPath();
-					context.circle(xDot, yDot, dotRadius);
-					context.closePath();
-					// i+1 because white (other) is the first color
-					// and i = 1 would be the first category
-					context.fillStyle = palette[i + 1];
-					context.fill();
-					context.lineWidth = 0.25 * pixelRatio;
-					context.strokeStyle = 'black';
-					context.stroke();
-					context.textStyle();
-					context.textSize(10 * pixelRatio);
-					if (i === -1) {
-						context.fillText('(all other categories)', xText, yDot + 5 * pixelRatio);
-					} else {
-						context.fillText(cats[i], xText, yDot + 5 * pixelRatio);
-					}
+			// Draw the figure legend
+			// Start at -1 which corresponds to
+			// the "(other)" category, i.e. those
+			// that didn't fit in the top 20
+			const dotRadius = 2 * radius;
+			const dotMargin = 10 * pixelRatio;
+			const xDot = width + dotMargin + dotRadius;
+			const xText = xDot + dotMargin + dotRadius;
+			for (let i = -1; i < cats.length; i++) {
+				let yDot = (i + 2) * (2 * dotRadius + dotMargin);
+				context.beginPath();
+				context.circle(xDot, yDot, dotRadius);
+				context.closePath();
+				// i+1 because white (other) is the first color
+				// and i = 1 would be the first category
+				context.fillStyle = palette[i + 1];
+				context.fill();
+				context.lineWidth = 0.25 * pixelRatio;
+				context.strokeStyle = 'black';
+				context.stroke();
+				context.textStyle();
+				context.textSize(10 * pixelRatio);
+				if (i === -1) {
+					context.fillText('(all other categories)', xText, yDot + 5 * pixelRatio);
+				} else {
+					context.fillText(cats[i], xText, yDot + 5 * pixelRatio);
 				}
-			} else {
-				let original_cmin = Math.min(...color);
-				let original_cmax = Math.max(...color);
-				// Log transform if requested
-				if (logScaleColor) {
-					color = color.map((c) => { return Math.log2(c + 1); });
+			}
+		} else {
+			let original_cmin = Math.min(...color);
+			let original_cmax = Math.max(...color);
+			mappedColor = Array.from(color);
+			// Log transform if requested
+			if (logScaleColor) {
+				for (let i = 0; i < mappedColor.length; i++) {
+					mappedColor[i] = Math.log2(color[i] + 1);
 				}
-				// Map to the range of colors
-				const cmin = Math.min(...color);
-				const cmax = Math.max(...color);
-				color = color.map((c) => { return palette[Math.round((c - cmin) / (cmax - cmin) * palette.length)]; });
+			}
 
-				// Draw the color legend
-				const dotRadius = 2 * radius;
-				const dotMargin = 10 * pixelRatio;
-				const xDot = width + dotMargin + dotRadius;
-				const xText = xDot + dotMargin + dotRadius;
-				for (let i = 0; i < palette.length; i++) {
-					let yDot = (i + 1) * (2 * dotRadius + dotMargin);
-					context.beginPath();
-					context.circle(xDot, yDot, dotRadius);
-					context.closePath();
-					// Invert it so max value is on top
-					context.fillStyle = palette[palette.length - i - 1];
-					context.fill();
-					context.lineWidth = 0.25 * pixelRatio;
-					context.strokeStyle = 'black';
-					context.stroke();
-					context.textStyle();
-					context.textSize(10 * pixelRatio);
-					if (i === 0) {
-						context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + 5 * pixelRatio);
-					}
-					if (i === palette.length - 1) {
-						context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + 5 * pixelRatio);
-					}
+			// Map to the range of colors
+			const cmin = Math.min(...mappedColor);
+			const cmax = Math.max(...mappedColor);
+			for (let i = 0; i < mappedColor.length; i++) {
+				let j = Math.round((mappedColor[i] - cmin) / (cmax - cmin) * palette.length);
+				let c = palette[j];
+				mappedColor[i] = c;
+			}
+
+			// Draw the color legend
+			const dotRadius = 2 * radius;
+			const dotMargin = 10 * pixelRatio;
+			const xDot = width + dotMargin + dotRadius;
+			const xText = xDot + dotMargin + dotRadius;
+			for (let i = 0; i < palette.length; i++) {
+				let yDot = (i + 1) * (2 * dotRadius + dotMargin);
+				context.beginPath();
+				context.circle(xDot, yDot, dotRadius);
+				context.closePath();
+				// Invert it so max value is on top
+				context.fillStyle = palette[palette.length - i - 1];
+				context.fill();
+				context.lineWidth = 0.25 * pixelRatio;
+				context.strokeStyle = 'black';
+				context.stroke();
+				context.textStyle();
+				context.textSize(10 * pixelRatio);
+				if (i === 0) {
+					context.fillText(parseFloat(original_cmax.toPrecision(3)), xText, yDot + 5 * pixelRatio);
+				}
+				if (i === palette.length - 1) {
+					context.fillText(parseFloat(original_cmin.toPrecision(3)), xText, yDot + 5 * pixelRatio);
 				}
 			}
 		}
+
 		// Draw the scatter plot itself
 		context.globalAlpha = 0.6;
 		context.strokeStyle = 'black';
@@ -165,7 +173,7 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		palette.forEach((current_color) => {
 			context.beginPath();
 			for (let i = 0; i < x.length; i++) {
-				if (color[i] !== current_color) {
+				if (mappedColor[i] !== current_color) {
 					continue;
 				}
 				context.circle(x[i], y[i], radius);
