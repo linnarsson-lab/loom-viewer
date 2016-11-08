@@ -42,9 +42,6 @@ const DatasetList = function (props) {
 	const descriptionSearch = (<FormControl type='text'
 		onChange={handleChangeFactory('description', dispatch)} />);
 
-	const datasetSearch = (<FormControl type='text'
-		onChange={handleChangeFactory('dataset', dispatch)} />);
-
 	const headerStyles = [{ border: 'none 0px' }, { padding: '4px' }];
 
 	const columns = [
@@ -78,23 +75,15 @@ const DatasetList = function (props) {
 			key: 'lastModified',
 			sortIcon: 'sort-by-order',
 			headerStyles,
-			dataStyle: { width: '4%', fontSize: '10px' },
+			dataStyle: { width: '10%', fontSize: '12px' },
 			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'lastModified' });},
-		},
-		{
-			headers: ['FILE', datasetSearch],
-			key: 'dataset',
-			sortIcon: 'sort-by-alphabet',
-			headerStyles,
-			dataStyle: { width: '8%', fontSize: '10px' },
-			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'dataset' });},
 		},
 		{
 			headers: ['SIZE'],
 			key: 'totalCells',
 			sortIcon: 'sort-by-attributes',
 			headerStyles,
-			dataStyle: { width: '2%', fontSize: '10px' },
+			dataStyle: { width: '4%', fontSize: '12px' },
 			onHeaderClick: () => { dispatch({ type: SORT_DATASETS, key: 'totalCells' });},
 		},
 		{
@@ -116,12 +105,18 @@ const DatasetList = function (props) {
 			let proj = datasets[i];
 			const {project, title, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
+			// create new datasets object with proper tags
+			// strip '.loom' ending
 			const titleURL = (
-				<Link
-					to={'dataset/cellmetadata/' + path}
-					title={'Open ' + path}>
-					{title}
-				</Link>
+				<div>
+					<Link
+						to={'dataset/cellmetadata/' + path}
+						title={'Open ' + path}>
+						{title}
+					</Link>
+					<br />
+					<code title={dataset}>{dataset}</code>
+				</div>
 
 			);
 			const downloadURL = '/clone/' + path;
@@ -139,40 +134,33 @@ const DatasetList = function (props) {
 			const paperButton = doi === '' ? (
 				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-					<Button
-						bsSize='xsmall'
-						bsStyle='link'
-						href={'http://dx.doi.org/' + doi}
-						title={'Original reference: http://dx.doi.org/' + doi}
-						style={{ padding: 0 }}
-						>
-						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-					</Button>
+				<Button
+					bsSize='xsmall'
+					bsStyle='link'
+					href={'http://dx.doi.org/' + doi}
+					title={'Original reference: http://dx.doi.org/' + doi}
+					style={{ padding: 0 }}
+					>
+					<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+				</Button>
 				);
 			const urlButton = url === '' ? (
 				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-					<Button
-						bsSize='xsmall'
-						bsStyle='link'
-						href={url}
-						title={'External web page: ' + url}
-						style={{ padding: 0 }}
-						>
-						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-					</Button>
+				<Button
+					bsSize='xsmall'
+					bsStyle='link'
+					href={url}
+					title={'External web page: ' + url}
+					style={{ padding: 0 }}
+					>
+					<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+				</Button>
 				);
-			// create new datasets object with proper tags
-			// strip '.loom' ending
-			let fileName = dataset.substr(0, dataset.length - 5);
-			if (fileName.length > 8) {
-				fileName = fileName.substr(0, 7) + '…';
-			}
 			datasets[i] = merge(
 				datasets[i],
 				{
 					title: titleURL,
-					dataset: (<code title={dataset}>{fileName}</code>),
 					doi: paperButton,
 					url: urlButton,
 					download: downloadButton,
