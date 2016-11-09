@@ -7,7 +7,7 @@ from functools import wraps, update_wrapper
 import os
 import os.path
 import sys
-from io import StringIO
+from io import BytesIO
 import json
 from datetime import datetime, timedelta
 import argparse
@@ -214,7 +214,7 @@ def send_col(project, filename, col):
 #
 
 def serve_image(img):
-	img_io = StringIO()
+	img_io = BytesIO()
 	img.save(img_io, 'PNG')
 	img_io.seek(0)
 	return flask.send_file(img_io, mimetype='image/png')
