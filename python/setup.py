@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 
 # pylint: disable=exec-used
+__version__ = '0.0.0'
 exec(open('loompy/_version.py').read())
 
 setup(
@@ -8,12 +9,13 @@ setup(
     version = __version__,
     packages = find_packages(),
     install_requires = [
+        'matplotlib',
         'scikit-learn',
-        'h5py', 
+        'h5py',
         'pandas', 
         'scipy<=0.17.1',
         'numpy', 
-        'progressbar',
+        'progressbar2',
         'requests',
         'flask-compress',
         'PyMySQL'

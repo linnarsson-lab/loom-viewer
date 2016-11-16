@@ -29,7 +29,6 @@ import numpy as np
 import os.path
 import os
 import sys
-import __builtin__
 import time
 import loompy
 import tempfile
@@ -115,7 +114,7 @@ class LoomPipeline(object):
 			cursor.execute('SELECT ID from jos_aaatranscriptome WHERE name = %s', transcriptome)
 			transcriptome_id = cursor.fetchone()[0]
 		except:
-			raise PipelineError, ("Could not find transcriptome ID for '%s'" % transcriptome)
+			raise PipelineError("Could not find transcriptome ID for '%s'" % transcriptome)
 		cursor.close()
 		# Download gene annotations
 		cursor = connection.cursor()
@@ -148,15 +147,15 @@ class LoomPipeline(object):
 
 		N_STD_FIELDS = 11 # UPDATE THIS IF YOU CHANGE THE SQL ABOVE!!
 
-		transcriptome_headers = map(lambda x: x[0],cursor.description)
+		transcriptome_headers = list(map(lambda x: x[0],cursor.description))
 		rows = cursor.fetchall()
 		row_attrs = {}
-		for i in xrange(len(transcriptome_headers)):
+		for i in range(len(transcriptome_headers)):
 			hdr = transcriptome_headers[i]
 			if i >= N_STD_FIELDS:
 				hdr = "(" + dataset + ")_" + hdr
 			row_attrs[hdr] = []
-			for j in xrange(len(rows)):
+			for j in range(len(rows)):
 				row_attrs[hdr].append(rows[j][i])
 			row_attrs[hdr] = self._make_std_numpy_type(row_attrs[hdr], cursor.description[i][1])
 		cursor.close()
@@ -235,22 +234,22 @@ class LoomPipeline(object):
 				break
 
 			# List the headers
-			headers = map(lambda x: x[0], cursor.description)[:-2] # -2 because we don't want to include "Data"
+			headers = list(map(lambda x: x[0], cursor.description)[:-2]) # -2 because we don't want to include "Data"
 			# Rename custom fields to avoid collisions
-			for ix in xrange(len(headers)):
+			for ix in range(len(headers)):
 				if ix >= N_STD_FIELDS:
 					headers[ix] = "(" + dataset + ")_" + headers[ix]
 
 			# Set up empty lists for the column attributes
 			if nrows == 0:
-				for i in xrange(len(headers)):
+				for i in range(len(headers)):
 					col_attrs[headers[i]] = []
 			dt = np.dtype('int32')  # datatype for unpacking the Data blob
 			dt = dt.newbyteorder('>')
 			for row in cursor:
 				data = np.frombuffer(row[-1], dt)
 				matrix.append(data)
-				for i in xrange(len(headers)):
+				for i in range(len(headers)):
 					col_attrs[headers[i]].append(row[i])
 			nrows += cursor.rowcount
 			cursor.close()
@@ -258,7 +257,7 @@ class LoomPipeline(object):
 		# End of while-loop
 
 		# Convert to the appropriate numpy datatype
-		for ix in xrange(len(headers)):
+		for ix in range(len(headers)):
 			col_attrs[headers[ix]] = self._make_std_numpy_type(col_attrs[headers[ix]], cursor.description[ix][1])
 		cell_ids = col_attrs["CellID"]
 
@@ -294,9 +293,9 @@ class LoomPipeline(object):
 
 		# Check the ID attributes, and convert as needed from string identifiers
 		if not cell_attrs.__contains__("CellID"):
-			raise ValueError, "'CellID' attribute is missing from cell_attrs."
+			raise ValueError("'CellID' attribute is missing from cell_attrs.")
 		if cell_attrs["CellID"].dtype.kind != 'i' and cell_attrs["CellID"].dtype.kind != 'S':
-			raise ValueError, "'CellID' attribute is not of type INTEGER or STRING."
+			raise ValueError("'CellID' attribute is not of type INTEGER or STRING.")
 		if cell_attrs["CellID"].dtype.kind == 'S':
 			cell_id_mapping = self.get_cell_id_mapping(transcriptome)
 			cell_attrs["CellID"] = np.array([cell_id_mapping[cell] for cell in cell_attrs["CellID"]])
@@ -305,9 +304,9 @@ class LoomPipeline(object):
 			gene_attrs = {"TranscriptID":np.zeros((0,))}
 		else:
 			if not gene_attrs.__contains__("TranscriptID"):
-				raise ValueError, "'TranscriptID' attribute is missing from gene_attrs."
+				raise ValueError("'TranscriptID' attribute is missing from gene_attrs.")
 			if gene_attrs["TranscriptID"].dtype.kind != 'i' and gene_attrs["TranscriptID"].dtype.kind != 'S':
-				raise ValueError, "'TranscriptID' attribute is not of type INTEGER or STRING."
+				raise ValueError("'TranscriptID' attribute is not of type INTEGER or STRING.")
 			if gene_attrs["TranscriptID"].dtype.kind == 'S':
 				gene_id_mapping = self.get_transcript_id_mapping(transcriptome)
 				try:
@@ -345,7 +344,7 @@ class LoomPipeline(object):
 		fields = attrs.keys()
 		formats = []
 		schema = []
-		for ix in xrange(len(fields)):
+		for ix in range(len(fields)):
 			kind = attrs[fields[ix]].dtype.kind
 			if kind == "S" or kind == "U":
 				formats.append("%s")
@@ -360,7 +359,7 @@ class LoomPipeline(object):
 				formats.append("%d")
 				schema.append("`" + fields[ix] + "` int")
 			else:
-				raise TypeError, "Unsupported numpy datatype of kind '%s'" % kind
+				raise TypeError("Unsupported numpy datatype of kind '%s'" % kind)
 
 
 		# Create the table in MySQL
@@ -380,9 +379,9 @@ class LoomPipeline(object):
 
 		# Upload the data
 		rows = []
-		for ix in xrange(attrs[attrs.keys()[0]].shape[0]):
+		for ix in range(attrs[attrs.keys()[0]].shape[0]):
 			row = []
-			for a in xrange(len(fields)):
+			for a in range(len(fields)):
 				row.append(formats[a] % (attrs[fields[a]][ix]))
 			rows.append(row)
 
@@ -418,7 +417,7 @@ class LoomPipeline(object):
 		cursor.close()
 
 		mapping = {}
-		for j in xrange(len(rows)):
+		for j in range(len(rows)):
 			mapping[rows[j][0]] = rows[j][1]
 		cursor.close()
 		return mapping
@@ -459,7 +458,7 @@ class LoomPipeline(object):
 		cursor.close()
 
 		mapping = {}
-		for j in xrange(len(rows)):
+		for j in range(len(rows)):
 			mapping[rows[j][1] + "_" + rows[j][2]] = rows[j][0]
 		cursor.close()
 		return mapping

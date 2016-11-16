@@ -5,10 +5,13 @@ import os
 import argparse
 import logging
 import requests
-from urlparse import urlparse
+try:
+	from urllib.parse import urlparse
+except ImportError:
+	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
-import StringIO
+from io import StringIO
 import pandas as pd
 import numpy as np
 
@@ -41,7 +44,7 @@ def stats_command(dataset_path, filename):
 		logging.error("File not found")
 		sys.exit(1)
 	logging.info("Computing statistics")
-	ds.compute_stats()
+	ds.compute_stats( ) 
 
 def project_command(dataset_path, filename, perplexity):
 	ds = connect_loom(dataset_path, filename)
@@ -98,9 +101,9 @@ def list_command(dataset_path, server, username, password):
 		else:
 			datasets[ds["project"]].append(ds["filename"])
 	for p in datasets.keys():
-		print p + ":"
+		print(p + ":")
 		for f in datasets[p]:
-			print "   " + f
+			print("   " + f)
 
 def clone_command(dataset_path, project, url, username, password):
 	url_parts = urlparse(url)
@@ -297,7 +300,7 @@ if __name__ == '__main__':
 		os.mkdir(args.dataset_path)
 
 	if args.command == "version":
-		print "loom v" + str(loompy.__version__)
+		print("loom v" + str(loompy.__version__))
 		sys.exit(0)
 	if args.command == "list":
 		list_command(args.dataset_path, args.server, args.username, args.password)
