@@ -6,7 +6,6 @@ import { SortableTable } from './sortabletable';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
-import { merge } from '../js/util';
 
 import Fuse from 'fuse.js';
 
@@ -53,7 +52,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '16%', fontSize: '16px', fontWeight: 'bold', fontStyle: 'normal' },
-			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'project' });}, null],
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'project' }); }, null],
 		},
 		{
 			headers: ['TITLE', titleSearch],
@@ -61,7 +60,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '30%', fontWeight: 'bold' },
-			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'title' });}, null],
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'title' }); }, null],
 		},
 		{
 			headers: ['DESCRIPTION', descriptionSearch],
@@ -69,7 +68,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '32%', fontStyle: 'italic' },
-			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'description' });}, null],
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'description' }); }, null],
 		},
 		{
 			headers: ['DATE', dateSearch],
@@ -77,7 +76,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-order',
 			headerStyles,
 			dataStyle: { width: '10%', fontSize: '12px' },
-			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'lastModified' });}, null],
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'lastModified' }); }, null],
 		},
 		{
 			headers: ['SIZE'],
@@ -85,7 +84,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-attributes',
 			headerStyles,
 			dataStyle: { width: '4%', fontSize: '12px' },
-			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'totalCells' });}, null],
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'totalCells' }); }, null],
 		},
 		{
 			headers: [(
@@ -104,7 +103,7 @@ const DatasetList = function (props) {
 	if (datasets) {
 		for (let i = 0; i < datasets.length; i++) {
 			let proj = datasets[i];
-			const {project, title, dataset, url, doi } = proj;
+			const {project, title, description, lastModified, totalCells, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
 			// create new datasets object with proper tags
 			// strip '.loom' ending
@@ -135,44 +134,39 @@ const DatasetList = function (props) {
 			const paperButton = doi === '' ? (
 				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={'http://dx.doi.org/' + doi}
-					title={'Original reference: http://dx.doi.org/' + doi}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-				</Button>
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
 				);
 			const urlButton = url === '' ? (
 				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={url}
-					title={'External web page: ' + url}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-				</Button>
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
 				);
-			datasets[i] = merge(
-				datasets[i],
-				{
-					title: titleURL,
-					doi: paperButton,
-					url: urlButton,
-					download: downloadButton,
-				}
-			);
 			// merge() does not play nicely with JSX
-			datasets[i].buttons = (
-				<div style={{ textAlign: 'center' }}>
-					{[paperButton, urlButton, downloadButton]}
-				</div>
-			);
+			datasets[i] = {
+				project, description, lastModified, totalCells,
+				title: titleURL,
+				buttons: (
+					<div style={{ textAlign: 'center' }}>
+						{[paperButton, urlButton, downloadButton]}
+					</div>
+				),
+			};
 		}
 
 		return (
@@ -212,7 +206,7 @@ class SearchDataSetViewComponent extends Component {
 
 	componentWillMount() {
 		const {dispatch, projects, sortKeys, search } = this.props;
-		if (!projects){
+		if (!projects) {
 			dispatch(fetchProjects());
 		} else {
 			// merge all projects. Note that this creates a
@@ -240,7 +234,7 @@ class SearchDataSetViewComponent extends Component {
 		if (projects) {
 			const { sortKeys, search } = nextProps;
 			if (JSON.stringify(sortKeys) !== JSON.stringify(this.props.sortKeys) ||
-			JSON.stringify(search) !== JSON.stringify(this.props.search) ) {
+				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
 				this.filterProjects(projects, sortKeys, search);
 			}
 		}
@@ -264,7 +258,7 @@ class SearchDataSetViewComponent extends Component {
 			for (let i = 0; i < sortKeys.length; i++) {
 				let pa = projects[a][sortKeys[i].key];
 				let pb = projects[b][sortKeys[i].key];
-				if (typeof pa === 'string'){
+				if (typeof pa === 'string') {
 					pa = pa.toLowerCase();
 					pb = pb.toLowerCase();
 				}
