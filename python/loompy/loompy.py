@@ -189,14 +189,15 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 
 	create(loom_file, matrix, row_attrs, col_attrs, row_types, col_types)
 
-def combine(files, output_file):
+def combine(files, output_file, key=None, file_attrs={}):
 	"""
 	Combine two or more loom files and save as a new loom file
 
 	Args:
 		files (list of str):	the list of input files (full paths)
-
 		output_file (str):		full path of the output loom file
+		key (string):			Row attribute to use to verify row ordering
+		file_attrs (dict):		file attributes (title, description, url, etc.)
 
 	Returns:
 		Nothing, but creates a new loom file combining the input files.
@@ -209,10 +210,14 @@ def combine(files, output_file):
 
 	copyfile(files[0], output_file)
 
+	ds = connect(output_file)
+	for a in file_attrs:
+		ds.attrs[a] = file_attrs[a]
+
 	if len(files) >= 2:
-		ds = connect(output_file)
 		for f in files[1:]:
-			ds.add_loom(f)
+			ds.add_loom(f, key)
+	ds.close()
 
 def connect(filename):
 	"""
@@ -502,7 +507,7 @@ class LoomConnection(object):
 		self.shape = (self.shape[0], n_cols)
 		self.file.flush()
 
-	def add_loom(self, other_file):
+	def add_loom(self, other_file, key=None):
 		"""
 		Add the content of another loom file
 
@@ -519,14 +524,28 @@ class LoomConnection(object):
 		# Sanity checks
 		if other.shape[0] != self.shape[0]:
 			raise ValueError("The two loom files have different numbers of rows")
+		if key is not None:
+			pk1 = other.row_attrs[key]
+			pk2 = self.row_attrs[key]
+			for ix,val in enumerate(pk1):
+				if pk2[ix] != val:
+					raise ValueError("Primary keys are not identical")
 
+		todel = []
 		for ca in other.col_attrs.keys():
 			if not ca in self.col_attrs:
-				raise ValueError("The other loom file has column attribute %s which is not in this file" % ca)
+				logging.warn("Removing column attribute %s which was missing in one file", ca)
+				todel.append(ca)
+		for ca in todel:
+			other.delete_attr(ca, axis=1)
 
+		todel = []
 		for ca in self.col_attrs.keys():
 			if not ca in other.col_attrs:
-				raise ValueError("Column attribute %s is missing in the other loom file" % ca)
+				logging.warn("Removing column attribute %s which was missing in one file", ca)
+				todel.append(ca)
+		for ca in todel:
+			self.delete_attr(ca, axis=1)
 
 		self.add_columns(other[:, :], other.col_attrs)
 
@@ -725,7 +744,7 @@ class LoomConnection(object):
 			return result[0]
 		return result
 
-	def pairwise(self, f, asfile, axis=0, chunksize=10000, pass_attrs=False):
+	def pairwise(self, f, asfile, axis=0, pass_attrs=False):
 		"""
 		Compute a matrix of pairwise values by applying f to each pair of rows (columns)
 
@@ -733,7 +752,6 @@ class LoomConnection(object):
 			f (lambda):			The function f(a,b) which will be called with vectors a and b and should return a single float
 			asfile (str):		The name of a new loom file which will be created to hold the result
 			axis (int):			The axis over which to apply the function (0 = rows, 1 = columns)
-			chunksize (int):	Number of rows (columns) to load in each chunk during computation
 			pass_attrs (bool):	If true, dicts of attributes will be passed as extra arguments to f(a,b,attr1,attr2)
 		Returns:
 			Nothing, but a new .loom file will be created
@@ -749,24 +767,24 @@ class LoomConnection(object):
 		ds = None  # The loom output dataset connection
 		if axis == 0:
 			ix = 0
-			rows_per_chunk = chunksize
+			rows_per_chunk = max(1, int(15000000/self.shape[1]))
 			while ix < self.shape[0]:
-				a = self[ix:ix + rows_per_chunk,:]
+				a = self[ix:ix + rows_per_chunk, :]
 				submatrix = np.zeros((self.shape[0], a.shape[0]))
 				jx = 0
 				while jx < self.shape[0]:
-					b = self[jx:jx + rows_per_chunk,:]
+					b = self[jx:jx + rows_per_chunk, :]
 					for i in range(a.shape[0]):
 						for j in range(b.shape[0]):
 							if pass_attrs:
-								attr1 = {key: v[ix + i] for (key,v) in self.row_attrs.items()}
-								attr2 = {key: v[jx + j] for (key,v) in self.row_attrs.items()}
-								submatrix[jx + j, i] = f(a[i],b[j],attr1,attr2)
+								attr1 = {key: v[ix + i] for (key, v) in self.row_attrs.items()}
+								attr2 = {key: v[jx + j] for (key, v) in self.row_attrs.items()}
+								submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
 							else:
 								submatrix[jx + j, i] = f(a[i], b[j])
 					jx += rows_per_chunk
 				# Get the subset of row attrs for this chunk
-				ca = {key: v[ix:ix + rows_per_chunk] for (key,v) in self.row_attrs.items()}
+				ca = {key: v[ix:ix + rows_per_chunk] for (key, v) in self.row_attrs.items()}
 				if ds == None:
 					create(asfile, submatrix, self.row_attrs, ca)
 					ds = connect(asfile)
@@ -775,24 +793,24 @@ class LoomConnection(object):
 				ix += rows_per_chunk
 		if axis == 1:
 			ix = 0
-			cols_per_chunk = chunksize
+			cols_per_chunk = max(1, int(15000000/self.shape[0]))
 			while ix < self.shape[1]:
-				a = self[:,ix:ix + cols_per_chunk]
+				a = self[:, ix:ix + cols_per_chunk]
 				submatrix = np.zeros((self.shape[1], a.shape[1]))
 				jx = 0
 				while jx < self.shape[1]:
-					b = self[:,jx:jx + cols_per_chunk]
+					b = self[:, jx:jx + cols_per_chunk]
 					for i in range(a.shape[1]):
 						for j in range(b.shape[1]):
 							if pass_attrs:
-								attr1 = {key: v[ix + i] for (key,v) in self.col_attrs.items()}
-								attr2 = {key: v[jx + j] for (key,v) in self.col_attrs.items()}
-								submatrix[jx + j, i] = f(a[i],b[j],attr1,attr2)
+								attr1 = {key: v[ix + i] for (key, v) in self.col_attrs.items()}
+								attr2 = {key: v[jx + j] for (key, v) in self.col_attrs.items()}
+								submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
 							else:
 								submatrix[jx + j, i] = f(a[i], b[j])
 					jx += cols_per_chunk
 				# Get the subset of row attrs for this chunk
-				ca = {key: v[ix:ix + cols_per_chunk] for (key,v) in self.col_attrs.items()}
+				ca = {key: v[ix:ix + cols_per_chunk] for (key, v) in self.col_attrs.items()}
 				if ds == None:
 					create(asfile, submatrix, self.col_attrs, ca)
 					ds = connect(asfile)

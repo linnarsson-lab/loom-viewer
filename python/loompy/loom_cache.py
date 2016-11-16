@@ -89,6 +89,8 @@ class LoomCache(object):
 				for f in os.listdir(os.path.join(self.dataset_path, proj)):
 					if f.endswith(".loom"):
 						ds = self.connect_dataset_locally(proj, f, username, password)
+						if ds is None:
+							continue
 						title = ds.attrs.get("title", f)
 						descr = ds.attrs.get("description", "")
 						url = ds.attrs.get("url", "")
@@ -125,7 +127,10 @@ class LoomCache(object):
 		if key in self.looms:
 			return self.looms[key]
 
-		result = loompy.connect(absolute_path)
+		try:
+			result = loompy.connect(absolute_path)
+		except:
+			return None
 		self.looms[key] = result
 		return result
 
