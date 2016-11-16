@@ -3,49 +3,108 @@ import React, { PropTypes } from 'react';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 import { ViewInitialiser } from './view-initialiser';
 import { Canvas } from './canvas';
+import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
 function makeData(attr, gene, fetchedGenes, colAttrs) {
-	const data = ((attr === '(gene)' && fetchedGenes[gene]) ?
+	return ((attr === '(gene)' && fetchedGenes[gene]) ?
 		fetchedGenes[gene] : colAttrs[attr]);
-	// don't mutate data from the redux store
-	return data ? data.slice(0) : null;
 }
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { fetchedGenes, landscapeState, colAttrs } = dataSet;
-	const { colorAttr, colorGene, colorMode, xCoordinate, xGene, yCoordinate, yGene, filterZeros } = landscapeState;
+	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorGene, colorMode } = landscapeState;
 
-	let color = makeData(colorAttr, colorGene, fetchedGenes, colAttrs);
-	let x = makeData(xCoordinate, xGene, fetchedGenes, colAttrs);
-	let y = makeData(yCoordinate, yGene, fetchedGenes, colAttrs);
-
-	if (filterZeros && color) {
-		const filterData = color.slice(0);
-		const data = (v, i) => { return filterData[i]; };
-		color = color.filter(data);
-		x = x ? x.filter(data) : null;
-		y = y ? y.filter(data) : null;
+	// filter out undefined attributes;
+	let attrs = [], genes = [];
+	for (let i = 0; i < coordinateAttrs.length; i++) {
+		let attr = coordinateAttrs[i];
+		if (attr) {
+			attrs.push(attr);
+			genes.push(coordinateGenes[i]);
+		}
 	}
 
-	const logColor = colorAttr === '(gene)';
-	const logX = xCoordinate === '(gene)';
-	const logY = yCoordinate === '(gene)';
 
-	const paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
-	return (
-		<div className='view'>
-			<LandscapeSidepanel
-				dataSet={dataSet}
-				dispatch={dispatch}
-				/>
+	const color = makeData(colorAttr, colorGene, fetchedGenes, colAttrs);
+	let plot;
+	if (asMatrix && attrs.length > 2) {
+		const cellStyle = {
+			border: '1px solid lightgrey',
+			flex: '1 1 auto',
+			margin: '1px',
+		};
+		const cellStyleNoBorder = {
+			flex: '1 1 auto',
+			margin: '1px',
+		};
+		const rowStyle = {
+			flex: '1 1 auto',
+		};
+		let matrix = [];
+		for (let j = 0; j < attrs.length; j++) {
+			let row = [];
+			for (let i = 0; i < attrs.length; i++) {
+				let paint;
+				if (i <= j) {
+					const x = makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
+					const y = makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
+					const logColor = colorAttr === '(gene)';
+					const logX = attrs[i] === '(gene)';
+					const logY = attrs[j] === '(gene)';
+					paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
+				}
+				row.push(
+					<Canvas
+						key={j + '_' + i}
+						style={i <= j ? cellStyle : cellStyleNoBorder}
+						paint={paint}
+						redraw
+						clear
+						/>
+				);
+
+			}
+			matrix.push(
+				<div
+					key={j}
+					className={'view'}
+					style={rowStyle}>
+					{row}
+				</div>
+			);
+		}
+		plot = <div className={'view-vertical'}>{matrix}</div>;
+	} else {
+		let x = makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
+		let y = makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
+
+		const logColor = colorAttr === '(gene)';
+		const logX = attrs[0] === '(gene)';
+		const logY = attrs[1] === '(gene)';
+
+		const paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
+		plot = (
 			<Canvas
 				paint={paint}
 				style={{ margin: '20px' }}
 				redraw
 				clear
 				/>
+		);
+
+	}
+
+	return (
+		<div className='view'>
+			<LandscapeSidepanel
+				dataSet={dataSet}
+				dispatch={dispatch}
+				/>
+			<RemountOnResize watchedVal={attrs.length}>
+				{plot}
+			</RemountOnResize>
 		</div>
 	);
 };
@@ -56,13 +115,12 @@ LandscapeComponent.propTypes = {
 };
 
 const initialState = { // Initialise landscapeState for this dataset
-	xCoordinate: '_tSNE1',
-	xGene: '',
-	yCoordinate: '_tSNE2',
-	yGene: '',
-	colorAttr: 'CellID',
-	colorMode: 'Heatmap',
+	coordinateAttrs: ['_tSNE1', '_tSNE2'],
+	coordinateGenes: ['', ''],
+	asMatrix: false,
+	colorAttr: '(original order)',
 	colorGene: '',
+	colorMode: 'Heatmap',
 };
 
 export const LandscapeViewInitialiser = function (props) {

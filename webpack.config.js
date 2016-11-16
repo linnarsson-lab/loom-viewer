@@ -8,6 +8,25 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 	inject: 'body',
 });
 
+const uglifySettings = {
+	mangle: true,
+	sourcemap: false,
+	compress: {
+		warnings: false,
+		sequences: true,
+		dead_code: true,
+		conditionals: true,
+		booleans: true,
+		unused: true,
+		if_return: true,
+		join_vars: true,
+		drop_console: true,
+	},
+	output: {
+		comments: false,
+	},
+};
+
 module.exports = {
 	entry: {
 		'/static/js/bundle': './client/loom',
@@ -29,12 +48,12 @@ module.exports = {
 	plugins: [
 		new webpack.DefinePlugin({
 			'process.env': {
-				'NODE_ENV': "'production'",
+				'NODE_ENV': "'debug'",
 			},
 		}),
-		new webpack.optimize.DedupePlugin(),
-		new webpack.optimize.OccurenceOrderPlugin(),
-		new webpack.optimize.UglifyJsPlugin({ mangle: true, sourcemap: false }),
+		// new webpack.optimize.DedupePlugin(),
+		// new webpack.optimize.OccurenceOrderPlugin(),
+		// new webpack.optimize.UglifyJsPlugin(uglifySettings),
 		HTMLWebpackPluginConfig,
 	],
 };

@@ -1,32 +1,36 @@
-import { nMostFrequent, calcMinMax } from '../js/util';
+import { nMostFrequent, arrayConstr } from '../js/util';
 import * as colors from '../js/colors';
 
-export function sparkline(data, mode, dataRange, label, orientation) {
+export function sparkline(attr, mode, dataRange, label, orientation, unfiltered) {
 	// Determine plotter
 	let paint = null;
 	switch (mode) {
 		case 'Categorical':
-			paint = categoriesPainter(data);
+			paint = categoriesPainter;
 			break;
 		case 'Bars':
-			paint = barPainter(data, label);
+			paint = barPainter(attr, label);
 			break;
 		case 'Heatmap':
-			paint = heatmapPainter(data, label);
+			paint = heatmapPainter(attr, label, colors.solar256);
+			break;
+		case 'Heatmap2':
+			paint = heatmapPainter(attr, label, colors.YlGnBu256);
 			break;
 		default:
 			paint = textPaint;
 	}
 
 	return (context) => {
-		sparklinePainter(context, paint, data, mode, dataRange, orientation);
+		sparklinePainter(context, paint, attr, mode, dataRange, orientation, unfiltered);
 	};
 }
 
-function sparklinePainter(context, paint, data, mode, dataRange, orientation) {
-	if (data === undefined) {
+function sparklinePainter(context, paint, attr, mode, dataRange, orientation, unfiltered) {
+	if (attr === undefined) {
 		return;
 	}
+	const { data, filteredData, arrayType, indexedVal, mostFrequent, colorIndices } = attr;
 
 	// All of our plotting functions draw horizontaly
 	// To get a vertical plot, we simply rotate the canvas
@@ -56,15 +60,15 @@ function sparklinePainter(context, paint, data, mode, dataRange, orientation) {
 	// than one pixel.
 
 	// The key insight is that the fractional part of these floats
-	// indicate that only a fraction of a data point is displayed.
+	// indicate that only a fraction of a datapoint is displayed.
 	// So for example:
 	//   dataRange = [ 1.4, 5.3 ]
-	// .. results in displaying datapoints 1 to6, but data point 1
-	// will only be 0.6 times the width of the other data points,
+	// .. results in displaying datapoints 1 to6, but datapoint 1
+	// will only be 0.6 times the width of the other datapoints,
 	// and point 6 will only be 0.3 times the width.
 
 	// If dataRange is undefined, use the whole dataset.
-	dataRange = dataRange ? dataRange : [0, data.length];
+	dataRange = dataRange ? dataRange : [0, (unfiltered ? data.length : filteredData.length)];
 
 	let leftRange = dataRange[0];
 	let rightRange = dataRange[1];
@@ -96,12 +100,20 @@ function sparklinePainter(context, paint, data, mode, dataRange, orientation) {
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
 	// with undefined entries on either or both ends.
-	let rangeData = new Array(totalRange);
-	for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
-		rangeData[i] = data[i0 + i];
+	let array = arrayType === 'indexedString' && mode === 'Text' ? Array : arrayConstr(arrayType);
+	let source = unfiltered ? data : filteredData;
+	let rangeData = new array(totalRange);
+	if (indexedVal && mode === 'Text'){
+		for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
+			rangeData[i] = indexedVal[source[i0 + i]];
+		}
+	} else {
+		for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
+			rangeData[i] = source[i0 + i];
+		}
 	}
 
-	paint(context, rangeData, xOffset, rangeWidth);
+	paint(context, rangeData, xOffset, rangeWidth, mostFrequent, colorIndices);
 
 	// Make sure our rotation from before is undone
 	if (orientation === 'vertical') {
@@ -212,23 +224,18 @@ function calcMeans(rangeData, rangeWidth) {
 // If we have strings for data, we concatenate them.
 
 
-
-function categoriesPainter(data) {
-	const categories = nMostFrequent(data, 20).values;
-	return (context, rangeData, xOffset, rangeWidth) => {
-		categoriesPaint(context, rangeData, xOffset, rangeWidth, categories);
-	};
-}
-
-function categoriesPaint(context, rangeData, xOffset, rangeWidth, categories) {
+function categoriesPainter(context, rangeData, xOffset, rangeWidth, mostFrequent, colorIndices) {
 	if (rangeData.length <= rangeWidth) {
 		// more pixels than data
 		const barWidth = rangeWidth / rangeData.length;
 		for (let i = 0; i < rangeData.length; i++) {
 			if (rangeData[i] !== undefined) {
-				const color = categories.indexOf(rangeData[i]) + 1;
-				context.fillStyle = colors.category20[color];
-				context.fillRect(xOffset + i * barWidth, 0, barWidth, context.height);
+				const cIdx = colorIndices[rangeData[i]];
+				context.fillStyle = colors.category20[cIdx];
+				// force to pixel grid
+				const x = xOffset + i * barWidth;
+				const roundedWidth = ((xOffset + (i+1) * barWidth) | 0) - (x|0);
+				context.fillRect(x|0, 0, roundedWidth, context.height);
 			}
 		}
 	} else {
@@ -239,8 +246,8 @@ function categoriesPaint(context, rangeData, xOffset, rangeWidth, categories) {
 			const slice = rangeData.slice(i0, i1);
 			const commonest = nMostFrequent(slice, 1).values[0];
 			if (commonest !== undefined) {
-				const color = categories.indexOf(commonest) + 1;
-				context.fillStyle = colors.category20[color];
+				const cIdx = colorIndices[commonest];
+				context.fillStyle = colors.category20[cIdx];
 				context.fillRect(xOffset + i, 0, 1, context.height);
 			}
 		}
@@ -248,16 +255,18 @@ function categoriesPaint(context, rangeData, xOffset, rangeWidth, categories) {
 }
 
 
-function barPainter(data, label) {
-	const { min, max } = calcMinMax(data);
+function barPainter(attr, label) {
 	return (context, rangeData, xOffset, rangeWidth) => {
-		barPaint(context, rangeData, xOffset, rangeWidth, label, min, max);
+		barPaint(context, rangeData, xOffset, rangeWidth, attr, label);
 	};
 }
 
 
-function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
-
+function barPaint(context, rangeData, xOffset, rangeWidth, attr, label) {
+	let { min, max, hasZeros } = attr;
+	if (hasZeros){
+		min = min < 0 ? min : 0;
+	}
 	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
 	// factor to multiply the mean values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
@@ -270,7 +279,8 @@ function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
 		// draw from bottom to top we start at height and
 		// subtract the height.
 		let y = context.height - barHeight;
-		context.fillRect(x, y, barWidth, barHeight);
+		// force to pixel grid
+		context.fillRect(x|0, y, ((x+barWidth)|0) - (x|0), barHeight);
 		x += barWidth;
 	}
 	const ratio = context.pixelRatio;
@@ -290,21 +300,25 @@ function barPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
 
 
 
-function heatmapPainter(data, label) {
-	const { min, max } = calcMinMax(data);
+function heatmapPainter(attr, label, colorLUT) {
 	return (context, rangeData, xOffset, rangeWidth) => {
-		heatmapPaint(context, rangeData, xOffset, rangeWidth, label, min, max);
+		heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT);
 	};
 }
 
-function heatmapPaint(context, rangeData, xOffset, rangeWidth, label, min, max) {
+function heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT) {
+	let { min, max, hasZeros } = attr;
+	if (hasZeros){
+		min = min < 0 ? min : 0;
+	}
 	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
-	const colorIdxScale = (colors.solar9.length / (max - min) || 1);
+	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	for (let i = 0, x = xOffset; i < outliers.length; i++) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let colorIdx = (outliers[i] * colorIdxScale) | 0;
-		context.fillStyle = colors.solar9[colorIdx];
-		context.fillRect(x, 0, barWidth, context.height);
+		let colorIdx = ((outliers[i] - min) * colorIdxScale) | 0;
+		context.fillStyle = colorLUT[colorIdx];
+		// force to pixel grid
+		context.fillRect(x|0, 0, ((x+barWidth)|0) - (x|0), context.height);
 		x += barWidth;
 	}
 	context.textStyle();

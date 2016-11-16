@@ -1,7 +1,9 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import { ListGroupItem, Glyphicon,
-	Button, ButtonGroup } from 'react-bootstrap';
+import {
+	ListGroupItem, Glyphicon,
+	Button, ButtonGroup
+} from 'react-bootstrap';
 import { merge } from '../js/util';
 
 // Since print settings are pretty much equivalent across side-panels, make one component for them
@@ -45,7 +47,7 @@ export const PrintSettings = function (props) {
 	const showPrintMenu = (
 		<Button
 			bsStyle={showPrint ? 'primary' : 'default'}
-			onClick={ () => { printMenuProps.onChange(!showPrint); } }
+			onClick={() => { printMenuProps.onChange(!showPrint); } }
 			>
 			Export image
 		</Button>
@@ -200,14 +202,14 @@ function generateExportRenderFuncs(exportTarget, printSize, dpi, pixelSize, orie
 
 		// 75 dpi ~= 30 dots/cm. We take that as the default.
 		switch (printSize) {
-		case 'A4':
-			cwidth = 620;
-			cheight = 877;
-			break;
-		case 'US Letter':
-			cwidth = 638;
-			cheight = 825;
-			break;
+			case 'A4':
+				cwidth = 620;
+				cheight = 877;
+				break;
+			case 'US Letter':
+				cwidth = 638;
+				cheight = 825;
+				break;
 		}
 
 		//Using 75 DPI as pixelRatio 1, we scale for 150 and 300 DPI
@@ -217,41 +219,41 @@ function generateExportRenderFuncs(exportTarget, printSize, dpi, pixelSize, orie
 
 	} else {
 		switch (pixelSize) {
-		case '640x480':
-			cwidth = 640;
-			cheight = 480;
-			pixelRatio = 0.5;
-			break;
-		case '800x600':
-			cwidth = 800;
-			cheight = 6000;
-			pixelRatio = 0.5;
-			break;
-		case '1024x768':
-			cwidth = 1024;
-			cheight = 768;
-			pixelRatio = 1;
-			break;
-		case '1280x720':
-			cwidth = 1280;
-			cheight = 720;
-			pixelRatio = 1;
-			break;
-		case '1920x1080':
-			cwidth = 1920;
-			cheight = 1080;
-			pixelRatio = 2;
-			break;
-		case '3840x2160 (4K)':
-			cwidth = 3840;
-			cheight = 2160;
-			pixelRatio = 4;
-			break;
-		case '7680x4320 (8K)':
-			cwidth = 7680;
-			cheight = 4320;
-			pixelRatio = 8;
-			break;
+			case '640x480':
+				cwidth = 640;
+				cheight = 480;
+				pixelRatio = 0.5;
+				break;
+			case '800x600':
+				cwidth = 800;
+				cheight = 6000;
+				pixelRatio = 0.5;
+				break;
+			case '1024x768':
+				cwidth = 1024;
+				cheight = 768;
+				pixelRatio = 1;
+				break;
+			case '1280x720':
+				cwidth = 1280;
+				cheight = 720;
+				pixelRatio = 1;
+				break;
+			case '1920x1080':
+				cwidth = 1920;
+				cheight = 1080;
+				pixelRatio = 2;
+				break;
+			case '3840x2160 (4K)':
+				cwidth = 3840;
+				cheight = 2160;
+				pixelRatio = 4;
+				break;
+			case '7680x4320 (8K)':
+				cwidth = 7680;
+				cheight = 4320;
+				pixelRatio = 8;
+				break;
 		}
 	}
 
@@ -271,8 +273,8 @@ function generateExportRenderFuncs(exportTarget, printSize, dpi, pixelSize, orie
 
 	// }
 
-	const saveSVG = () => {};
-	const savePNG = () => {};
+	const saveSVG = () => { };
+	const savePNG = () => { };
 	return { savePNG, saveSVG };
 }
 

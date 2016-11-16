@@ -63,7 +63,7 @@ class HeatmapMapComponent extends Component {
 						width={heatmapWidth}
 						height={sparklineHeight}
 						paint={
-							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]])
+							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
 						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
@@ -78,9 +78,9 @@ class HeatmapMapComponent extends Component {
 										const { dataBounds, zoom, center } = val;
 										dispatch({
 											type: SET_VIEW_PROPS,
-											fieldName: 'heatmapState',
+											viewStateName: 'heatmapState',
 											datasetName: dataSet.dataset,
-											heatmapState: { dataBounds, zoom, center },
+											viewState: { dataBounds, zoom, center },
 										});
 									}
 								} />
@@ -93,7 +93,8 @@ class HeatmapMapComponent extends Component {
 								rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
-								'vertical')}
+								'vertical',
+								true)}
 							redraw
 							clear
 							/>

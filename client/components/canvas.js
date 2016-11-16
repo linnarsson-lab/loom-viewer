@@ -72,7 +72,7 @@ class CanvasComponent extends React.Component {
 	// Relies on a ref to a DOM element, so only call
 	// when canvas element has been rendered!
 	draw() {
-		if (this.state) {
+		if (this.state && this.props.paint) {
 			const { width, height, ratio } = this.state;
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');

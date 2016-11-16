@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { fetchGene } from '../actions/actions.js';
+import { fetchGene } from '../actions/actions';
 import { isEqual } from 'lodash';
 import Select from 'react-virtualized-select';
 import createFilterOptions from 'react-select-fast-filter-options';
@@ -12,7 +12,7 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillMount() {
-		this.setState(this.createOptions(this.props.dataSet.rowAttrs.Gene));
+		this.setState(this.createOptions(this.props.dataSet.rowAttrs.Gene.data));
 		if (this.props.value) {
 			let values = null;
 			if (this.props.multi) {
@@ -29,8 +29,8 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const prevSG = this.props.dataSet.rowAttrs.Gene;
-		const nextSG = nextProps.dataSet.rowAttrs.Gene;
+		const prevSG = this.props.dataSet.rowAttrs.Gene.data;
+		const nextSG = nextProps.dataSet.rowAttrs.Gene.data;
 		if (!isEqual(prevSG, nextSG)) {
 			this.setState(this.createOptions(nextSG));
 		}

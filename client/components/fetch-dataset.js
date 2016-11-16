@@ -4,7 +4,7 @@ import { fetchDataSet } from '../actions/actions';
 // A placeholder <div> that simultaneously
 // dispatches a fetchDataSet action.
 export class FetchDatasetComponent extends Component {
-	componentDidMount() {
+	componentWillMount() {
 		const { dispatch, dataSets, dataset, project } = this.props;
 		dispatch(fetchDataSet({ dataSets, project, dataset}));
 	}

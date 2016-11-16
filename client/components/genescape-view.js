@@ -3,26 +3,78 @@ import React, { PropTypes } from 'react';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 import { ViewInitialiser } from './view-initialiser';
 import { Canvas } from './canvas';
+import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
 const GenescapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
 	const { genescapeState } = dataSet;
 
-	const { colorAttr, xCoordinate, yCoordinate } = genescapeState;
-	let color = dataSet.rowAttrs[colorAttr];
-	let x = dataSet.rowAttrs[xCoordinate];
-	let y = dataSet.rowAttrs[yCoordinate];
-
-	if (genescapeState.filterZeros && color) {
-		const filterData = color.slice(0);
-		const data = (v, i) => { return filterData[i]; };
-		color = color.filter(data);
-		x = x ? x.filter(data) : null;
-		y = y ? y.filter(data) : null;
+	const { coordinateAttrs, asMatrix, colorAttr, colorMode } = genescapeState;
+	// filter out undefined attributes;
+	let attrs = [];
+	for (let i = 0; i < coordinateAttrs.length; i++) {
+		let attr = coordinateAttrs[i];
+		if (attr) {
+			attrs.push(attr);
+		}
 	}
 
-	const paint = scatterplot(x, y, color, genescapeState.colorMode);
+	const color = dataSet.rowAttrs[colorAttr];
+	let plot;
+	if (asMatrix && attrs.length > 2) {
+		const cellStyle = {
+			border: '1px solid lightgrey',
+			flex: '1 1 auto',
+			margin: '1px',
+		};
+		const cellStyleNoBorder = {
+			flex: '1 1 auto',
+			margin: '1px',
+		};
+		const rowStyle = {
+			flex: '1 1 auto',
+		};
+		let matrix = [];
+		for (let j = 0; j < attrs.length; j++) {
+			let row = [];
+			for (let i = 0; i < attrs.length; i++) {
+				const x = dataSet.rowAttrs[attrs[i]];
+				const y = dataSet.rowAttrs[attrs[j]];
+				const paint = i <= j ? scatterplot(x, y, color, colorMode) : null;
+				row.push(
+					<Canvas
+						key={j + '_' + i}
+						style={i <= j ? cellStyle : cellStyleNoBorder}
+						paint={paint}
+						redraw
+						clear
+						/>
+				);
+			}
+			matrix.push(
+				<div
+					key={j}
+					className={'view'}
+					style={rowStyle}>
+					{row}
+				</div>
+			);
+		}
+		plot = <div className={'view-vertical'}>{matrix}</div>;
+	} else {
+		let x = dataSet.rowAttrs[attrs[0]];
+		let y = dataSet.rowAttrs[attrs[1]];
+		plot = (
+			<Canvas
+				paint={scatterplot(x, y, color, colorMode)}
+				style={{ margin: '20px' }}
+				redraw
+				clear
+				/>
+		);
+	}
+
 	return (
 		<div className='view' >
 			<GenescapeSidepanel
@@ -30,12 +82,9 @@ const GenescapeComponent = function (props) {
 				dataSet={dataSet}
 				dispatch={dispatch}
 				/>
-			<Canvas
-				paint={paint}
-				style={{ margin: '20px' }}
-				redraw
-				clear
-				/>
+			<RemountOnResize watchedVal={attrs.length}>
+				{plot}
+			</RemountOnResize>
 		</div>
 	);
 
@@ -49,8 +98,9 @@ GenescapeComponent.propTypes = {
 
 const initialState = {
 	// Initialise genescapeState for this dataset
-	xCoordinate: '_tSNE1',
-	yCoordinate: '_tSNE2',
+	coordinateAttrs: ['_tSNE1', '_tSNE2'],
+	asMatrix: false,
+	colorAttr: '(original order)',
 	colorMode: 'Heatmap',
 };
 

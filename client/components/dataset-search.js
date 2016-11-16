@@ -1,43 +1,46 @@
 import React, { Component, PropTypes } from 'react';
 import { Grid, Row, Col, Button, Glyphicon, FormControl } from 'react-bootstrap';
 import { Link } from 'react-router';
+
 import { SortableTable } from './sortabletable';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
-import { merge } from '../js/util';
 
 import Fuse from 'fuse.js';
 
 function handleChangeFactory(field, dispatch) {
 	return (event) => {
-		let searchVal = event.target.value ? event.target.value : '';
+		let val = event.target.value ? event.target.value : '';
 		dispatch({
 			type: SEARCH_DATASETS,
-			field,
-			search: searchVal,
+			state: {
+				projects: {
+					search: {
+						[field]: val,
+					},
+				},
+			},
 		});
 	};
 }
 
+
 // Generates tabular list of datasets
 const DatasetList = function (props) {
-	const {datasets, dispatch, sortKey } = props;
+	const {datasets, dispatch, search, sortKeys } = props;
 
-	const dateSearch = (<FormControl type='text'
+	const dateSearch = (<FormControl type='text' value={search.lastModified}
 		onChange={handleChangeFactory('lastModified', dispatch)} />);
 
-	const projectSearch = (<FormControl type='text'
+	const projectSearch = (<FormControl type='text' value={search.project}
 		onChange={handleChangeFactory('project', dispatch)} />);
 
-	const titleSearch = (<FormControl type='text'
+	const titleSearch = (<FormControl type='text' value={search.title}
 		onChange={handleChangeFactory('title', dispatch)} />);
 
-	const descriptionSearch = (<FormControl type='text'
+	const descriptionSearch = (<FormControl type='text' value={search.description}
 		onChange={handleChangeFactory('description', dispatch)} />);
-
-	const datasetSearch = (<FormControl type='text'
-		onChange={handleChangeFactory('dataset', dispatch)} />);
 
 	const headerStyles = [{ border: 'none 0px' }, { padding: '4px' }];
 
@@ -49,7 +52,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '16%', fontSize: '16px', fontWeight: 'bold', fontStyle: 'normal' },
-			onDispatch: { type: SORT_DATASETS, key: 'project' },
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'project' }); }, null],
 		},
 		{
 			headers: ['TITLE', titleSearch],
@@ -57,7 +60,7 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '30%', fontWeight: 'bold' },
-			onDispatch: { type: SORT_DATASETS, key: 'title' },
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'title' }); }, null],
 		},
 		{
 			headers: ['DESCRIPTION', descriptionSearch],
@@ -65,40 +68,32 @@ const DatasetList = function (props) {
 			sortIcon: 'sort-by-alphabet',
 			headerStyles,
 			dataStyle: { width: '32%', fontStyle: 'italic' },
-			onDispatch: { type: SORT_DATASETS, key: 'description' },
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'description' }); }, null],
 		},
 		{
 			headers: ['DATE', dateSearch],
 			key: 'lastModified',
 			sortIcon: 'sort-by-order',
 			headerStyles,
-			dataStyle: { width: '4%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'lastModified' },
+			dataStyle: { width: '10%', fontSize: '12px' },
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'lastModified' }); }, null],
 		},
 		{
-			headers: ['FILE', datasetSearch],
-			key: 'dataset',
-			sortIcon: 'sort-by-alphabet',
-			headerStyles,
-			dataStyle: { width: '8%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'dataset' },
-		},
-		{
-			header: 'SIZE',
+			headers: ['SIZE'],
 			key: 'totalCells',
 			sortIcon: 'sort-by-attributes',
 			headerStyles,
-			dataStyle: { width: '2%', fontSize: '10px' },
-			onDispatch: { type: SORT_DATASETS, key: 'totalCells' },
+			dataStyle: { width: '4%', fontSize: '12px' },
+			onHeaderClick: [() => { dispatch({ type: SORT_DATASETS, key: 'totalCells' }); }, null],
 		},
 		{
-			header: (
+			headers: [(
 				<div style={{ textAlign: 'center' }}>
 					<Glyphicon glyph='file' title={'Original Reference'} />
 					<Glyphicon glyph='globe' title={'External Webpage'} />
 					<Glyphicon glyph='cloud-download' title={'Download Loom File'} />
 				</div>
-			),
+			)],
 			key: 'buttons',
 			headerStyles: [{ border: 'none 0px', padding: '8px 0px' }, { padding: '0px' }],
 			dataStyle: { width: '8%', padding: '8px 0px' },
@@ -108,14 +103,20 @@ const DatasetList = function (props) {
 	if (datasets) {
 		for (let i = 0; i < datasets.length; i++) {
 			let proj = datasets[i];
-			const {project, title, dataset, url, doi } = proj;
+			const {project, title, description, lastModified, totalCells, dataset, url, doi } = proj;
 			let path = project + '/' + dataset;
+			// create new datasets object with proper tags
+			// strip '.loom' ending
 			const titleURL = (
-				<Link
-					to={'dataset/cellmetadata/' + path}
-					title={'Open ' + path}>
-					{title}
-				</Link>
+				<div>
+					<Link
+						to={'dataset/cellmetadata/' + path}
+						title={'Open ' + path}>
+						{title}
+					</Link>
+					<br />
+					<code title={dataset}>{dataset}</code>
+				</div>
 
 			);
 			const downloadURL = '/clone/' + path;
@@ -133,50 +134,39 @@ const DatasetList = function (props) {
 			const paperButton = doi === '' ? (
 				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={'http://dx.doi.org/' + doi}
-					title={'Original reference: http://dx.doi.org/' + doi}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-				</Button>
-			);
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
+				);
 			const urlButton = url === '' ? (
 				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
-				<Button
-					bsSize='xsmall'
-					bsStyle='link'
-					href={url}
-					title={'External web page: ' + url}
-					style={{ padding: 0 }}
-					>
-					<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-				</Button>
-			);
-			// create new datasets object with proper tags
-			// strip '.loom' ending
-			let fileName = dataset.substr(0, dataset.length - 5);
-			if (fileName.length > 8) {
-				fileName = fileName.substr(0, 7) + '…';
-			}
-			datasets[i] = merge(
-				datasets[i],
-				{
-					title: titleURL,
-					dataset: (<code title={dataset}>{fileName}</code>),
-					doi: paperButton,
-					url: urlButton,
-					download: downloadButton,
-					buttons: (
-						<div style={{ textAlign: 'center' }}>
-							{[paperButton, urlButton, downloadButton]}
-						</div>
-					),
-				}
-			);
+					<Button
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
+						>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
+				);
+			// merge() does not play nicely with JSX
+			datasets[i] = {
+				project, description, lastModified, totalCells,
+				title: titleURL,
+				buttons: (
+					<div style={{ textAlign: 'center' }}>
+						{[paperButton, urlButton, downloadButton]}
+					</div>
+				),
+			};
 		}
 
 		return (
@@ -184,7 +174,7 @@ const DatasetList = function (props) {
 				data={datasets}
 				columns={columns}
 				dispatch={dispatch}
-				sortKey={sortKey}
+				sortedKey={sortKeys[0]}
 				/>
 		);
 	} else {
@@ -196,10 +186,13 @@ const DatasetList = function (props) {
 DatasetList.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	datasets: PropTypes.array,
-	sortKey: PropTypes.shape({
-		key: PropTypes.string,
-		ascending: PropTypes.bool,
-	}),
+	search: PropTypes.object,
+	sortKeys: PropTypes.arrayOf(
+		PropTypes.shape({
+			key: PropTypes.string,
+			ascending: PropTypes.bool,
+		})
+	),
 };
 
 
@@ -211,27 +204,27 @@ class SearchDataSetViewComponent extends Component {
 		this.state = { projects: undefined, filtered: undefined };
 	}
 
-	componentDidMount() {
-		const {dispatch, projects, sortKey, search } = this.props;
-		if (projects) {
-			let mergedProjects = [];
-			for (let keys = Object.keys(projects), i = 0; i < keys.length; i++) {
-				mergedProjects = mergedProjects.concat(projects[keys[i]]);
-			}
-			this.filterProjects(mergedProjects, sortKey, search);
-		} else {
+	componentWillMount() {
+		const {dispatch, projects, sortKeys, search } = this.props;
+		if (!projects) {
 			dispatch(fetchProjects());
-		}
-	}
-
-	componentWillReceiveProps(nextProps) {
-		let { projects } = this.state;
-
-		if (!projects && nextProps.projects) {
+		} else {
 			// merge all projects. Note that this creates a
 			// new array so we don't have to worry about
 			// mutating the original projects object, as long
 			// as we don't mutate individual project objects.
+			let mergedProjects = [];
+			for (let keys = Object.keys(projects), i = 0; i < keys.length; i++) {
+				mergedProjects = mergedProjects.concat(projects[keys[i]]);
+			}
+			this.filterProjects(mergedProjects, sortKeys, search);
+		}
+	}
+
+	componentWillUpdate(nextProps) {
+		let { projects } = this.state;
+
+		if (!projects && nextProps.projects) {
 			projects = [];
 			for (let keys = Object.keys(nextProps.projects), i = 0; i < keys.length; i++) {
 				projects = projects.concat(nextProps.projects[keys[i]]);
@@ -239,53 +232,54 @@ class SearchDataSetViewComponent extends Component {
 		}
 
 		if (projects) {
-			const { sortKey, search } = nextProps;
-			this.filterProjects(projects, sortKey, search);
+			const { sortKeys, search } = nextProps;
+			if (JSON.stringify(sortKeys) !== JSON.stringify(this.props.sortKeys) ||
+				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
+				this.filterProjects(projects, sortKeys, search);
+			}
 		}
 	}
 
-	filterProjects(projects, sortKey, search) {
+	filterProjects(projects, sortKeys, search) {
 		let filtered = undefined;
-		// (stable!) sort projects if we have a new key to sort by
-		// Also, nasty object comparison hack, but it works here.
-		if (sortKey &&
-			JSON.stringify(sortKey) !== JSON.stringify(this.props.sortKey)) {
-
-			// store original positions
-			let indices = new Array(projects.length);
-			for (let i = 0; i < indices.length; i++) {
-				indices[i] = i;
-			}
-
-			const v = sortKey.ascending ? 1 : -1;
-			const k = sortKey.key;
-			let compare = (a, b) => {
-				let pa = projects[a][k];
-				let pb = projects[b][k];
-				return pa < pb ? -v :
-					pa > pb ? v :
-						indices[a] < indices[b] ? -1 : 1;
-			};
-			if ((typeof projects[0][k]) === 'string') {
-				compare = (a, b) => {
-					let pa = projects[a][k].toLowerCase();
-					let pb = projects[b][k].toLowerCase();
-					return pa < pb ? -v :
-						pa > pb ? v :
-							indices[a] < indices[b] ? -1 : 1;
-				};
-			}
-			indices.sort(compare);
-
-			// re-arrange projects
-			let t = new Array(projects.length);
-			for (let i = 0; i < projects.length; i++) {
-				t[i] = projects[indices[i]];
-			}
-			for (let i = 0; i < projects.length; i++) {
-				projects[i] = t[i];
-			}
+		// Store original positions. If we ever need more than
+		// 4 billion indics we have other issues to worry about
+		let indices = new Uint32Array(projects.length);
+		for (let i = 0; i < indices.length; i++) {
+			indices[i] = i;
 		}
+
+		let retVal = new Int8Array(sortKeys.length);
+		for (let i = 0; i < sortKeys.length; i++) {
+			retVal[i] = sortKeys[i].ascending ? 1 : -1;
+		}
+
+		const comparator = (a, b) => {
+			for (let i = 0; i < sortKeys.length; i++) {
+				let pa = projects[a][sortKeys[i].key];
+				let pb = projects[b][sortKeys[i].key];
+				if (typeof pa === 'string') {
+					pa = pa.toLowerCase();
+					pb = pb.toLowerCase();
+				}
+				if (pa < pb) {
+					return -retVal[i];
+				} else if (pa > pb) {
+					return retVal[i];
+				}
+			}
+			return indices[a] < indices[b] ? -1 : 1;
+		};
+
+		indices.sort(comparator);
+
+		// re-arrange projects
+		let t = new Array(projects.length);
+		for (let i = 0; i < projects.length; i++) {
+			t[i] = projects[indices[i]];
+		}
+		projects = t;
+
 
 		if (!search) {
 			filtered = projects.slice(0);
@@ -341,7 +335,8 @@ class SearchDataSetViewComponent extends Component {
 
 	render() {
 		const {filtered} = this.state;
-		const {dispatch, sortKey } = this.props;
+		let {dispatch, search, sortKeys } = this.props;
+		search = search ? search : {};
 
 		return (
 			<Grid>
@@ -351,10 +346,11 @@ class SearchDataSetViewComponent extends Component {
 						md={12}
 						lg={12}>
 						<div className='view-vertical'>
-							<h1><Link to='/dataset/' title={'List view'}>Datasets</Link> > Search</h1>
+							<h1>Dataset Search</h1>
 							<FormControl
 								type='text'
 								placeholder='All fields..'
+								value={search.all}
 								onChange={handleChangeFactory('all', dispatch)}
 								style={{ width: '100%' }} />
 							<br />
@@ -363,7 +359,8 @@ class SearchDataSetViewComponent extends Component {
 								<DatasetList
 									dispatch={dispatch}
 									datasets={filtered}
-									sortKey={sortKey} />
+									search={search}
+									sortKeys={sortKeys} />
 							) : null}
 						</div>
 					</Col>
@@ -377,20 +374,22 @@ SearchDataSetViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	projects: PropTypes.object,
 	search: PropTypes.object,
-	sortKey: PropTypes.shape({
-		key: PropTypes.string,
-		ascending: PropTypes.bool,
-	}),
+	sortKeys: PropTypes.arrayOf(
+		PropTypes.shape({
+			key: PropTypes.string,
+			ascending: PropTypes.bool,
+		})
+	),
 };
 
 //connect SearchDataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	return {
-		projects: state.data.projects,
-		search: state.data.search,
-		sortKey: state.data.sortKey,
-	};
+	return state.data.projects ? {
+		projects: state.data.projects.list,
+		search: state.data.projects.search,
+		sortKeys: state.data.projects.sortKeys,
+	} : {};
 };
 export const SearchDataSetView = connect(mapStateToProps)(SearchDataSetViewComponent);
