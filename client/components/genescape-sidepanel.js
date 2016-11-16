@@ -1,17 +1,55 @@
 import React, { PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-//import { PrintSettings } from './print-settings';
+import { AttrLegend } from './legend';
 import {
 	Panel, ListGroup, ListGroupItem,
 	ButtonGroup, Button,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const { genescapeState } = dataSet;
-	const {xCoordinate, yCoordinate, colorAttr, colorMode} = genescapeState;
+	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode} = genescapeState;
+
+	// filter out undefined attributes;
+	let newAttrs = [];
+	for (let i = 0; i < coordinateAttrs.length; i++) {
+		let attr = coordinateAttrs[i];
+		if (attr) {
+			newAttrs.push(attr);
+		}
+	}
+
+	const coordAttrFactory = (idx) => {
+		return (value) => {
+			let newVals = newAttrs.slice(0);
+			newVals[idx] = value;
+			dispatch({
+				type: SET_VIEW_PROPS,
+				viewStateName: 'genescapeState',
+				datasetName: dataSet.dataset,
+				viewState: { coordinateAttrs: newVals },
+			});
+		};
+	};
+
+	const rowAttrOptions = dataSet.rowKeys.sort();
+
+	let coordinateDropdowns = [];
+
+	for (let i = 0; i <= newAttrs.length; i++) {
+		const coordHC = coordAttrFactory(i);
+		coordinateDropdowns.push(
+			<DropdownMenu
+				key={i}
+				value={newAttrs[i] ? newAttrs[i] : '<select attribute>'}
+				options={rowAttrOptions}
+				onChange={coordHC}
+				/>
+		);
+	}
 
 	const handleChangeFactory = (field) => {
 		return (value) => {
@@ -24,17 +62,47 @@ export const GenescapeSidepanel = function (props) {
 		};
 	};
 
-	const rowAttrOptions = Object.keys(dataSet.rowAttrs).sort();
-
-	const xCoordinateHC = handleChangeFactory('xCoordinate');
-	const yCoordinateHC = handleChangeFactory('yCoordinate');
+	const asMatrixHC = handleChangeFactory('asMatrix');
 	const colorAttrHC = handleChangeFactory('colorAttr');
-	const filterZeros = handleChangeFactory('filterZeros');
-	const filterZerosHC = () => { filterZeros(!genescapeState.filterZeros); };
 
+	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
+	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
 
-	const isTSNE = (xCoordinate === '_tSNE1') && (yCoordinate === '_tSNE2');
-	const isPCA = (xCoordinate === '_PC1') && (yCoordinate === '_PC2');
+	const setTSNE = () => {
+		let newVals = coordinateAttrs.slice(0);
+		newVals[0] = '_tSNE1';
+		newVals[1] = '_tSNE2';
+		dispatch({
+			type: SET_VIEW_PROPS,
+			viewStateName: 'genescapeState',
+			datasetName: dataSet.dataset,
+			viewState: { coordinateAttrs: newVals },
+		});
+	};
+
+	const setPCA = () => {
+		let newVals = coordinateAttrs.slice(0);
+		newVals[0] = '_PC1';
+		newVals[1] = '_PC2';
+		dispatch({
+			type: SET_VIEW_PROPS,
+			viewStateName: 'genescapeState',
+			datasetName: dataSet.dataset,
+			viewState: { coordinateAttrs: newVals },
+		});
+	};
+
+	const filterFunc = (val) => {
+		return () => {
+			dispatch({
+				type: FILTER_METADATA,
+				dataset: dataSet.dataset,
+				attr: 'rowAttrs',
+				key: colorAttr,
+				val,
+			});
+		};
+	};
 
 	return (
 		<Panel
@@ -48,54 +116,28 @@ export const GenescapeSidepanel = function (props) {
 						<ButtonGroup>
 							<Button
 								bsStyle={isTSNE ? 'success' : 'default'}
-								onClick={() => {
-									dispatch({
-										type: SET_VIEW_PROPS,
-										viewStateName: 'genescapeState',
-										datasetName: dataSet.dataset,
-										viewState: {
-											xCoordinate: '_tSNE1',
-											yCoordinate: '_tSNE2',
-										},
-									});
-								} }>
+								onClick={setTSNE}>
 								tSNE
 							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
 								bsStyle={isPCA ? 'success' : 'default'}
-								onClick={() => {
-									dispatch({
-										type: SET_VIEW_PROPS,
-										viewStateName: 'genescapeState',
-										datasetName: dataSet.dataset,
-										viewState: {
-											xCoordinate: '_PC1',
-											yCoordinate: '_PC2',
-										},
-									});
-								} }>
+								onClick={setPCA}>
 								PCA
 							</Button>
 						</ButtonGroup>
 					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
-					<label>X Coordinate</label>
-					<DropdownMenu
-						value={xCoordinate}
-						options={rowAttrOptions}
-						onChange={xCoordinateHC}
-						/>
-				</ListGroupItem>
-				<ListGroupItem>
-					<label>Y Coordinate</label>
-					<DropdownMenu
-						value={yCoordinate}
-						options={rowAttrOptions}
-						onChange={yCoordinateHC}
-						/>
+					{coordinateDropdowns}
+					<ButtonGroup>
+						<Button
+							bsStyle={asMatrix ? 'success' : 'default'}
+							onClick={() => {asMatrixHC(!asMatrix); } }>
+							Plot Matrix
+						</Button>
+					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Color</label>
@@ -104,13 +146,6 @@ export const GenescapeSidepanel = function (props) {
 						options={rowAttrOptions}
 						onChange={colorAttrHC}
 						/>
-					<Button
-						bsStyle={genescapeState.filterZeros ? 'success' : 'default'}
-						onClick={filterZerosHC}
-						>
-						Filter zeros
-					</Button>
-
 				</ListGroupItem>
 				<ListGroupItem>
 					<ButtonGroup justified>
@@ -126,6 +161,19 @@ export const GenescapeSidepanel = function (props) {
 									});
 								} }>
 								Heatmap
+							</Button>
+						</ButtonGroup>						<ButtonGroup>
+							<Button
+								bsStyle={colorMode === 'Heatmap2' ? 'success' : 'default'}
+								onClick={() => {
+									dispatch({
+										type: SET_VIEW_PROPS,
+										viewStateName: 'genescapeState',
+										datasetName: dataSet.dataset,
+										viewState: { colorMode: 'Heatmap2' },
+									});
+								} }>
+								Heatmap2
 							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
@@ -143,14 +191,12 @@ export const GenescapeSidepanel = function (props) {
 							</Button>
 						</ButtonGroup>
 					</ButtonGroup>
+					<AttrLegend
+						mode={colorMode}
+						filterFunc={filterFunc}
+						attr={dataSet.rowAttrs[colorAttr]}
+						/>
 				</ListGroupItem>
-				{/*
-				<PrintSettings
-					dispatch={dispatch}
-					dataSet={dataSet}
-					fieldName={'genescapeState'}
-					actionType={'SET_GENESCAPE_PROPS'} />
-				*/}
 			</ListGroup>
 		</Panel>
 	);

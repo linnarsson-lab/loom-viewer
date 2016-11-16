@@ -63,7 +63,7 @@ class HeatmapMapComponent extends Component {
 						width={heatmapWidth}
 						height={sparklineHeight}
 						paint={
-							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]])
+							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
 						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
@@ -93,7 +93,8 @@ class HeatmapMapComponent extends Component {
 								rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
-								'vertical')}
+								'vertical',
+								true)}
 							redraw
 							clear
 							/>

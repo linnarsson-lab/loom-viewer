@@ -3,7 +3,7 @@ import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
 import JSURL from 'jsurl';
-import { prune, merge } from '../js/util';
+import { arrayConstr, prune, merge } from '../js/util';
 
 
 import {
@@ -47,23 +47,23 @@ function setViewStateURL(state, action) {
 	const { viewStateName, datasetName, viewState } = action;
 	let view = 'unknown';
 	switch (viewStateName) {
-	case 'heatmapState':
-		view = 'heatmap';
-		break;
-	case 'sparklineState':
-		view = 'sparklines';
-		break;
-	case 'landscapeState':
-		view = 'cells';
-		break;
-	case 'genescapeState':
-		view = 'genes';
-		break;
-	case 'geneMetadataState':
-		view = 'genemetadata';
-		break;
-	case 'cellMetadataState':
-		view = 'cellmetadata';
+		case 'heatmapState':
+			view = 'heatmap';
+			break;
+		case 'sparklineState':
+			view = 'sparklines';
+			break;
+		case 'landscapeState':
+			view = 'cells';
+			break;
+		case 'genescapeState':
+			view = 'genes';
+			break;
+		case 'geneMetadataState':
+			view = 'genemetadata';
+			break;
+		case 'cellMetadataState':
+			view = 'cellmetadata';
 	}
 	const dataSet = state.dataSets[datasetName];
 	const project = dataSet.project;
@@ -81,14 +81,18 @@ function setViewStateURL(state, action) {
 
 function updateFilter(state, action) {
 
-	// first toggle filter in metadata
+	// first toggle filter in metadata & update
+	// relevant (row|col)Filtered array
 	let newState = updateMostFrequent(state, action);
 
 	// update indices - pre-calc filtered data
 	const { dataset, attr } = action;
-	const { newAttrs, filteredGenes } = updateFilterIndices(newState.dataSets[dataset], attr);
-	const dataSetUpdate = filteredGenes?
-		{ [attr]: newAttrs, fetchedGenes: filteredGenes } : { [attr]: newAttrs};
+	let { newAttrs, filteredGenes } = updateFilterIndices(newState.dataSets[dataset], attr);
+	// Check which attributes are invisible due to other attribute filters
+	// turned off because it slowed things down too much
+	// newAttrs = updateVisible(newAttrs);
+	const dataSetUpdate = filteredGenes ?
+		{ [attr]: newAttrs, fetchedGenes: filteredGenes } : { [attr]: newAttrs };
 	let attrIndicesTree = {
 		dataSets: {
 			[dataset]: dataSetUpdate,
@@ -100,20 +104,37 @@ function updateFilter(state, action) {
 
 function updateMostFrequent(state, action) {
 	const { dataset, attr, key, val } = action;
-	let data = state.dataSets[dataset][attr][key];
-	let mostFrequent = data.mostFrequent.slice(0);
+	const ds = state.dataSets[dataset];
+	let attrData = ds[attr][key];
+	let mostFrequent = attrData.mostFrequent.slice(0);
+	// update filtered in metadata
+	let filtered;
 	for (let i = 0; i < mostFrequent.length; i++) {
 		let mf = mostFrequent[i];
 		if (val === mf.val) {
-			mostFrequent[i] = merge(mf, { filtered: !mf.filtered });
+			filtered = !mf.filtered;
+			mostFrequent[i] = merge(mf, { filtered });
 			break;
 		}
 	}
+	// update filtered array;
+	let filteredArray = attr === 'colAttrs' ? ds.colFiltered.slice(0) : ds.rowFiltered.slice(0);
+	if (filtered){
+		for (let i = 0, data = attrData.data; i < filteredArray.length; i++){
+			if (data[i] === val){ filteredArray[i]++; }
+		}
+	} else {
+		for (let i = 0, data = attrData.data; i < filteredArray.length; i++){
+			if (data[i] === val){ filteredArray[i]--; }
+		}
+	}
+	filtered = attr === 'colAttrs' ? 'colFiltered' : 'rowFiltered';
 	let filterTree = {
 		dataSets: {
 			[dataset]: {
+				[filtered]: filteredArray,
 				[attr]: {
-					[key]: merge( data, { mostFrequent }),
+					[key]: merge(attrData, { mostFrequent }),
 				},
 			},
 		},
@@ -124,78 +145,59 @@ function updateMostFrequent(state, action) {
 function updateFilterIndices(ds, attr) {
 	const attributes = ds[attr];
 	const isColAttrs = attr === 'colAttrs';
-	const attrKeys = isColAttrs ? ds.colKeys : ds.rowKeys;
-	let indices = attributes['(original order)'].data.slice(0);
-	for (let i = 0; i < attrKeys.length; i++) {
-		const key = attrKeys[i];
-		indices = filterAttrIndices(attributes[key], indices);
-	}
 
+	const [filtered, order, attrKeys] = isColAttrs ?
+	[ds.colFiltered, ds.colOrder, ds.colKeys] :
+	[ds.rowFiltered, ds.rowOrder, ds.rowKeys];
+
+	// filter indices
+	//let indices = attributes['(original order)'].data.slice(0);
+	let indices = filterIndices(filtered);
 	// Sort indices according to sort settings
-	const order = isColAttrs ? ds.colOrder : ds.rowOrder;
 	indices = sortAttrIndices(indices, order, attributes);
-
 	// Update newly data according to new filter/sort settings
 	let newAttrs = updateAttrs(indices, attrKeys, attributes);
 
 	let filteredGenes;
-	if (isColAttrs){
+	if (isColAttrs) {
 		filteredGenes = updateFilteredGenes(ds.fetchedGenes, indices);
 	}
 	return { newAttrs, filteredGenes };
 }
 
-function filterAttrIndices(attr, indices){
-	const { data, mostFrequent, stringVal } = attr;
-	// if every value is unique, we don't filter
-	if (mostFrequent[0].count === 1) { return indices; }
-	const maxFilters = Math.min(mostFrequent.length, 20);
-	for (let i = 0; i < maxFilters; i++) {
-		const { val, filtered } = mostFrequent[i];
-		if (filtered) {
-			const oldIndices = indices;
-			indices = [];
-			if (stringVal){
-				for (let j = 0; j < oldIndices.length; j++) {
-					const idx = oldIndices[j];
-					if (stringVal[data[idx]] !== val) {
-						indices.push(idx);
-					}
-				}
-			} else {
-				for (let j = 0; j < oldIndices.length; j++) {
-					const idx = oldIndices[j];
-					if (data[idx] !== val) {
-						indices.push(idx);
-					}
-				}
-			}
+function filterIndices(filtered) {
+	let indices = [];
+	let maxVal = 0;
+	for (let i = 0; i < filtered.length; i++) {
+		if (!filtered[i]){
+			indices.push(i);
+			maxVal = i;
 		}
 	}
 
 	// convert to typed arrays for indexing speed.
-	if (indices.length < 256){
+	if (maxVal < 256) {
 		return Uint8Array.from(indices);
-	} else if (indices.length < 65536){
+	} else if (maxVal < 65536) {
 		return Uint16Array.from(indices);
-	} if (indices.length < 4294967296){
+	} if (maxVal < 4294967296) {
 		return Uint32Array.from(indices);
 	}
 	return Float64Array.from(indices);
 }
 
-function sortAttrIndices(indices, order, attributes){
+function sortAttrIndices(indices, order, attributes) {
 
 	let retVal = new Int8Array(order.length);
-	for (let i = 0; i < order.length; i++){
+	for (let i = 0; i < order.length; i++) {
 		retVal[i] = order[i].ascending ? 1 : -1;
 	}
 	const comparator = (a, b) => {
-		for (let i = 0; i < order.length; i++){
+		for (let i = 0; i < order.length; i++) {
 			let data = attributes[order[i].key].data;
-			if (data[a] < data[b]){
+			if (data[a] < data[b]) {
 				return -retVal[i];
-			} else if (data[a] > data[b]){
+			} else if (data[a] > data[b]) {
 				return retVal[i];
 			}
 		}
@@ -204,30 +206,14 @@ function sortAttrIndices(indices, order, attributes){
 	return indices.sort(comparator);
 }
 
-function updateAttrs(indices, attrKeys, attributes){
+function updateAttrs(indices, attrKeys, attributes) {
 	let newAttrs = {};
 	for (let i = 0; i < attrKeys.length; i++) {
 		const key = attrKeys[i];
 		const { data, arrayType } = attributes[key];
-		let arrayConstr = Array;
-		switch (arrayType) {
-		case 'float32':
-			arrayConstr = Float32Array;
-			break;
-		case 'number':
-		case 'float64':
-			arrayConstr = Float64Array;
-			break;
-		case 'integer':
-			arrayConstr = Int32Array;
-			break;
-		case 'indexedString':
-			arrayConstr = Uint8Array;
-			break;
-		default:
-		}
-		let filteredData = new arrayConstr(indices.length);
-		for (let j = 0; j < indices.length; j++){
+		const constr = arrayConstr(arrayType);
+		let filteredData = new constr(indices.length);
+		for (let j = 0; j < indices.length; j++) {
 			filteredData[j] = data[indices[j]];
 		}
 		newAttrs[key] = merge(attributes[key], { filteredData });
@@ -235,31 +221,33 @@ function updateAttrs(indices, attrKeys, attributes){
 	return newAttrs;
 }
 
-function updateFilteredGenes(fetchedGenes, indices){
+function updateFilteredGenes(fetchedGenes, indices) {
 	let newGenes = {};
-	for (let i = 0, keys = Object.keys(fetchedGenes); i < keys.length; i++){
-		const {data} = fetchedGenes[keys[i]];
-		let filteredData = new Float64Array(indices.length);
-		for (let j = 0; j < indices.length; j++){
+	for (let i = 0, keys = Object.keys(fetchedGenes); i < keys.length; i++) {
+		const key = keys[i];
+		const {data, arrayType } = fetchedGenes[key];
+		const constr = arrayConstr(arrayType);
+		let filteredData = new constr(indices.length);
+		for (let j = 0; j < indices.length; j++) {
 			filteredData[j] = data[indices[j]];
 		}
-		newGenes[keys[i]] = {data, filteredData};
+		newGenes[key] = merge(fetchedGenes[key], { filteredData });
 	}
 	return newGenes;
 }
 
-function updateAttrOrder(order, key){
+function updateAttrOrder(order, key) {
 	let newOrder = Array.from(order);
 	let idx = newOrder.length;
-	while (idx--){
-		if (key === newOrder[idx].key){
+	while (idx--) {
+		if (key === newOrder[idx].key) {
 			break;
 		}
 	}
 	let t = newOrder[idx];
-	if (idx){ // if idx > 0
-		while (idx--){
-			newOrder[idx+1] = newOrder[idx];
+	if (idx) { // if idx > 0
+		while (idx--) {
+			newOrder[idx + 1] = newOrder[idx];
 		}
 		newOrder[0] = t;
 	} else {
@@ -284,7 +272,7 @@ function updateGeneSortOrder(state, action) {
 	let newAttrs = updateAttrs(indices, rowKeys, rowAttrs);
 	return merge(state, {
 		dataSets: {
-			[dataset]: { rowAttrs: newAttrs, rowOrder},
+			[dataset]: { rowAttrs: newAttrs, rowOrder },
 		},
 	});
 }
@@ -292,7 +280,7 @@ function updateGeneSortOrder(state, action) {
 function updateCellSortOrder(state, action) {
 	const { key, dataset } = action;
 	const ds = state.dataSets[dataset];
-	const { colAttrs, colKeys } = ds;
+	const { colAttrs, colKeys, fetchedGenes } = ds;
 	// set new sort order
 	let colOrder = updateAttrOrder(ds.colOrder, key);
 	let indices = colAttrs['(original order)'].filteredData;
@@ -302,18 +290,20 @@ function updateCellSortOrder(state, action) {
 
 	// Update newly data according to new filter/sort settings
 	let newAttrs = updateAttrs(indices, colKeys, colAttrs);
+	let newGenes = updateFilteredGenes(fetchedGenes, indices);
 	return merge(state, {
 		dataSets: {
-			[dataset]: { colAttrs: newAttrs, colOrder},
+			[dataset]: { colAttrs: newAttrs, colOrder, fetchedGenes: newGenes },
 		},
-	});}
+	});
+}
 
-function receivedGene(state, action){
+function receivedGene(state, action) {
 	const {gene, datasetName} = action;
 	const indices = state.dataSets[datasetName].colAttrs['(original order)'].filteredData;
 	let filteredData = new Float64Array(indices.length);
 	const {data} = action.state.dataSets[datasetName].fetchedGenes[gene];
-	for (let i = 0; i < indices.length; i++){
+	for (let i = 0; i < indices.length; i++) {
 		filteredData[i] = data[indices[i]];
 	}
 	action.state.dataSets[datasetName].fetchedGenes[gene].filteredData = filteredData;
@@ -354,35 +344,35 @@ const initialData = {
 
 function data(state = initialData, action) {
 	switch (action.type) {
-	case RECEIVE_PROJECTS:
-	case RECEIVE_DATASET:
-	case SEARCH_DATASETS:
-	case SEARCH_METADATA:
-	case REQUEST_GENE:
-	case REQUEST_GENE_FAILED:
-		return update(state, action);
+		case RECEIVE_PROJECTS:
+		case RECEIVE_DATASET:
+		case SEARCH_DATASETS:
+		case SEARCH_METADATA:
+		case REQUEST_GENE:
+		case REQUEST_GENE_FAILED:
+			return update(state, action);
 
-	case RECEIVE_GENE:
-		return receivedGene(state, action);
+		case RECEIVE_GENE:
+			return receivedGene(state, action);
 
-	case SORT_DATASETS:
-		return updateDatasetSortOrder(state, action.key);
+		case SORT_DATASETS:
+			return updateDatasetSortOrder(state, action.key);
 
-	case SORT_GENE_METADATA:
-		return updateGeneSortOrder(state, action);
+		case SORT_GENE_METADATA:
+			return updateGeneSortOrder(state, action);
 
-	case SORT_CELL_METADATA:
-		return updateCellSortOrder(state, action);
+		case SORT_CELL_METADATA:
+			return updateCellSortOrder(state, action);
 
-	case FILTER_METADATA:
-		return updateFilter(state, action);
+		case FILTER_METADATA:
+			return updateFilter(state, action);
 
-	//===VIEW ACTIONS===
-	case SET_VIEW_PROPS:
-		return setViewStateURL(state, action);
+		//===VIEW ACTIONS===
+		case SET_VIEW_PROPS:
+			return setViewStateURL(state, action);
 
-	default:
-		return state;
+		default:
+			return state;
 	}
 }
 

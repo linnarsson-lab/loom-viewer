@@ -35,11 +35,12 @@ export const SortableTable = function (props) {
 				) : null;
 			}
 			const header = headers ? headers[i] : null;
+			const onClick = header ? Array.isArray(onHeaderClick) ? onHeaderClick[i] : onHeaderClick : null;
 			headerCells.push(
 				<th
 					key={keys ? keys.join(' ') : key}
-					style={Object.assign({ cursor: (header && onHeaderClick) ? 'pointer' : 'default' }, headerStyles ? headerStyles[i] : null)}
-					onClick={header ? onHeaderClick : null}>
+					style={Object.assign({ cursor: onClick ? 'pointer' : 'default' }, headerStyles ? headerStyles[i] : null)}
+					onClick={onClick}>
 					{header}{sortIcon}
 				</th>
 			);

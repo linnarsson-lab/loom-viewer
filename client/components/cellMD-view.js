@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { FormControl } from 'react-bootstrap';
+import { FormControl, Glyphicon } from 'react-bootstrap';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
 import { SEARCH_METADATA, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/actionTypes';
@@ -45,7 +45,6 @@ class CellMDComponent extends Component {
 			});
 		};
 
-
 		this.setState({ onClickAttrFactory, onClickFilterFactory, searchMetadata });
 	}
 
@@ -61,6 +60,23 @@ class CellMDComponent extends Component {
 				/>
 		);
 
+		// Show first four attributes to use as sort keys
+		const { colOrder } = dataSet;
+		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
+		for (let i = 0; i < Math.min(colOrder.length, 4); i++){
+			const val = colOrder[i];
+			sortOrderList.push(
+				<span key={i}>
+					{val.key}
+					<Glyphicon
+						glyph={ val.ascending ?
+						'sort-by-attributes' : 'sort-by-attributes-alt' } />
+					&nbsp;,&nbsp;&nbsp;&nbsp;
+				</span>
+			);
+		}
+		sortOrderList.push('...');
+
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
 				<h1>Cell Metadata of {dataSet.dataset}</h1>
@@ -73,6 +89,7 @@ class CellMDComponent extends Component {
 					onClickFilterFactory={onClickFilterFactory}
 					searchField={searchField}
 					searchVal={searchVal}
+					sortOrderList={sortOrderList}
 					/>
 			</div>
 		);

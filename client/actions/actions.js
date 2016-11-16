@@ -19,7 +19,7 @@ import {
 } from './actionTypes';
 
 import { groupBy } from 'lodash';
-import { countElements } from '../js/util';
+import { countElements, calcMinMax } from '../js/util';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ function receiveProjects(list) {
 	keys = Object.keys(list[keys[0]][0]);
 	let sortKeys = [];
 	for (let i = 0; i < keys.length; i++) {
-		sortKeys.push({ key: sortKeys[i], ascending: true });
+		sortKeys.push({ key: keys[i], ascending: true });
 	}
 	// sort by date by default
 	for (let i = 0; i < keys.length; i++) {
@@ -89,13 +89,14 @@ function receiveProjects(list) {
 export function fetchProjects(projects) {
 	return (dispatch) => {
 		// Announce that the request has been started
-		dispatch(requestProjects());
+		//dispatch(requestProjects());
 		// Second, check if projects already exists in the store
 		// If so, notify it is cached and return.
 		// If not, perform a fetch request (async)
 		if (projects) {
 			// Announce we are retrieving from cache
-			return dispatch(requestProjectsCached());
+			// return dispatch(requestProjectsCached());
+			return;
 		} else {
 			// Announce we are fetching from server
 			dispatch(requestProjectsFetch());
@@ -169,7 +170,7 @@ function receiveDataSet(dataSet) {
 }
 
 // prep received dataset for actual usage.
-function prepData(dataSet){
+function prepData(dataSet) {
 	// store original order of rowAttrs and colAttrs,
 	let origOrderKey = '(original order)';
 	let rowKeys = Object.keys(dataSet.rowAttrs).sort();
@@ -182,8 +183,8 @@ function prepData(dataSet){
 	dataSet.rowKeys = rowKeys;
 	dataSet.colKeys = colKeys;
 	// Initial sort order
-	dataSet.rowOrder = rowKeys.map((key) => { return {key, ascending: true}; });
-	dataSet.colOrder = colKeys.map((key) => { return {key, ascending: true}; });
+	dataSet.rowOrder = rowKeys.map((key) => { return { key, ascending: true }; });
+	dataSet.colOrder = colKeys.map((key) => { return { key, ascending: true }; });
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular
@@ -196,10 +197,11 @@ function prepData(dataSet){
 	dataSet.colAttrs = newColAttrs;
 	// Schema metadata is now part of the array objects
 	// in rowAttr/colAttr, so we can remove the field
-	// delete dataSet['schema'];
-	// add empty fields for filtering values
-	dataSet.rowFilters = {};
-	dataSet.colFilters = {};
+	delete dataSet['schema'];
+	// Add zero-initialised filter counting arrays, assumes
+	// that we will never have more than 65,535 attributes
+	dataSet.rowFiltered = new Uint16Array(dataSet.rowAttrs[origOrderKey].data.length);
+	dataSet.colFiltered = new Uint16Array(dataSet.colAttrs[origOrderKey].data.length);
 	// add empty fields for fetched genes
 	dataSet.fetchedGenes = {};
 	dataSet.fetchingGenes = {};
@@ -215,31 +217,60 @@ function originalOrder(array) {
 }
 
 
-// Convert plain arrays to typed/indexed arrays
 function convertArrays(attrs, schema) {
 	let keys = Object.keys(schema);
 	let newAttrs = {};
 	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
-		let array = { data: attrs[key], arrayType: schema[key] };
-		let mostFrequent = countElements(array.data);
-		for (let i = 0; i < mostFrequent.length; i++){
-			mostFrequent[i].filtered = false;
-			mostFrequent[i].visible = true;
-		}
-		array.mostFrequent = mostFrequent;
-		// create lookup table to convert attribute values
-		// to color indices (so a look-up table for finding
-		// indices for another lookup table).
-		let colorIndices = {};
-		for (let i = 0; i < 20 && i < mostFrequent.length; i++){
-			colorIndices[mostFrequent[i].val] = i;
-		}
-		array.colorIndices = colorIndices;
-		// convert number values to typed arrays matching the schema,
-		// and string arrays with few unique values to indexedString
-		array.filteredData = Array.from(array.data);
-		switch (array.arrayType) {
+		newAttrs[key] = convertArray(attrs[key], schema[key]);
+	}
+	return newAttrs;
+}
+
+// Convert plain array to object with
+// typed/indexed array and metadata
+function convertArray(data, arrayType) {
+	let array = { data, arrayType };
+	let mostFrequent = countElements(array.data);
+	for (let i = 0; i < mostFrequent.length; i++) {
+		mostFrequent[i].filtered = false;
+	}
+	array.mostFrequent = mostFrequent;
+	// create lookup table to convert attribute values
+	// to color indices (so a look-up table for finding
+	// indices for another lookup table).
+	let colorIndices = {};
+	for (let i = 0; i < 20 && i < mostFrequent.length; i++) {
+		colorIndices[mostFrequent[i].val] = i + 1;
+	}
+	array.colorIndices = colorIndices;
+	switch (array.arrayType) {
+		case 'float32':
+		case 'number':
+		case 'float64':
+			// make sure the values in this array are actually floats
+			// and if not set schema to use integers instead
+			array.arrayType = isRealFloat(array.data) ?
+				array.arrayType : 'integer';
+			break;
+		default:
+		// do nothing
+	}
+
+	// For our plotters we often need to know the dynamic
+	// range for non-zero values, but also need to know
+	// if zero-values are present. So we pre-calc this.
+	// Note: calcMinMax returns undefined values
+	// if array.data is not numerical.
+	const { min, max, hasZeros } = calcMinMax(array.data, true);
+	array.min = min;
+	array.max = max;
+	array.hasZeros = hasZeros;
+
+	// convert number values to typed arrays matching the schema,
+	// and string arrays with few unique values to indexedString
+	array.filteredData = Array.from(array.data);
+	switch (array.arrayType) {
 		case 'float32':
 			array.data = Float32Array.from(array.data);
 			array.filteredData = Float32Array.from(array.data);
@@ -250,40 +281,87 @@ function convertArrays(attrs, schema) {
 			array.filteredData = Float64Array.from(array.data);
 			break;
 		case 'integer':
-			array.data = Int32Array.from(array.data);
-			array.filteredData = Int32Array.from(array.data);
+			// convert to most compact integer representation
+			// for better performance.
+			if (min >= 0) {
+				if (max < 256) {
+					array.data = Uint8Array.from(array.data);
+					array.filteredData = Uint8Array.from(array.data);
+					array.arrayType = 'uint8';
+				} else if (max < 65535) {
+					array.data = Uint16Array.from(array.data);
+					array.filteredData = Uint16Array.from(array.data);
+					array.arrayType = 'uint16';
+				} else {
+					array.data = Uint32Array.from(array.data);
+					array.filteredData = Uint32Array.from(array.data);
+					array.arrayType = 'uint32';
+				}
+			} else if (min > -128 && max < 128) {
+				array.data = Int8Array.from(array.data);
+				array.filteredData = Int8Array.from(array.data);
+				array.arrayType = 'int8';
+			} else if (min > -32769 && max < 32768) {
+				array.data = Int16Array.from(array.data);
+				array.filteredData = Int16Array.from(array.data);
+				array.arrayType = 'in16';
+			} else {
+				array.data = Int32Array.from(array.data);
+				array.filteredData = Int32Array.from(array.data);
+				array.arrayType = 'in32';
+			}
 			break;
 		case 'string':
-			if (mostFrequent.length < 256){
-				array = IndexedStringArray(array, mostFrequent);
+			if (mostFrequent.length < 256) {
+				array = IndexedStringArray(array);
 				array.filteredData = Uint8Array.from(array.data);
 			}
 			break;
 		default:
-		}
-		newAttrs[key] = array;
 	}
-	return newAttrs;
+	return array;
 }
 
+function isRealFloat(array) {
+	// see if any of the values differ
+	// from forced integer value
+	for (let i = 0; i < array.length; i++) {
+		if ((array[i] | 0) !== array[i]) { return true; }
+	}
+	return false;
+}
+
+// mdArray & mostFrequent must be mutable!
 // Using indexed strings can be much faster, since Uint8Arrays
-// are denser and smaller, and allow for quicker "string"
-// comparisons in the plotters.
-function IndexedStringArray(metaDataArray, mostFrequent){
-	let data = new Uint8Array(metaDataArray.data.length);
-	metaDataArray.arrayType = 'indexedString';
-	metaDataArray.stringVal = new Array(mostFrequent.length);
-	for (let i = 0; i < mostFrequent.length; i++){
-		const { val } = mostFrequent[i];
-		metaDataArray.stringVal[i] = val;
-		for (let j = 0; j < metaDataArray.data.length; j++){
-			if (metaDataArray.data[j] === val){
-				data[j] = i;
+// are denser and smaller, and allow for quicker comparisons
+// in the plotters than strings.
+function IndexedStringArray(mdArray) {
+	let mf = mdArray.mostFrequent.slice(0);
+	let data = new Uint8Array(mdArray.data.length);
+	mdArray.arrayType = 'indexedString';
+	mdArray.indexedVal = new Array(mf.length);
+	let ci = {};
+	for (let i = 0; i < mf.length; i++) {
+		const { val } = mf[i];
+		// This is necessary to sync with sorting:
+		// the most common value should be largest
+		const idx = mf.length - i - 1;
+		mdArray.indexedVal[idx] = val;
+		for (let j = 0; j < mdArray.data.length; j++) {
+			if (mdArray.data[j] === val) {
+				data[j] = idx;
 			}
 		}
+		// convert mostFrequent and colorIndices to use indexed
+		// values too, to simplify the most common situation:
+		// direct lookup using the filteredData/data array.
+		mf[i] = Object.assign(mf[i], { val: idx });
+		ci[idx] = i + 1; //offset by one, for zero-values
 	}
-	metaDataArray.data = data;
-	return metaDataArray;
+	mdArray.data = data;
+	mdArray.mostFrequent = mf;
+	mdArray.colorIndices = ci;
+	return mdArray;
 }
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -374,7 +452,7 @@ function receiveGene(gene, datasetName, data) {
 		state: {
 			dataSets: {
 				[datasetName]: {
-					fetchedGenes: { [gene]: { data: Float64Array.from(data) } },
+					fetchedGenes: { [gene]: convertArray(data, 'number') },
 				},
 			},
 		},

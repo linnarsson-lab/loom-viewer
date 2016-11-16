@@ -11,7 +11,7 @@ export class MetadataPlot extends Component {
 		super(props);
 		this.modeCycler = this.modeCycler.bind(this);
 
-		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Categorical'];
+		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Heatmap2', 'Categorical'];
 		let idx = modes.indexOf(props.mode);
 		const mode = idx !== -1 ? idx : 0;
 		this.state = { modes, mode };
@@ -25,7 +25,7 @@ export class MetadataPlot extends Component {
 
 	render() {
 		const { modes, mode } = this.state;
-		const { data, filterFunc, mostFrequent } = this.props;
+		const { attr, filterFunc } = this.props;
 		return (
 			<div className='view-vertical'>
 				<div
@@ -33,24 +33,23 @@ export class MetadataPlot extends Component {
 					style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 					<Canvas
 						height={30}
-						paint={sparkline(data, modes[mode])}
+						paint={sparkline(attr, modes[mode])}
 						redraw clear />
 				</div>
 				<AttrLegend
 					mode={modes[mode]}
 					filterFunc={filterFunc}
-					mostFrequent={mostFrequent} />
+					attr={attr} />
 			</div>
 		);
 	}
 }
 
 MetadataPlot.propTypes = {
-	data: PropTypes.array.isRequired,
+	attr: PropTypes.object.isRequired,
 	mode: PropTypes.string,
 	modes: PropTypes.arrayOf(PropTypes.string),
 	filterFunc: PropTypes.func.isRequired,
-	mostFrequent: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
 
@@ -71,7 +70,7 @@ export class MetadataComponent extends Component {
 	}
 
 
-	componentWillReceiveProps(nextProps){
+	componentWillReceiveProps(nextProps) {
 		const {columns, tableData } = this.createTableData(nextProps);
 		this.setState({ columns, tableData });
 	}
@@ -79,7 +78,12 @@ export class MetadataComponent extends Component {
 	createTableData(props) {
 		const { attributes, attrKeys,
 			onClickAttrFactory, onClickFilterFactory,
-			searchField, searchVal } = props;
+			searchField, searchVal, sortOrderList } = props;
+		const sortOrderStyle = {
+			fontWeight: 'normal',
+			fontStyle: 'italic',
+			verticalAlign: 'middle',
+		};
 		const columns = [
 			{
 				headers: ['ATTRIBUTE', searchField],
@@ -87,15 +91,16 @@ export class MetadataComponent extends Component {
 				dataStyle: { width: '10%', fontWeight: 'bold' },
 			},
 			{
-				headers: ['DATA'],
+				headers: ['DATA', sortOrderList],
+				headerStyles: [{}, sortOrderStyle],
 				key: 'val',
 				dataStyle: { width: '90%', fontStyle: 'italic' },
 			},
 		];
 
 		let filteredKeys = attrKeys;
-		if (searchVal){
-			filteredKeys = attrKeys.map( (val) => {
+		if (searchVal) {
+			filteredKeys = attrKeys.map((val) => {
 				return { val };
 			});
 			const fuse = new Fuse(filteredKeys, {
@@ -110,14 +115,22 @@ export class MetadataComponent extends Component {
 			const key = filteredKeys[i];
 			const onClick = onClickAttrFactory(key);
 			let tableRow = { name: <div onClick={onClick} style={{ width: '100%', height: '100%', cursor: 'pointer' }}><span>{key}</span></div> };
-			const { filteredData, mostFrequent, type } = attributes[key];
+			const attr = attributes[key];
+			let { filteredData, indexedVal, mostFrequent, arrayType } = attr;
 
 			if (mostFrequent.length === 1 || mostFrequent[0].count === 1) {
 				// only one string, or unique strings
-				let list = mostFrequent[0].val;
+				let list = filteredData[0];
 				const l = Math.min(mostFrequent.length, 5);
-				for (let i = 1; i < l; i++) {
-					list += `, ${mostFrequent[i].val}`;
+				if (indexedVal) {
+					list = indexedVal[list];
+					for (let i = 1; i < l; i++) {
+						list += `, ${indexedVal[filteredData[i]]}`;
+					}
+				} else {
+					for (let i = 1; i < l; i++) {
+						list += `, ${filteredData[i]}`;
+					}
 				}
 				if (l < mostFrequent.length) {
 					list += ', ...';
@@ -127,26 +140,24 @@ export class MetadataComponent extends Component {
 
 
 				const filterFunc = (val) => { return onClickFilterFactory(key, val); };
-				switch(type){
-				case 'string':
-				case 'indexedString':
-					tableRow.val = (
-						<MetadataPlot
-							data={filteredData}
-							modes={['Categorical']}
-							filterFunc={filterFunc}
-							mostFrequent={mostFrequent} />
-					);
-					break;
-				default:
-					tableRow.val = (
-						<MetadataPlot
-							data={filteredData}
-							mode={ /* guess default category based on nr of unique values*/
-								mostFrequent.length <= 20 ? 'Categorical' : 'Bars'}
-							filterFunc={filterFunc}
-							mostFrequent={mostFrequent} />
-					);
+				switch (arrayType) {
+					case 'indexedString':
+					case 'string':
+						tableRow.val = (
+							<MetadataPlot
+								attr={attr}
+								modes={['Categorical']}
+								filterFunc={filterFunc} />
+						);
+						break;
+					default:
+						tableRow.val = (
+							<MetadataPlot
+								attr={attr}
+								mode={ /* guess default category based on nr of unique values*/
+									mostFrequent.length <= 20 ? 'Categorical' : 'Bars'}
+								filterFunc={filterFunc} />
+						);
 				}
 			}
 			tableData.push(tableRow);
@@ -172,6 +183,7 @@ MetadataComponent.propTypes = {
 	attrKeys: PropTypes.array.isRequired,
 	searchField: PropTypes.node.isRequired,
 	searchVal: PropTypes.string.isRequired,
+	sortOrderList: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	onClickAttrFactory: PropTypes.func.isRequired,
 	onClickFilterFactory: PropTypes.func.isRequired,

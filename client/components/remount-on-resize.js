@@ -22,6 +22,12 @@ export class RemountOnResize extends React.Component {
 		window.removeEventListener('resize', this.setResize);
 	}
 
+	componentWillReceiveProps(nextProps){
+		if (this.props.watchedVal !== nextProps.watchedVal){
+			this.setState({ resizing: true });
+		}
+	}
+
 	componentDidUpdate(prevProps, prevState) {
 		if (!prevState.resizing && this.state.resizing) {
 			this.setState({ resizing: false });
@@ -38,4 +44,5 @@ RemountOnResize.propTypes = {
 	className: PropTypes.string,
 	style: PropTypes.object,
 	children: PropTypes.node.isRequired,
+	watchedVal: PropTypes.any,
 };

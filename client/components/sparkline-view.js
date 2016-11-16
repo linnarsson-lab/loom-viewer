@@ -8,122 +8,31 @@ import { sparkline } from './sparkline';
 
 import * as _ from 'lodash';
 
-// TODO: Don't re-render every sparkline on every re-render. Cache stuff.
-class SparklineViewComponent extends Component {
-
-	constructor(props) {
-		super(props);
-		this.sortIndices = this.sortIndices.bind(this);
-		this.generateSparklinePainters = this.generateSparklinePainters.bind(this);
-		this.createSortedBy = this.createSortedBy.bind(this);
+const SparklineViewComponent = (props) => {
+	const { dataSet, dispatch } = props;
+	const sl = dataSet.sparklineState;
+	// The old column attribute values that we displayed in the "legend"
+	let legendData = dataSet.colAttrs[sl.colAttr];
+	// if colAttr does not exist (for example, the default values
+	// in the Loom interface is not present), pick the first column
+	if (legendData === undefined) {
+		legendData = dataSet.colAttrs[dataSet.colKeys[0]];
 	}
 
-	sortIndices(length, slState, dataSet) {
-		// Indices that we want to sort the data by. Default to sorted "as is"
-		let indices = new Int32Array(length);
-		for (let i = 0; i < indices.length; ++i) {
-			indices[i] = i;
-		}
+	// selected genes in state
+	const selection = sl.genes;
 
-		// Determine which array we want to sort the data by. Note
-		// that we abuse the JS dictionary behavior of returning
-		// "undefined" when an entry doesn't exist: if the string
-		// returned by an orderByGeneN or orderByAttrN is not present,
-		// its compArrN will be undefined, thus ignored.
-		const { orderByAttr1, orderByAttr2, orderByAttr3 } = slState;
-		let compArr1 = (orderByAttr1 === '(gene)') ?
-			dataSet.fetchedGenes[slState.orderByGene1]
-			:
-			dataSet.colAttrs[orderByAttr1];
-		let compArr2 = (orderByAttr2 === '(gene)') ?
-			dataSet.fetchedGenes[slState.orderByGene2]
-			:
-			dataSet.colAttrs[orderByAttr3];
-		let compArr3 = (orderByAttr3 === '(gene)') ?
-			dataSet.fetchedGenes[slState.orderByGene3]
-			:
-			dataSet.colAttrs[orderByAttr3];
-		let compArr = [];
-		if (compArr1) { compArr.push(compArr1.filteredData); }
-		if (compArr2) { compArr.push(compArr2.filteredData); }
-		if (compArr3) { compArr.push(compArr3.filteredData); }
-
-		// Because not all browsers use a stable algorithm,
-		// we force stability with this trick:
-		// http://stackoverflow.com/a/2085225
-		// Essentially, as a last resort we compare to the
-		// original positions of the data.
-		// This is important to ensure the sparline data
-		// behaves the same across browsers.
-		if (compArr) {
-			indices = indices.slice(0).sort((a, b) => {
-				let i = 0, v = 0;
-				while (v === 0 && i < compArr.length) {
-					v = compArr[i][a] < compArr[i][b] ? -1 :
-						compArr[i][a] > compArr[i][b] ? 1 : 0;
-					i++;
-				}
-				return v ? v : (indices[a] < indices[b] ? -1 : 1);
-			});
-		}
-		return indices;
-	}
-
-	// Creates a new sorted array
-	createSortedBy(arr, indices) {
-		let sortedArr = new Array(arr.length);
-		for (let i = 0; i < arr.length; ++i) { sortedArr[i] = arr[indices[i]]; }
-		return sortedArr;
-	}
-
-	generateSparklinePainters(genes, geneData, mode, showLabels) {
-		let newSL = []; // new sparklines
-		let dataRange = [0, geneData[0].length];
-		for (let i = 0; i < genes.length; i++) {
-			const gene = genes[i];
-			newSL[i] = sparkline(geneData[i], mode, dataRange, showLabels ? gene : null);
-		}
-		return newSL;
-	}
-
-	render() {
-		const { dataSet, dispatch } = this.props;
-		const sl = dataSet.sparklineState;
-		// The old column attribute values that we displayed in the "legend"
-		let legendData = dataSet.colAttrs[sl.colAttr];
-		// if colAttr does not exist (for example, the default values
-		// in the Loom interface is not present), pick the first column
-		if (legendData === undefined) {
-			let properties = Object.getOwnPropertyNames(dataSet.colAttrs);
-			legendData = dataSet.colAttrs[properties[0]];
-		}
-
-		const indices = this.sortIndices(legendData.length, sl, dataSet);
-
-		// selected genes in state
-		const selection = dataSet.rowAttrs.Gene ?
-			_.intersection(sl.genes, dataSet.rowAttrs.Gene)
-			:
-			sl.genes;
-
-		let genes = [], data = [];
-		for (let i = 0; i < selection.length; i++) {
-			let geneData = dataSet.fetchedGenes[selection[i]].filteredData;
-			// no point trying to generate genes without data
-			if (geneData) {
-				genes.push(selection[i]);
-				data.push(this.createSortedBy(geneData, indices));
-			}
-		}
-
-		let sparklinePainters = genes.length ? this.generateSparklinePainters(genes, data, sl.geneMode, sl.showLabels) : [];
-		let sparklines = new Array(sparklinePainters.length);
-		for (let i = 0; i < sparklinePainters.length; i++) {
-			sparklines[i] = (
+	// only show the genes that actually have been fetched
+	let sparklines = [], j = 0;
+	for (let i = 0; i < selection.length; i++) {
+		let geneData = dataSet.fetchedGenes[selection[i]];
+		// no point trying to generate genes without data
+		if (geneData) {
+			sparklines.push(
 				<div
-					key={genes[i]}
+					key={selection[i]}
 					style={{
-						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+						background: ((j++ % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
 						display: 'flex',
 						flexDirection: 'column',
 						minHeight: '30px',
@@ -131,67 +40,66 @@ class SparklineViewComponent extends Component {
 					}}>
 					<Canvas
 						height={30}
-						paint={sparklinePainters[i]}
+						paint={sparkline(geneData, sl.geneMode, undefined, sl.showLabels ? selection[i] : null)}
 						redraw
 						clear
 						/>
 				</div>
 			);
 		}
+	}
 
+	const legend = (
+		<div style={{
+			flex: '0 0 auto',
+			minHeight: '20px',
+			overflowY: 'scroll',
+			overflowX: 'hidden',
+		}}>
+			<Canvas
+				height={20}
+				paint={sparkline(legendData, sl.colMode)}
+				redraw
+				clear
+				/>
+		</div>
+	);
 
-		const legendPainter = sparkline(this.createSortedBy(legendData, indices), sl.colMode);
-		const legend = (
+	const sparklineview = (
+		<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
+			{legend}
 			<div style={{
-				flex: '0 0 auto',
-				minHeight: '20px',
+				display: 'flex',
+				flex: 1,
 				overflowY: 'scroll',
 				overflowX: 'hidden',
 			}}>
-				<Canvas
-					height={20}
-					paint={legendPainter}
-					redraw
-					clear
-					/>
-			</div>
-		);
-
-		const sparklineview = (
-			<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
-				{legend}
 				<div style={{
 					display: 'flex',
-					flex: 1,
-					overflowY: 'scroll',
-					overflowX: 'hidden',
+					flexDirection: 'column',
+					width: '100%',
 				}}>
-					<div style={{
-						display: 'flex',
-						flexDirection: 'column',
-						width: '100%',
-					}}>
-						{sparklines}
-					</div>
+					{sparklines}
 				</div>
-				{legend}
 			</div>
-		);
+			{legend}
+		</div>
+	);
 
 
-		return (
-			<div className='view' style={{ overflowX: 'hidden' }}>
-				<div style={{ overflowY: 'auto' }}>
-					<SparklineSidepanel
-						dataSet={dataSet}
-						dispatch={dispatch}
-						/>
-				</div>
-				{sparklineview}
+	return (
+		<div className='view' style={{ overflowX: 'hidden' }}>
+			<div style={{ overflowY: 'auto' }}>
+				<SparklineSidepanel
+					dataSet={dataSet}
+					dispatch={dispatch}
+					/>
 			</div>
-		);
-	}
-}
+			{sparklineview}
+		</div>
+	);
+};
+
 
 SparklineViewComponent.propTypes = {
 	dataSet: PropTypes.object.isRequired,
@@ -199,12 +107,6 @@ SparklineViewComponent.propTypes = {
 };
 
 const initialState = { // Initialise sparklineState for this dataset
-	orderByAttr1: '(original order)',
-	orderByGene1: '',
-	orderByAttr2: '',
-	orderByGene2: '',
-	orderByAttr3: '',
-	orderByGene3: '',
 	colMode: 'Categorical',
 	geneMode: 'Bars',
 	genes: '',

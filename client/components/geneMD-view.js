@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react';
-import { FormControl } from 'react-bootstrap';
+import { FormControl, Glyphicon } from 'react-bootstrap';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
 import { SEARCH_METADATA, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/actionTypes';
@@ -8,6 +8,7 @@ class GeneMDComponent extends Component {
 	componentWillMount() {
 		const { dispatch, dataSet} = this.props;
 		const { dataset } = dataSet;
+
 		const onClickAttrFactory = (key) => {
 			return () => {
 				dispatch({
@@ -61,6 +62,22 @@ class GeneMDComponent extends Component {
 				/>
 		);
 
+		const { rowOrder } = dataSet;
+		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
+		for (let i = 0; i < Math.min(rowOrder.length, 4); i++){
+			const val = rowOrder[i];
+			sortOrderList.push(
+				<span key={i}>
+					{val.key}
+					<Glyphicon
+						glyph={ val.ascending ?
+						'sort-by-attributes' : 'sort-by-attributes-alt' } />
+					&nbsp;,&nbsp;&nbsp;&nbsp;
+				</span>
+			);
+		}
+		sortOrderList.push('...');
+
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
 				<h1>Gene Metadata of {dataSet.dataset}</h1>
@@ -73,6 +90,7 @@ class GeneMDComponent extends Component {
 					onClickFilterFactory={onClickFilterFactory}
 					searchField={searchField}
 					searchVal={searchVal}
+					sortOrderList={sortOrderList}
 					/>
 			</div>
 		);

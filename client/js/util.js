@@ -85,20 +85,64 @@ export function nMostFrequent(array, n) {
 	// return result[0] === '' ? result.slice(1, n + 1) : result.slice(0, n);
 }
 
-export function calcMinMax(data) {
-	let min = 0;
-	let max = 0;
+// assumes no NaN values!
+export function calcMinMax(data, ignoreZeros) {
+	let min, max, hasZeros;
 	if (typeof data[0] === 'number') {
-		min = Number.MAX_VALUE;
-		max = Number.MIN_VALUE;
-		for (let i = 0; i < data.length; i++) {
-			min = min < data[i] ? min : data[i];
-			max = max > data[i] ? max : data[i];
+		if (ignoreZeros) {
+			let i = 0;
+			while (data[i] === 0) { i++; }
+			min = data[i];
+			max = data[i];
+			hasZeros = i > 0;
+			while (i < data.length){
+				const v = data[i];
+				if (v){
+					min = min < v ? min : v;
+					max = max > v ? max : v;
+				}
+				hasZeros = hasZeros || v === 0;
+				i++;
+			}
+		} else {
+			min = data[0];
+			max = data[0];
+			for (let i = 1; i < data.length; i++) {
+				const v = data[i];
+				min = min < v ? min : v;
+				max = max > v ? max : v;
+				hasZeros = hasZeros || v === 0;
+			}
 		}
 	}
-	return { min, max };
+	return { min, max, hasZeros };
 }
 
+export function arrayConstr(arrayType){
+	switch (arrayType) {
+		case 'float32':
+			return Float32Array;
+		case 'number':
+		case 'float64':
+			return Float64Array;
+		case 'integer':
+		case 'int32':
+			return Int32Array;
+		case 'int16':
+			return Int16Array;
+		case 'int8':
+			return Int8Array;
+		case 'uint32':
+			return Uint32Array;
+		case 'uint16':
+			return Uint16Array;
+		case 'uint8':
+		case 'indexedString':
+			return Uint8Array;
+		default:
+	}
+	return Array;
+}
 // checks if an object is an array or typed array
 export function isArray(obj) {
 	return obj instanceof Array ||
