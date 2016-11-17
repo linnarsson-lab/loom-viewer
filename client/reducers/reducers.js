@@ -25,18 +25,19 @@ import {
 	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
-
-// Usage: action can optionally have "prune", "state" and "toggle"
-// trees to declaratively modify the old state tree.
-// - action.prune is a tree of values of the old state tree to
-//   "remove" (by not copying them to the new state)
-// - action.state is a tree of new values to merge into the old
-//   state tree, resulting in the new state.
-// - action.toggle is a tree of new values to merge into the old
-//   state tree, but toggles boolean values (previously undefined
-//   values are initialised as "true")
-// If multiple trees are provided, they are applied in order of
-// prune -> state -> toggle
+/**
+ * Usage: action can optionally have "prune" and "state" trees
+ * to "declaratively" modify the old state tree.
+ * - action.prune is a tree of values of the old state tree to
+ *   "remove" (by not copying them to the new state). Only leaves
+ *   will be pruned
+ * - action.state is a tree of new values to merge into the old
+ *   state tree, resulting in the new state.
+ * If both are provided, prune is applied first (which lets us
+ * _replace_ objects wholesale, instead of merging them).
+ * IMPORTANT: use simple, "plain" JS objects only; this borks when
+ * passed JSX objects, for example.
+ */
 function update(state, action) {
 	let newState = action.prune ? prune(state, action.prune) : state;
 	newState = action.state ? merge(newState, action.state) : newState;
