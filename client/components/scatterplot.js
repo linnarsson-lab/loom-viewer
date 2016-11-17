@@ -1,6 +1,13 @@
 import * as colorLUT from '../js/colors';
 import { rndNorm } from '../js/util';
 
+// "global" sprite canvas
+const sprite = document.createElement('canvas');
+sprite.id = 'dot_sprite';
+sprite.width = 13;
+sprite.height = 13;
+const spriteContext = sprite.getContext('2d');
+
 export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 	return (context) => {
 		// only render if all required data is supplied
@@ -70,9 +77,9 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 		}
 
 		// Draw the scatter plot itself
-		context.globalAlpha = 0.6;
-		context.strokeStyle = 'black';
-		context.lineWidth = Math.min(0.25, Math.max(0.1, radius/20));
+		spriteContext.globalAlpha = 0.6;
+		spriteContext.strokeStyle = 'black';
+		spriteContext.lineWidth = Math.min(0.25, Math.max(0.1, radius / 20));
 		let palette = [];
 		switch (colorMode) {
 			case 'Heatmap':
@@ -92,18 +99,21 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 
 		if (colorMode === 'Categorical') {
 			for (let i = 0; i < palette.length; i++) {
-				context.beginPath();
-				context.fillStyle = palette[i];
+				// draw dot on sprite
+				spriteContext.clearRect(0, 0, sprite.width, sprite.height);
+				spriteContext.fillStyle = palette[i];
+				spriteContext.beginPath();
+				spriteContext.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
+				spriteContext.closePath();
+				spriteContext.stroke();
+				spriteContext.fill();
 				for (let j = 0; j < xData.length; j++) {
 					const cIdx = colorIndices[colData[j]];
 					if (cIdx !== i) {
 						continue;
 					}
-					context.circle(xData[j], yData[j], radius);
+					context.drawImage(sprite, xData[j] | 0, yData[j] | 0);
 				}
-				context.closePath();
-				context.stroke();
-				context.fill();
 			}
 		} else { // one of the Heatmap options
 			if (hasZeros) {
@@ -111,20 +121,23 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 			}
 			const colorIdxScale = (palette.length / (max - min) || 1);
 			for (let i = 0; i < palette.length; i++) {
-				context.beginPath();
-				context.fillStyle = palette[i];
+				// draw dot on sprite
+				spriteContext.clearRect(0, 0, sprite.width, sprite.height);
+				spriteContext.fillStyle = palette[i];
+				spriteContext.beginPath();
+				spriteContext.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
+				spriteContext.closePath();
+				if (radius > 2) {
+					spriteContext.stroke();
+				}
+				spriteContext.fill();
 				for (let j = 0; j < xData.length; j++) {
 					const cIdx = ((colData[j] - min) * colorIdxScale) | 0;
 					if (cIdx !== i) {
 						continue;
 					}
-					context.circle(xData[j], yData[j], radius);
+					context.drawImage(sprite, xData[j] | 0, yData[j] | 0);
 				}
-				context.closePath();
-				if (radius > 2) {
-					context.stroke();
-				}
-				context.fill();
 			}
 		}
 		context.restore();
