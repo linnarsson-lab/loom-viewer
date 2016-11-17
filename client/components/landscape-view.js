@@ -50,10 +50,9 @@ const LandscapeComponent = function (props) {
 				if (i <= j) {
 					const x = makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
 					const y = makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
-					const logColor = colorAttr === '(gene)';
 					const logX = attrs[i] === '(gene)';
 					const logY = attrs[j] === '(gene)';
-					paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
+					paint = scatterplot(x, y, color, colorMode, logX, logY);
 				}
 				row.push(
 					<Canvas
@@ -80,11 +79,10 @@ const LandscapeComponent = function (props) {
 		let x = makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
 		let y = makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
 
-		const logColor = colorAttr === '(gene)';
 		const logX = attrs[0] === '(gene)';
 		const logY = attrs[1] === '(gene)';
 
-		const paint = scatterplot(x, y, color, colorMode, logColor, logX, logY);
+		const paint = scatterplot(x, y, color, colorMode, logX, logY);
 		plot = (
 			<Canvas
 				paint={paint}

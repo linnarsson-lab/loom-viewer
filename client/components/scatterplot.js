@@ -1,7 +1,7 @@
 import * as colorLUT from '../js/colors';
 import { rndNorm } from '../js/util';
 
-export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, logScaleY) {
+export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -13,9 +13,12 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		context.fillStyle = 'white';
 		context.fillRect(0, 0, width, height);
 
-		// avoid accidentally mutating source arrays
-		let xData = x.filteredData.slice(0),
-			yData = y.filteredData.slice(0),
+		// avoid accidentally mutating source arrays,
+		// and make sure we're convert data to floats
+		// for the sake of plotting (we optimise storage
+		// to smallest sensible format)
+		let xData = Float32Array.from(x.filteredData),
+			yData = Float32Array.from(y.filteredData),
 			colData = color.filteredData.slice(0);
 		let { width, height, pixelRatio } = context;
 
