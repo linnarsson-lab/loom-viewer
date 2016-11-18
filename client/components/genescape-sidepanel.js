@@ -11,7 +11,7 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const { genescapeState } = dataSet;
-	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode} = genescapeState;
+	const { coordinateAttrs, asMatrix, colorAttr, colorMode} = genescapeState;
 
 	// filter out undefined attributes;
 	let newAttrs = [];
@@ -25,7 +25,14 @@ export const GenescapeSidepanel = function (props) {
 	const coordAttrFactory = (idx) => {
 		return (value) => {
 			let newVals = newAttrs.slice(0);
-			newVals[idx] = value;
+			if (value){
+				newVals[idx] = value;
+			} else {
+				for (let i = idx; i < newVals.length; i++){
+					newVals[i] = newVals[i+1];
+				}
+				newVals.pop();
+			}
 			dispatch({
 				type: SET_VIEW_PROPS,
 				viewStateName: 'genescapeState',
