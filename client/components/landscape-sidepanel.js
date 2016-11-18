@@ -26,13 +26,22 @@ export const LandscapeSidepanel = function (props) {
 
 	const coordAttrFactory = (idx) => {
 		return (value) => {
-			let newVals = newAttrs.slice(0);
-			newVals[idx] = value;
+			let newVals = newAttrs.slice(0), newGeneVals = newGenes.slice(0);
+			if (value){
+				newVals[idx] = value;
+			} else {
+				for (let i = idx; i < newVals.length; i++){
+					newVals[i] = newVals[i+1];
+					newGeneVals[i] = newGeneVals[i+1];
+				}
+				newVals.pop();
+				newGeneVals.pop();
+			}
 			dispatch({
 				type: SET_VIEW_PROPS,
 				viewStateName: 'landscapeState',
 				datasetName: dataSet.dataset,
-				viewState: { coordinateAttrs: newVals },
+				viewState: { coordinateAttrs: newVals, coordinateGenes: newGeneVals },
 			});
 		};
 	};
@@ -59,7 +68,7 @@ export const LandscapeSidepanel = function (props) {
 		const coordHC = coordAttrFactory(i);
 		const coordGeneHC = coordGeneFactory(i);
 		coordinateDropdowns.push(
-			<div key={i} >
+			<div key={`${i}_${newAttrs[i]}_${newGenes[i]}`} >
 				<DropdownMenu
 					value={newAttrs[i] ? newAttrs[i] : '<select attribute>'}
 					options={colAttrsOptions}
