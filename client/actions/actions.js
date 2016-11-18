@@ -1,9 +1,9 @@
 import 'whatwg-fetch';
 
 import {
-	REQUEST_PROJECTS,
+	//REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FETCH,
-	REQUEST_PROJECTS_CACHED,
+	//REQUEST_PROJECTS_CACHED,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	REQUEST_DATASET,
@@ -29,11 +29,11 @@ import { countElements, calcMinMax } from '../js/util';
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestProjects() {
-	return {
-		type: REQUEST_PROJECTS,
-	};
-}
+// function requestProjects() {
+// 	return {
+// 		type: REQUEST_PROJECTS,
+// 	};
+// }
 
 function requestProjectsFetch() {
 	return {
@@ -41,11 +41,11 @@ function requestProjectsFetch() {
 	};
 }
 
-function requestProjectsCached() {
-	return {
-		type: REQUEST_PROJECTS_CACHED,
-	};
-}
+// function requestProjectsCached() {
+// 	return {
+// 		type: REQUEST_PROJECTS_CACHED,
+// 	};
+// }
 
 function requestProjectsFailed() {
 	return {
