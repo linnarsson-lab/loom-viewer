@@ -148,6 +148,9 @@ export const LandscapeSidepanel = function (props) {
 
 			<ListGroup fill>
 				<ListGroupItem>
+					<p>In process of fixing UI. For now, to change draw order use Cell Metadata page to sort.</p>
+				</ListGroupItem>
+				<ListGroupItem>
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button

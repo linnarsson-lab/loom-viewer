@@ -1,12 +1,17 @@
 import * as colorLUT from '../js/colors';
 import { rndNorm } from '../js/util';
 
-// "global" sprite canvas
-const sprite = document.createElement('canvas');
-sprite.id = 'dot_sprite';
-sprite.width = 13;
-sprite.height = 13;
-const spriteContext = sprite.getContext('2d');
+// "global" array of sprite canvases
+const { sprites, contexts } = (() => {
+	const sprites = new Array(257), contexts = new Array(257); // ibg
+	for (let i = 0; i < sprites.length; i++) {
+		sprites[i] = document.createElement('canvas');
+		sprites[i].id = `dot_sprite_${i}`;
+		sprites[i].width = 16;
+		sprites[i].height = 16;
+	}
+	return { sprites, contexts };
+})();
 
 export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 	return (context) => {
@@ -15,6 +20,7 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 			return;
 		}
 
+		let { width, height, pixelRatio } = context;
 		// Erase previous paint
 		context.save();
 		context.fillStyle = 'white';
@@ -27,7 +33,6 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 		let xData = Float32Array.from(x.filteredData),
 			yData = Float32Array.from(y.filteredData),
 			colData = color.filteredData.slice(0);
-		let { width, height, pixelRatio } = context;
 
 		// Scale of data
 		let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
@@ -77,9 +82,6 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 		}
 
 		// Draw the scatter plot itself
-		spriteContext.globalAlpha = 0.6;
-		spriteContext.strokeStyle = 'black';
-		spriteContext.lineWidth = Math.min(0.25, Math.max(0.1, radius / 20));
 		let palette = [];
 		switch (colorMode) {
 			case 'Heatmap':
@@ -93,51 +95,44 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 				break;
 		}
 
+		// prep the sprites
+		const w = sprites[0].width, h = sprites[0].height;
+		const lineW = Math.min(0.5, Math.max(0.125, radius / 10));
+		for (let i = 0; i < palette.length; i++) {
+			contexts[i] = sprites[i].getContext('2d');
+			contexts[i].clearRect(0, 0, w, h);
+			contexts[i].beginPath();
+			contexts[i].arc(w*0.5, h*0.5, radius, 0, 2 * Math.PI, false);
+			contexts[i].closePath();
+			if (radius > 2 || colorMode === 'Categorical') {
+				contexts[i].globalAlpha = 0.3;
+				contexts[i].strokeStyle = 'black';
+				contexts[i].lineWidth = lineW;
+				contexts[i].stroke();
+			}
+			if (i) {
+				contexts[i].globalAlpha = 0.5;
+				contexts[i].fillStyle = palette[i];
+				contexts[i].fill();
+			}
+		}
+		const spriteOffset = (w * 0.5);
+
+		// blit sprites in order of array
 		let { colorIndices, min, max, hasZeros } = color;
-
-		// Trick to draw by colData, which is a lot faster on the HTML canvas element
-
 		if (colorMode === 'Categorical') {
-			for (let i = 0; i < palette.length; i++) {
-				// draw dot on sprite
-				spriteContext.clearRect(0, 0, sprite.width, sprite.height);
-				spriteContext.fillStyle = palette[i];
-				spriteContext.beginPath();
-				spriteContext.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
-				spriteContext.closePath();
-				spriteContext.stroke();
-				spriteContext.fill();
-				for (let j = 0; j < xData.length; j++) {
-					const cIdx = colorIndices[colData[j]];
-					if (cIdx !== i) {
-						continue;
-					}
-					context.drawImage(sprite, xData[j] | 0, yData[j] | 0);
-				}
+			for (let i = 0; i < xData.length; i++) {
+				const cIdx = colorIndices[colData[i]] | 0; // force "undefined" to zero
+				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 			}
 		} else { // one of the Heatmap options
 			if (hasZeros) {
 				min = min < 0 ? min : 0;
 			}
-			const colorIdxScale = (palette.length / (max - min) || 1);
-			for (let i = 0; i < palette.length; i++) {
-				// draw dot on sprite
-				spriteContext.clearRect(0, 0, sprite.width, sprite.height);
-				spriteContext.fillStyle = palette[i];
-				spriteContext.beginPath();
-				spriteContext.arc(sprite.width / 2 | 0, sprite.height / 2 | 0, radius, 0, 2 * Math.PI, false);
-				spriteContext.closePath();
-				if (radius > 2) {
-					spriteContext.stroke();
-				}
-				spriteContext.fill();
-				for (let j = 0; j < xData.length; j++) {
-					const cIdx = ((colData[j] - min) * colorIdxScale) | 0;
-					if (cIdx !== i) {
-						continue;
-					}
-					context.drawImage(sprite, xData[j] | 0, yData[j] | 0);
-				}
+			const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
+			for (let i = 0; i < xData.length; i++) {
+				const cIdx = ((colData[i] - min) * colorIdxScale) | 0;
+				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 			}
 		}
 		context.restore();
