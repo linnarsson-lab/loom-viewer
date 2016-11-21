@@ -16,7 +16,7 @@ const LandscapeComponent = function (props) {
 	const { fetchedGenes, viewState, colAttrs } = dataSet;
 	const { coordinateAttrs, coordinateGenes,
 		colorAttr, colorGene, colorMode,
-		logX, logY, jitterX, jitterY, asMatrix } = viewState.landscape;
+		logscale, jitter, filterZeros, asMatrix } = viewState.landscape;
 
 	// filter out undefined attributes;
 	let attrs = [], genes = [];
@@ -52,7 +52,7 @@ const LandscapeComponent = function (props) {
 				if (i <= j) {
 					const x = makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
 					const y = makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
-					paint = scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY);
+					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
 				}
 				row.push(
 					<Canvas
@@ -78,7 +78,7 @@ const LandscapeComponent = function (props) {
 	} else {
 		let x = makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
 		let y = makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
-		const paint = scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY);
+		const paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
 		plot = (
 			<Canvas
 				paint={paint}
@@ -111,6 +111,9 @@ LandscapeComponent.propTypes = {
 const initialState = { // Initialise landscapeState for this dataset
 	coordinateAttrs: ['_tSNE1', '_tSNE2'],
 	coordinateGenes: ['', ''],
+	logscale: {},
+	jitter: {},
+	filterZeros: {},
 	asMatrix: false,
 	colorAttr: '(original order)',
 	colorGene: '',

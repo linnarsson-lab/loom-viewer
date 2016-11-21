@@ -13,7 +13,7 @@ export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const lss = dataSet.viewState.landscape;
 	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode,
-		logX, logY, jitterX, jitterY } = lss;
+		logscale, jitter, filterZeros } = lss;
 
 	// filter out undefined attributes;
 	let newAttrs = [], newGenes = [];
@@ -100,10 +100,9 @@ export const LandscapeSidepanel = function (props) {
 	const asMatrixHC = handleChangeFactory('asMatrix');
 	const colorAttrHC = handleChangeFactory('colorAttr');
 	const colorGeneHC = handleChangeFactory('colorGene');
-	const logxHC = handleChangeFactory('logX');
-	const logyHC = handleChangeFactory('logY');
-	const jitterxHC = handleChangeFactory('jitterX');
-	const jitteryHC = handleChangeFactory('jitterY');
+	const logscaleHC = handleChangeFactory('logscale');
+	const jitterHC = handleChangeFactory('jitter');
+	const filterZerosHC = handleChangeFactory('filterZeros');
 
 	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
 	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
@@ -179,32 +178,46 @@ export const LandscapeSidepanel = function (props) {
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={logX ? 'success' : 'default'}
-								onClick={() => { logxHC(!logX); } }>
+								bsStyle={logscale.x ? 'success' : 'default'}
+								onClick={() => { logscaleHC({ x: !logscale.x }); } }>
 								log X axis
 							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={jitterX ? 'success' : 'default'}
-								onClick={() => { jitterxHC(!jitterX); } }>
+								bsStyle={jitter.x ? 'success' : 'default'}
+								onClick={() => { jitterHC({ x: !jitter.x }); } }>
 								jitter X axis
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={filterZeros.x ? 'success' : 'default'}
+								onClick={() => { filterZerosHC({ x: !filterZeros.x }); } }>
+								filter X zeros
 							</Button>
 						</ButtonGroup>
 					</ButtonGroup>
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={logY ? 'success' : 'default'}
-								onClick={() => { logyHC(!logY); } }>
+								bsStyle={logscale.y ? 'success' : 'default'}
+								onClick={() => { logscaleHC({ y: !logscale.y }); } }>
 								log Y axis
 							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={jitterY ? 'success' : 'default'}
-								onClick={() => { jitteryHC(!jitterY); } }>
+								bsStyle={jitter.y ? 'success' : 'default'}
+								onClick={() => { jitterHC({ y: !jitter.y }); } }>
 								jitter Y axis
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={filterZeros.y ? 'success' : 'default'}
+								onClick={() => { filterZerosHC({ y: !filterZeros.y }); } }>
+								filter Y zeros
 							</Button>
 						</ButtonGroup>
 					</ButtonGroup>

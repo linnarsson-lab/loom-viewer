@@ -1,5 +1,5 @@
 import * as colorLUT from '../js/colors';
-import { rndNorm } from '../js/util';
+import { arrayConstr, rndNorm } from '../js/util';
 
 // "global" array of sprite canvases
 const { sprites, contexts } = (() => {
@@ -13,7 +13,7 @@ const { sprites, contexts } = (() => {
 	return { sprites, contexts };
 })();
 
-export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitterX, jitterY) {
+export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros) {
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -29,10 +29,48 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitter
 		// avoid accidentally mutating source arrays,
 		// and make sure we're convert data to floats
 		// for the sake of plotting (we optimise storage
-		// to smallest sensible format)
-		let xData = Float32Array.from(x.filteredData),
-			yData = Float32Array.from(y.filteredData),
+		// to smallest sensible format).
+		// Filter out zeroes if requested in the process
+		// (this has to happen before log/jitter for
+		//  obvious reasons)
+		let xData = [], yData = [], colData = [];
+		if (!filterZeros.x && !filterZeros.y){
+			xData = Float32Array.from(x.filteredData);
+			yData = Float32Array.from(y.filteredData);
 			colData = color.filteredData.slice(0);
+		} else {
+			if (filterZeros.x && filterZeros.y){
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (x.filteredData[i] && y.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			} else if (filterZeros.x){
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (x.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			} else { //filterZeros.y
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (y.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			}
+			// convert to right type.
+			xData = Float32Array.from(xData);
+			yData = Float32Array.from(yData);
+			let constr = arrayConstr(color.arrayType);
+			colData = constr.from(colData);
+		}
+
 
 		// Scale of data
 		let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
@@ -41,14 +79,14 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitter
 		let ymax = y.max;
 
 		// Log transform if requested
-		if (logScaleX){
+		if (logscale.x) {
 			for (let i = 0; i < xData.length; i++) {
 				xData[i] = Math.log2(2 + xData[i]);
 			}
 			xmin = Math.log2(2 + xmin) - 1;
 			xmax = Math.log2(2 + xmax) + 1;
 		}
-		if (logScaleY){
+		if (logscale.y) {
 			for (let i = 0; i < yData.length; i++) {
 				yData[i] = Math.log2(2 + yData[i]);
 			}
@@ -56,7 +94,7 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitter
 			ymax = Math.log2(2 + ymax) + 1;
 		}
 
-		if (jitterX && jitterY) {
+		if (jitter.x && jitter.y) {
 			// if jittering both axes, do so in a
 			// circle around the data
 			for (let i = 0; i < xData.length; i++) {
@@ -65,11 +103,11 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitter
 				xData[i] += r * Math.sin(t);
 				yData[i] += r * Math.cos(t);
 			}
-		} else if (jitterX) {
+		} else if (jitter.x) {
 			for (let i = 0; i < xData.length; i++) {
 				xData[i] += rndNorm();
 			}
-		} else if (jitterY) {
+		} else if (jitter.y) {
 			for (let i = 0; i < yData.length; i++) {
 				yData[i] += rndNorm();
 			}
@@ -109,7 +147,7 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitter
 			contexts[i] = sprites[i].getContext('2d');
 			contexts[i].clearRect(0, 0, w, h);
 			contexts[i].beginPath();
-			contexts[i].arc(w*0.5, h*0.5, radius, 0, 2 * Math.PI, false);
+			contexts[i].arc(w * 0.5, h * 0.5, radius, 0, 2 * Math.PI, false);
 			contexts[i].closePath();
 			if (radius > 2 || colorMode === 'Categorical') {
 				contexts[i].globalAlpha = 0.3;

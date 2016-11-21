@@ -8,8 +8,8 @@ import { scatterplot } from './scatterplot';
 
 const GenescapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
-	const { coordinateAttrs, asMatrix, colorAttr, colorMode,
-		logX, logY, jitterX, jitterY } = dataSet.viewState.genescape;
+	const { coordinateAttrs, colorAttr, colorMode,
+		logscale, jitter, filterZeros, asMatrix } = dataSet.viewState.genescape;
 
 	// filter out undefined attributes;
 	let attrs = [];
@@ -41,7 +41,7 @@ const GenescapeComponent = function (props) {
 			for (let i = 0; i < attrs.length; i++) {
 				const x = dataSet.rowAttrs[attrs[i]];
 				const y = dataSet.rowAttrs[attrs[j]];
-				const paint = i <= j ? scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY) : null;
+				const paint = i <= j ? scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros) : null;
 				row.push(
 					<Canvas
 						key={j + '_' + i}
@@ -67,7 +67,7 @@ const GenescapeComponent = function (props) {
 		let y = dataSet.rowAttrs[attrs[1]];
 		plot = (
 			<Canvas
-				paint={scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY)}
+				paint={scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros)}
 				style={{ margin: '20px' }}
 				redraw
 				clear
@@ -98,6 +98,9 @@ GenescapeComponent.propTypes = {
 const initialState = {
 	// Initialise genescape state for this dataset
 	coordinateAttrs: ['_tSNE1', '_tSNE2'],
+	logscale: {},
+	jitter: {},
+	filterZeros: {},
 	asMatrix: false,
 	colorAttr: '(original order)',
 	colorMode: 'Heatmap',
