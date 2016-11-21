@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { FetchDatasetComponent } from './fetch-dataset';
+import { merge } from '../js/util';
 import JSURL from 'jsurl';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -7,33 +8,32 @@ class ViewStateInitialiser extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataSet,
-			viewsettings, viewStateName,
+			viewsettings, stateName,
 			initialState } = this.props;
 
 		// URL-encoded state >> existing state >> initial state
-		const viewState = viewsettings ? JSURL.parse(viewsettings) : (
-			dataSet[viewStateName] ? dataSet[viewStateName] : initialState
-		);
+		let viewState = viewsettings ? JSURL.parse(viewsettings) : dataSet.viewState;
+		viewState = viewState[stateName] ? viewState : merge(viewState, { [stateName]: initialState });
 
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
 		let datasetName = dataSet.dataset;
 		dispatch({
 			type: SET_VIEW_PROPS,
-			viewStateName,
+			stateName,
 			datasetName,
 			viewState,
 		});
 	}
 
 	render() {
-		const { dispatch, dataSet, View, viewStateName } = this.props;
-		return dataSet[viewStateName] ? (
+		const { dispatch, dataSet, View, stateName } = this.props;
+		return dataSet.viewState && dataSet.viewState[stateName] ? (
 			<View
 				dispatch={dispatch}
 				dataSet={dataSet}
 				/>
-		) : <div className='view'>Initialising View Settings - {viewStateName}</div>;
+		) : <div className='view'>Initialising View Settings - {stateName}</div>;
 	}
 }
 
@@ -41,14 +41,14 @@ ViewStateInitialiser.propTypes = {
 	dataSet: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	View: PropTypes.func.isRequired,
-	viewStateName: PropTypes.string.isRequired,
+	stateName: PropTypes.string.isRequired,
 	viewsettings: PropTypes.string,
 	initialState: PropTypes.object.isRequired,
 };
 
 export const ViewInitialiser = function (props) {
 	const {
-		View, viewStateName, initialState,
+		View, stateName, initialState,
 		dispatch, data, params,
 	} = props;
 	const { dataset, project, viewsettings } = params;
@@ -62,7 +62,7 @@ export const ViewInitialiser = function (props) {
 		:
 		<ViewStateInitialiser
 			View={View}
-			viewStateName={viewStateName}
+			stateName={stateName}
 			initialState={initialState}
 			dataSet={dataSet}
 			dispatch={dispatch}
@@ -75,6 +75,6 @@ ViewInitialiser.propTypes = {
 	data: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	View: PropTypes.func.isRequired,
-	viewStateName: PropTypes.string.isRequired,
+	stateName: PropTypes.string.isRequired,
 	initialState: PropTypes.object.isRequired,
 };

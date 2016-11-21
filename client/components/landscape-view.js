@@ -13,8 +13,10 @@ function makeData(attr, gene, fetchedGenes, colAttrs) {
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
-	const { fetchedGenes, landscapeState, colAttrs } = dataSet;
-	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorGene, colorMode } = landscapeState;
+	const { fetchedGenes, viewState, colAttrs } = dataSet;
+	const { coordinateAttrs, coordinateGenes,
+		colorAttr, colorGene, colorMode,
+		logX, logY, jitterX, jitterY, asMatrix } = viewState.landscape;
 
 	// filter out undefined attributes;
 	let attrs = [], genes = [];
@@ -50,9 +52,7 @@ const LandscapeComponent = function (props) {
 				if (i <= j) {
 					const x = makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
 					const y = makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
-					const logX = attrs[i] === '(gene)';
-					const logY = attrs[j] === '(gene)';
-					paint = scatterplot(x, y, color, colorMode, logX, logY);
+					paint = scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY);
 				}
 				row.push(
 					<Canvas
@@ -78,11 +78,7 @@ const LandscapeComponent = function (props) {
 	} else {
 		let x = makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
 		let y = makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
-
-		const logX = attrs[0] === '(gene)';
-		const logY = attrs[1] === '(gene)';
-
-		const paint = scatterplot(x, y, color, colorMode, logX, logY);
+		const paint = scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY);
 		plot = (
 			<Canvas
 				paint={paint}
@@ -125,7 +121,7 @@ export const LandscapeViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={LandscapeComponent}
-			viewStateName={'landscapeState'}
+			stateName={'landscape'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}

@@ -13,7 +13,7 @@ const { sprites, contexts } = (() => {
 	return { sprites, contexts };
 })();
 
-export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
+export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY, jitterX, jitterY) {
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -41,31 +41,38 @@ export function scatterplot(x, y, color, colorMode, logScaleX, logScaleY) {
 		let ymax = y.max;
 
 		// Log transform if requested
-		if (logScaleX && logScaleY) {
-			// if both axes are log scales, jitter in a
-			// circle around the data instead of a box
+		if (logScaleX){
+			for (let i = 0; i < xData.length; i++) {
+				xData[i] = Math.log2(2 + xData[i]);
+			}
+			xmin = Math.log2(2 + xmin) - 1;
+			xmax = Math.log2(2 + xmax) + 1;
+		}
+		if (logScaleY){
+			for (let i = 0; i < yData.length; i++) {
+				yData[i] = Math.log2(2 + yData[i]);
+			}
+			ymin = Math.log2(2 + ymin) - 1;
+			ymax = Math.log2(2 + ymax) + 1;
+		}
+
+		if (jitterX && jitterY) {
+			// if jittering both axes, do so in a
+			// circle around the data
 			for (let i = 0; i < xData.length; i++) {
 				const r = rndNorm();
 				const t = Math.PI * 2 * Math.random();
-				xData[i] = Math.log2(2 + xData[i]) + r * Math.sin(t);
-				yData[i] = Math.log2(2 + yData[i]) + r * Math.cos(t);
+				xData[i] += r * Math.sin(t);
+				yData[i] += r * Math.cos(t);
 			}
-			xmin = Math.log2(2 + xmin) - 1;
-			xmax = Math.log2(2 + xmax) + 1;
-			ymin = Math.log2(2 + ymin) - 1;
-			ymax = Math.log2(2 + ymax) + 1;
-		} else if (logScaleX) {
+		} else if (jitterX) {
 			for (let i = 0; i < xData.length; i++) {
-				xData[i] = Math.log2(2 + xData[i]) + rndNorm();
+				xData[i] += rndNorm();
 			}
-			xmin = Math.log2(2 + xmin) - 1;
-			xmax = Math.log2(2 + xmax) + 1;
-		} else if (logScaleY) {
+		} else if (jitterY) {
 			for (let i = 0; i < yData.length; i++) {
-				yData[i] = Math.log2(2 + yData[i]) + rndNorm();
+				yData[i] += rndNorm();
 			}
-			ymin = Math.log2(2 + ymin) - 1;
-			ymax = Math.log2(2 + ymax) + 1;
 		}
 
 		// Suitable radius of the markers

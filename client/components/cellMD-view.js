@@ -2,19 +2,20 @@ import React, { Component, PropTypes } from 'react';
 import { FormControl, Glyphicon } from 'react-bootstrap';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
-import { SEARCH_METADATA, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/actionTypes';
 
 class CellMDComponent extends Component {
 	componentWillMount() {
 		const { dispatch, dataSet} = this.props;
-		const { dataset } = dataSet;
+		const datasetName = dataSet.dataset;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
 				dispatch({
 					type: SORT_CELL_METADATA,
-					dataset,
+					datasetName,
 					key,
+					stateName: 'geneMD',
 				});
 			};
 		};
@@ -23,7 +24,7 @@ class CellMDComponent extends Component {
 			return () => {
 				dispatch({
 					type: FILTER_METADATA,
-					dataset,
+					datasetName,
 					attr: 'colAttrs',
 					key,
 					val,
@@ -34,14 +35,11 @@ class CellMDComponent extends Component {
 		const searchMetadata = (event) => {
 			let searchVal = event.target.value ? event.target.value : '';
 			dispatch({
-				type: SEARCH_METADATA,
-				state: {
-					dataSets: {
-						[dataset]: {
-							cellMetadataState: { searchVal },
-						},
-					},
-				},
+				type: SET_VIEW_PROPS,
+				datasetName,
+				stateName: 'cellMD',
+				viewState: { cellMD: { searchVal } },
+
 			});
 		};
 
@@ -51,7 +49,7 @@ class CellMDComponent extends Component {
 	render() {
 		const { dataSet, dispatch } = this.props;
 		const { onClickAttrFactory, onClickFilterFactory, searchMetadata } = this.state;
-		let { searchVal } = dataSet.cellMetadataState;
+		let { searchVal } = dataSet.viewState.cellMD;
 		const searchField = (
 			<FormControl
 				type='text'
@@ -108,7 +106,7 @@ const CellMetadataViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={CellMDComponent}
-			viewStateName={'cellMetadataState'}
+			stateName={'cellMD'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}

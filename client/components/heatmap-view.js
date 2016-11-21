@@ -21,7 +21,8 @@ class HeatmapMapComponent extends Component {
 
 	render() {
 		const { dispatch, dataSet } = this.props;
-		const { fetchedGenes, heatmapState } = dataSet;
+		const { fetchedGenes } = dataSet;
+		const hms = dataSet.viewState.heatmap;
 		if (this.state) {
 			// Calculate the layout of everything, which we can only
 			// do after mounting because we rely on the parent node.
@@ -37,25 +38,25 @@ class HeatmapMapComponent extends Component {
 				minHeight: `${heatmapHeight}px`,
 				maxHeight: `${heatmapHeight}px`,
 			};
-			const { dataBounds } = heatmapState;
+			const { dataBounds } = hms;
 
-			const colGeneSelected = (heatmapState.colAttr === '(gene)') &&
-				fetchedGenes.hasOwnProperty(heatmapState.colGene);
+			const colGeneSelected = (hms.colAttr === '(gene)') &&
+				fetchedGenes.hasOwnProperty(hms.colGene);
 
-			const colData = colGeneSelected ? fetchedGenes[heatmapState.colGene]
-				: dataSet.colAttrs[heatmapState.colAttr];
+			const colData = colGeneSelected ? fetchedGenes[hms.colGene]
+				: dataSet.colAttrs[hms.colAttr];
 
-			let rowData = dataSet.rowAttrs[heatmapState.rowAttr];
-			if (heatmapState.rowAttr === '(gene positions)') {
-				const shownGenes = heatmapState.rowGenes.trim().split(/[ ,\r\n]+/);
+			let rowData = dataSet.rowAttrs[hms.rowAttr];
+			if (hms.rowAttr === '(gene positions)') {
+				const shownGenes = hms.rowGenes.trim().split(/[ ,\r\n]+/);
 				const allGenes = dataSet.rowAttrs['Gene'];
 				rowData = new Array(allGenes.length);
 				for (let i = 0; i < allGenes.length; i++) {
 					rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
 				}
 			}
-			const rowMode = (heatmapState.rowAttr === '(gene positions)') ?
-				'TextAlways' : heatmapState.rowMode;
+			const rowMode = (hms.rowAttr === '(gene positions)') ?
+				'TextAlways' : hms.rowMode;
 
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
@@ -63,7 +64,7 @@ class HeatmapMapComponent extends Component {
 						width={heatmapWidth}
 						height={sparklineHeight}
 						paint={
-							sparkline(colData, heatmapState.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
+							sparkline(colData, hms.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
 						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
@@ -78,9 +79,9 @@ class HeatmapMapComponent extends Component {
 										const { dataBounds, zoom, center } = val;
 										dispatch({
 											type: SET_VIEW_PROPS,
-											viewStateName: 'heatmapState',
+											stateName: 'heatmap',
 											datasetName: dataSet.dataset,
-											viewState: { dataBounds, zoom, center },
+											viewState: { heatmap: { dataBounds, zoom, center } },
 										});
 									}
 								} />
@@ -143,7 +144,7 @@ HeatmapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { // Initialise heatmapState for this dataset
+const initialState = { // Initialise heatmap state for this dataset
 	dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
 	rowMode: 'Text',
 	rowGenes: '',
@@ -155,7 +156,7 @@ export const HeatmapViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={HeatmapComponent}
-			viewStateName={'heatmapState'}
+			stateName={'heatmap'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}

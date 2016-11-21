@@ -1,4 +1,4 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes } from 'react';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
 import { ViewInitialiser } from './view-initialiser';
@@ -6,11 +6,9 @@ import { ViewInitialiser } from './view-initialiser';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
-import * as _ from 'lodash';
-
 const SparklineViewComponent = (props) => {
 	const { dataSet, dispatch } = props;
-	const sl = dataSet.sparklineState;
+	const sl = dataSet.viewState.sparkline;
 	// The old column attribute values that we displayed in the "legend"
 	let legendData = dataSet.colAttrs[sl.colAttr];
 	// if colAttr does not exist (for example, the default values
@@ -117,7 +115,7 @@ export const SparklineViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={SparklineViewComponent}
-			viewStateName={'sparklineState'}
+			stateName={'sparkline'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}

@@ -2,28 +2,29 @@ import React, { Component, PropTypes } from 'react';
 import { FormControl, Glyphicon } from 'react-bootstrap';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
-import { SEARCH_METADATA, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/actionTypes';
 
 class GeneMDComponent extends Component {
 	componentWillMount() {
 		const { dispatch, dataSet} = this.props;
-		const { dataset } = dataSet;
+		const datasetName = dataSet.dataset;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
 				dispatch({
 					type: SORT_GENE_METADATA,
-					dataset,
+					datasetName,
 					key,
+					stateName: 'geneMD',
 				});
 			};
 		};
-		// Yeah, I know...
+
 		const onClickFilterFactory = (key, val) => {
 			return () => {
 				dispatch({
 					type: FILTER_METADATA,
-					dataset,
+					datasetName,
 					attr: 'rowAttrs',
 					key,
 					val,
@@ -31,21 +32,15 @@ class GeneMDComponent extends Component {
 			};
 		};
 
-
 		const searchMetadata = (event) => {
 			let searchVal = event.target.value ? event.target.value : '';
 			dispatch({
-				type: SEARCH_METADATA,
-				state: {
-					dataSets: {
-						[dataset]: {
-							geneMetadataState: { searchVal },
-						},
-					},
-				},
+				type: SET_VIEW_PROPS,
+				datasetName,
+				stateName: 'geneMD',
+				viewState: { geneMD: { searchVal } },
 			});
 		};
-
 
 		this.setState({ onClickAttrFactory, onClickFilterFactory, searchMetadata });
 	}
@@ -53,7 +48,7 @@ class GeneMDComponent extends Component {
 	render() {
 		const { dataSet, dispatch } = this.props;
 		const { onClickAttrFactory, onClickFilterFactory, searchMetadata } = this.state;
-		let { searchVal } = dataSet.geneMetadataState;
+		let { searchVal } = dataSet.viewState.geneMD;
 		const searchField = (
 			<FormControl
 				type='text'
@@ -105,11 +100,11 @@ GeneMDComponent.propTypes = {
 const initialState = { searchVal : '' };
 
 const GeneMetadataViewInitialiser = function (props) {
-	// Initialise geneMetadataState for this dataset
+	// Initialise geneMetadata state for this dataset
 	return (
 		<ViewInitialiser
 			View={GeneMDComponent}
-			viewStateName={'geneMetadataState'}
+			stateName={'geneMD'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}

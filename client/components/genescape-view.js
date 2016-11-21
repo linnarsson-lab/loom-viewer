@@ -8,9 +8,9 @@ import { scatterplot } from './scatterplot';
 
 const GenescapeComponent = function (props) {
 	const { dispatch, dataSet } = props;
-	const { genescapeState } = dataSet;
+	const { coordinateAttrs, asMatrix, colorAttr, colorMode,
+		logX, logY, jitterX, jitterY } = dataSet.viewState.genescape;
 
-	const { coordinateAttrs, asMatrix, colorAttr, colorMode } = genescapeState;
 	// filter out undefined attributes;
 	let attrs = [];
 	for (let i = 0; i < coordinateAttrs.length; i++) {
@@ -41,7 +41,7 @@ const GenescapeComponent = function (props) {
 			for (let i = 0; i < attrs.length; i++) {
 				const x = dataSet.rowAttrs[attrs[i]];
 				const y = dataSet.rowAttrs[attrs[j]];
-				const paint = i <= j ? scatterplot(x, y, color, colorMode) : null;
+				const paint = i <= j ? scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY) : null;
 				row.push(
 					<Canvas
 						key={j + '_' + i}
@@ -67,7 +67,7 @@ const GenescapeComponent = function (props) {
 		let y = dataSet.rowAttrs[attrs[1]];
 		plot = (
 			<Canvas
-				paint={scatterplot(x, y, color, colorMode)}
+				paint={scatterplot(x, y, color, colorMode, logX, logY, jitterX, jitterY)}
 				style={{ margin: '20px' }}
 				redraw
 				clear
@@ -78,7 +78,6 @@ const GenescapeComponent = function (props) {
 	return (
 		<div className='view' >
 			<GenescapeSidepanel
-				genescapeState={genescapeState}
 				dataSet={dataSet}
 				dispatch={dispatch}
 				/>
@@ -97,7 +96,7 @@ GenescapeComponent.propTypes = {
 };
 
 const initialState = {
-	// Initialise genescapeState for this dataset
+	// Initialise genescape state for this dataset
 	coordinateAttrs: ['_tSNE1', '_tSNE2'],
 	asMatrix: false,
 	colorAttr: '(original order)',
@@ -108,7 +107,7 @@ export const GenescapeViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={GenescapeComponent}
-			viewStateName={'genescapeState'}
+			stateName={'genescape'}
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
