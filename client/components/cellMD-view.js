@@ -25,6 +25,7 @@ class CellMDComponent extends Component {
 				dispatch({
 					type: FILTER_METADATA,
 					datasetName,
+					stateName: 'cellMD',
 					attr: 'colAttrs',
 					key,
 					val,

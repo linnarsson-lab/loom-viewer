@@ -136,7 +136,8 @@ export const LandscapeSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				dataset: dataSet.dataset,
+				datasetName: dataSet.dataset,
+				stateName: 'landscape',
 				attr: 'colAttrs',
 				key: colorAttr,
 				val,

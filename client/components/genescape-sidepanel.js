@@ -107,7 +107,8 @@ export const GenescapeSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				dataset: dataSet.dataset,
+				datasetName: dataSet.dataset,
+				stateName: 'genescape',
 				attr: 'rowAttrs',
 				key: colorAttr,
 				val,

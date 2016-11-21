@@ -35,7 +35,8 @@ export const SparklineSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				dataset: dataSet.dataset,
+				datasetName: dataSet.dataset,
+				stateName: 'sparkline',
 				attr: 'colAttrs',
 				key: attrKey,
 				val,

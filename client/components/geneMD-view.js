@@ -25,6 +25,7 @@ class GeneMDComponent extends Component {
 				dispatch({
 					type: FILTER_METADATA,
 					datasetName,
+					stateName: 'geneMD',
 					attr: 'rowAttrs',
 					key,
 					val,
