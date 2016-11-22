@@ -11,7 +11,7 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
-	const lss = dataSet.viewState.landscape;
+	const attrs = dataSet.colAttrs, lss = dataSet.viewState.landscape;
 	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode,
 		logscale, jitter, filterZeros } = lss;
 
@@ -107,29 +107,36 @@ export const LandscapeSidepanel = function (props) {
 	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
 	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
 
-	const setTSNE = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_tSNE1';
-		newVals[1] = '_tSNE2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			stateName: 'landscape',
-			datasetName: dataSet.dataset,
-			viewState: { landscape: { coordinateAttrs: newVals } },
-		});
+	const setCoordinateFactory = (label, attr1, attr2) => {
+		if (attrs[attr1] && attrs[attr2]) {
+			const isSet = (coordinateAttrs[0] === attr1) && (coordinateAttrs[1] === attr2);
+			const handleClick = () => {
+				let newVals = coordinateAttrs.slice(0);
+				newVals[0] = attr1;
+				newVals[1] = attr2;
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'landscape',
+					datasetName: dataSet.dataset,
+					viewState: { landscape: { coordinateAttrs: newVals } },
+				});
+			};
+			return (
+				<ButtonGroup>
+					<Button
+						bsStyle={isSet ? 'success' : 'default'}
+						onClick={handleClick}>
+						{label}
+					</Button>
+				</ButtonGroup>
+			);
+		} else {
+			return null;
+		}
 	};
-
-	const setPCA = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_PC1';
-		newVals[1] = '_PC2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			stateName: 'landscape',
-			datasetName: dataSet.dataset,
-			viewState: { landscape: { coordinateAttrs: newVals } },
-		});
-	};
+	const setTSNE = setCoordinateFactory('tSNE', '_tSNE1', '_tSNE2');
+	const setPCA = setCoordinateFactory('PCA', '_PC1', '_PC2');
+	const setSFDP = setCoordinateFactory('SFDP', 'SFDP_X', 'SFDP_Y');
 
 	const filterFunc = (val) => {
 		return () => {
@@ -155,24 +162,15 @@ export const LandscapeSidepanel = function (props) {
 				<ListGroupItem>
 					<p>In process of fixing UI. For now, to change draw order use Cell Metadata page to sort.</p>
 				</ListGroupItem>
-				<ListGroupItem>
-					<ButtonGroup justified>
-						<ButtonGroup>
-							<Button
-								bsStyle={isTSNE ? 'success' : 'default'}
-								onClick={setTSNE}>
-								tSNE
-							</Button>
+				{setTSNE || setPCA || setSFDP ? (
+					<ListGroupItem>
+						<ButtonGroup justified>
+							{setTSNE}
+							{setPCA}
+							{setSFDP}
 						</ButtonGroup>
-						<ButtonGroup>
-							<Button
-								bsStyle={isPCA ? 'success' : 'default'}
-								onClick={setPCA}>
-								PCA
-							</Button>
-						</ButtonGroup>
-					</ButtonGroup>
-				</ListGroupItem>
+					</ListGroupItem>
+				) : null }
 				<ListGroupItem>
 					{coordinateDropdowns}
 					<ButtonGroup justified>

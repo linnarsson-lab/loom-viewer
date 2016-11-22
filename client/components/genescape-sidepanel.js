@@ -10,10 +10,11 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
+	const attrs = dataSet.rowAttrs;
 	const { coordinateAttrs, asMatrix, colorAttr, colorMode,
 		logscale, jitter, filterZeros } = dataSet.viewState.genescape;
 
-	// filter out undefined attributes;
+	// filter out undefined attributes from selection;
 	let newAttrs = [];
 	for (let i = 0; i < coordinateAttrs.length; i++) {
 		let attr = coordinateAttrs[i];
@@ -75,32 +76,38 @@ export const GenescapeSidepanel = function (props) {
 	const jitterHC = handleChangeFactory('jitter');
 	const filterZerosHC = handleChangeFactory('filterZeros');
 
-	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
-	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
-
-	const setTSNE = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_tSNE1';
-		newVals[1] = '_tSNE2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			stateName: 'genescape',
-			datasetName: dataSet.dataset,
-			viewState: { genescape: { coordinateAttrs: newVals } },
-		});
+	const setCoordinateFactory = (label, attr1, attr2) => {
+		if (attrs[attr1] && attrs[attr2]) {
+			const isSet = (coordinateAttrs[0] === attr1) && (coordinateAttrs[1] === attr2);
+			const handleClick = () => {
+				let newVals = coordinateAttrs.slice(0);
+				newVals[0] = attr1;
+				newVals[1] = attr2;
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'genescape',
+					datasetName: dataSet.dataset,
+					viewState: { genescape: { coordinateAttrs: newVals } },
+				});
+			};
+			return (
+				<ButtonGroup>
+					<Button
+						bsStyle={isSet ? 'success' : 'default'}
+						onClick={handleClick}>
+						{label}
+				</Button>
+				</ButtonGroup>
+			);
+		} else {
+			return null;
+		}
 	};
 
-	const setPCA = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_PC1';
-		newVals[1] = '_PC2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			stateName: 'genescape',
-			datasetName: dataSet.dataset,
-			viewState: { genescape: { coordinateAttrs: newVals } },
-		});
-	};
+	const setTSNE = setCoordinateFactory('tSNE', '_tSNE1', '_tSNE2');
+	const setPCA = setCoordinateFactory('PCA', '_PC1', '_PC2');
+	const setSFDP = setCoordinateFactory('SFDP', 'SFDP_X', 'SFDP_Y');
+
 
 	const filterFunc = (val) => {
 		return () => {
@@ -122,24 +129,15 @@ export const GenescapeSidepanel = function (props) {
 			header='Settings'
 			bsStyle='default'>
 			<ListGroup fill>
-				<ListGroupItem>
-					<ButtonGroup justified>
-						<ButtonGroup>
-							<Button
-								bsStyle={isTSNE ? 'success' : 'default'}
-								onClick={setTSNE}>
-								tSNE
-							</Button>
+				{setTSNE || setPCA || setSFDP ? (
+					<ListGroupItem>
+						<ButtonGroup justified>
+							{setTSNE}
+							{setPCA}
+							{setSFDP}
 						</ButtonGroup>
-						<ButtonGroup>
-							<Button
-								bsStyle={isPCA ? 'success' : 'default'}
-								onClick={setPCA}>
-								PCA
-							</Button>
-						</ButtonGroup>
-					</ButtonGroup>
-				</ListGroupItem>
+					</ListGroupItem>
+				) : null }
 				<ListGroupItem>
 					{coordinateDropdowns}
 					<ButtonGroup justified>
@@ -258,7 +256,7 @@ export const GenescapeSidepanel = function (props) {
 					<AttrLegend
 						mode={colorMode}
 						filterFunc={filterFunc}
-						attr={dataSet.rowAttrs[colorAttr]}
+						attr={attrs[colorAttr]}
 						/>
 				</ListGroupItem>
 			</ListGroup>
