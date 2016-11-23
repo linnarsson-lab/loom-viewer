@@ -6,7 +6,7 @@ import {
 	ButtonGroup, Button,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA, SET_VIEW_PROPS_AND_SORT_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -84,9 +84,11 @@ export const GenescapeSidepanel = function (props) {
 				newVals[0] = attr1;
 				newVals[1] = attr2;
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: SET_VIEW_PROPS_AND_SORT_METADATA,
 					stateName: 'genescape',
 					datasetName: dataSet.dataset,
+					key: attr2,
+					asc: false,
 					viewState: { genescape: { coordinateAttrs: newVals } },
 				});
 			};

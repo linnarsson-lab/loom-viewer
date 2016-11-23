@@ -7,12 +7,13 @@ import {
 	Button, ButtonGroup,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA, SET_VIEW_PROPS_AND_SORT_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
 	const attrs = dataSet.colAttrs, lss = dataSet.viewState.landscape;
-	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode,
+	const { coordinateAttrs, coordinateGenes, asMatrix,
+		colorAttr, colorMode, colorGene,
 		logscale, jitter, filterZeros } = lss;
 
 	// filter out undefined attributes;
@@ -104,9 +105,6 @@ export const LandscapeSidepanel = function (props) {
 	const jitterHC = handleChangeFactory('jitter');
 	const filterZerosHC = handleChangeFactory('filterZeros');
 
-	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
-	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
-
 	const setCoordinateFactory = (label, attr1, attr2) => {
 		if (attrs[attr1] && attrs[attr2]) {
 			const isSet = (coordinateAttrs[0] === attr1) && (coordinateAttrs[1] === attr2);
@@ -115,9 +113,11 @@ export const LandscapeSidepanel = function (props) {
 				newVals[0] = attr1;
 				newVals[1] = attr2;
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: SET_VIEW_PROPS_AND_SORT_METADATA,
 					stateName: 'landscape',
 					datasetName: dataSet.dataset,
+					key: attr2,
+					asc: false,
 					viewState: { landscape: { coordinateAttrs: newVals } },
 				});
 			};
@@ -294,7 +294,14 @@ export const LandscapeSidepanel = function (props) {
 							mode={colorMode}
 							filterFunc={filterFunc}
 							attr={dataSet.colAttrs[colorAttr]}
-							/>) : null}
+							/>
+						) : (
+						<AttrLegend
+							mode={colorMode}
+							filterFunc={filterFunc}
+							attr={dataSet.fetchedGenes[colorGene]}
+							/>
+							) }
 				</ListGroupItem>
 			</ListGroup>
 		</Panel >

@@ -15,7 +15,7 @@ class CellMDComponent extends Component {
 					type: SORT_CELL_METADATA,
 					datasetName,
 					key,
-					stateName: 'geneMD',
+					stateName: 'cellMD',
 				});
 			};
 		};

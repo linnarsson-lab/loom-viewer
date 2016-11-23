@@ -21,7 +21,9 @@ import {
 	REQUEST_GENE,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
+	FILTER_GENE,
 	SET_VIEW_PROPS,
+	SET_VIEW_PROPS_AND_SORT_METADATA,
 } from '../actions/actionTypes';
 
 /**
@@ -240,7 +242,7 @@ function updateFilteredGenes(fetchedGenes, indices) {
 	return newGenes;
 }
 
-function updateAttrOrder(order, key) {
+function updateAttrOrder(order, key, ascending) {
 	let newOrder = Array.from(order);
 	let idx = newOrder.length;
 	while (idx--) {
@@ -257,6 +259,10 @@ function updateAttrOrder(order, key) {
 	} else {
 		// Already in front of array, toggle ascending
 		newOrder[0] = { key: t.key, ascending: !t.ascending };
+	}
+	// check if manually overriding asc/desc toggle
+	if (ascending !== undefined){
+		newOrder[0] = Object.assign({}, newOrder[0], {ascending});
 	}
 	return newOrder;
 }
@@ -286,11 +292,11 @@ function updateGeneSortOrder(state, action) {
 }
 
 function updateCellSortOrder(state, action) {
-	const { key, datasetName } = action;
+	const { key, datasetName, asc } = action;
 	const ds = state.dataSets[datasetName];
 	const { colAttrs, colKeys, fetchedGenes } = ds;
 	// set new sort order
-	let colOrder = updateAttrOrder(ds.colOrder, key);
+	let colOrder = updateAttrOrder(ds.colOrder, key, asc);
 	let indices = colAttrs['(original order)'].filteredData;
 
 	// Sort indices according to new sort settings
@@ -377,6 +383,13 @@ function data(state = initialData, action) {
 			newState = updateViewState(newState, action);
 			return setViewStateURL(newState, action);
 
+		case SET_VIEW_PROPS_AND_SORT_METADATA:
+			newState = updateCellSortOrder(state, action);
+			newState = updateViewState(newState, action);
+			return setViewStateURL(newState, action);
+
+		case FILTER_GENE:
+			return state;
 
 		default:
 			return state;
