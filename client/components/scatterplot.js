@@ -1,23 +1,76 @@
 import * as colorLUT from '../js/colors';
-import { rndNorm } from '../js/util';
+import { arrayConstr, rndNorm } from '../js/util';
 
-export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, logScaleY) {
+// "global" array of sprite canvases
+const { sprites, contexts } = (() => {
+	const sprites = new Array(257), contexts = new Array(257); // ibg
+	for (let i = 0; i < sprites.length; i++) {
+		sprites[i] = document.createElement('canvas');
+		sprites[i].id = `dot_sprite_${i}`;
+		sprites[i].width = 16;
+		sprites[i].height = 16;
+	}
+	return { sprites, contexts };
+})();
+
+export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros) {
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
 			return;
 		}
 
+		let { width, height, pixelRatio } = context;
 		// Erase previous paint
 		context.save();
 		context.fillStyle = 'white';
 		context.fillRect(0, 0, width, height);
 
-		// avoid accidentally mutating source arrays
-		let xData = x.filteredData.slice(0),
-			yData = y.filteredData.slice(0),
+		// avoid accidentally mutating source arrays,
+		// and make sure we're convert data to floats
+		// for the sake of plotting (we optimise storage
+		// to smallest sensible format).
+		// Filter out zeroes if requested in the process
+		// (this has to happen before log/jitter for
+		//  obvious reasons)
+		let xData = [], yData = [], colData = [];
+		if (!filterZeros.x && !filterZeros.y){
+			xData = Float32Array.from(x.filteredData);
+			yData = Float32Array.from(y.filteredData);
 			colData = color.filteredData.slice(0);
-		let { width, height, pixelRatio } = context;
+		} else {
+			if (filterZeros.x && filterZeros.y){
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (x.filteredData[i] && y.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			} else if (filterZeros.x){
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (x.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			} else { //filterZeros.y
+				for (let i = 0; i < x.filteredData.length; i++){
+					if (y.filteredData[i]){
+						xData.push(x.filteredData[i]);
+						yData.push(y.filteredData[i]);
+						colData.push(color.filteredData[i]);
+					}
+				}
+			}
+			// convert to right type.
+			xData = Float32Array.from(xData);
+			yData = Float32Array.from(yData);
+			let constr = arrayConstr(color.arrayType);
+			colData = constr.from(colData);
+		}
+
 
 		// Scale of data
 		let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
@@ -26,31 +79,38 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		let ymax = y.max;
 
 		// Log transform if requested
-		if (logScaleX && logScaleY) {
-			// if both axes are log scales, jitter in a
-			// circle around the data instead of a box
+		if (logscale.x) {
+			for (let i = 0; i < xData.length; i++) {
+				xData[i] = Math.log2(2 + xData[i]);
+			}
+			xmin = Math.log2(2 + xmin) - 1;
+			xmax = Math.log2(2 + xmax) + 1;
+		}
+		if (logscale.y) {
+			for (let i = 0; i < yData.length; i++) {
+				yData[i] = Math.log2(2 + yData[i]);
+			}
+			ymin = Math.log2(2 + ymin) - 1;
+			ymax = Math.log2(2 + ymax) + 1;
+		}
+
+		if (jitter.x && jitter.y) {
+			// if jittering both axes, do so in a
+			// circle around the data
 			for (let i = 0; i < xData.length; i++) {
 				const r = rndNorm();
 				const t = Math.PI * 2 * Math.random();
-				xData[i] = Math.log2(2 + xData[i]) + r * Math.sin(t);
-				yData[i] = Math.log2(2 + yData[i]) + r * Math.cos(t);
+				xData[i] += r * Math.sin(t);
+				yData[i] += r * Math.cos(t);
 			}
-			xmin = Math.log2(2 + xmin) - 1;
-			xmax = Math.log2(2 + xmax) + 1;
-			ymin = Math.log2(2 + ymin) - 1;
-			ymax = Math.log2(2 + ymax) + 1;
-		} else if (logScaleX) {
+		} else if (jitter.x) {
 			for (let i = 0; i < xData.length; i++) {
-				xData[i] = Math.log2(2 + xData[i]) + rndNorm();
+				xData[i] += rndNorm();
 			}
-			xmin = Math.log2(2 + xmin) - 1;
-			xmax = Math.log2(2 + xmax) + 1;
-		} else if (logScaleY) {
+		} else if (jitter.y) {
 			for (let i = 0; i < yData.length; i++) {
-				yData[i] = Math.log2(2 + yData[i]) + rndNorm();
+				yData[i] += rndNorm();
 			}
-			ymin = Math.log2(2 + ymin) - 1;
-			ymax = Math.log2(2 + ymax) + 1;
 		}
 
 		// Suitable radius of the markers
@@ -67,9 +127,6 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 		}
 
 		// Draw the scatter plot itself
-		context.globalAlpha = 0.6;
-		context.strokeStyle = 'black';
-		context.lineWidth = Math.min(0.25, Math.max(0.1, radius/20));
 		let palette = [];
 		switch (colorMode) {
 			case 'Heatmap':
@@ -83,45 +140,44 @@ export function scatterplot(x, y, color, colorMode, logScaleColor, logScaleX, lo
 				break;
 		}
 
+		// prep the sprites
+		const w = sprites[0].width, h = sprites[0].height;
+		const lineW = Math.min(0.5, Math.max(0.125, radius / 10));
+		for (let i = 0; i < palette.length; i++) {
+			contexts[i] = sprites[i].getContext('2d');
+			contexts[i].clearRect(0, 0, w, h);
+			contexts[i].beginPath();
+			contexts[i].arc(w * 0.5, h * 0.5, radius, 0, 2 * Math.PI, false);
+			contexts[i].closePath();
+			if (radius > 2 || colorMode === 'Categorical') {
+				contexts[i].globalAlpha = 0.3;
+				contexts[i].strokeStyle = 'black';
+				contexts[i].lineWidth = lineW;
+				contexts[i].stroke();
+			}
+			if (i) {
+				contexts[i].globalAlpha = 0.5;
+				contexts[i].fillStyle = palette[i];
+				contexts[i].fill();
+			}
+		}
+		const spriteOffset = (w * 0.5);
+
+		// blit sprites in order of array
 		let { colorIndices, min, max, hasZeros } = color;
-
-		// Trick to draw by colData, which is a lot faster on the HTML canvas element
-
 		if (colorMode === 'Categorical') {
-			for (let i = 0; i < palette.length; i++) {
-				context.beginPath();
-				context.fillStyle = palette[i];
-				for (let j = 0; j < xData.length; j++) {
-					const cIdx = colorIndices[colData[j]];
-					if (cIdx !== i) {
-						continue;
-					}
-					context.circle(xData[j], yData[j], radius);
-				}
-				context.closePath();
-				context.stroke();
-				context.fill();
+			for (let i = 0; i < xData.length; i++) {
+				const cIdx = colorIndices[colData[i]] | 0; // force "undefined" to zero
+				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 			}
 		} else { // one of the Heatmap options
 			if (hasZeros) {
 				min = min < 0 ? min : 0;
 			}
-			const colorIdxScale = (palette.length / (max - min) || 1);
-			for (let i = 0; i < palette.length; i++) {
-				context.beginPath();
-				context.fillStyle = palette[i];
-				for (let j = 0; j < xData.length; j++) {
-					const cIdx = ((colData[j] - min) * colorIdxScale) | 0;
-					if (cIdx !== i) {
-						continue;
-					}
-					context.circle(xData[j], yData[j], radius);
-				}
-				context.closePath();
-				if (radius > 2) {
-					context.stroke();
-				}
-				context.fill();
+			const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
+			for (let i = 0; i < xData.length; i++) {
+				const cIdx = ((colData[i] - min) * colorIdxScale) | 0;
+				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 			}
 		}
 		context.restore();

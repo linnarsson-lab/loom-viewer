@@ -7,18 +7,20 @@ import {
 	Button, ButtonGroup,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA, SET_VIEW_PROPS_AND_SORT_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
-	const landscapeState = dataSet.landscapeState;
-	const { coordinateAttrs, coordinateGenes, asMatrix, colorAttr, colorMode } = landscapeState;
+	const attrs = dataSet.colAttrs, lss = dataSet.viewState.landscape;
+	const { coordinateAttrs, coordinateGenes, asMatrix,
+		colorAttr, colorMode, colorGene,
+		logscale, jitter, filterZeros } = lss;
 
 	// filter out undefined attributes;
 	let newAttrs = [], newGenes = [];
-	for (let i = 0; i < coordinateAttrs.length; i++){
+	for (let i = 0; i < coordinateAttrs.length; i++) {
 		let attr = coordinateAttrs[i];
-		if (attr){
+		if (attr) {
 			newAttrs.push(attr);
 			newGenes.push(coordinateGenes[i]);
 		}
@@ -26,13 +28,22 @@ export const LandscapeSidepanel = function (props) {
 
 	const coordAttrFactory = (idx) => {
 		return (value) => {
-			let newVals = newAttrs.slice(0);
-			newVals[idx] = value;
+			let newVals = newAttrs.slice(0), newGeneVals = newGenes.slice(0);
+			if (value) {
+				newVals[idx] = value;
+			} else {
+				for (let i = idx; i < newVals.length; i++) {
+					newVals[i] = newVals[i + 1];
+					newGeneVals[i] = newGeneVals[i + 1];
+				}
+				newVals.pop();
+				newGeneVals.pop();
+			}
 			dispatch({
 				type: SET_VIEW_PROPS,
-				viewStateName: 'landscapeState',
+				stateName: 'landscape',
 				datasetName: dataSet.dataset,
-				viewState: { coordinateAttrs: newVals },
+				viewState: { landscape: { coordinateAttrs: newVals, coordinateGenes: newGeneVals } },
 			});
 		};
 	};
@@ -43,9 +54,9 @@ export const LandscapeSidepanel = function (props) {
 			newVals[idx] = value;
 			dispatch({
 				type: SET_VIEW_PROPS,
-				viewStateName: 'landscapeState',
+				stateName: 'landscape',
 				datasetName: dataSet.dataset,
-				viewState: { coordinateGenes: newVals },
+				viewState: { landscape: { coordinateGenes: newVals } },
 			});
 		};
 	};
@@ -55,11 +66,11 @@ export const LandscapeSidepanel = function (props) {
 
 	let coordinateDropdowns = [];
 
-	for (let i = 0; i <= newAttrs.length; i++){
+	for (let i = 0; i <= newAttrs.length; i++) {
 		const coordHC = coordAttrFactory(i);
 		const coordGeneHC = coordGeneFactory(i);
 		coordinateDropdowns.push(
-			<div key={i} >
+			<div key={`${i}_${newAttrs[i]}_${newGenes[i]}`} >
 				<DropdownMenu
 					value={newAttrs[i] ? newAttrs[i] : '<select attribute>'}
 					options={colAttrsOptions}
@@ -80,9 +91,9 @@ export const LandscapeSidepanel = function (props) {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				viewStateName: 'landscapeState',
+				stateName: 'landscape',
 				datasetName: dataSet.dataset,
-				viewState: { [field]: value },
+				viewState: { landscape: { [field]: value } },
 			});
 		};
 	};
@@ -90,39 +101,49 @@ export const LandscapeSidepanel = function (props) {
 	const asMatrixHC = handleChangeFactory('asMatrix');
 	const colorAttrHC = handleChangeFactory('colorAttr');
 	const colorGeneHC = handleChangeFactory('colorGene');
+	const logscaleHC = handleChangeFactory('logscale');
+	const jitterHC = handleChangeFactory('jitter');
+	const filterZerosHC = handleChangeFactory('filterZeros');
 
-	const isTSNE = (coordinateAttrs[0] === '_tSNE1') && (coordinateAttrs[1] === '_tSNE2');
-	const isPCA = (coordinateAttrs[0] === '_PC1') && (coordinateAttrs[1] === '_PC2');
-
-	const setTSNE = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_tSNE1';
-		newVals[1] = '_tSNE2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			viewStateName: 'landscapeState',
-			datasetName: dataSet.dataset,
-			viewState: { coordinateAttrs: newVals },
-		});
+	const setCoordinateFactory = (label, attr1, attr2) => {
+		if (attrs[attr1] && attrs[attr2]) {
+			const isSet = (coordinateAttrs[0] === attr1) && (coordinateAttrs[1] === attr2);
+			const handleClick = () => {
+				let newVals = coordinateAttrs.slice(0);
+				newVals[0] = attr1;
+				newVals[1] = attr2;
+				dispatch({
+					type: SET_VIEW_PROPS_AND_SORT_METADATA,
+					stateName: 'landscape',
+					datasetName: dataSet.dataset,
+					key: attr2,
+					asc: false,
+					viewState: { landscape: { coordinateAttrs: newVals } },
+				});
+			};
+			return (
+				<ButtonGroup>
+					<Button
+						bsStyle={isSet ? 'success' : 'default'}
+						onClick={handleClick}>
+						{label}
+					</Button>
+				</ButtonGroup>
+			);
+		} else {
+			return null;
+		}
 	};
-
-	const setPCA = () => {
-		let newVals = coordinateAttrs.slice(0);
-		newVals[0] = '_PC1';
-		newVals[1] = '_PC2';
-		dispatch({
-			type: SET_VIEW_PROPS,
-			viewStateName: 'landscapeState',
-			datasetName: dataSet.dataset,
-			viewState: { coordinateAttrs: newVals },
-		});
-	};
+	const setTSNE = setCoordinateFactory('tSNE', '_tSNE1', '_tSNE2');
+	const setPCA = setCoordinateFactory('PCA', '_PC1', '_PC2');
+	const setSFDP = setCoordinateFactory('SFDP', 'SFDP_X', 'SFDP_Y');
 
 	const filterFunc = (val) => {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				dataset: dataSet.dataset,
+				datasetName: dataSet.dataset,
+				stateName: 'landscape',
 				attr: 'colAttrs',
 				key: colorAttr,
 				val,
@@ -139,29 +160,69 @@ export const LandscapeSidepanel = function (props) {
 
 			<ListGroup fill>
 				<ListGroupItem>
+					<p>In process of fixing UI. For now, to change draw order use Cell Metadata page to sort.</p>
+				</ListGroupItem>
+				{setTSNE || setPCA || setSFDP ? (
+					<ListGroupItem>
+						<ButtonGroup justified>
+							{setTSNE}
+							{setPCA}
+							{setSFDP}
+						</ButtonGroup>
+					</ListGroupItem>
+				) : null }
+				<ListGroupItem>
+					{coordinateDropdowns}
 					<ButtonGroup justified>
 						<ButtonGroup>
 							<Button
-								bsStyle={isTSNE ? 'success' : 'default'}
-								onClick={setTSNE}>
-								tSNE
+								bsStyle={logscale.x ? 'success' : 'default'}
+								onClick={() => { logscaleHC({ x: !logscale.x }); } }>
+								log X axis
 							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
 							<Button
-								bsStyle={isPCA ? 'success' : 'default'}
-								onClick={setPCA}>
-								PCA
+								bsStyle={jitter.x ? 'success' : 'default'}
+								onClick={() => { jitterHC({ x: !jitter.x }); } }>
+								jitter X axis
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={filterZeros.x ? 'success' : 'default'}
+								onClick={() => { filterZerosHC({ x: !filterZeros.x }); } }>
+								filter X zeros
 							</Button>
 						</ButtonGroup>
 					</ButtonGroup>
-				</ListGroupItem>
-				<ListGroupItem>
-					{coordinateDropdowns}
+					<ButtonGroup justified>
+						<ButtonGroup>
+							<Button
+								bsStyle={logscale.y ? 'success' : 'default'}
+								onClick={() => { logscaleHC({ y: !logscale.y }); } }>
+								log Y axis
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={jitter.y ? 'success' : 'default'}
+								onClick={() => { jitterHC({ y: !jitter.y }); } }>
+								jitter Y axis
+							</Button>
+						</ButtonGroup>
+						<ButtonGroup>
+							<Button
+								bsStyle={filterZeros.y ? 'success' : 'default'}
+								onClick={() => { filterZerosHC({ y: !filterZeros.y }); } }>
+								filter Y zeros
+							</Button>
+						</ButtonGroup>
+					</ButtonGroup>
 					<ButtonGroup>
 						<Button
 							bsStyle={asMatrix ? 'success' : 'default'}
-							onClick={() => {asMatrixHC(!asMatrix); } }>
+							onClick={() => { asMatrixHC(!asMatrix); } }>
 							Plot Matrix
 						</Button>
 					</ButtonGroup>
@@ -178,7 +239,7 @@ export const LandscapeSidepanel = function (props) {
 							dataSet={dataSet}
 							dispatch={dispatch}
 							onChange={colorGeneHC}
-							value={landscapeState.colorGene}
+							value={lss.colorGene}
 							/>
 						: null}
 				</ListGroupItem>
@@ -190,9 +251,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										viewStateName: 'landscapeState',
+										stateName: 'landscape',
 										datasetName: dataSet.dataset,
-										viewState: { colorMode: 'Heatmap' },
+										viewState: { landscape: { colorMode: 'Heatmap' } },
 									});
 								} }>
 								Heatmap
@@ -204,9 +265,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										viewStateName: 'landscapeState',
+										stateName: 'landscape',
 										datasetName: dataSet.dataset,
-										viewState: { colorMode: 'Heatmap2' },
+										viewState: { landscape: { colorMode: 'Heatmap2' } },
 									});
 								} }>
 								Heatmap2
@@ -218,9 +279,9 @@ export const LandscapeSidepanel = function (props) {
 								onClick={() => {
 									dispatch({
 										type: SET_VIEW_PROPS,
-										viewStateName: 'landscapeState',
+										stateName: 'landscape',
 										datasetName: dataSet.dataset,
-										viewState: { colorMode: 'Categorical' },
+										viewState: { landscape: { colorMode: 'Categorical' } },
 									});
 								} }>
 								Categorical
@@ -228,12 +289,19 @@ export const LandscapeSidepanel = function (props) {
 
 						</ButtonGroup>
 					</ButtonGroup>
-					{ colorAttr !== '(gene)' ? (
+					{colorAttr !== '(gene)' ? (
 						<AttrLegend
 							mode={colorMode}
 							filterFunc={filterFunc}
 							attr={dataSet.colAttrs[colorAttr]}
-							/>) : null }
+							/>
+						) : (
+						<AttrLegend
+							mode={colorMode}
+							filterFunc={filterFunc}
+							attr={dataSet.fetchedGenes[colorGene]}
+							/>
+							) }
 				</ListGroupItem>
 			</ListGroup>
 		</Panel >

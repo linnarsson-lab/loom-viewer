@@ -12,21 +12,21 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const SparklineSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
-	const { sparklineState } = dataSet;
+	const { sparkline } = dataSet.viewState;
 
 	// The old column attribute values that we displayed in the "legend"
 	// if colAttr does not exist (for example, the default values
 	// in the Loom interface is not present), pick the first column
-	const attrKey = sparklineState.colAttr ? sparklineState.colAttr : dataSet.colKeys[0];
+	const attrKey = sparkline.colAttr ? sparkline.colAttr : dataSet.colKeys[0];
 	const legendData = dataSet.colAttrs[attrKey];
 
 	const handleChangeFactory = (field) => {
-		return (value) => {
+		return (val) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				viewStateName: 'sparklineState',
+				stateName: 'sparkline',
 				datasetName: dataSet.dataset,
-				viewState: { [field]: value },
+				viewState: { sparkline: { [field]: val } },
 			});
 		};
 	};
@@ -35,7 +35,8 @@ export const SparklineSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				dataset: dataSet.dataset,
+				datasetName: dataSet.dataset,
+				stateName: 'sparkline',
 				attr: 'colAttrs',
 				key: attrKey,
 				val,
@@ -56,7 +57,7 @@ export const SparklineSidepanel = function (props) {
 	const geneModeHC = handleChangeFactory('geneMode');
 
 	const showLabels = handleChangeFactory('showLabels');
-	const showLabelsHC = () => { showLabels(!sparklineState.showLabels); };
+	const showLabelsHC = () => { showLabels(!sparkline.showLabels); };
 
 
 	return (
@@ -72,17 +73,17 @@ export const SparklineSidepanel = function (props) {
 				<ListGroupItem>
 					<label>Show cell attribute</label>
 					<DropdownMenu
-						value={sparklineState.colAttr}
+						value={sparkline.colAttr}
 						options={colAttrsOptions}
 						onChange={colAttrsHC}
 						/>
 					<DropdownMenu
-						value={sparklineState.colMode}
+						value={sparkline.colMode}
 						options={colModeOptions}
 						onChange={colModeHC}
 						/>
 					<AttrLegend
-						mode={sparklineState.colMode}
+						mode={sparkline.colMode}
 						filterFunc={filterFunc}
 						attr={legendData}
 						/>
@@ -93,18 +94,18 @@ export const SparklineSidepanel = function (props) {
 						dataSet={dataSet}
 						dispatch={dispatch}
 						onChange={genesHC}
-						value={sparklineState.genes}
+						value={sparkline.genes}
 						multi
 						clearable
 						/>
 					<label>Show genes as</label>
 					<DropdownMenu
-						value={sparklineState.geneMode}
+						value={sparkline.geneMode}
 						options={geneModeOptions}
 						onChange={geneModeHC}
 						/>
 					<Button
-						bsStyle={sparklineState.showLabels ? 'success' : 'default'}
+						bsStyle={sparkline.showLabels ? 'success' : 'default'}
 						onClick={showLabelsHC}
 						>
 						Show labels

@@ -1,9 +1,9 @@
 import 'whatwg-fetch';
 
 import {
-	REQUEST_PROJECTS,
+	//REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FETCH,
-	REQUEST_PROJECTS_CACHED,
+	//REQUEST_PROJECTS_CACHED,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	REQUEST_DATASET,
@@ -19,7 +19,7 @@ import {
 } from './actionTypes';
 
 import { groupBy } from 'lodash';
-import { countElements, calcMinMax } from '../js/util';
+import { countElements, calcMinMax, arrayConstr } from '../js/util';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -29,11 +29,11 @@ import { countElements, calcMinMax } from '../js/util';
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestProjects() {
-	return {
-		type: REQUEST_PROJECTS,
-	};
-}
+// function requestProjects() {
+// 	return {
+// 		type: REQUEST_PROJECTS,
+// 	};
+// }
 
 function requestProjectsFetch() {
 	return {
@@ -41,11 +41,11 @@ function requestProjectsFetch() {
 	};
 }
 
-function requestProjectsCached() {
-	return {
-		type: REQUEST_PROJECTS_CACHED,
-	};
-}
+// function requestProjectsCached() {
+// 	return {
+// 		type: REQUEST_PROJECTS_CACHED,
+// 	};
+// }
 
 function requestProjectsFailed() {
 	return {
@@ -205,6 +205,7 @@ function prepData(dataSet) {
 	// add empty fields for fetched genes
 	dataSet.fetchedGenes = {};
 	dataSet.fetchingGenes = {};
+	dataSet.viewState = {};
 	return dataSet;
 }
 
@@ -333,8 +334,8 @@ function isRealFloat(array) {
 
 // mdArray & mostFrequent must be mutable!
 // Using indexed strings can be much faster, since Uint8Arrays
-// are denser and smaller, and allow for quicker comparisons
-// in the plotters than strings.
+// are smaller and don't add pointer indirection, and allow
+// for quicker comparisons in the plotters than strings.
 function IndexedStringArray(mdArray) {
 	let mf = mdArray.mostFrequent.slice(0);
 	let data = new Uint8Array(mdArray.data.length);
@@ -443,7 +444,13 @@ function requestGeneFailed(gene, datasetName) {
 	};
 }
 
-function receiveGene(gene, datasetName, data) {
+function receiveGene(gene, datasetName, indices, data) {
+	let convertedData = convertArray(data, 'number');
+	const constr = arrayConstr(data.arrayType);
+	convertedData.filteredData = new constr(indices.length);
+	for (let i = 0; i < indices.length; i++) {
+		convertedData.filteredData[i] = convertedData.data[indices[i]];
+	}
 	return {
 		type: RECEIVE_GENE,
 		gene,
@@ -452,7 +459,7 @@ function receiveGene(gene, datasetName, data) {
 		state: {
 			dataSets: {
 				[datasetName]: {
-					fetchedGenes: { [gene]: convertArray(data, 'number') },
+					fetchedGenes: { [gene]: convertedData },
 				},
 			},
 		},
@@ -487,7 +494,8 @@ export function fetchGene(dataSet, genes) {
 				.then((response) => { return response.json(); })
 				.then((json) => {
 					// Third, once the response comes in, dispatch an action to provide the data
-					dispatch(receiveGene(gene, dataSet.dataset, json));
+					const indices = dataSet.colAttrs['(original order)'].filteredData;
+					dispatch(receiveGene(gene, dataSet.dataset, indices, json));
 				})
 				// Or, if it failed, dispatch an action to set the error flag
 				.catch((err) => {

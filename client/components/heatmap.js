@@ -5,7 +5,8 @@ export class Heatmap extends React.Component {
 
 	componentDidMount() {
 		const { zoomRange, fullZoomWidth, fullZoomHeight,
-			dataset, project, heatmapState } = this.props.dataSet;
+			dataset, project, viewState } = this.props.dataSet;
+		const hms = viewState.heatmap;
 
 		L.Icon.Default.imagePath = '/static/img';
 		const map = L.map(
@@ -33,10 +34,10 @@ export class Heatmap extends React.Component {
 		const southWest = map.unproject([0, fullZoomHeight], map.getMaxZoom());
 		const northEast = map.unproject([fullZoomWidth, 0], map.getMaxZoom());
 		map.fitBounds(new L.LatLngBounds(southWest, northEast));
-		const center = heatmapState.center ? heatmapState.center :
+		const center = hms.center ? hms.center :
 			L.latLng((southWest.lat + northEast.lat) * 0.5,
 				(southWest.lng + northEast.lng) * 0.5);
-		const zoom = heatmapState.zoom ? heatmapState.zoom : 8;
+		const zoom = hms.zoom ? hms.zoom : 8;
 		map.setView(center, zoom);
 
 		const handleViewChanged = () => {

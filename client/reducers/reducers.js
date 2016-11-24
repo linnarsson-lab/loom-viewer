@@ -15,68 +15,74 @@ import {
 	RECEIVE_DATASET,
 	SEARCH_DATASETS,
 	SORT_DATASETS,
-	SEARCH_METADATA,
 	FILTER_METADATA,
 	SORT_GENE_METADATA,
 	SORT_CELL_METADATA,
 	REQUEST_GENE,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
+	FILTER_GENE,
 	SET_VIEW_PROPS,
+	SET_VIEW_PROPS_AND_SORT_METADATA,
 } from '../actions/actionTypes';
 
-
-// Usage: action can optionally have "prune", "state" and "toggle"
-// trees to declaratively modify the old state tree.
-// - action.prune is a tree of values of the old state tree to
-//   "remove" (by not copying them to the new state)
-// - action.state is a tree of new values to merge into the old
-//   state tree, resulting in the new state.
-// - action.toggle is a tree of new values to merge into the old
-//   state tree, but toggles boolean values (previously undefined
-//   values are initialised as "true")
-// If multiple trees are provided, they are applied in order of
-// prune -> state -> toggle
+/**
+ * Usage: action can optionally have "prune" and "state" trees
+ * to "declaratively" modify the old state tree.
+ * - action.prune is a tree of values of the old state tree to
+ *   "remove" (by not copying them to the new state). Only leaves
+ *   will be pruned
+ * - action.state is a tree of new values to merge into the old
+ *   state tree, resulting in the new state.
+ * If both are provided, prune is applied first (which lets us
+ * _replace_ objects wholesale, instead of merging them).
+ * IMPORTANT: use simple, "plain" JS objects only; this borks when
+ * passed JSX objects, for example.
+ */
 function update(state, action) {
 	let newState = action.prune ? prune(state, action.prune) : state;
 	newState = action.state ? merge(newState, action.state) : newState;
 	return newState;
 }
 
-function setViewStateURL(state, action) {
-	const { viewStateName, datasetName, viewState } = action;
-	let view = 'unknown';
-	switch (viewStateName) {
-		case 'heatmapState':
-			view = 'heatmap';
-			break;
-		case 'sparklineState':
-			view = 'sparklines';
-			break;
-		case 'landscapeState':
-			view = 'cells';
-			break;
-		case 'genescapeState':
-			view = 'genes';
-			break;
-		case 'geneMetadataState':
-			view = 'genemetadata';
-			break;
-		case 'cellMetadataState':
-			view = 'cellmetadata';
-	}
-	const dataSet = state.dataSets[datasetName];
-	const project = dataSet.project;
-	const newViewState = merge(dataSet[viewStateName], viewState);
-	const url = `/dataset/${view}/${project}/${datasetName}/${JSURL.stringify(newViewState)}`;
-	browserHistory.replace(url);
+function updateViewState(state, action) {
+	let { datasetName, viewState } = action;
+	viewState = merge(state.dataSets[datasetName].viewState, viewState);
 	return merge(state,
 		{
 			dataSets: {
-				[datasetName]: { [viewStateName]: newViewState },
+				[datasetName]: { viewState },
 			},
 		}
 	);
+}
+
+function setViewStateURL(state, action) {
+	let { stateName, datasetName } = action;
+	let view = 'unknown';
+	switch (stateName) {
+		case 'heatmap':
+			view = 'heatmap';
+			break;
+		case 'sparkline':
+			view = 'sparklines';
+			break;
+		case 'landscape':
+			view = 'cells';
+			break;
+		case 'genescape':
+			view = 'genes';
+			break;
+		case 'geneMD':
+			view = 'genemetadata';
+			break;
+		case 'cellMD':
+			view = 'cellmetadata';
+	}
+	const { project, viewState } = state.dataSets[datasetName];
+	const url = `/dataset/${view}/${project}/${datasetName}/${JSURL.stringify(viewState)}`;
+	browserHistory.replace(url);
+	return state;
 }
 
 function updateFilter(state, action) {
@@ -86,8 +92,8 @@ function updateFilter(state, action) {
 	let newState = updateMostFrequent(state, action);
 
 	// update indices - pre-calc filtered data
-	const { dataset, attr } = action;
-	let { newAttrs, filteredGenes } = updateFilterIndices(newState.dataSets[dataset], attr);
+	const { datasetName, attr } = action;
+	let { newAttrs, filteredGenes } = updateFilterIndices(newState.dataSets[datasetName], attr);
 	// Check which attributes are invisible due to other attribute filters
 	// turned off because it slowed things down too much
 	// newAttrs = updateVisible(newAttrs);
@@ -95,7 +101,7 @@ function updateFilter(state, action) {
 		{ [attr]: newAttrs, fetchedGenes: filteredGenes } : { [attr]: newAttrs };
 	let attrIndicesTree = {
 		dataSets: {
-			[dataset]: dataSetUpdate,
+			[datasetName]: dataSetUpdate,
 		},
 	};
 	newState = merge(newState, attrIndicesTree);
@@ -103,8 +109,8 @@ function updateFilter(state, action) {
 }
 
 function updateMostFrequent(state, action) {
-	const { dataset, attr, key, val } = action;
-	const ds = state.dataSets[dataset];
+	const { datasetName, attr, key, val } = action;
+	const ds = state.dataSets[datasetName];
 	let attrData = ds[attr][key];
 	let mostFrequent = attrData.mostFrequent.slice(0);
 	// update filtered in metadata
@@ -119,19 +125,19 @@ function updateMostFrequent(state, action) {
 	}
 	// update filtered array;
 	let filteredArray = attr === 'colAttrs' ? ds.colFiltered.slice(0) : ds.rowFiltered.slice(0);
-	if (filtered){
-		for (let i = 0, data = attrData.data; i < filteredArray.length; i++){
-			if (data[i] === val){ filteredArray[i]++; }
+	if (filtered) {
+		for (let i = 0, data = attrData.data; i < filteredArray.length; i++) {
+			if (data[i] === val) { filteredArray[i]++; }
 		}
 	} else {
-		for (let i = 0, data = attrData.data; i < filteredArray.length; i++){
-			if (data[i] === val){ filteredArray[i]--; }
+		for (let i = 0, data = attrData.data; i < filteredArray.length; i++) {
+			if (data[i] === val) { filteredArray[i]--; }
 		}
 	}
 	filtered = attr === 'colAttrs' ? 'colFiltered' : 'rowFiltered';
 	let filterTree = {
 		dataSets: {
-			[dataset]: {
+			[datasetName]: {
 				[filtered]: filteredArray,
 				[attr]: {
 					[key]: merge(attrData, { mostFrequent }),
@@ -147,8 +153,8 @@ function updateFilterIndices(ds, attr) {
 	const isColAttrs = attr === 'colAttrs';
 
 	const [filtered, order, attrKeys] = isColAttrs ?
-	[ds.colFiltered, ds.colOrder, ds.colKeys] :
-	[ds.rowFiltered, ds.rowOrder, ds.rowKeys];
+		[ds.colFiltered, ds.colOrder, ds.colKeys] :
+		[ds.rowFiltered, ds.rowOrder, ds.rowKeys];
 
 	// filter indices
 	//let indices = attributes['(original order)'].data.slice(0);
@@ -169,7 +175,7 @@ function filterIndices(filtered) {
 	let indices = [];
 	let maxVal = 0;
 	for (let i = 0; i < filtered.length; i++) {
-		if (!filtered[i]){
+		if (!filtered[i]) {
 			indices.push(i);
 			maxVal = i;
 		}
@@ -236,7 +242,7 @@ function updateFilteredGenes(fetchedGenes, indices) {
 	return newGenes;
 }
 
-function updateAttrOrder(order, key) {
+function updateAttrOrder(order, key, ascending) {
 	let newOrder = Array.from(order);
 	let idx = newOrder.length;
 	while (idx--) {
@@ -254,12 +260,16 @@ function updateAttrOrder(order, key) {
 		// Already in front of array, toggle ascending
 		newOrder[0] = { key: t.key, ascending: !t.ascending };
 	}
+	// check if manually overriding asc/desc toggle
+	if (ascending !== undefined){
+		newOrder[0] = Object.assign({}, newOrder[0], {ascending});
+	}
 	return newOrder;
 }
 
 function updateGeneSortOrder(state, action) {
-	const { key, dataset } = action;
-	const ds = state.dataSets[dataset];
+	const { key, datasetName } = action;
+	const ds = state.dataSets[datasetName];
 	const { rowAttrs, rowKeys } = ds;
 	// set new sort order
 	let rowOrder = updateAttrOrder(ds.rowOrder, key);
@@ -272,17 +282,21 @@ function updateGeneSortOrder(state, action) {
 	let newAttrs = updateAttrs(indices, rowKeys, rowAttrs);
 	return merge(state, {
 		dataSets: {
-			[dataset]: { rowAttrs: newAttrs, rowOrder },
+			[datasetName]: {
+				rowAttrs: newAttrs,
+				rowOrder,
+				viewState: { geneMD: { rowOrder } },
+			},
 		},
 	});
 }
 
 function updateCellSortOrder(state, action) {
-	const { key, dataset } = action;
-	const ds = state.dataSets[dataset];
+	const { key, datasetName, asc } = action;
+	const ds = state.dataSets[datasetName];
 	const { colAttrs, colKeys, fetchedGenes } = ds;
 	// set new sort order
-	let colOrder = updateAttrOrder(ds.colOrder, key);
+	let colOrder = updateAttrOrder(ds.colOrder, key, asc);
 	let indices = colAttrs['(original order)'].filteredData;
 
 	// Sort indices according to new sort settings
@@ -293,21 +307,14 @@ function updateCellSortOrder(state, action) {
 	let newGenes = updateFilteredGenes(fetchedGenes, indices);
 	return merge(state, {
 		dataSets: {
-			[dataset]: { colAttrs: newAttrs, colOrder, fetchedGenes: newGenes },
+			[datasetName]: {
+				colAttrs: newAttrs,
+				colOrder,
+				viewState: { cellMD: { colOrder } },
+				fetchedGenes: newGenes,
+			},
 		},
 	});
-}
-
-function receivedGene(state, action) {
-	const {gene, datasetName} = action;
-	const indices = state.dataSets[datasetName].colAttrs['(original order)'].filteredData;
-	let filteredData = new Float64Array(indices.length);
-	const {data} = action.state.dataSets[datasetName].fetchedGenes[gene];
-	for (let i = 0; i < indices.length; i++) {
-		filteredData[i] = data[indices[i]];
-	}
-	action.state.dataSets[datasetName].fetchedGenes[gene].filteredData = filteredData;
-	return update(state, action);
 }
 
 function updateDatasetSortOrder(state, key) {
@@ -343,33 +350,46 @@ const initialData = {
 };
 
 function data(state = initialData, action) {
+	let newState;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:
 		case RECEIVE_DATASET:
 		case SEARCH_DATASETS:
-		case SEARCH_METADATA:
 		case REQUEST_GENE:
+		case RECEIVE_GENE:
 		case REQUEST_GENE_FAILED:
 			return update(state, action);
 
-		case RECEIVE_GENE:
-			return receivedGene(state, action);
+		//===VIEW ACTIONS===
+		case SET_VIEW_PROPS:
+			newState = updateViewState(state, action);
+			return setViewStateURL(newState, action);
 
 		case SORT_DATASETS:
 			return updateDatasetSortOrder(state, action.key);
 
 		case SORT_GENE_METADATA:
 			return updateGeneSortOrder(state, action);
+			//newState = updateGeneSortOrder(state, action);
+			//return setViewStateURL(newState, action);
 
 		case SORT_CELL_METADATA:
 			return updateCellSortOrder(state, action);
+			// newState = updateCellSortOrder(state, action);
+			// return setViewStateURL(newState, action);
 
 		case FILTER_METADATA:
-			return updateFilter(state, action);
+			newState = updateFilter(state, action);
+			newState = updateViewState(newState, action);
+			return setViewStateURL(newState, action);
 
-		//===VIEW ACTIONS===
-		case SET_VIEW_PROPS:
-			return setViewStateURL(state, action);
+		case SET_VIEW_PROPS_AND_SORT_METADATA:
+			newState = updateCellSortOrder(state, action);
+			newState = updateViewState(newState, action);
+			return setViewStateURL(newState, action);
+
+		case FILTER_GENE:
+			return state;
 
 		default:
 			return state;
