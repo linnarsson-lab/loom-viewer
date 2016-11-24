@@ -688,6 +688,51 @@ class LoomConnection(object):
 				values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]
 			self.set_attr(name, values, axis=1, dtype=new_dtype)
 
+	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
+		if axis == 1:
+			cols_per_chunk = batch_size
+			ix = 0
+			while ix < ds.shape[1]:
+				cols_per_chunk = min(ds.shape[1] - ix, cols_per_chunk)
+
+				selection = cells - ix
+				# Pick out the cells that are in this batch
+				selection = selection[np.where(np.logical_and(selection >= 0, selection < ix + cols_per_chunk))[0]]
+				if selection.shape[0] == 0:
+					continue
+
+				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
+				vals = ds[:, ix:ix + cols_per_chunk]
+				if genes is not None:
+					vals = vals[genes, :]
+				if cells is not None:
+					vals = vals[:, selection]
+
+				yield (ix, selection, vals)
+				ix = ix + cols_per_chunk
+
+		if axis == 0:
+			rows_per_chunk = batch_size
+			ix = 0
+			while ix < ds.shape[0]:
+				rows_per_chunk = min(ds.shape[0] - ix, rows_per_chunk)
+
+				selection = genes - ix
+				# Pick out the genes that are in this batch
+				selection = selection[np.where(np.logical_and(selection >= 0, selection < ix + rows_per_chunk))[0]]
+				if selection.shape[0] == 0:
+					continue
+
+				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
+				vals = ds[ix:ix + rows_per_chunk, :]
+				if genes is not None:
+					vals = vals[selection, :]
+				if cells is not None:
+					vals = vals[:, cells]
+
+				yield (ix, selection, vals)
+				ix = ix + cols_per_chunk
+
 	def map(self, f, axis=0, chunksize=10000, selection=None):
 		"""
 		Apply a function along an axis without loading the entire dataset in memory.
@@ -893,6 +938,13 @@ class LoomConnection(object):
 	# FEATURE SELECTION #
 	#####################
 
+	def _valid_gene(data):
+		"""
+			Amit's criteria:
+			valid = find(sum(data>0,2)>20 & sum(data>0,2)<length(data(1,:))*0.6);
+		"""
+		nnz = np.count_nonzero(data)
+		return nnz >= 20 and nnz < (0.6*data.shape[0])
 
 	def feature_selection(self, n_genes, method="SVR", cells=None):
 		"""
@@ -907,7 +959,7 @@ class LoomConnection(object):
 
 		This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
 		"""
-		(mu,std) = self.map((np.mean,np.std),axis=0, selection=cells)
+		(mu, std, valid) = self.map((np.mean, np.std, _valid), axis=0, selection=cells)
 		cv = std/mu
 		log2_m = np.log2(mu)
 		excluded = (log2_m == float("-inf"))
@@ -915,27 +967,28 @@ class LoomConnection(object):
 		log2_cv = np.log2(cv)
 		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
+		excluded = np.logical_or(excluded, np.logical_not(valid))
 
 		logging.debug("Selecting %i genes" % n_genes)
 		if method == "SVR":
 			logging.info("Fitting CV vs mean using SVR")
 			svr_gamma = 1000./len(mu)
 			clf = SVR(gamma=svr_gamma)
-			clf.fit(log2_m[:,np.newaxis], log2_cv)
+			clf.fit(log2_m[:, np.newaxis], log2_cv)
 			fitted_fun = clf.predict
 			# Score is the relative position with respect of the fitted curve
-			score = np.log2(cv) - fitted_fun(log2_m[:,np.newaxis])
+			score = np.log2(cv) - fitted_fun(log2_m[:, np.newaxis])
 			score = np.nan_to_num(score)
 		else:
 			logging.info("Fitting CV vs mean using least squares")
 			#Define the objective function to fit (least squares)
-			fun = lambda x, log2_m, log2_cv: sum(abs( np.log2( (2.**log2_m)**(-x[0])+x[1]) - log2_cv ))
+			fun = lambda x, log2_m, log2_cv: sum(abs(np.log2((2.**log2_m)**(-x[0])+x[1])-log2_cv))
 			#Fit using Nelder-Mead algorythm
-			x0=[0.5,0.5]
-			optimization =  minimize(fun, x0, args=(log2_m,log2_cv), method='Nelder-Mead')
+			x0 = [0.5, 0.5]
+			optimization = minimize(fun, x0, args=(log2_m, log2_cv), method='Nelder-Mead')
 			params = optimization.x
 			#The fitted function
-			fitted_fun = lambda log_mu: np.log2( (2.**log_mu)**(-params[0]) + params[1])
+			fitted_fun = lambda log_mu: np.log2((2.**log_mu)**(-params[0])+params[1])
 
 			# Score is the relative position with respect of the fitted curve
 			score = np.log2(cv) - fitted_fun(np.log2(mu))
