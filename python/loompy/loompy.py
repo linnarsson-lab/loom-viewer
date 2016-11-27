@@ -692,8 +692,8 @@ class LoomConnection(object):
 		if axis == 1:
 			cols_per_chunk = batch_size
 			ix = 0
-			while ix < ds.shape[1]:
-				cols_per_chunk = min(ds.shape[1] - ix, cols_per_chunk)
+			while ix < self.shape[1]:
+				cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
 
 				selection = cells - ix
 				# Pick out the cells that are in this batch
@@ -702,7 +702,7 @@ class LoomConnection(object):
 					continue
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
-				vals = ds[:, ix:ix + cols_per_chunk]
+				vals = self[:, ix:ix + cols_per_chunk]
 				if genes is not None:
 					vals = vals[genes, :]
 				if cells is not None:
@@ -714,8 +714,8 @@ class LoomConnection(object):
 		if axis == 0:
 			rows_per_chunk = batch_size
 			ix = 0
-			while ix < ds.shape[0]:
-				rows_per_chunk = min(ds.shape[0] - ix, rows_per_chunk)
+			while ix < self.shape[0]:
+				rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
 
 				selection = genes - ix
 				# Pick out the genes that are in this batch
