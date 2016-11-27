@@ -764,7 +764,7 @@ class LoomConnection(object):
 			ix = 0
 			while ix < self.shape[0]:
 				rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
-				if selection != None:
+				if selection is not None:
 					chunk = self[ix:ix + rows_per_chunk, :][:, selection]
 				else:
 					chunk = self[ix:ix + rows_per_chunk, :]
@@ -778,7 +778,7 @@ class LoomConnection(object):
 			ix = 0
 			while ix < self.shape[1]:
 				cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
-				if selection != None:
+				if selection is not None:
 					chunk = self[:, ix:ix + cols_per_chunk][selection, :]
 				else:
 					chunk = self[:, ix:ix + cols_per_chunk]
@@ -959,7 +959,7 @@ class LoomConnection(object):
 
 		This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
 		"""
-		(mu, std, valid) = self.map((np.mean, np.std, _valid), axis=0, selection=cells)
+		(mu, std, valid) = self.map((np.mean, np.std, _valid_gene), axis=0, selection=cells)
 		cv = std/mu
 		log2_m = np.log2(mu)
 		excluded = (log2_m == float("-inf"))
