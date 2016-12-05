@@ -1,8 +1,11 @@
 #! /bin/bash
 
-# Remove old JS files
+# Remove old files
 if [ -a ./python/loompy/static/js ]; then
   rm -r ./python/loompy/static/js
+fi
+if [ -a ./python/loompy/static/css ]; then
+  rm -r ./python/loompy/static/css
 fi
 if [ -a ./python/build ]; then
   rm -r ./python/build
@@ -16,6 +19,7 @@ set -o errexit
 
 # Set up the static directory
 mkdir ./python/loompy/static/js
+mkdir ./python/loompy/static/css
 
 # Build static assets
 

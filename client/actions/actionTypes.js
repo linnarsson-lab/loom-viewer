@@ -1,31 +1,29 @@
-export const REQUEST_PROJECTS_FETCH = 1;
-export const REQUEST_PROJECTS_FAILED = 2;
-export const RECEIVE_PROJECTS = 3;
+const prod = process.env.NODE_ENV === 'production';
 
-export const REQUEST_DATASET = 4;
-export const REQUEST_DATASET_FETCH = 5;
-export const REQUEST_DATASET_CACHED = 6;
-export const REQUEST_DATASET_FAILED = 7;
-export const RECEIVE_DATASET = 8;
+export const REQUEST_PROJECTS_FETCH = prod ? 1 : 'REQUEST_PROJECTS_FETCH';
+export const REQUEST_PROJECTS_FAILED = prod ? 2 : 'REQUEST_PROJECTS_FAILED';
+export const RECEIVE_PROJECTS = prod ? 3 : 'RECEIVE_PROJECTS';
 
-export const SEARCH_DATASETS = 9;
-export const SORT_DATASETS = 10;
+export const REQUEST_DATASET = prod ? 4 : 'REQUEST_DATASET';
+export const REQUEST_DATASET_FETCH = prod ? 5 : 'REQUEST_DATASET_FETCH';
+export const REQUEST_DATASET_CACHED = prod ? 6 : 'REQUEST_DATASET_CACHED';
+export const REQUEST_DATASET_FAILED = prod ? 7 : 'REQUEST_DATASET_FAILED';
+export const RECEIVE_DATASET = prod ? 8 : 'RECEIVE_DATASET';
 
-export const FILTER_METADATA = 11;
-export const SORT_GENE_METADATA = 12;
-export const SORT_CELL_METADATA = 13;
+export const SEARCH_DATASETS = prod ? 9 : 'SEARCH_DATASETS';
+export const SORT_DATASETS = prod ? 10 : 'SORT_DATASETS';
 
-export const REQUEST_GENE = 14;
-export const REQUEST_GENE_FETCH = 15;
-export const REQUEST_GENE_CACHED = 16;
-export const REQUEST_GENE_FAILED = 17;
-export const RECEIVE_GENE = 18;
-export const FILTER_GENE = 19;
+export const FILTER_METADATA = prod ? 11 : 'FILTER_METADATA';
+export const SORT_GENE_METADATA = prod ? 12 : 'SORT_GENE_METADATA';
+export const SORT_CELL_METADATA = prod ? 13 : 'SORT_CELL_METADATA';
 
-export const SET_VIEW_PROPS = 20;
+export const REQUEST_GENE = prod ? 14 : 'REQUEST_GENE';
+export const REQUEST_GENE_FETCH = prod ? 15 : 'REQUEST_GENE_FETCH';
+export const REQUEST_GENE_CACHED = prod ? 16 : 'REQUEST_GENE_CACHED';
+export const REQUEST_GENE_FAILED = prod ? 17 : 'REQUEST_GENE_FAILED';
+export const RECEIVE_GENE = prod ? 18 : 'RECEIVE_GENE';
+export const FILTER_GENE = prod ? 19 : 'FILTER_GENE';
+
+export const SET_VIEW_PROPS = prod ? 20 : 'SET_VIEW_PROPS';
 // combine into one, to avoid needless re-renders
-export const SET_VIEW_PROPS_AND_SORT_METADATA = 21;
-
-// export const REQUEST_PROJECTS = 1;
-// export const REQUEST_PROJECTS_CACHED = 3;
-// export const SEARCH_METADATA = 14;
+export const SET_VIEW_PROPS_AND_SORT_METADATA = prod ? 21 : 'SET_VIEW_PROPS_AND_SORT_METADATA';
