@@ -117,7 +117,7 @@ class LoomCache(object):
 			"totalCells": total_cells,
 			"totalGenes": total_genes,
 			"lastModified": last_mod,
-		}		
+		}
 	def format_time(self, project, filename):
 		"""
 		Returns the last time the file was modified as a string,
