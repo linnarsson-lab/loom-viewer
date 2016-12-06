@@ -91,29 +91,33 @@ class LoomCache(object):
 						ds = self.connect_dataset_locally(project, filename, username, password)
 						if ds is None:
 							continue
-						title = ds.attrs.get("title", filename)
-						descr = ds.attrs.get("description", "")
-						url = ds.attrs.get("url", "")
-						doi = ds.attrs.get("doi", "")
-						# get arbitrary col/row attribute, they're all lists
-						# of equal size. The length equals total cells/genes
-						totalCells = ds.shape[1]
-						totalGenes = ds.shape[0]
-						lastMod = self.format_time(project, filename)
-						listEntry = {
-							"project": project,
-							"filename": filename,
-							"dataset": filename,
-							"title": title,
-							"description": descr,
-							"url":url,
-							"doi": doi,
-							"totalCells": totalCells,
-							"totalGenes": totalGenes,
-							"lastModified": lastMod,
-						}
-						result.append(listEntry)
+						result.append(self.make_list_entry(project, filename, ds))
 		return result
+	def make_list_entry(self, project, filename, ds):
+		"""
+		Generate object containing list entry metadata
+		"""
+		title = ds.attrs.get("title", filename)
+		descr = ds.attrs.get("description", "")
+		url = ds.attrs.get("url", "")
+		doi = ds.attrs.get("doi", "")
+		# get arbitrary col/row attribute, they're all lists
+		# of equal size. The length equals total cells/genes
+		total_cells = ds.shape[1]
+		total_genes = ds.shape[0]
+		last_mod = self.format_time(project, filename)
+		return {
+			"project": project,
+			"filename": filename,
+			"dataset": filename,
+			"title": title,
+			"description": descr,
+			"url":url,
+			"doi": doi,
+			"totalCells": total_cells,
+			"totalGenes": total_genes,
+			"lastModified": last_mod,
+		}		
 	def format_time(self, project, filename):
 		"""
 		Returns the last time the file was modified as a string,
