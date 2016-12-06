@@ -116,13 +116,14 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 		// Suitable radius of the markers
 		// - smaller canvas size -> smaller points
 		const radius = Math.min(6, (Math.max(1, Math.min(width, height) / 100)) * pixelRatio) | 0;
-		// Scale to screen dimensions and round to pixel position
+
+		// Scale to screen dimensions (with margins) and round to pixel position
 		for (let i = 0; i < xData.length; i++) {
-			const xi = (xData[i] - xmin) / (xmax - xmin) * (width - 2 * radius) + radius;
+			const xi = (xData[i] - xmin) / (xmax - xmin) * (width - 8*radius) + 4*radius;
 			xData[i] = xi | 0;
 		}
 		for (let i = 0; i < yData.length; i++) {
-			const yi = (1 - (yData[i] - ymin) / (ymax - ymin)) * (height - 2 * radius) + radius;
+			const yi = (1 - (yData[i] - ymin) / (ymax - ymin)) * (height - 8*radius) + 4*radius;
 			yData[i] = yi | 0;
 		}
 

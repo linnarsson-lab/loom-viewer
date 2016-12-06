@@ -1,10 +1,10 @@
 /**
  * Crude normal curve approximation by taking the average of 8 random values.
- * Returns random value between [-1, 1)
+ * Returns random value between [-0.5, 0.5)
  */
 export function rndNorm() {
 	return ((Math.random() + Math.random() + Math.random() + Math.random() +
-		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.25;
+		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.125;
 }
 
 
