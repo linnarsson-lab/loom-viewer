@@ -43,12 +43,12 @@ class LoomCache(object):
 		self.dataset_path = dataset_path
 		self.looms = {}
 
-	def authorize(self, proj, username, password, mode="read"):
+	def authorize(self, project, username, password, mode="read"):
 		"""
 		Check authorization for the specific project and credentials
 
 		Args:
-			proj (str):			Project name
+			project (str):		Project name
 			username (str): 	Username
 			password (str):		Password
 			mode (str):			"read" or "write"
@@ -58,7 +58,7 @@ class LoomCache(object):
 		an existing auth.txt file (with 'w' flag for the user).
 		"""
 		users = {}
-		authfile = os.path.join(self.dataset_path, proj, "auth.txt")
+		authfile = os.path.join(self.dataset_path, project, "auth.txt")
 		if not os.path.exists(authfile):
 			return True if mode == "read" else False
 		else:
@@ -84,14 +84,14 @@ class LoomCache(object):
 		"""
 		projects = [x for x in os.listdir(self.dataset_path) if not x.startswith(".")]
 		result = []
-		for proj in projects:
-			if self.authorize(proj, username, password):
-				for f in os.listdir(os.path.join(self.dataset_path, proj)):
-					if f.endswith(".loom"):
-						ds = self.connect_dataset_locally(proj, f, username, password)
+		for project in projects:
+			if self.authorize(project, username, password):
+				for filename in os.listdir(os.path.join(self.dataset_path, project)):
+					if filename.endswith(".loom"):
+						ds = self.connect_dataset_locally(project, filename, username, password)
 						if ds is None:
 							continue
-						title = ds.attrs.get("title", f)
+						title = ds.attrs.get("title", filename)
 						descr = ds.attrs.get("description", "")
 						url = ds.attrs.get("url", "")
 						doi = ds.attrs.get("doi", "")
@@ -99,10 +99,29 @@ class LoomCache(object):
 						# of equal size. The length equals total cells/genes
 						totalCells = ds.shape[1]
 						totalGenes = ds.shape[0]
-						#last time the file was modified, formatted year/month/day hour:minute:second
-						lastMod = time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(os.path.getmtime(os.path.join(self.dataset_path, proj, f))))
-						result.append({ "project": proj, "filename": f, "dataset": f, "title": title, "description": descr, "url":url, "doi": doi, "totalCells": totalCells, "totalGenes": totalGenes, "lastModified": lastMod})
+						lastMod = self.format_time(project, filename)
+						listEntry = {
+							"project": project,
+							"filename": filename,
+							"dataset": filename,
+							"title": title,
+							"description": descr,
+							"url":url,
+							"doi": doi,
+							"totalCells": totalCells,
+							"totalGenes": totalGenes,
+							"lastModified": lastMod,
+						}
+						result.append(listEntry)
 		return result
+	def format_time(self, project, filename):
+		"""
+		Returns the last time the file was modified as a string,
+		formatted year/month/day hour:minute:second
+		"""
+		path = os.path.join(self.dataset_path, project, filename)
+		mtime = time.gmtime(os.path.getmtime(path))
+		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
 
 	def connect_dataset_locally(self, project, filename, username=None, password=None):
 		"""
