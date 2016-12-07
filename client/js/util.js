@@ -95,9 +95,9 @@ export function calcMinMax(data, ignoreZeros) {
 			min = data[i];
 			max = data[i];
 			hasZeros = i > 0;
-			while (i < data.length){
+			while (i < data.length) {
 				const v = data[i];
-				if (v){
+				if (v) {
 					min = min < v ? min : v;
 					max = max > v ? max : v;
 				}
@@ -118,7 +118,172 @@ export function calcMinMax(data, ignoreZeros) {
 	return { min, max, hasZeros };
 }
 
-export function arrayConstr(arrayType){
+// === Metadata Arrays ===
+// Instead of plain arrays, we wrap the data from our attributes
+// and genes in an object containing useful metadata about them. 
+// This includes array type (typed arrays are much faster 
+// to use, and we also have a special format for indexed strings)
+// to which attribute and dataset the data belongs, if the array
+// has zeros, min and max value excluding zeros, which twenty
+// values are most common, by how much, whether they are filtered,
+// and a color indices LUT matching these common values
+
+
+// Convert plain array to object with
+// typed/indexed array and metadata
+export function convertArray(data, arrayType) {
+	let array = { data, arrayType };
+	let mostFrequent = countElements(array.data);
+	for (let i = 0; i < mostFrequent.length; i++) {
+		mostFrequent[i].filtered = false;
+	}
+	array.mostFrequent = mostFrequent;
+
+	// create lookup table to convert attribute values
+	// to color indices (so a look-up table for finding
+	// indices for another lookup table).
+	array.colorIndices = {};
+	for (let i = 0; i < 20 && i < mostFrequent.length; i++) {
+		array.colorIndices[mostFrequent[i].val] = i + 1;
+	}
+
+	// For string arrays, convert to indexed
+	// form if fewer than 256 unique strings
+	if (array.arrayType === 'string' && mostFrequent.length < 256) {
+		array = IndexedStringArray(array);
+		array.filteredData = Uint8Array.from(array.data);
+	}
+
+
+	switch (array.arrayType) {
+		case 'float32':
+		case 'number':
+		case 'float64':
+			// Test whether "float" values are actually integers,
+			// if so convert to typed integer arrays.
+			array.arrayType = isInteger(array.data) ?
+				'integer' : array.arrayType;
+			break;
+		default:
+		// do nothing
+	}
+
+	// For our plotters we often need to know the dynamic
+	// range for non-zero values, but also need to know
+	// if zero-values are present. We also use this information
+	// to determine integer size, so we pre-calc this.
+	const { min, max, hasZeros } = calcMinMax(array.data, true);
+	array.min = min;
+	array.max = max;
+	array.hasZeros = hasZeros;
+	// convert number values to typed arrays matching the schema,
+	// and string arrays with few unique values to indexedString
+	array.filteredData = Array.from(array.data);
+	switch (array.arrayType) {
+		case 'float32':
+			array.data = Float32Array.from(array.data);
+			array.filteredData = Float32Array.from(array.data);
+			break;
+		case 'number':
+		case 'float64':
+			array.data = Float64Array.from(array.data);
+			array.filteredData = Float64Array.from(array.data);
+			break;
+		case 'integer':
+			// convert to most compact integer representation
+			// for better performance.
+			if (min >= 0) {
+				if (max < 256) {
+					array.data = Uint8Array.from(array.data);
+					array.filteredData = Uint8Array.from(array.data);
+					array.arrayType = 'uint8';
+				} else if (max < 65535) {
+					array.data = Uint16Array.from(array.data);
+					array.filteredData = Uint16Array.from(array.data);
+					array.arrayType = 'uint16';
+				} else {
+					array.data = Uint32Array.from(array.data);
+					array.filteredData = Uint32Array.from(array.data);
+					array.arrayType = 'uint32';
+				}
+			} else if (min > -128 && max < 128) {
+				array.data = Int8Array.from(array.data);
+				array.filteredData = Int8Array.from(array.data);
+				array.arrayType = 'int8';
+			} else if (min > -32769 && max < 32768) {
+				array.data = Int16Array.from(array.data);
+				array.filteredData = Int16Array.from(array.data);
+				array.arrayType = 'in16';
+			} else {
+				array.data = Int32Array.from(array.data);
+				array.filteredData = Int32Array.from(array.data);
+				array.arrayType = 'in32';
+			}
+			break;
+		// in case of string arrays, we assum they represent
+		// categories when plotted as x/y attributes. For this
+		// we need to set min/max to the number of unique categories
+		case 'string':
+			array.min = 1;
+			array.max = array.mostFrequent.length;
+			array.hasZeros = false;
+			break;
+		case 'indexedString':
+			array.min = 0;
+			array.max = 20;
+			array.hasZeros = true;
+			break;
+		default: // no conversions needed for (indexed) strings
+	}
+	return array;
+}
+
+/** 
+ * Tests if all values in an array are integer values
+*/
+export function isInteger(array) {
+	// see if any of the values differ
+	// from forced integer value
+	for (let i = 0; i < array.length; i++) {
+		if ((array[i] | 0) !== array[i]) { return false; }
+	}
+	return true;
+}
+
+// mdArray & mostFrequent must be mutable!
+// Using indexed strings can be much faster, since Uint8Arrays
+// are smaller and don't add pointer indirection, and allow
+// for quicker comparisons in the plotters than strings.
+export function IndexedStringArray(mdArray) {
+	let mf = mdArray.mostFrequent.slice(0);
+	let data = new Uint8Array(mdArray.data.length);
+	mdArray.arrayType = 'indexedString';
+	mdArray.indexedVal = new Array(mf.length);
+	let ci = {};
+	for (let i = 0; i < mf.length; i++) {
+		const { val } = mf[i];
+		// This is necessary to sync with sorting:
+		// the most common value should be largest
+		const idx = mf.length - i - 1;
+		mdArray.indexedVal[idx] = val;
+		for (let j = 0; j < mdArray.data.length; j++) {
+			if (mdArray.data[j] === val) {
+				data[j] = idx;
+			}
+		}
+		// convert mostFrequent and colorIndices to use indexed
+		// values too, to simplify the most common situation:
+		// direct lookup using the filteredData/data array.
+		mf[i] = Object.assign(mf[i], { val: idx });
+		ci[idx] = i + 1; //offset by one, for zero-values
+	}
+	mdArray.data = data;
+	mdArray.mostFrequent = mf;
+	mdArray.colorIndices = ci;
+	return mdArray;
+}
+
+export function arrayConstr(arrayType) {
 	switch (arrayType) {
 		case 'float32':
 			return Float32Array;
@@ -143,7 +308,9 @@ export function arrayConstr(arrayType){
 	}
 	return Array;
 }
+
 // checks if an object is an array or typed array
+// not for our objects that encapsulate typed arrays
 export function isArray(obj) {
 	return obj instanceof Array ||
 		obj instanceof Float64Array ||
