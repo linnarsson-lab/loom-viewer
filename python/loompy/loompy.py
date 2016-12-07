@@ -170,17 +170,24 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		col_attrs[key] = np.array([sample_annotation[key]]*matrix.shape[1])
 		col_types[key] = schema[key]
 
-	tsne = np.loadtxt(os.path.join(folder, "analysis", "tsne", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
-	col_attrs["_tSNE1"] = tsne[:, 0].astype('float64')
-	col_attrs["_tSNE2"] = tsne[:, 1].astype('float64')
-	col_types["_tSNE1"] = "float64"
-	col_types["_tSNE2"] = "float64"
+	tsne_file = os.path.join(folder, "analysis", "tsne", "projection.csv")
+	# In cellranger V2 the file moved one level deeper
+	if not os.path.exists(tsne_file):
+		tsne_file = os.path.join(folder, "analysis", "tsne", "2_components", "projection.csv")
+	if os.path.exists(tsne_file):
+		tsne = np.loadtxt(tsne_file, usecols=(1, 2), delimiter=',', skiprows=1)
+		col_attrs["_tSNE1"] = tsne[:, 0].astype('float64')
+		col_attrs["_tSNE2"] = tsne[:, 1].astype('float64')
+		col_types["_tSNE1"] = "float64"
+		col_types["_tSNE2"] = "float64"
 
-	pca = np.loadtxt(os.path.join(folder, "analysis", "pca", "projection.csv"), usecols=(1, 2), delimiter=',', skiprows=1)
-	col_attrs["_PC1"] = pca[:, 0].astype('float64')
-	col_attrs["_PC2"] = pca[:, 1].astype('float64')
-	col_types["_PC1"] = "float64"
-	col_types["_PC2"] = "float64"
+	pca_file = os.path.join(folder, "analysis", "pca", "projection.csv")
+	if os.path.exists(pca_file):
+		pca = np.loadtxt(pca_file, usecols=(1, 2), delimiter=',', skiprows=1)
+		col_attrs["_PC1"] = pca[:, 0].astype('float64')
+		col_attrs["_PC2"] = pca[:, 1].astype('float64')
+		col_types["_PC1"] = "float64"
+		col_types["_PC2"] = "float64"
 
 	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans.astype('float64')
