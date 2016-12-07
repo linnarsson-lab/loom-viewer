@@ -195,9 +195,6 @@ function prepData(dataSet) {
 	let newColAttrs = convertArrays(dataSet.colAttrs, dataSet.schema.colAttrs);
 	dataSet.rowAttrs = newRowAttrs;
 	dataSet.colAttrs = newColAttrs;
-	// Schema metadata is now part of the array objects
-	// in rowAttr/colAttr, so we can remove the field
-	delete dataSet['schema'];
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
 	dataSet.rowFiltered = new Uint16Array(dataSet.rowAttrs[origOrderKey].data.length);
@@ -223,7 +220,7 @@ function convertArrays(attrs, schema) {
 	let newAttrs = {};
 	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
-		newAttrs[key] = convertArray(attrs[key], schema[key]);
+		newAttrs[key] = convertArray(attrs[key]);
 	}
 	return newAttrs;
 }
