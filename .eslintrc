@@ -86,7 +86,7 @@
         "react/require-render-return": 2,
         "react/no-unknown-property": 2,
         "react/prefer-stateless-function": 1,
-        "react/wrap-multilines": 2,
+        "react/jsx-wrap-multilines": 2,
         "react/no-danger": 2,
         "react/jsx-uses-vars": 2,
         "react/jsx-no-undef": 2,
@@ -103,6 +103,6 @@
         "react/jsx-equals-spacing": [2, "never"],
         "react/jsx-space-before-closing": 2,
         "react/jsx-boolean-value": [2, "never"],
-        "react/no-comment-textnodes": 2
+        "react/jsx-no-comment-textnodes": 2
     }
 }
