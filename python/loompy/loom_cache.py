@@ -42,6 +42,7 @@ class LoomCache(object):
 			os.makedirs(dataset_path)
 		self.dataset_path = dataset_path
 		self.looms = {}
+		self.list_entries = {}
 
 	def authorize(self, project, username, password, mode="read"):
 		"""
@@ -91,7 +92,15 @@ class LoomCache(object):
 						ds = self.connect_dataset_locally(project, filename, username, password)
 						if ds is None:
 							continue
-						result.append(self.make_list_entry(project, filename, ds))
+						key = project + "/" + filename
+						list_entry = self.list_entries.get(key)
+						# if list_entry is cached and the file has not changed, use
+						# cached list_entry, else recreate list_entry from loom file
+						if list_entry is None or self.format_time(project, filename) != list_entry["lastModified"]:
+							print("Outdated list-entry for " + key +", updating cache")
+							list_entry = self.make_list_entry(project, filename, ds)
+							self.list_entries[key] = list_entry
+						result.append(list_entry)
 		return result
 	def make_list_entry(self, project, filename, ds):
 		"""
@@ -147,7 +156,9 @@ class LoomCache(object):
 			return None
 
 		key = project + "/" + filename
-		if key in self.looms:
+		cache = self.list_entries.get(key)
+		if key in self.looms and cache != None and cache["lastModified"] == self.format_time(project, filename):
+			print("Serving dataset " + key +" from cache")
 			return self.looms[key]
 
 		try:
