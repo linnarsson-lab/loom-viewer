@@ -167,6 +167,21 @@ class LoomCache(object):
 			return None
 		self.looms[key] = result
 		return result
+	def update_cache(self, project, filename, username=None, password=None):
+		"""
+		Updates the cache if file was modified according to the OS
+		"""
+		# Similarly, update data in list_entry if required
+		key = project + "/" + filename
+		list_entry = self.list_entries.get(key)
+		if list_entry is None or self.format_time(project, filename) != list_entry["lastModified"]:
+			print("Outdated cache for " + key +", updating")
+			# since we only use this function when the file has changed,
+			# we can simply call connect_dataset_locally to update the cache
+			ds = connect_dataset_locally(project, filename, username, password)
+			# after updating the ds, we can update the list_entry
+			list_entry = self.make_list_entry(project, filename, ds)
+			self.list_entries[key] = list_entry
 
 	def close(self):
 		for ds in self.looms.values():
