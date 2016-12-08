@@ -36,22 +36,7 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 		let { xData, yData, colData,
 			xmin, xmax, ymin, ymax } = convertData(x, y, color, filterZeros);
 
-		// Log transform if requested
-		if (logscale.x) {
-			for (let i = 0; i < xData.length; i++) {
-				xData[i] = Math.log2(2 + xData[i]);
-			}
-			xmin = Math.log2(2 + xmin) - 1;
-			xmax = Math.log2(2 + xmax) + 1;
-		}
-		if (logscale.y) {
-			for (let i = 0; i < yData.length; i++) {
-				yData[i] = Math.log2(2 + yData[i]);
-			}
-			ymin = Math.log2(2 + ymin) - 1;
-			ymax = Math.log2(2 + ymax) + 1;
-		}
-
+		// Jitter if requested
 		if (jitter.x && jitter.y) {
 			// if jittering both axes, do so in a
 			// circle around the data
@@ -61,35 +46,41 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 				xData[i] += r * Math.sin(t);
 				yData[i] += r * Math.cos(t);
 			}
+			// rndNorm() returns a range [-0.5, 0.5),
+			// so we adjust min/max accordingly
+			xmin -= 0.25; xmax += 0.25;
+			ymin -= 0.25; ymax += 0.25;
 		} else if (jitter.x) {
 			for (let i = 0; i < xData.length; i++) {
 				xData[i] += rndNorm();
 			}
+			xmin -= 0.25; xmax += 0.25;
 		} else if (jitter.y) {
 			for (let i = 0; i < yData.length; i++) {
 				yData[i] += rndNorm();
 			}
+			ymin -= 0.25; ymax += 0.25;
 		}
 
-		// Suitable radius of the markers
-		// - smaller canvas size -> smaller points
-		const radius = Math.min(6, (Math.max(1, Math.min(width, height) / 100)) * pixelRatio) | 0;
 
-		// Scale to screen dimensions (with margins) and round to pixel position
-		let margin = 2 * radius;
-		// we add +1 in the divisor here (and compensate further on with +0.5)
-		// to *also* add a margin *before* the normalisation
-		let xScale = ((width - 2 * margin)) / (xmax - xmin + 1);
-		for (let i = 0; i < xData.length; i++) {
-			xData[i] = ((xData[i] - xmin + 0.5) * xScale + margin) | 0;
+
+		// Log transform if requested
+		if (logscale.x) {
+			for (let i = 0; i < xData.length; i++) {
+				xData[i] = Math.log2(1 + xData[i]);
+			}
+			xmin = Math.log2(1 + xmin);
+			xmax = Math.log2(1 + xmax);
 		}
-		let yNorm = 1 / (ymax - ymin + 1);
-		let yProject = (height - 2 * margin);
-		for (let i = 0; i < yData.length; i++) {
-			yData[i] = ((1 - (yData[i] - ymin + 0.5) * yNorm) * yProject + margin) | 0;
+		if (logscale.y) {
+			for (let i = 0; i < yData.length; i++) {
+				yData[i] = Math.log2(1 + yData[i]);
+			}
+			ymin = Math.log2(1 + ymin);
+			ymax = Math.log2(1 + ymax);
 		}
 
-		// Draw the scatter plot itself
+		let cIdx = new Uint32Array(colData.length);
 		let palette = [];
 		switch (colorMode) {
 			case 'Heatmap':
@@ -101,6 +92,48 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 			case 'Categorical':
 				palette = colorLUT.category20;
 				break;
+		}
+
+		if (colorMode === 'Categorical') {
+			let { colorIndices } = color;
+			for (let i = 0; i < cIdx.length; i++) {
+				cIdx[i] = colorIndices[colData[i]] | 0;
+			}
+		} else {
+			let { min, max, hasZeros } = color;
+			if (hasZeros) {
+				min = min < 0 ? min : 0;
+			}
+			const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
+			for (let i = 0; i < cIdx.length; i++) {
+				cIdx[i] = ((colData[i] - min) * colorIdxScale) | 0;
+			}
+
+		}
+
+		let sorted = sortByAxes(xData, yData, cIdx);
+		xData = sorted.x;
+		yData = sorted.y;
+		cIdx = sorted.c;
+
+		// Suitable radius of the markers
+		// - smaller canvas size -> smaller points
+		const radius = Math.min(6, (Math.max(1, Math.min(width, height) / 100)) * pixelRatio);
+
+		// Scale to screen dimensions (with margins) and round to pixel position
+		let radMargin = 2 * radius;
+		let xmargin = (xmax - xmin) * 0.0625;
+		let yMargin = (ymax - ymin) * 0.0625;
+		// we add xmargin/ymargin in the divisor here (and compensate further on with 0.5)
+		// to *also* add a margin *before* the normalisation
+		let xScale = ((width - 2 * radMargin)) / (xmax - xmin + xmargin);
+		for (let i = 0; i < xData.length; i++) {
+			xData[i] = ((xData[i] - xmin + 0.5 * xmargin) * xScale + radMargin);
+		}
+		let yNorm = 1 / (ymax - ymin + yMargin);
+		let yProject = (height - 2 * radMargin);
+		for (let i = 0; i < yData.length; i++) {
+			yData[i] = ((1 - (yData[i] - ymin + 0.5 * yMargin) * yNorm) * yProject + radMargin);
 		}
 
 		const w = sprites[0].width, h = sprites[0].height;
@@ -126,25 +159,20 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 			contexts[i].fill();
 		}
 
+		// blit sprites
 		const spriteOffset = (w * 0.5);
-
-		// blit sprites in order of array
-		let { colorIndices, min, max, hasZeros } = color;
-		if (colorMode === 'Categorical') {
-			for (let i = 0; i < xData.length; i++) {
-				const cIdx = colorIndices[colData[i]] | 0; // force "undefined" to zero
-				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
-			}
-		} else { // one of the Heatmap options
-			if (hasZeros) {
-				min = min < 0 ? min : 0;
-			}
-			const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
-			for (let i = 0; i < xData.length; i++) {
-				const cIdx = ((colData[i] - min) * colorIdxScale) | 0;
-				context.drawImage(sprites[cIdx], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
+		// first the uncoloured values
+		for (let i = 0; i < xData.length; i++) {
+			if (cIdx[i] === 0) {
+				context.drawImage(sprites[cIdx[i]], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 			}
 		}
+		for (let i = 0; i < xData.length; i++) {
+			if (cIdx[i]) {
+				context.drawImage(sprites[cIdx[i]], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
+			}
+		}
+
 		context.restore();
 	};
 }
@@ -176,7 +204,7 @@ function convertData(x, y, color, filterZeros) {
 				if (x[i] && y[i]) {
 					xData.push(x[i]);
 					yData.push(y[i]);
-					colData.push(color[i]);
+					colData.push(color.filteredData[i]);
 				}
 			}
 		} else if (filterZeros.x) {
@@ -184,7 +212,7 @@ function convertData(x, y, color, filterZeros) {
 				if (x[i]) {
 					xData.push(x[i]);
 					yData.push(y[i]);
-					colData.push(color[i]);
+					colData.push(color.filteredData[i]);
 				}
 			}
 		} else { //else filterZeros.y
@@ -192,7 +220,7 @@ function convertData(x, y, color, filterZeros) {
 				if (y[i]) {
 					xData.push(x[i]);
 					yData.push(y[i]);
-					colData.push(color[i]);
+					colData.push(color.filteredData[i]);
 				}
 			}
 		}
@@ -206,11 +234,11 @@ function convertData(x, y, color, filterZeros) {
 }
 
 function convertStringArray(data) {
-	let l = data.filteredData.length;
+	const l = data.filteredData.length;
 	let retVal;
 	switch (data.arrayType) {
 		case 'string':
-			if (l < 256){
+			if (l < 256) {
 				retVal = new Uint8Array(l);
 			} else if (l < 65535) {
 				retVal = new Uint16Array(l);
@@ -225,10 +253,38 @@ function convertStringArray(data) {
 			retVal = new Uint8Array(l);
 			for (let i = 0; i < l; i++) {
 				retVal[i] = data.colorIndices[data.filteredData[i]] | 0;
-				if (retVal[i] > 20){ retVal[i] = 0; }
+				if (retVal[i] > 20) { retVal[i] = 0; }
 			}
 			return retVal;
 		default:
 			return data.filteredData;
 	}
+}
+
+
+function sortByAxes(xData, yData, cIdx) {
+	let indices = new Uint32Array(cIdx.length), i;
+	for (i = 0; i < cIdx.length; i++) {
+		indices[i] = i;
+	}
+
+	// sort by x, then by y, so that we render zero values first, 
+	// and then from back-to-front. This has to be done after
+	// jittering to maintain the tiling behaviour that is desired.
+	indices.sort((a, b) => {
+		return (
+			yData[a] < yData[b] ? 1 : yData[a] > yData[b] ? -1 :
+				xData[a] < xData[b] ? -1 : xData[a] > xData[b] ? 1 :
+					a < b ? -1 : 1
+		);
+	});
+	let x = new Float32Array(cIdx.length),
+		y = new Float32Array(cIdx.length),
+		c = new Uint32Array(cIdx.length);
+	for (i = 0; i < x.length; i++) {
+		x[i] = xData[indices[i]];
+		y[i] = yData[indices[i]];
+		c[i] = cIdx[indices[i]];
+	}
+	return { x, y, c };
 }

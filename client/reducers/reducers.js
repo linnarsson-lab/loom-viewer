@@ -23,7 +23,6 @@ import {
 	RECEIVE_GENE,
 	FILTER_GENE,
 	SET_VIEW_PROPS,
-	SET_VIEW_PROPS_AND_SORT_METADATA,
 } from '../actions/actionTypes';
 
 /**
@@ -380,11 +379,6 @@ function data(state = initialData, action) {
 
 		case FILTER_METADATA:
 			newState = updateFilter(state, action);
-			newState = updateViewState(newState, action);
-			return setViewStateURL(newState, action);
-
-		case SET_VIEW_PROPS_AND_SORT_METADATA:
-			newState = updateCellSortOrder(state, action);
 			newState = updateViewState(newState, action);
 			return setViewStateURL(newState, action);
 
