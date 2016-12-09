@@ -48,7 +48,7 @@ def strip(s):
 		return s[2:-1]
 	return s
 
-def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_types):
+def create(filename, matrix, row_attrs, col_attrs, row_attr_types=None, col_attr_types=None):
 	"""
 	Create a new .loom file from the given data.
 
@@ -57,12 +57,14 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 		matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
 		row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N
 		col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
-		row_attr_types (dict):	Row attribute types ('float64', 'int' or 'string' for each attribute)
-		col_attr_types (dict):	Column attribute types ('float64', 'int' or 'string' for each attribute)
 
 	Returns:
 		Nothing. To work with the file, use loom.connect(filename).
 	"""
+	if not row_attr_types is None:
+		raise DeprecationWarning("row_attr_types are no longer supported and will be ignored")
+	if not col_attr_types is None:
+		raise DeprecationWarning("col_attr_types are no longer supported and will be ignored")
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
@@ -73,21 +75,16 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types, col_attr_type
 	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
-	f.attrs["schema"] = json.dumps({"matrix": "float32", "row_attrs": {}, "col_attrs": {}})
 	f.flush()
 	f.close()
 
 	ds = connect(filename)
 
 	for key, vals in row_attrs.items():
-		if not key in row_attr_types:
-			raise ValueError("Type information missing for row attribute " + key)
-		ds.set_attr(key, vals, axis = 0, dtype=row_attr_types[key])
+		ds.set_attr(key, vals, axis = 0)
 
 	for key, vals in col_attrs.items():
-		if not key in col_attr_types:
-			raise ValueError("Type information missing for column attribute " + key)
-		ds.set_attr(key, vals, axis = 1, dtype=col_attr_types[key])
+		ds.set_attr(key, vals, axis = 1)
 
 	ds.close()
 
@@ -122,26 +119,27 @@ def create_from_pandas(df, loom_file):
 	column attributes of the .loom file. The main matrix of the DataFrame must contain only
 	float values. The datatypes of the attributes will be inferred as either float or string.
 	"""
+	raise DeprecationWarning("Creating loom files from Pandas is no longer supported")
 
-	n_rows = df.shape[0]
-	f = h5py.File(loom_file, "w")
-	f.create_group('/row_attrs')
-	f.create_group('/col_attrs')
-	f.create_dataset('matrix', data=df.values.astype('float32'), compression='gzip', maxshape=(n_rows, None), chunks=(100, 100))
-	for attr in df.index.names:
-		try:
-			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float64')
-		except ValueError(e):
-			f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype(str)
-	for attr in df.columns.names:
-		try:
-			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype('float64')
-		except ValueError(e):
-			f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype(str)
-	f.close()
-	pass
+	# n_rows = df.shape[0]
+	# f = h5py.File(loom_file, "w")
+	# f.create_group('/row_attrs')
+	# f.create_group('/col_attrs')
+	# f.create_dataset('matrix', data=df.values.astype('float32'), compression='gzip', maxshape=(n_rows, None), chunks=(100, 100))
+	# for attr in df.index.names:
+	# 	try:
+	# 		f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype('float64')
+	# 	except ValueError(e):
+	# 		f['/row_attrs/' + attr] = df.index.get_level_values(attr).values.astype(str)
+	# for attr in df.columns.names:
+	# 	try:
+	# 		f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype('float64')
+	# 	except ValueError(e):
+	# 		f['/col_attrs/' + attr] = df.columns.get_level_values(attr).values.astype(str)
+	# f.close()
+	# pass
 
-def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotation={}, schema={}, genome='mm10'):
+def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotation={}, schema=None, genome='mm10'):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
@@ -150,25 +148,23 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		loom_file (str):			full path of the resulting loom file
 		cell_id_prefix (str):		prefix to add to cell IDs (e.g. the sample id for this sample)
 		sample_annotation (dict): 	dict of additional sample attributes
-		schema (dict):				types for the additional sample attributes (required)
 		genome (str):				genome build to load (e.g. 'mm10')
 
 	Returns:
 		Nothing, but creates loom_file
 	"""
+	if schema is not None:
+		raise DeprecationWarning("Argument 'schema' is no longer supported and will be ignored")
 	matrix_folder = os.path.join(folder, 'filtered_gene_bc_matrices', genome)
 	matrix = mmread(os.path.join(matrix_folder, "matrix.mtx")).astype("float32").todense()
 
 	col_attrs = {"CellID": np.array([(cell_id_prefix + strip(bc)[2:-1]) for bc in np.loadtxt(os.path.join(matrix_folder, "barcodes.tsv"), delimiter="\t", dtype="unicode")])}
-	col_types = {"CellID": "string"}
 
 	temp = np.loadtxt(os.path.join(matrix_folder, "genes.tsv"), delimiter="\t", dtype="unicode")
 	row_attrs = {"Accession": temp[:, 0], "Gene": temp[:, 1]}
-	row_types = {"Accession": "string", "Gene": "string"}
 
 	for key in sample_annotation.keys():
 		col_attrs[key] = np.array([sample_annotation[key]]*matrix.shape[1])
-		col_types[key] = schema[key]
 
 	tsne_file = os.path.join(folder, "analysis", "tsne", "projection.csv")
 	# In cellranger V2 the file moved one level deeper
@@ -178,24 +174,97 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		tsne = np.loadtxt(tsne_file, usecols=(1, 2), delimiter=',', skiprows=1)
 		col_attrs["_tSNE1"] = tsne[:, 0].astype('float64')
 		col_attrs["_tSNE2"] = tsne[:, 1].astype('float64')
-		col_types["_tSNE1"] = "float64"
-		col_types["_tSNE2"] = "float64"
 
 	pca_file = os.path.join(folder, "analysis", "pca", "projection.csv")
 	if os.path.exists(pca_file):
 		pca = np.loadtxt(pca_file, usecols=(1, 2), delimiter=',', skiprows=1)
 		col_attrs["_PC1"] = pca[:, 0].astype('float64')
 		col_attrs["_PC2"] = pca[:, 1].astype('float64')
-		col_types["_PC1"] = "float64"
-		col_types["_PC2"] = "float64"
 
 	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans.astype('float64')
-	col_types["_KMeans_10"] = "float64"
 
 
-	create(loom_file, matrix, row_attrs, col_attrs, row_types, col_types)
+	create(loom_file, matrix, row_attrs, col_attrs)
 
+def join(file1, file2, output_file, key, file_attrs={}):
+	"""
+	Perform a proper join of two or more loom files
+
+	Args:
+		files (list of str):	the list of input files (full paths)
+		output_file (str):		full path of the output loom file
+		key (string or (string, string)):			Primary key(s)
+		file_attrs (dict):		file attributes (title, description, url, etc.)
+
+	Returns:
+		Nothing, but creates a new loom file joining the input files.
+
+	File attributes that are not given as function args, are taken instead from the first file
+	"""
+	if len(files) == 0:
+		raise ValueError("The input file list was empty")
+
+	if type(key) == str:
+		key1 = key
+		key2 = key
+	else:
+		key1 = key[0]
+		key2 = key[1]
+
+	# Perform the join operation
+	ds1 = connect(file1)
+	ds2 = connect(file2)
+	keys1 = ds1.row_attrs[key1]
+	keys2 = ds2.row_attrs[key2]
+
+	a=pd.DataFrame({
+			'key': keys1,
+			'ix_a': np.fromiter(range(keys1.shape[0]))
+		})
+	b=pd.DataFrame({
+			'key': keys2,
+			'ix_b': np.fromiter(range(keys2.shape[0]))
+		})
+	joined = pd.merge(a, b, on='key')
+
+	# These are the indexes into the two datasets for the joined rows
+	ix_a = joined["ix_a"].values
+	ix_b = joined["ix_b"].values
+
+	# Copy dataset 1 to the output
+	ds_output = None
+	row_attrs = {}
+	for k, v in ds1.row_attrs.items():
+		row_attrs[k] = v[ix_a]
+	batch_size = 5000
+	ix = 0
+	while True:
+		m = ds1[ix_a, ix:ix + batch_size]
+		col_attrs = {}
+		for k, v in ds1.col_attrs.items():
+			col_attrs[k] = v[ix:ix+batch_size]
+		if ds_output is None:
+			create(output_file, m, row_attrs, col_attrs, file_attrs=file_attrs)
+			ds_output = connect(output_file)
+			for a, v in file_attrs:
+				ds_output.attrs[a] = v
+		else:
+			ds_output.add_columns(m, col_attrs)
+		ix = ix + 1
+	# Copy dataset 2 to the output
+	ix = 0
+	while True:
+		m = ds2[ix_b, ix:ix + batch_size]
+		col_attrs = {}
+		for k, v in ds2.col_attrs.items():
+			col_attrs[k] = v[ix:ix+batch_size]
+			ds_output.add_columns(m, col_attrs)
+		ix = ix + 1
+	ds.close()
+	ds1.close()
+	ds2.close()
+		
 def combine(files, output_file, key=None, file_attrs={}):
 	"""
 	Combine two or more loom files and save as a new loom file
@@ -327,25 +396,13 @@ class LoomConnection(object):
 		self.file = h5py.File(filename, 'r+')
 		self.shape = self.file['matrix'].shape
 
-		if not self.file.attrs.__contains__("schema"):
-			raise ValueError("No schema found in " + filename)
-
-		# This is for backwards compatibility with files generated from Python 2
-		if type(self.file.attrs["schema"]) is bytes:
-			self.schema = json.loads(self.file.attrs["schema"].decode("utf-8"))
-		else:
-			self.schema = json.loads(self.file.attrs["schema"])
-
 		self.row_attrs = {}
 
 		for key in self.file['row_attrs'].keys():
-			vals = self.file['row_attrs'][key][:]
-			dtype = self.schema["row_attrs"][key]
-			if dtype == "string":
-				if type(vals[0] == bytes):
-					vals = np.array([x.decode("utf-8") for x in vals])
+			if self.file['row_attrs'][key].dtype.kind == 'S':
+				vals = self.file['row_attrs'][key][:].astype('U')
 			else:
-				vals = vals.astype(dtype)
+				vals = self.file['row_attrs'][key][:]
 
 			self.row_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
@@ -353,13 +410,10 @@ class LoomConnection(object):
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
-			vals = self.file['col_attrs'][key][:]
-			dtype = self.schema["col_attrs"][key]
-			if dtype == "string":
-				if type(vals[0] == bytes):
-					vals = np.array([x.decode("utf-8") for x in vals])
+			if self.file['col_attrs'][key].dtype.kind == 'S':
+				vals = self.file['col_attrs'][key][:].astype('U')
 			else:
-				vals = vals.astype(dtype)
+				vals = self.file['col_attrs'][key][:]
 
 			self.col_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
@@ -485,23 +539,7 @@ class LoomConnection(object):
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
-			vals = np.array(vals)
-			dtype = self.schema["col_attrs"][key]
-
-			if dtype != "int" and dtype != "float64" and dtype != "string":
-				raise TypeError("Invalid loom data type: " + dtype)
-
-			if dtype == "string":
-				vals = vals.astype("unicode")
-				vals = np.array([x.encode('utf-8') for x in vals])
-			if dtype == "float64":
-				vals = vals.astype("float64")
-			if dtype == "int":
-				vals = vals.astype("int")
-
-			if dtype == "float64":
-				if not np.isfinite(vals).all():
-					raise ValueError("INF, NaN not allowed in .loom attributes")
+			vals = np.array(vals).astype(self.col_attrs[key].dtype)
 
 			temp = self.file['/col_attrs/' + key][:]
 			temp.resize((n_cols,))
@@ -598,30 +636,16 @@ class LoomConnection(object):
 			name (str): 			Name of the attribute
 			values (numpy.ndarray):	Array of values of length equal to the axis length
 			axis (int):				Axis of the attribute (0 = rows, 1 = columns)
-			dtype (str):			Type ("float64", "int", or "string")
 
 		Returns:
 			Nothing.
 
 		This will overwrite any existing attribute of the same name.
 		"""
-		if dtype == None:
-			raise TypeError("Data type must be provided")
-
-
-		if dtype != "int" and dtype != "float64" and dtype != "string":
-			raise TypeError("Invalid loom data type: " + dtype)
-
-		if dtype == "string":
-			values = values.astype("unicode")
-		if dtype == "float64":
-			values = values.astype("float64")
-		if dtype == "int":
-			values = values.astype("int")
-
-		if dtype == "float64":
-			if not np.isfinite(values).all():
-				raise ValueError("INF, NaN not allowed in .loom attributes")
+		if dtype is not None:
+			raise DeprecationWarning("Data type should no longer be provided")
+		if values.dtype.type is np.str_:
+			values = np.array([x.encode('utf-8') for x in values])
 
 		# Add annotation along the indicated axis
 		if axis == 0:
@@ -629,29 +653,20 @@ class LoomConnection(object):
 				raise ValueError("Row attribute must have %d values" % self.shape[0])
 			if self.file['/row_attrs'].__contains__(name):
 				del self.file['/row_attrs/' + name]
-			if dtype == "string":
-				self.file['/row_attrs/' + name] = np.array([x.encode('utf-8') for x in values])
-			else:
-				self.file['/row_attrs/' + name] = values
+			self.file['/row_attrs/' + name] = values
 			self.row_attrs[name] = values
 			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.row_attrs[name])
-			self.schema["row_attrs"][name] = dtype
 		else:
 			if len(values) != self.shape[1]:
 				raise ValueError("Column attribute must have %d values" % self.shape[1])
 			if self.file['/col_attrs'].__contains__(name):
 				del self.file['/col_attrs/' + name]
-			if dtype == "string":
-				self.file['/col_attrs/' + name] = np.array([x.encode('utf-8') for x in values])
-			else:
-				self.file['/col_attrs/' + name] = values
+			self.file['/col_attrs/' + name] = values
 			self.col_attrs[name] = self.file['/col_attrs/' + name][:]
 			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.col_attrs[name])
-			self.schema["col_attrs"][name] = dtype
 
-		self.file.attrs["schema"] = json.dumps(self.schema)
 		self.file.flush()
 
 	def set_attr_bydict(self, name, fromattr, dict, new_dtype=None, axis=0, default=None):
@@ -665,8 +680,6 @@ class LoomConnection(object):
 
 			dict (dict):			Key-value mapping from source to target values
 
-			new_dtype (string):		Datatype for the new attribute
-
 			axis (int):				Axis of the attribute (0 = rows, 1 = columns)
 
 			default: (float or str):	Default target value to use if no mapping exists for a source value
@@ -677,6 +690,8 @@ class LoomConnection(object):
 		This will overwrite any existing attribute of the same name. It is perfectly possible to map an
 		attribute to itself (in-place).
 		"""
+		if new_dtype is not None:
+			raise DeprecationWarning("'new_dtype' should no longer be provided and will be ignored")
 		if axis == 0:
 			if not self.row_attrs.__contains__(fromattr):
 				raise KeyError("Row attribute %s does not exist" % fromattr)
@@ -684,7 +699,7 @@ class LoomConnection(object):
 				values = [dict[x] if dict.__contains__(x) else x for x in self.row_attrs[fromattr]]
 			else:
 				values = [dict[x] if dict.__contains__(x) else default for x in self.row_attrs[fromattr]]
-			self.set_attr(name, values, axis=0, dtype=new_dtype)
+			self.set_attr(name, values, axis=0)
 
 		if axis == 1:
 			if not self.col_attrs.__contains__(fromattr):
@@ -693,7 +708,7 @@ class LoomConnection(object):
 				values = [dict[x] if dict.__contains__(x) else x for x in self.col_attrs[fromattr]]
 			else:
 				values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]
-			self.set_attr(name, values, axis=1, dtype=new_dtype)
+			self.set_attr(name, values, axis=1)
 
 	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
 		if axis == 1:
@@ -1006,8 +1021,8 @@ class LoomConnection(object):
 
 		logging.debug("Excluding %i genes" % excluded.sum())
 		logging.debug("Keeping %i genes" % (1-excluded).sum())
-		self.set_attr("_Noise", score, axis = 0, dtype="float64")
-		self.set_attr("_Excluded", excluded, axis = 0, dtype="int")
+		self.set_attr("_Noise", score, axis = 0)
+		self.set_attr("_Excluded", excluded, axis = 0)
 
 	def backspin(self,
 		numLevels=2,
@@ -1055,9 +1070,9 @@ class LoomConnection(object):
 		log2_cv = np.log2(std/mu)
 		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
-		self.set_attr("_LogMean", log2_m, axis=0, dtype="float64")
-		self.set_attr("_LogCV", log2_cv, axis=0, dtype="float64")
-		self.set_attr("_Total", sums, axis=0, dtype="float64")
+		self.set_attr("_LogMean", log2_m, axis=0)
+		self.set_attr("_LogCV", log2_cv, axis=0)
+		self.set_attr("_Total", sums, axis=0)
 
 		(mu, std, sums) = self.map((np.mean, np.std, np.sum), axis=1)
 		log2_m = np.log2(mu)
@@ -1066,9 +1081,9 @@ class LoomConnection(object):
 		log2_cv = np.log2(std/mu)
 		excluded = np.logical_or(excluded, log2_cv == float("nan"))
 		log2_cv = np.nan_to_num(log2_cv)
-		self.set_attr("_LogMean", log2_m, axis=1, dtype="float64")
-		self.set_attr("_LogCV", log2_cv, axis=1, dtype="float64")
-		self.set_attr("_Total", sums, axis=1, dtype="float64")
+		self.set_attr("_LogMean", log2_m, axis=1)
+		self.set_attr("_LogCV", log2_cv, axis=1)
+		self.set_attr("_Total", sums, axis=1)
 
 
 	##############
@@ -1119,8 +1134,8 @@ class LoomConnection(object):
 			# Save first two dimensions as column attributes
 			pc1 = Xtransformed[:,0]
 			pc2 = Xtransformed[:,1]
-			self.set_attr("_PC1", pc1, axis = 0, dtype="float64")
-			self.set_attr("_PC2", pc2, axis = 0, dtype="float64")
+			self.set_attr("_PC1", pc1, axis = 0)
+			self.set_attr("_PC2", pc2, axis = 0)
 
 			# Then, perform tSNE based on the top components
 			# Precompute the distance matrix
@@ -1136,8 +1151,8 @@ class LoomConnection(object):
 			# Save first two dimensions as column attributes
 			tsne1 = tsne[:,0]
 			tsne2 = tsne[:,1]
-			self.set_attr("_tSNE1", tsne1, axis = 0, dtype="float64")
-			self.set_attr("_tSNE2", tsne2, axis = 0, dtype="float64")
+			self.set_attr("_tSNE1", tsne1, axis = 0)
+			self.set_attr("_tSNE2", tsne2, axis = 0)
 			logging.debug("Row projection completed")
 
 		if axis == 1 or axis == 2:
@@ -1172,8 +1187,8 @@ class LoomConnection(object):
 			# Save first two dimensions as column attributes
 			pc1 = Xtransformed[:,0]
 			pc2 = Xtransformed[:,1]
-			self.set_attr("_PC1", pc1, axis = 1, dtype="float64")
-			self.set_attr("_PC2", pc2, axis = 1, dtype="float64")
+			self.set_attr("_PC1", pc1, axis = 1)
+			self.set_attr("_PC2", pc2, axis = 1)
 
 			# Then, perform tSNE based on the top components
 			# Precompute the distance matrix
@@ -1189,8 +1204,8 @@ class LoomConnection(object):
 			# Save first two dimensions as column attributes
 			tsne1 = tsne[:,0]
 			tsne2 = tsne[:,1]
-			self.set_attr("_tSNE1", tsne1, axis = 1, dtype="float64")
-			self.set_attr("_tSNE2", tsne2, axis = 1, dtype="float64")
+			self.set_attr("_tSNE1", tsne1, axis = 1)
+			self.set_attr("_tSNE2", tsne2, axis = 1)
 			logging.debug("Column projection completed")
 
 	#############
@@ -1381,15 +1396,7 @@ class _CEF(object):
 		self.matrix = []
 
 	def export_as_loom(self, filename):
-		row_types = {}
-		for ix in range(len(self.row_attr_names)):
-			row_types[self.row_attr_names[ix]] = "float64" if np.issubdtype(np.array(self.row_attr_values[ix]).dtype, np.number) else "string"
-
-		col_types = {}
-		for ix in range(len(self.col_attr_names)):
-			col_types[self.col_attr_names[ix]] = "float64" if np.issubdtype(np.array(self.col_attr_values[ix]).dtype, np.number) else "string"
-
-		create(filename, self.matrix, dict(zip(self.row_attr_names, self.row_attr_values)), dict(zip(self.col_attr_names, self.col_attr_values)), row_types, col_types)
+		create(filename, self.matrix, dict(zip(self.row_attr_names, self.row_attr_values)), dict(zip(self.col_attr_names, self.col_attr_values)))
 
 	def add_header(self, name, value):
 		self.header_names.append(name)
