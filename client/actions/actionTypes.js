@@ -25,5 +25,3 @@ export const RECEIVE_GENE = prod ? 18 : 'RECEIVE_GENE';
 export const FILTER_GENE = prod ? 19 : 'FILTER_GENE';
 
 export const SET_VIEW_PROPS = prod ? 20 : 'SET_VIEW_PROPS';
-// combine into one, to avoid needless re-renders
-export const SET_VIEW_PROPS_AND_SORT_METADATA = prod ? 21 : 'SET_VIEW_PROPS_AND_SORT_METADATA';

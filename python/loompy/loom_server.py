@@ -174,6 +174,8 @@ def upload_file(project, filename):
 	data = request.get_data()
 	with open(path, 'wb') as f:
 		f.write(data)
+		f.close()
+		app.cache.update_cache(project, filename)
 
 	return "",201
 

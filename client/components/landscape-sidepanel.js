@@ -7,7 +7,7 @@ import {
 	Button, ButtonGroup,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA, SET_VIEW_PROPS_AND_SORT_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataSet } = props;
@@ -113,11 +113,9 @@ export const LandscapeSidepanel = function (props) {
 				newVals[0] = attr1;
 				newVals[1] = attr2;
 				dispatch({
-					type: SET_VIEW_PROPS_AND_SORT_METADATA,
+					type: SET_VIEW_PROPS,
 					stateName: 'landscape',
 					datasetName: dataSet.dataset,
-					key: attr2,
-					asc: false,
 					viewState: { landscape: { coordinateAttrs: newVals } },
 				});
 			};
@@ -170,7 +168,7 @@ export const LandscapeSidepanel = function (props) {
 							{setSFDP}
 						</ButtonGroup>
 					</ListGroupItem>
-				) : null }
+				) : null}
 				<ListGroupItem>
 					{coordinateDropdowns}
 					<ButtonGroup justified>
@@ -289,19 +287,15 @@ export const LandscapeSidepanel = function (props) {
 
 						</ButtonGroup>
 					</ButtonGroup>
-					{colorAttr !== '(gene)' ? (
-						<AttrLegend
-							mode={colorMode}
-							filterFunc={filterFunc}
-							attr={dataSet.colAttrs[colorAttr]}
-							/>
-						) : (
-						<AttrLegend
+					{colorAttr !== '(gene)' ? (<AttrLegend
+						mode={colorMode}
+						filterFunc={filterFunc}
+						attr={dataSet.colAttrs[colorAttr]}
+						/>) : (<AttrLegend
 							mode={colorMode}
 							filterFunc={filterFunc}
 							attr={dataSet.fetchedGenes[colorGene]}
-							/>
-							) }
+							/>)}
 				</ListGroupItem>
 			</ListGroup>
 		</Panel >
