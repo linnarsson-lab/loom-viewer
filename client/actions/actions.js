@@ -189,10 +189,8 @@ function prepData(dataSet) {
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular
 	// meta-data so we have to add it first
-	dataSet.schema.rowAttrs[origOrderKey] = 'integer';
-	dataSet.schema.colAttrs[origOrderKey] = 'integer';
-	let newRowAttrs = convertArrays(dataSet.rowAttrs, dataSet.schema.rowAttrs);
-	let newColAttrs = convertArrays(dataSet.colAttrs, dataSet.schema.colAttrs);
+	let newRowAttrs = convertArrays(dataSet.rowAttrs);
+	let newColAttrs = convertArrays(dataSet.colAttrs);
 	dataSet.rowAttrs = newRowAttrs;
 	dataSet.colAttrs = newColAttrs;
 	// Add zero-initialised filter counting arrays, assumes
@@ -215,8 +213,8 @@ function originalOrder(array) {
 }
 
 
-function convertArrays(attrs, schema) {
-	let keys = Object.keys(schema);
+function convertArrays(attrs) {
+	let keys = Object.keys(attrs);
 	let newAttrs = {};
 	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
