@@ -238,12 +238,14 @@ export function convertArray(data) {
  * Tests if all values in an array are integer values
 */
 export function isInteger(array) {
-	// see if any of the values differ
-	// from forced integer value
-	for (let i = 0; i < array.length; i++) {
-		if ((array[i] | 0) !== array[i]) { return false; }
-	}
-	return true;
+	// |0 forces to integer value, we can
+	//  then compare strict equality
+	let i = 0;
+	while (array[i] === (array[i] | 0)) { ++i; }
+	// if i === array.length, the while loop
+	// must have gone through the whole array,
+	// so all values are integer numbers
+	return i === array.length;
 }
 
 // mdArray & mostFrequent must be mutable!
