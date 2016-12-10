@@ -645,7 +645,7 @@ class LoomConnection(object):
 		if dtype is not None:
 			raise DeprecationWarning("Data type should no longer be provided")
 		if values.dtype.type is np.str_:
-			values = np.array([x.encode('utf-8') for x in values])
+			values = np.array([x.encode('ascii', 'ignore') for x in values])
 
 		# Add annotation along the indicated axis
 		if axis == 0:
