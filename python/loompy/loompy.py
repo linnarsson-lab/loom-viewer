@@ -446,19 +446,19 @@ class LoomConnection(object):
 		"""
 		a = ["/row_attrs/", "/col_attrs/"][axis]
 
-		if self.file[a][key].dtype.kind == 'S':
-			vals = np.array([x.decode('utf8') for x in self.file[a][key][:]])
+		if self.file[a][name].dtype.kind == 'S':
+			vals = np.array([x.decode('utf8') for x in self.file[a][name][:]])
 		else:
-			vals = self.file[a][key][:]
+			vals = self.file[a][name][:]
 
 		if axis == 0:
-			self.row_attrs[key] = vals
-			if not hasattr(LoomConnection, key):
-				setattr(self, key, self.row_attrs[key])
+			self.row_attrs[name] = vals
+			if not hasattr(LoomConnection, name):
+				setattr(self, name, self.row_attrs[name])
 		else:
 			self.col_attrs[key] = vals
-			if not hasattr(LoomConnection, key):
-				setattr(self, key, self.col_attrs[key])
+			if not hasattr(LoomConnection,name):
+				setattr(self, name, self.col_attrs[name])
 
 	def _repr_html_(self):
 		"""
