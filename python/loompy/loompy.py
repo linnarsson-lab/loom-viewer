@@ -407,6 +407,9 @@ class LoomConnection(object):
 			self.row_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
 				setattr(self, key, self.row_attrs[key])
+			if vals[0] is str and len(vals[0]) >= 3 and vals[:2] == "b'" and vals[-1] == "'":
+					logging.warn("Fixing unicode bug by re-setting row attribute '" + key + "'")
+					self.set_attr(key, np.array([x[2:-1] for x in vals]), axis=0)
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
@@ -418,6 +421,9 @@ class LoomConnection(object):
 			self.col_attrs[key] = vals
 			if not hasattr(LoomConnection, key):
 				setattr(self, key, self.col_attrs[key])
+			if vals[0] is str and len(vals[0]) >= 3 and vals[:2] == "b'" and vals[-1] == "'":
+					logging.warn("Fixing unicode bug by re-setting column attribute '" + key + "'")
+					self.set_attr(key, np.array([x[2:-1] for x in vals]), axis=1)
 
 		self.attrs = LoomAttributeManager(self.file)
 
