@@ -401,6 +401,7 @@ class LoomConnection(object):
 		for key in self.file['row_attrs'].keys():
 			if self.file['row_attrs'][key].dtype.kind == 'S':
 				vals = self.file['row_attrs'][key][:].astype('U')
+				np.array([x.decode('utf8') for x in self.filef["row_attrs"][key][:]])
 			else:
 				vals = self.file['row_attrs'][key][:]
 
@@ -411,7 +412,7 @@ class LoomConnection(object):
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
 			if self.file['col_attrs'][key].dtype.kind == 'S':
-				vals = self.file['col_attrs'][key][:].astype('U')
+				np.array([x.decode('utf8') for x in self.filef["col_attrs"][key][:]])
 			else:
 				vals = self.file['col_attrs'][key][:]
 
