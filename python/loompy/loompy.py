@@ -399,34 +399,66 @@ class LoomConnection(object):
 		self.row_attrs = {}
 
 		for key in self.file['row_attrs'].keys():
-			if self.file['row_attrs'][key].dtype.kind == 'S':
-				vals = np.array([x.decode('utf8') for x in self.file["row_attrs"][key][:]])
-			else:
-				vals = self.file['row_attrs'][key][:]
-
-			self.row_attrs[key] = vals
-			if not hasattr(LoomConnection, key):
-				setattr(self, key, self.row_attrs[key])
-			if type(vals[0]) is np.str_ and len(vals[0]) >= 3 and vals[0][:2] == "b'" and vals[0][-1] == "'":
+			self._load_attr(key, axis=0)
+			v = self.row_attrs[key][0]
+			if type(v) is np.str_ and len(v) >= 3 and v[:2] == "b'" and v[-1] == "'":
 				logging.warn("Fixing unicode bug by re-setting row attribute '" + key + "'")
-				self.set_attr(key, np.array([x[2:-1] for x in vals]), axis=0)
+				self._save_attr(key, np.array([x[2:-1] for x in vals]), axis=0)
+				self._load_attr(key, axis=0)
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
-			if self.file['col_attrs'][key].dtype.kind == 'S':
-				vals = np.array([x.decode('utf8') for x in self.file["col_attrs"][key][:]])
-			else:
-				vals = self.file['col_attrs'][key][:]
-
-			self.col_attrs[key] = vals
-			if not hasattr(LoomConnection, key):
-				setattr(self, key, self.col_attrs[key])
-			if type(vals[0]) is np.str_ and len(vals[0]) >= 3 and vals[0][:2] == "b'" and vals[0][-1] == "'":
+			self._load_attr(key, axis=1)
+			v = self.col_attrs[key][0]
+			if type(v) is np.str_ and len(v) >= 3 and v[:2] == "b'" and v[-1] == "'":
 				logging.warn("Fixing unicode bug by re-setting column attribute '" + key + "'")
-				self.set_attr(key, np.array([x[2:-1] for x in vals]), axis=1)
+				self._save_attr(key, np.array([x[2:-1] for x in vals]), axis=1)
+				self._load_attr(key, axis=1)
 
 		self.attrs = LoomAttributeManager(self.file)
 
+	def _save_attr(self, name, vals, axis):
+		"""
+		Save an attribute to the file, nothing else
+
+		Remarks:
+			Handles unicode to ascii conversion (lossy, but HDF5 supports only ascii)
+			Does not update the attribute cache (use _load_attr for this)
+		"""
+		if values.dtype.type is np.str_:
+			values = np.array([x.encode('ascii', 'ignore') for x in values])
+
+		a = ["/row_attrs/", "/col_attrs/"][axis]
+		if len(values) != self.shape[axis]:
+			raise ValueError("Attribute must have exactly %d values" % self.shape[0])
+		if self.file[a].__contains__(name):
+			del self.file[a + name]
+		self.file[a + name] = values
+		self.file.flush()
+
+	def _load_attr(self, name, axis):
+		"""
+		Load an attribute from the file, nothing else
+
+		Remarks:
+			Handles ascii to unicode conversion
+			Updates the attribute cache as well as the class attributes
+		"""
+		a = ["/row_attrs/", "/col_attrs/"][axis]
+
+		if self.file[a][key].dtype.kind == 'S':
+			vals = np.array([x.decode('utf8') for x in self.file[a][key][:]])
+		else:
+			vals = self.file[a][key][:]
+
+		if axis == 0:
+			self.row_attrs[key] = vals
+			if not hasattr(LoomConnection, key):
+				setattr(self, key, self.row_attrs[key])
+		else:
+			self.col_attrs[key] = vals
+			if not hasattr(LoomConnection, key):
+				setattr(self, key, self.col_attrs[key])
 
 	def _repr_html_(self):
 		"""
@@ -600,7 +632,7 @@ class LoomConnection(object):
 
 		self.add_columns(other[:, :], other.col_attrs)
 
-	def delete_attr(self, name, axis=0):
+	def delete_attr(self, name, axis=0, raise_on_missing=True):
 		"""
 		Permanently delete an existing attribute and all its values
 
@@ -614,24 +646,28 @@ class LoomConnection(object):
 		"""
 		if axis == 0:
 			if not name in self.row_attrs:
-				raise KeyError("Row attribute " + name + " does not exist")
-
+				if raise_on_missing:
+					raise KeyError("Row attribute " + name + " does not exist")
+				else:
+					return
 			del self.row_attrs[name]
 			del self.file['/row_attrs/' + name]
-			del self.schema["row_attrs"][name]
+			if hasattr(self, name):
+				delattr(self, name)
 
 		elif axis == 1:
 			if not name in self.col_attrs:
-				raise KeyError("Column attribute " + name + " does not exist")
-
+				if raise_on_missing:
+					raise KeyError("Column attribute " + name + " does not exist")
+				else:
+					return
 			del self.col_attrs[name]
 			del self.file['/col_attrs/' + name]
-			del self.schema["col_attrs"][name]
-
+			if hasattr(self, name):
+				delattr(self, name)
 		else:
 			raise ValueError("Axis must be 0 or 1")
 
-		self.file.attrs["schema"] = json.dumps(self.schema)
 		self.file.flush()
 
 	def set_attr(self, name, values, axis=0, dtype=None):
@@ -650,30 +686,10 @@ class LoomConnection(object):
 		"""
 		if dtype is not None:
 			raise DeprecationWarning("Data type should no longer be provided")
-		if values.dtype.type is np.str_:
-			values = np.array([x.encode('ascii', 'ignore') for x in values])
 
-		# Add annotation along the indicated axis
-		if axis == 0:
-			if len(values) != self.shape[0]:
-				raise ValueError("Row attribute must have %d values" % self.shape[0])
-			if self.file['/row_attrs'].__contains__(name):
-				del self.file['/row_attrs/' + name]
-			self.file['/row_attrs/' + name] = values
-			self.row_attrs[name] = values
-			if not hasattr(LoomConnection, name):
-				setattr(self, name, self.row_attrs[name])
-		else:
-			if len(values) != self.shape[1]:
-				raise ValueError("Column attribute must have %d values" % self.shape[1])
-			if self.file['/col_attrs'].__contains__(name):
-				del self.file['/col_attrs/' + name]
-			self.file['/col_attrs/' + name] = values
-			self.col_attrs[name] = self.file['/col_attrs/' + name][:]
-			if not hasattr(LoomConnection, name):
-				setattr(self, name, self.col_attrs[name])
-
-		self.file.flush()
+		self.delete_attr(name, axis, raise_on_missing=False)
+		self._save_attr(name, values, axis)
+		self._load_attr(name, axis)
 
 	def set_attr_bydict(self, name, fromattr, dict, new_dtype=None, axis=0, default=None):
 		"""
