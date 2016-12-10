@@ -54,7 +54,7 @@ export function countElements(array) {
 	uniques.sort((a, b) => {
 		return a.count < b.count ? 1 :
 			a.count > b.count ? -1 :
-				a.val <= b.val ? -1 : 1;
+				a.val < b.val ? -1 : 1;
 	});
 
 	return uniques;
@@ -147,7 +147,10 @@ export function convertArray(data) {
 		array.colorIndices[mostFrequent[i].val] = i + 1;
 	}
 
-	array.arrayType = (typeof data[0]) === 'number' && (typeof data[data.length - 1]) === 'number' ? 'number' : 'string';
+	// Data is either a string or a number; assumes no
+	// invalid input is given here (no objects, arrays,
+	// and so on)
+	array.arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
 
 	if (array.arrayType === 'number') {
 		// Test whether values are actually integers,
@@ -168,15 +171,18 @@ export function convertArray(data) {
 	// and string arrays with few unique values to indexedString
 	switch (array.arrayType) {
 		case 'float32':
-			// the only way to force
+			// the only way to force to Float32 is using a 
+			// typed Float32Array. So we do that first,
+			// and see if any information gets truncated
+			// If so, we'll use doubles instead.
 			array.data = Float32Array.from(data);
-			for (let i = 0; i < data.length; i++){
-				if (array.data[i] !== data[i]){
+			for (let i = 0; i < data.length; i++) {
+				if (array.data[i] !== data[i]) {
 					array.arrayType = 'float64';
 					break;
 				}
 			}
-			if (array.arrayType === 'float64'){
+			if (array.arrayType === 'float64') {
 				array.data = Float64Array.from(data);
 				array.filteredData = Float64Array.from(array.data);
 			} else {
@@ -238,12 +244,14 @@ export function convertArray(data) {
  * Tests if all values in an array are integer values
 */
 export function isInteger(array) {
-	// see if any of the values differ
-	// from forced integer value
-	for (let i = 0; i < array.length; i++) {
-		if ((array[i] | 0) !== array[i]) { return false; }
-	}
-	return true;
+	// |0 forces to integer value, we can
+	//  then compare strict equality
+	let i = 0;
+	while (array[i] === (array[i] | 0)) { ++i; }
+	// if i === array.length, the while loop
+	// must have gone through the whole array,
+	// so all values are integer numbers
+	return i === array.length;
 }
 
 // mdArray & mostFrequent must be mutable!
@@ -276,8 +284,8 @@ export function IndexedStringArray(mdArray) {
 	mdArray.data = data;
 	mdArray.filteredData = Uint8Array.from(data);
 	mdArray.hasZeros = false;
-	for (let i = 0; i < data.length; i++){
-		if (!data[i]){
+	for (let i = 0; i < data.length; i++) {
+		if (!data[i]) {
 			mdArray.hasZeros = true;
 			break;
 		}
@@ -361,7 +369,7 @@ export function isArray(obj) {
 * - in all other cases, the value from `newObj` is
 * assigned to the resulting object.
 *
-* *Again: (typed) arrays are not merged but overwritten
+* *Again: (typed) arrays are not merged but replaced
 * by the new array!*
 **/
 export function merge(oldObj, newObj) {
@@ -385,21 +393,18 @@ export function merge(oldObj, newObj) {
 				// by replacing it with the last key in the
 				// the array (unless it is the last element,
 				// in which case we just pop it).
-				untouchedKey = untouchedKeys.pop();
-				if (i < untouchedKeys.length) {
-					untouchedKeys[i] = untouchedKey;
-					i--; // So we don't skip a key
-				}
-				// We only need to merge the value if it is
-				// an an object, otherwise we can use the value from
+				untouchedKey = untouchedKeys[untouchedKeys.length - 1];
+				untouchedKeys[i--] = untouchedKey; // So we don't skip a key
+				untouchedKeys.pop();
+				// We only need to merge the value if it is an object, 
+				// otherwise we overwrite it with the value from
 				// the new object (as if it is a new key/value pair).
 				let val = newObj[newKey];
 				if (typeof val === 'object' && !isArray(val)) {
 					overlappingKeys.push(newKey);
-					newKey = newKeys.pop();
-					if (j < newKeys.length) {
-						newKeys[j] = newKey;
-					}
+					newKey = newKeys[newKeys.length - 1];
+					newKeys[j] = newKey;
+					newKeys.pop();
 				}
 				break;
 			}
@@ -425,15 +430,16 @@ export function merge(oldObj, newObj) {
 
 /**
 * Similar to `util.merge`, but for "deleting" fields from trees
-* Produces a new object, with the leaves of `delTree` pruned
-* out of `sourceTree` (by virtue of not copying).
+* Produces a new object, with leaves of `delTree` that are marked
+* with 0 pruned out of `sourceTree` (by virtue of not copying).
 * - `sourceTree` is the pre-existing state, assumed
 *   to be an object structured like a tree.
 * - `delTree` should be a tree where the values
-*   are either subtrees (objects), or anything that's
-*   not an object (actual value does not matter)
-*   If subtree, we recurse. If *anything* else, we prune
-*   the matching key.
+*   are either subtrees (objects) that matching
+*   the structure of `sourceTree`, or a leaf with 0 
+*   to mark a field for pruning. Anything else is 
+*   ignored (and thus, does not affect the structure
+*   of the sourceTree)
 */
 export function prune(sourceTree, delTree) {
 	if (!sourceTree) {
@@ -452,15 +458,12 @@ export function prune(sourceTree, delTree) {
 		for (let j = 0; j < sourceKeys.length; j++) {
 			let sourceKey = sourceKeys[j];
 			if (sourceKey === delKey) {
-				// "delete" by not copying
-				sourceKey = sourceKeys.pop();
-				if (j < sourceKeys.length) {
-					sourceKeys[j] = sourceKey;
-				}
-				// check if we need to recurse
+				// check if we need to recurse or delete
 				let val = delTree[delKey];
-				if (typeof val === 'object' && !Array.isArray(val)) {
-					subKeys.push(delKey);
+				if (val === 0 || typeof val === 'object' && !Array.isArray(val)) {
+					sourceKeys[j] = sourceKeys[sourceKeys.length - 1];
+					sourceKey = sourceKeys.pop();
+					if (val) { subKeys.push(delKey); }
 				}
 				break;
 			}
@@ -468,7 +471,6 @@ export function prune(sourceTree, delTree) {
 	}
 
 	let prunedObj = {};
-	let totalKeys = sourceKeys.length;
 	// copy all values that aren't pruned
 	for (let i = 0; i < sourceKeys.length; i++) {
 		let key = sourceKeys[i];
@@ -477,81 +479,10 @@ export function prune(sourceTree, delTree) {
 	// recurse on all subtrees
 	for (let i = 0; i < subKeys.length; i++) {
 		let key = subKeys[i];
-		let subTree = prune(sourceTree[key], delTree[key]);
-		if (subTree) { // avoid setting keys for undefined values
-			prunedObj[key] = subTree;
-			totalKeys++;
-		}
+		prunedObj[key] = prune(sourceTree[key], delTree[key]);
 	}
 	// don't return prunedObj if it is empty
-	return totalKeys ? prunedObj : undefined;
-}
-
-/**
- * Like `util.merge`, but toggles boolean leaf values
- *
- * Boolean values in `newObj` should be set to
- * `true` for consistent results!
- *
- * The reason for this is as follows:
- *
- * - if a branch is new, `util.toggle` makes a shallow copy.
- *   Because of this, if a leaf is `false`, it will be
- *   initialised as such when it is hidden away somewhere
- *   in a new subtree.
- * - if only the boolean leaf value is new, the previously
- *   `undefined` value gets inverted, and hence initialised
- *   as `true`, regardless of its value in `newObj`.
- *
- * Don't make use of this; just pass `true` for values
- * that you want to toggle, and use `util.merge` if you want
- * to initialise an undefined value as `false` instead.
- */
-export function toggle(oldObj, newObj) {
-	if (!oldObj) {
-		return newObj;
-	} else if (!newObj) {
-		return oldObj;
-	}
-	let untouchedKeys = Object.keys(oldObj);
-	let newKeys = Object.keys(newObj);
-	let overlappingKeys = [];
-	for (let i = 0; i < untouchedKeys.length; i++) {
-		let untouchedKey = untouchedKeys[i];
-		for (let j = 0; j < newKeys.length; j++) {
-			let newKey = newKeys[j];
-			if (untouchedKey === newKey) {
-				untouchedKey = untouchedKeys.pop();
-				if (i < untouchedKeys.length) {
-					untouchedKeys[i] = untouchedKey;
-					i--;
-				}
-				let val = newObj[newKey];
-				if (typeof val === 'object' && !isArray(val)) {
-					overlappingKeys.push(newKey);
-					newKey = newKeys.pop();
-					if (j < newKeys.length) {
-						newKeys[j] = newKey;
-					}
-				}
-				break;
-			}
-		}
-	}
-	let mergedObj = {};
-	for (let i = 0; i < overlappingKeys.length; i++) {
-		let key = overlappingKeys[i];
-		mergedObj[key] = toggle(oldObj[key], newObj[key]);
-	}
-	for (let i = 0; i < untouchedKeys.length; i++) {
-		let key = untouchedKeys[i];
-		mergedObj[key] = oldObj[key];
-	}
-	for (let i = 0; i < newKeys.length; i++) {
-		let key = newKeys[i];
-		mergedObj[key] = typeof newObj[key] === 'boolean' ? !oldObj[key] : newObj[key];
-	}
-	return mergedObj;
+	return prunedObj;
 }
 
 // Examples:
@@ -627,43 +558,6 @@ export function toggle(oldObj, newObj) {
 // =>			foo: 'bar'
 // =>		}
 // =>	}
-//
-// toggle(a,b)
-// =>	{
-// =>		a: {
-// =>			a: {
-// =>				a: true,
-// =>				b: 1
-// =>			},
-// =>			b: {
-// =>				a: 2,
-// =>				b: 3
-// =>			}
-// =>		},
-// =>		b: {
-// =>			foo: 'bar',
-// =>			fizz: 'buzz'
-// =>		}
-// =>	}
-//
-// toggle((toggle(a,b), b)
-// =>	{
-// =>		a: {
-// =>			a: {
-// =>				a: false,
-// =>				b: 1
-// =>			},
-// =>			b: {
-// =>				a: 2,
-// =>				b: 3
-// =>			}
-// =>		},
-// =>		b: {
-// =>			foo: 'bar',
-// =>			fizz: 'buzz'
-// =>		}
-// =>	}
-
 
 /*
 // cycle detector

@@ -40,8 +40,7 @@ import {
  */
 function update(state, action) {
 	let newState = action.prune ? prune(state, action.prune) : state;
-	newState = action.state ? merge(newState, action.state) : newState;
-	return newState;
+	return action.state ? merge(newState, action.state) : newState;
 }
 
 function updateViewState(state, action) {
