@@ -400,24 +400,24 @@ class LoomConnection(object):
 
 		for key in self.file['row_attrs'].keys():
 			self._load_attr(key, axis=0)
-			v = self.row_attrs[key][0]
-			if type(v) is np.str_ and len(v) >= 3 and v[:2] == "b'" and v[-1] == "'":
+			v = self.row_attrs[key]
+			if type(v[0]) is np.str_ and len(v[0]) >= 3 and v[0][:2] == "b'" and v[0][-1] == "'":
 				logging.warn("Fixing unicode bug by re-setting row attribute '" + key + "'")
-				self._save_attr(key, np.array([x[2:-1] for x in vals]), axis=0)
+				self._save_attr(key, np.array([x[2:-1] for x in v]), axis=0)
 				self._load_attr(key, axis=0)
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
 			self._load_attr(key, axis=1)
-			v = self.col_attrs[key][0]
-			if type(v) is np.str_ and len(v) >= 3 and v[:2] == "b'" and v[-1] == "'":
+			v = self.col_attrs[key]
+			if type(v[0]) is np.str_ and len(v[0]) >= 3 and v[0][:2] == "b'" and v[0][-1] == "'":
 				logging.warn("Fixing unicode bug by re-setting column attribute '" + key + "'")
-				self._save_attr(key, np.array([x[2:-1] for x in vals]), axis=1)
+				self._save_attr(key, np.array([x[2:-1] for x in v]), axis=1)
 				self._load_attr(key, axis=1)
 
 		self.attrs = LoomAttributeManager(self.file)
 
-	def _save_attr(self, name, vals, axis):
+	def _save_attr(self, name, values, axis):
 		"""
 		Save an attribute to the file, nothing else
 
@@ -456,7 +456,7 @@ class LoomConnection(object):
 			if not hasattr(LoomConnection, name):
 				setattr(self, name, self.row_attrs[name])
 		else:
-			self.col_attrs[key] = vals
+			self.col_attrs[name] = vals
 			if not hasattr(LoomConnection,name):
 				setattr(self, name, self.col_attrs[name])
 
