@@ -267,6 +267,126 @@ export function convertArray(data, name) {
 	return array;
 }
 
+
+/**
+ * - `array`: array to be sorted
+ * - `comparator`: comparison closure that takes *indices* i and j,
+ *   and compares `array[i]` to `array[j]` in some way, but always
+ *   ending with `i - j` as the last comparison to force stability.
+ * 
+ * Example:
+ * ```
+ *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
+ *  let comparator = (i, j) => {
+ *    let vi = array[i].n, vj = array[j].n;
+ *    return vi < vj ? -1 :
+ *      vi > vj ? 1 :
+ *        i - j;
+ *  };
+ *  stableSortInPlace(array, comparator);
+ *  // ==> [{n:0, s: "a"}, {n:1, s: "b"}, {n:1, s: "a"}]
+ * ```
+ */
+export function stableSortInPlace(array, comparator) {
+	return sortFromIndices(array, findIndices(array, comparator));
+}
+
+export function stableSortedCopy(array, comparator){
+	let indices = findIndices(array, comparator);
+	let sortedArray = [];
+	for (let i = 0; i < array.length; i++){
+		sortedArray.push(array[indices[i]]);
+	}
+	return sortedArray;
+}
+
+/**
+ * Finds the index of the value that *should* be stored
+ * at each array position (that is: `array[i]` should have
+ * the value at `array[indices[i]]`)
+ *
+ * - `array`: array to find indices for.
+ * - `comparator`: comparison closure that takes *index* i and j,
+ *   and compares values at `array[i]` to `array[j]` in some way.
+ *   To force stability, end comparison chain with with `i - j`.
+ * 
+ * Example:
+ * ```
+ *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
+ *  let comparator = (i, j) => {
+ *    let vi = array[i].n, vj = array[j].n;
+ *    return vi < vj ? -1 :
+ *      vi > vj ? 1 :
+ *        i - j;
+ *  };
+ *  findIndices(array, comparator);
+ *  // ==> [2, 0, 1]
+ * ```
+ */
+export function findIndices(array, comparator){
+	// Assumes we don't have to worry about sorting more than 
+	// 4 billion elements; if you know the upper bounds of your
+	// input you could replace it with a smaller typed array
+	let indices = new Uint32Array(array.length);
+	for (let i = 0; i < indices.length; i++) {
+		indices[i] = i;
+	}
+	// after sorting, `indices[i]` gives the index from where
+	// `array[i]` should take the value from, so 
+	// `array[i]` should have the value at `array[indices[i]]`
+	return indices.sort(comparator);	
+}
+
+/**
+ * - `array`: array to be sorted
+ * - `indices`: array of indices from where the value should *come from*,
+ * that is: `array[i] = array[indices[i]]` (of course, this naive 
+ * assignment would destroy the value at `array[i]`, hence this function)
+ * 
+ * **Important:** `indices` must contain each index of `array`, and each
+ * index must be present only once! In other words: indices may only 
+ * contain integers in the range `[0, array.length-1]`.
+ * 
+ * This function does *not* check for valid input!
+ * 
+ * For correct input, `indices` will be sorted afterwards,
+ * `[ 0, 1, ... array.length-1 ]`.
+ * 
+ * Example:
+ * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
+ * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
+ */
+export function sortFromIndices(array, indices) {
+	// there might be multiple cycles, so we must
+	// walk through the whole array to check
+	for (let k = 0; k < array.length; k++) {
+		// advance until we find a value in
+		// the "wrong" position
+		if (k !== indices[k]) {
+			// create vacancy to use "half-swaps" trick
+			// Thank you Andrei Alexandrescu
+			let v0 = array[k];
+			let i = k;
+			let j = indices[k];
+			while (j !== k) {
+				// shuffle value around
+				array[i] = array[j];
+				// array[i] is now in the correct position,
+				// update indices[i] to reflect this
+				indices[i] = i;
+				// go to next index
+				i = j;
+				j = indices[j];
+			}
+			// put original array[k] back in
+			// and update indices
+			array[i] = v0;
+			indices[i] = i;
+		}
+	}
+	return array;
+}
+
 /** 
  * Tests if all values in an array are integer values
 */
