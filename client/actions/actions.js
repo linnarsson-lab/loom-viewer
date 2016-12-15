@@ -55,24 +55,7 @@ function requestProjectsFailed() {
 function receiveProjects(json) {
 	
 	// initialise sorting order
-	let keys = Object.keys(json[0]);
-	let order = [];
-	for (let i = 0; i < keys.length; i++) {
-		order.push({ key: keys[i], ascending: true });
-	}
-	// sort by date by default
-	for (let i = 0; i < keys.length; i++) {
-		if (order[i].key === 'lastModified') {
-			let date = order[i];
-			date.ascending = false; //show newest first
-			for (let j = i; j > 0; j--) {
-				order[j] = order[j - 1];
-			}
-			order[0] = date;
-			break;
-		}
-	}
-
+	let order = { key: 'lastModified', ascending: true };
 	// convert json array to hashmap
 	let list = {};
 	for (let i = 0; i < json.length; i++){
@@ -92,19 +75,14 @@ function receiveProjects(json) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchProjects(projects) {
+export function fetchProjects(list) {
 	return (dispatch) => {
 		// Announce that the request has been started
 		//dispatch(requestProjects());
 		// Second, check if projects already exists in the store
-		// If so, notify it is cached and return.
-		// If not, perform a fetch request (async)
-		if (projects) {
-			// Announce we are retrieving from cache
-			// return dispatch(requestProjectsCached());
+		if (list) { // we retrieve from store cache
 			return;
-		} else {
-			// Announce we are fetching from server
+		} else { // Announce we are fetching from server
 			dispatch(requestProjectsFetch());
 			return (
 				fetch('/loom')

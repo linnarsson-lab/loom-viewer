@@ -334,20 +334,7 @@ function updateDatasetSortOrder(state, key) {
 	return merge(state, { projects: { sortKeys } });
 }
 
-
-// Keeps track of projects and datasets, including managing asynchronous fetching
-const initialData = {
-	//	{
-	//		'Midbrain': [{ 'dataset': 'mouse_midbrain.loom', 'isCached': false}, ... ],
-	// 	'Cortex': ...
-	//	}
-	projects: undefined,
-
-	// dataSets object will store fetched datasets & genes for caching purposes.
-	dataSets: {},
-};
-
-function data(state = initialData, action) {
+function datasets(state = {}, action) {
 	let newState;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:
@@ -389,5 +376,5 @@ function data(state = initialData, action) {
 	}
 }
 
-const loomAppReducer = combineReducers({ data });
+const loomAppReducer = combineReducers({ datasets });
 export default loomAppReducer;

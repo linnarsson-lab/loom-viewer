@@ -6,6 +6,7 @@ import { SortableTable } from './sortabletable';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
+import { findIndices, sortFromIndices } from '../js/util';
 
 import Fuse from 'fuse.js';
 
@@ -15,10 +16,8 @@ function handleChangeFactory(field, dispatch) {
 		dispatch({
 			type: SEARCH_DATASETS,
 			state: {
-				projects: {
-					search: {
-						[field]: val,
-					},
+				search: {
+					[field]: val,
 				},
 			},
 		});
@@ -28,7 +27,7 @@ function handleChangeFactory(field, dispatch) {
 
 // Generates tabular list of datasets
 const DatasetList = function (props) {
-	const {datasets, dispatch, search, sortKeys } = props;
+	const {datasets, dispatch, search, order } = props;
 
 	const dateSearch = (<FormControl type='text' value={search.lastModified}
 		onChange={handleChangeFactory('lastModified', dispatch)} />);
@@ -174,7 +173,7 @@ const DatasetList = function (props) {
 				data={datasets}
 				columns={columns}
 				dispatch={dispatch}
-				sortedKey={sortKeys[0]}
+				sortedKey={order[0]}
 				/>
 		);
 	} else {
@@ -187,7 +186,7 @@ DatasetList.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	datasets: PropTypes.array,
 	search: PropTypes.object,
-	sortKeys: PropTypes.arrayOf(
+	order: PropTypes.arrayOf(
 		PropTypes.shape({
 			key: PropTypes.string,
 			ascending: PropTypes.bool,
@@ -201,105 +200,80 @@ class SearchDataSetViewComponent extends Component {
 		super(props);
 
 		this.filterProjects = this.filterProjects.bind(this);
-		this.state = { projects: undefined, filtered: undefined };
+		this.state = { list: undefined, filtered: undefined };
 	}
 
 	componentWillMount() {
-		const {dispatch, projects, sortKeys, search } = this.props;
-		if (!projects) {
+		const {dispatch, list, order, search } = this.props;
+		if (!list) {
 			dispatch(fetchProjects());
 		} else {
-			// merge all projects. Note that this creates a
-			// new array so we don't have to worry about
-			// mutating the original projects object, as long
-			// as we don't mutate individual project objects.
-			let mergedProjects = [];
-			for (let keys = Object.keys(projects), i = 0; i < keys.length; i++) {
-				mergedProjects = mergedProjects.concat(projects[keys[i]]);
-			}
-			this.filterProjects(mergedProjects, sortKeys, search);
+			this.filterProjects(list, order, search);
 		}
 	}
 
 	componentWillUpdate(nextProps) {
-		let { projects } = this.state;
+		let { list } = this.state;
 
-		if (!projects && nextProps.projects) {
-			projects = [];
-			for (let keys = Object.keys(nextProps.projects), i = 0; i < keys.length; i++) {
-				projects = projects.concat(nextProps.projects[keys[i]]);
-			}
+		if (!list && nextProps.list) {
+			// convert to array
+			list = Object.keys(nextProps.list).map((key) => { return nextProps.list[key]; });
 		}
 
-		if (projects) {
-			const { sortKeys, search } = nextProps;
-			if (JSON.stringify(sortKeys) !== JSON.stringify(this.props.sortKeys) ||
+		if (list) {
+			const { order, search } = nextProps;
+			if (JSON.stringify(order) !== JSON.stringify(this.props.order) ||
 				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
-				this.filterProjects(projects, sortKeys, search);
+				this.filterProjects(list, order, search);
 			}
 		}
 	}
 
-	filterProjects(projects, sortKeys, search) {
+
+	filterProjects(list, order, search) {
 		let filtered = undefined;
-		// Store original positions. If we ever need more than
-		// 4 billion indics we have other issues to worry about
-		let indices = new Uint32Array(projects.length);
-		for (let i = 0; i < indices.length; i++) {
-			indices[i] = i;
-		}
 
-		let retVal = new Int8Array(sortKeys.length);
-		for (let i = 0; i < sortKeys.length; i++) {
-			retVal[i] = sortKeys[i].ascending ? 1 : -1;
-		}
-
-		const comparator = (a, b) => {
-			for (let i = 0; i < sortKeys.length; i++) {
-				let pa = projects[a][sortKeys[i].key];
-				let pb = projects[b][sortKeys[i].key];
-				if (typeof pa === 'string') {
-					pa = pa.toLowerCase();
-					pb = pb.toLowerCase();
-				}
-				if (pa < pb) {
-					return -retVal[i];
-				} else if (pa > pb) {
-					return retVal[i];
-				}
+		const retVal = order.ascending ? 1 : -1;
+		const compareKey = order.Key;
+		const comparator = (i, j) => {
+			let vi = list[i][compareKey];
+			let vj = list[j][compareKey];
+			if (typeof vi === 'string') {
+				vi = vi.toLowerCase();
+				vj = vj.toLowerCase();
 			}
-			return indices[a] < indices[b] ? -1 : 1;
+			return vi < vj ? -retVal :
+				vi > vj ? retVal :
+					i - j;
 		};
-
-		indices.sort(comparator);
-
-		// re-arrange projects
-		let t = new Array(projects.length);
-		for (let i = 0; i < projects.length; i++) {
-			t[i] = projects[indices[i]];
-		}
-		projects = t;
-
-
+		let indices = findIndices(list, comparator);
+		list = sortFromIndices(list, indices);
 		if (!search) {
-			filtered = projects.slice(0);
+			// if there is no search, filtered is
+			// just a sorted version of list.
+			filtered = list.slice(0);
 		} else {	// search/filter projects
 
 			// give date special (exact) treatment
+			// and sort list in the process
 			const date = search.lastModified;
 			if (date) {
 				filtered = [];
-				for (let i = 0; i < projects.length; i++) {
-					if (projects[i].lastModified.indexOf(date) !== -1) {
-						filtered.push(projects[i]);
+				for (let i = 0; i < list.length; i++) {
+					const entry = list[i];
+					if (entry.lastModified.indexOf(date) !== -1) {
+						filtered.push(entry);
 					}
 				}
 			} else {
-				filtered = projects.slice(0);
+				filtered = list.slice(0);
 			}
 
 			// fuzzy text search per field
 			const keys = ['project', 'title', 'dataset', 'description'];
+
+			// it's very possible filtered is empty after a few searches,
+			// so abort early if that happens
 			for (let i = 0; filtered.length && i < keys.length; i++) {
 				const key = keys[i];
 				const query = search[key];
@@ -328,14 +302,14 @@ class SearchDataSetViewComponent extends Component {
 			}
 		}
 
-		this.setState({ projects, filtered });
+		this.setState({ list, filtered });
 	}
 
 
 
 	render() {
 		const {filtered} = this.state;
-		let {dispatch, search, sortKeys } = this.props;
+		let { dispatch, search, order } = this.props;
 		search = search ? search : {};
 
 		return (
@@ -360,7 +334,7 @@ class SearchDataSetViewComponent extends Component {
 									dispatch={dispatch}
 									datasets={filtered}
 									search={search}
-									sortKeys={sortKeys} />
+									order={order} />
 							) : null}
 						</div>
 					</Col>
@@ -372,24 +346,22 @@ class SearchDataSetViewComponent extends Component {
 
 SearchDataSetViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
-	projects: PropTypes.object,
+	list: PropTypes.object,
 	search: PropTypes.object,
-	sortKeys: PropTypes.arrayOf(
-		PropTypes.shape({
-			key: PropTypes.string,
-			ascending: PropTypes.bool,
-		})
-	),
+	order: PropTypes.shape({
+		key: PropTypes.string,
+		ascending: PropTypes.bool,
+	}),
 };
 
 //connect SearchDataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	return state.data.projects ? {
-		projects: state.data.projects.list,
-		search: state.data.projects.search,
-		sortKeys: state.data.projects.sortKeys,
+	return state.datasets.list ? {
+		list: state.datasets.list,
+		search: state.datasets.search,
+		order: state.datasets.order,
 	} : {};
 };
-export const SearchDataSetView = connect(mapStateToProps)(SearchDataSetViewComponent);
+export const DataSetList = connect(mapStateToProps)(SearchDataSetViewComponent);
