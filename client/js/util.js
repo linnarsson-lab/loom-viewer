@@ -131,111 +131,138 @@ export function calcMinMax(data, ignoreZeros) {
 
 // Convert plain array to object with
 // typed/indexed array and metadata
-export function convertArray(data) {
-	let array = { data };
-	let mostFrequent = countElements(data);
-	for (let i = 0; i < mostFrequent.length; i++) {
-		mostFrequent[i].filtered = false;
-	}
-	array.mostFrequent = mostFrequent;
+export function convertArray(data, name) {
+	let array = { name };
+	let uniques = countElements(data);
+	if (uniques.length === 1) {
+		array.uniqueVal = uniques[0].val;
+	} else {
+		array.uniques = uniques;
+		// Convert arrays to compact (possibly indexed) format
 
-	// create lookup table to convert attribute values
-	// to color indices (so a look-up table for finding
-	// indices for another lookup table).
-	array.colorIndices = {};
-	for (let i = 0; i < 20 && i < mostFrequent.length; i++) {
-		array.colorIndices[mostFrequent[i].val] = i + 1;
-	}
+		// Data is either a string or a number; assumes no
+		// invalid input is given here (no objects, arrays,
+		// and so on)
+		array.arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
 
-	// Data is either a string or a number; assumes no
-	// invalid input is given here (no objects, arrays,
-	// and so on)
-	array.arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
+		if (array.arrayType === 'number') {
+			// Test whether values are actually integers,
+			// if so convert to typed integer arrays.
+			array.arrayType = isInteger(data) ? 'integer' : 'float32';
+		}
 
-	if (array.arrayType === 'number') {
-		// Test whether values are actually integers,
-		// if so convert to typed integer arrays.
-		array.arrayType = isInteger(data) ? 'integer' : 'float32';
-	}
+		// For our plotters we often need to know the dynamic
+		// range for non-zero values, but also need to know
+		// if zero-values are present. We also use this information
+		// to determine integer size, so we pre-calc this.
+		const { min, max, hasZeros } = calcMinMax(array.data, true);
+		array.min = min;
+		array.max = max;
+		array.hasZeros = hasZeros;
 
-	// For our plotters we often need to know the dynamic
-	// range for non-zero values, but also need to know
-	// if zero-values are present. We also use this information
-	// to determine integer size, so we pre-calc this.
-	const { min, max, hasZeros } = calcMinMax(array.data, true);
-	array.min = min;
-	array.max = max;
-	array.hasZeros = hasZeros;
-
-	// convert number values to typed arrays matching the schema,
-	// and string arrays with few unique values to indexedString
-	switch (array.arrayType) {
-		case 'float32':
-			// the only way to force to Float32 is using a 
-			// typed Float32Array. So we do that first,
-			// and see if any information gets truncated
-			// If so, we'll use doubles instead.
-			array.data = Float32Array.from(data);
-			for (let i = 0; i < data.length; i++) {
-				if (array.data[i] !== data[i]) {
-					array.arrayType = 'float64';
+		// convert number values to typed arrays matching the schema,
+		// and string arrays with few unique values to indexedString
+		switch (array.arrayType) {
+			case 'float32':
+				// the only way to force to Float32 is using a 
+				// typed Float32Array. So we do that first,
+				// and see if any information gets truncated
+				// If so, we'll use doubles instead.
+				array.data = Float32Array.from(data);
+				for (let i = 0; i < data.length; i++) {
+					if (array.data[i] !== data[i]) {
+						array.arrayType = 'float64';
+						break;
+					}
+				}
+				if (array.arrayType === 'float64') {
+					array.data = Float64Array.from(data);
+					array.filteredData = Float64Array.from(array.data);
+				} else {
+					array.filteredData = Float32Array.from(array.data);
+				}
+				break;
+			case 'integer':
+				// convert to most compact integer representation
+				// for better performance.
+				if (min >= 0) {
+					if (max < 256) {
+						array.data = Uint8Array.from(data);
+						array.filteredData = Uint8Array.from(array.data);
+						array.arrayType = 'uint8';
+					} else if (max < 65535) {
+						array.data = Uint16Array.from(data);
+						array.filteredData = Uint16Array.from(array.data);
+						array.arrayType = 'uint16';
+					} else {
+						array.data = Uint32Array.from(data);
+						array.filteredData = Uint32Array.from(array.data);
+						array.arrayType = 'uint32';
+					}
+				} else if (min > -128 && max < 128) {
+					array.data = Int8Array.from(data);
+					array.filteredData = Int8Array.from(array.data);
+					array.arrayType = 'int8';
+				} else if (min > -32769 && max < 32768) {
+					array.data = Int16Array.from(data);
+					array.filteredData = Int16Array.from(array.data);
+					array.arrayType = 'int16';
+				} else {
+					array.data = Int32Array.from(data);
+					array.filteredData = Int32Array.from(array.data);
+					array.arrayType = 'int32';
+				}
+				break;
+			case 'string':
+			default:
+				// For string arrays, convert to indexed
+				// form if fewer than 256 unique strings
+				if (uniques.length < 256) {
+					array = convertToIndexed(array);
 					break;
 				}
-			}
-			if (array.arrayType === 'float64') {
-				array.data = Float64Array.from(data);
-				array.filteredData = Float64Array.from(array.data);
-			} else {
-				array.filteredData = Float32Array.from(array.data);
-			}
-			break;
-		case 'integer':
-			// convert to most compact integer representation
-			// for better performance.
-			if (min >= 0) {
-				if (max < 256) {
-					array.data = Uint8Array.from(data);
-					array.filteredData = Uint8Array.from(array.data);
-					array.arrayType = 'uint8';
-				} else if (max < 65535) {
-					array.data = Uint16Array.from(data);
-					array.filteredData = Uint16Array.from(array.data);
-					array.arrayType = 'uint16';
-				} else {
-					array.data = Uint32Array.from(data);
-					array.filteredData = Uint32Array.from(array.data);
-					array.arrayType = 'uint32';
-				}
-			} else if (min > -128 && max < 128) {
-				array.data = Int8Array.from(data);
-				array.filteredData = Int8Array.from(array.data);
-				array.arrayType = 'int8';
-			} else if (min > -32769 && max < 32768) {
-				array.data = Int16Array.from(data);
-				array.filteredData = Int16Array.from(array.data);
-				array.arrayType = 'in16';
-			} else {
-				array.data = Int32Array.from(data);
-				array.filteredData = Int32Array.from(array.data);
-				array.arrayType = 'in32';
-			}
-			break;
-		case 'string':
-		default:
-			// For string arrays, convert to indexed
-			// form if fewer than 256 unique strings
-			if (mostFrequent.length < 256) {
-				array = IndexedStringArray(array);
+				array.data = data;
+				array.filteredData = Array.from(data);
+				// in case of string arrays, we assume they represent
+				// categories when plotted as x/y attributes. For this
+				// we need to set min/max to the number of unique categories
+				array.min = 0;
+				array.max = array.uniques.length;
+				array.hasZeros = true;
 				break;
-			}
-			array.filteredData = Array.from(array.data);
-			// in case of string arrays, we assume they represent
-			// categories when plotted as x/y attributes. For this
-			// we need to set min/max to the number of unique categories
-			array.min = 0;
-			array.max = array.mostFrequent.length;
-			array.hasZeros = true;
-			break;
+		}
+
+		// store uniques filtered after conversion, 
+		// so that it's updated for indexed arrays
+		for (let i = 0; i < array.uniques.length; i++) {
+			array.uniques[i].filtered = false;
+		}
+
+		// create lookup table to convert attribute values
+		// to color indices (so a look-up table for finding
+		// indices for another lookup table).
+		array.colorIndices = {
+			mostFreq: {},
+			max: {},
+		};
+		uniques.sort((a, b) => {
+			return (
+				a.count < b.count ? -1 :
+					a.count > b.count ? 1 :
+						a.val < b.val ? -1 : 1
+			);
+		});
+		for (let i = 0; i < 20 && i < uniques.length; i++) {
+			array.colorIndices.max[uniques[i].val] = i + 1;
+		}
+		uniques.sort((a, b) => {
+			return (
+				a.val < b.val ? -1 : 1
+			);
+		});
+		for (let i = 0; i < 20 && i < uniques.length; i++) {
+			array.colorIndices.mostFreq[uniques[i].val] = i + 1;
+		}
 	}
 	return array;
 }
@@ -254,46 +281,40 @@ export function isInteger(array) {
 	return i === array.length;
 }
 
-// mdArray & mostFrequent must be mutable!
 // Using indexed strings can be much faster, since Uint8Arrays
-// are smaller and don't add pointer indirection, and allow
-// for quicker comparisons in the plotters than strings.
-export function IndexedStringArray(mdArray) {
-	let mf = mdArray.mostFrequent.slice(0, 20);
-	let data = new Uint8Array(mdArray.data.length);
-	mdArray.arrayType = 'indexedString';
-	mdArray.indexedVal = new Array(mf.length);
-	let ci = {};
-	for (let i = 0; i < mf.length; i++) {
-		const { val } = mf[i];
-		// This is necessary to sync with sorting:
-		// the most common value should be largest
-		const idx = mf.length - i;
-		mdArray.indexedVal[idx] = val;
-		for (let j = 0; j < mdArray.data.length; j++) {
-			if (mdArray.data[j] === val) {
-				data[j] = idx;
+// are smaller, remove pointer indirection, and allow
+// for quicker comparisons than strings.
+export function convertToIndexed(mdArray) {
+	let un = mdArray.uniques.slice(0);
+	let data = mdArray.data;
+	// sort uniques by most frequent, so
+	// the indices grow from most to least
+	// common
+	un.sort((a, b) => {
+		return (
+			a.count > b.count ? -1 :
+				a.count < b.count ? 1 :
+					a.val > b.val ? -1 : 1
+		);
+	});
+
+	let indexedData = new Uint8Array(data.length);
+	mdArray.indexedVal = new Array(un.length);
+	for (let i = 0; i < un.length; i++) {
+		const { val } = un[i];
+		mdArray.indexedVal[i] = un[i].val;
+		for (let j = 0; j < data.length; j++) {
+			if (data[j] === val) {
+				indexedData[j] = un.length - i;
 			}
 		}
-		// convert mostFrequent and colorIndices to use indexed
-		// values too, to simplify the most common situation:
-		// direct lookup using the filteredData/data array.
-		mf[i] = Object.assign(mf[i], { val: idx });
-		ci[idx] = i + 1; //offset by one, for zero-values
 	}
-	mdArray.data = data;
-	mdArray.filteredData = Uint8Array.from(data);
+	mdArray.data = indexedData;
+	mdArray.filteredData = Uint8Array.from(indexedData);
 	mdArray.hasZeros = false;
-	for (let i = 0; i < data.length; i++) {
-		if (!data[i]) {
-			mdArray.hasZeros = true;
-			break;
-		}
-	}
-	mdArray.min = mdArray.hasZeros ? 0 : 1;
-	mdArray.max = mf.length;
-	mdArray.mostFrequent = mf;
-	mdArray.colorIndices = ci;
+	mdArray.min = 1;
+	mdArray.max = un.length;
+	mdArray.uniques = countElements(indexedData);
 	return mdArray;
 }
 

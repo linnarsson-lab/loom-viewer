@@ -18,7 +18,6 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { groupBy } from 'lodash';
 import { convertArray, arrayConstr } from '../js/util';
 
 
@@ -53,32 +52,39 @@ function requestProjectsFailed() {
 	};
 }
 
-function receiveProjects(list) {
-	// Initialise sorting order state
-	let keys = Object.keys(list);
-	// we actually need the metadata keys of a project,
-	// since that's what we're sorting the list by
-	keys = Object.keys(list[keys[0]][0]);
-	let sortKeys = [];
+function receiveProjects(json) {
+	
+	// initialise sorting order
+	let keys = Object.keys(json[0]);
+	let order = [];
 	for (let i = 0; i < keys.length; i++) {
-		sortKeys.push({ key: keys[i], ascending: true });
+		order.push({ key: keys[i], ascending: true });
 	}
 	// sort by date by default
 	for (let i = 0; i < keys.length; i++) {
-		if (sortKeys[i].key === 'lastModified') {
-			let date = sortKeys[i];
+		if (order[i].key === 'lastModified') {
+			let date = order[i];
 			date.ascending = false; //show newest first
 			for (let j = i; j > 0; j--) {
-				sortKeys[j] = sortKeys[j - 1];
+				order[j] = order[j - 1];
 			}
-			sortKeys[0] = date;
+			order[0] = date;
 			break;
 		}
 	}
 
+	// convert json array to hashmap
+	let list = {};
+	for (let i = 0; i < json.length; i++){
+		let ds = json[i];
+		ds.path = ds.project + '/' + ds.filename;
+		ds.viewState = {};
+		list[ds.path] = ds;
+	}
+
 	return {
 		type: RECEIVE_PROJECTS,
-		state: { projects: { list, sortKeys } },
+		state: { order, list },
 	};
 }
 
@@ -104,11 +110,7 @@ export function fetchProjects(projects) {
 				fetch('/loom')
 					.then((response) => { return response.json(); })
 					.then((json) => {
-						// Grouping by project must be done here, instead of in
-						// the reducer, because if it is already in the store we
-						// want to pass it back unmodified (see else branch below)
-						const fetchedProjects = groupBy(json, (item) => { return item.project; });
-						dispatch(receiveProjects(fetchedProjects));
+						dispatch(receiveProjects(json));
 					})
 					// Or, if it failed, dispatch an action to set the error flag
 					.catch((err) => {
@@ -150,58 +152,52 @@ function requestDataSet(datasetName) {
 
 // }
 
-function requestDataSetFailed(datasetName) {
+function requestDataSetFailed(path) {
 	return {
 		type: REQUEST_DATASET_FAILED,
-		datasetName: datasetName,
+		path,
 	};
 }
 
 
-function receiveDataSet(dataSet) {
+function receiveDataSet(data, path) {
+	let row = prepData(data.rowAttrs);
+	let geneKeys = [];
+	if (data.colAttrs['Gene']){
+		geneKeys = data.colAttrs['Gene'].slice;
+	}
+	let col = prepData(data.colAttrs);
+	col.geneKeys = geneKeys;
 	return {
 		type: RECEIVE_DATASET,
 		state: {
-			dataSets: {
-				[dataSet.dataset]: prepData(dataSet),
+			list: {
+				[path]: { data: { row, col } },
 			},
 		},
 	};
 }
 
-// prep received dataset for actual usage.
-function prepData(dataSet) {
-	// store original order of rowAttrs and colAttrs,
+function prepData(attrs){
+	let data = {};
+	data.keys = Object.keys(attrs).sort();
+	// store original order attrs
 	let origOrderKey = '(original order)';
-	let rowKeys = Object.keys(dataSet.rowAttrs).sort();
-	let colKeys = Object.keys(dataSet.colAttrs).sort();
-	dataSet.rowAttrs[origOrderKey] = originalOrder(dataSet.rowAttrs[rowKeys[0]]);
-	dataSet.colAttrs[origOrderKey] = originalOrder(dataSet.colAttrs[colKeys[0]]);
+	attrs[origOrderKey] = originalOrder(attrs[data.keys[0]]);
 	// Store all the keys
-	rowKeys.unshift(origOrderKey);
-	colKeys.unshift(origOrderKey);
-	dataSet.rowKeys = rowKeys;
-	dataSet.colKeys = colKeys;
+	data.keys.unshift(origOrderKey);
 	// Initial sort order
-	dataSet.rowOrder = rowKeys.map((key) => { return { key, ascending: true }; });
-	dataSet.colOrder = colKeys.map((key) => { return { key, ascending: true }; });
+	data.order = data.keys.map((key) => { return { key, ascending: true }; });
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular
 	// meta-data so we have to add it first
-	let newRowAttrs = convertArrays(dataSet.rowAttrs);
-	let newColAttrs = convertArrays(dataSet.colAttrs);
-	dataSet.rowAttrs = newRowAttrs;
-	dataSet.colAttrs = newColAttrs;
+	let newAttrs = convertArrays(attrs);
+	data.attrs = newAttrs;
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
-	dataSet.rowFiltered = new Uint16Array(dataSet.rowAttrs[origOrderKey].data.length);
-	dataSet.colFiltered = new Uint16Array(dataSet.colAttrs[origOrderKey].data.length);
-	// add empty fields for fetched genes
-	dataSet.fetchedGenes = {};
-	dataSet.fetchingGenes = {};
-	dataSet.viewState = {};
-	return dataSet;
+	data.filtedataount = new Uint16Array(attrs[origOrderKey].data.length);
+	return data;
 }
 
 function originalOrder(array) {
@@ -217,8 +213,8 @@ function convertArrays(attrs) {
 	let keys = Object.keys(attrs);
 	let newAttrs = {};
 	for (let i = 0; i < keys.length; i++) {
-		let key = keys[i];
-		newAttrs[key] = convertArray(attrs[key]);
+		const k = keys[i];
+		newAttrs[k] = convertArray(attrs[k], k);
 	}
 	return newAttrs;
 }
@@ -229,36 +225,30 @@ function convertArrays(attrs) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(fetchgene(...))
 
-export function fetchDataSet(data) {
-	const { project, dataset, dataSets } = data;
+export function fetchDataSet(datasets, path) {
 	return (dispatch) => {
 		// Announce that the request has been started
-		dispatch(requestDataSet(dataset));
+		dispatch(requestDataSet(path));
 		// See if the dataset already exists in the store
-		// If so, signal we use cached version.
+		// If so, we use cached version.
 		// If not, perform the request (async)
-		if (dataSets[dataset]) {
-			// Announce that the we are retrieving from cache
-			// dispatch(requestDataSetCached(dataset));
-		} else {
-			//Announce that we are fetching from server
-			// dispatch(requestDataSetFetch(dataset));
-			return (fetch(`/loom/${project}/${dataset}`)
+		if (!datasets.list[path].data) {
+			return (fetch(`/loom/${path}`)
 				.then((response) => {
 					// convert the JSON to a JS object, and
 					// do some prep-work
 					return response.json();
 				})
-				.then((ds) => {
+				.then((data) => {
 					// This goes last, to ensure the above defaults
 					// are set when the views are rendered
-					dispatch(receiveDataSet(ds));
+					dispatch(receiveDataSet(data, path));
 				})
 				.catch((err) => {
 					// Or, if fetch request failed, dispatch
 					// an action to set the error flag
 					console.log({ err });
-					dispatch(requestDataSetFailed(dataset));
+					dispatch(requestDataSetFailed(path));
 				}));
 		}
 	};
@@ -305,7 +295,7 @@ function requestGeneFailed(gene, datasetName) {
 }
 
 function receiveGene(gene, datasetName, indices, data) {
-	let convertedData = convertArray(data, 'number');
+	let convertedData = convertArray(data, gene);
 	const constr = arrayConstr(data.arrayType);
 	convertedData.filteredData = new constr(indices.length);
 	for (let i = 0; i < indices.length; i++) {
