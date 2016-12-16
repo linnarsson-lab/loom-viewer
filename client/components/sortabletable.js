@@ -11,7 +11,7 @@ const mapToCell = (row, key, keys) => {
 };
 
 export const SortableTable = function (props) {
-	const { data, columns, sortedKey } = props;
+	const { data, columns, order } = props;
 
 	let headerRows = [];
 	let maxHeaders = 0;
@@ -29,9 +29,9 @@ export const SortableTable = function (props) {
 			const { key, keys, headers, headerStyles, onHeaderClick } = column;
 			let sortIcon;
 			if (i === 0) {
-				sortIcon = sortedKey && key === sortedKey.key ? (
+				sortIcon = (order && key === order.key) ? (
 					<Glyphicon
-						glyph={column.sortIcon + (sortedKey.ascending ? '' : '-alt')} />
+						glyph={column.sortIcon + (order.asc ? '' : '-alt')} />
 				) : null;
 			}
 			const header = headers ? headers[i] : null;
@@ -95,8 +95,8 @@ SortableTable.propTypes = {
 	// Indicates to the table by which of the columns,
 	// if any, the data is sorted and whether it is
 	// ascending or descending
-	sortedKey: PropTypes.shape({
+	order: PropTypes.shape({
 		key: PropTypes.string,
-		ascending: PropTypes.bool,
+		asc: PropTypes.bool,
 	}),
 };

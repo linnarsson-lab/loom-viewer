@@ -173,7 +173,7 @@ const DatasetList = function (props) {
 				data={datasets}
 				columns={columns}
 				dispatch={dispatch}
-				sortedKey={order[0]}
+				order={order}
 				/>
 		);
 	} else {
@@ -186,12 +186,10 @@ DatasetList.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	datasets: PropTypes.array,
 	search: PropTypes.object,
-	order: PropTypes.arrayOf(
-		PropTypes.shape({
-			key: PropTypes.string,
-			ascending: PropTypes.bool,
-		})
-	),
+	order: PropTypes.shape({
+		key: PropTypes.string,
+		asc: PropTypes.bool,
+	}),
 };
 
 
@@ -233,8 +231,8 @@ class SearchDataSetViewComponent extends Component {
 	filterProjects(list, order, search) {
 		let filtered = undefined;
 
-		const retVal = order.ascending ? 1 : -1;
-		const compareKey = order.Key;
+		const retVal = order.asc ? 1 : -1;
+		const compareKey = order.key;
 		const comparator = (i, j) => {
 			let vi = list[i][compareKey];
 			let vj = list[j][compareKey];
@@ -242,12 +240,15 @@ class SearchDataSetViewComponent extends Component {
 				vi = vi.toLowerCase();
 				vj = vj.toLowerCase();
 			}
+
 			return vi < vj ? -retVal :
 				vi > vj ? retVal :
 					i - j;
 		};
 		let indices = findIndices(list, comparator);
+		console.log({list});
 		list = sortFromIndices(list, indices);
+		console.log({list});
 		if (!search) {
 			// if there is no search, filtered is
 			// just a sorted version of list.
@@ -350,7 +351,7 @@ SearchDataSetViewComponent.propTypes = {
 	search: PropTypes.object,
 	order: PropTypes.shape({
 		key: PropTypes.string,
-		ascending: PropTypes.bool,
+		asc: PropTypes.bool,
 	}),
 };
 

@@ -259,8 +259,8 @@ function updateAttrOrder(order, key, ascending) {
 		newOrder[0] = { key: t.key, ascending: !t.ascending };
 	}
 	// check if manually overriding asc/desc toggle
-	if (ascending !== undefined){
-		newOrder[0] = Object.assign({}, newOrder[0], {ascending});
+	if (ascending !== undefined) {
+		newOrder[0] = Object.assign({}, newOrder[0], { ascending });
 	}
 	return newOrder;
 }
@@ -316,22 +316,10 @@ function updateCellSortOrder(state, action) {
 }
 
 function updateDatasetSortOrder(state, key) {
-	const sortKeys = state.projects.sortKeys.slice(0);
-	let keyIdx = sortKeys.length;
-	while (keyIdx--) {
-		if (sortKeys[keyIdx].key === key) { break; }
-	}
-	if (keyIdx === -1) { // invalid key
-		return state;
-	} else if (keyIdx) {
-		while (keyIdx--) {
-			sortKeys[keyIdx + 1] = sortKeys[keyIdx];
-		}
-		sortKeys[0] = { key, ascending: true };
-	} else { // sortKey was on top already, toggle ascending
-		sortKeys[0] = { key, ascending: !sortKeys[0].ascending };
-	}
-	return merge(state, { projects: { sortKeys } });
+	return merge(state, {
+		order: (state.order.key === key) ?
+			{ key: state.order.key, asc: !state.order.asc } : { key, asc: true },
+	});
 }
 
 function datasets(state = {}, action) {
@@ -355,13 +343,13 @@ function datasets(state = {}, action) {
 
 		case SORT_GENE_METADATA:
 			return updateGeneSortOrder(state, action);
-			//newState = updateGeneSortOrder(state, action);
-			//return setViewStateURL(newState, action);
+		//newState = updateGeneSortOrder(state, action);
+		//return setViewStateURL(newState, action);
 
 		case SORT_CELL_METADATA:
 			return updateCellSortOrder(state, action);
-			// newState = updateCellSortOrder(state, action);
-			// return setViewStateURL(newState, action);
+		// newState = updateCellSortOrder(state, action);
+		// return setViewStateURL(newState, action);
 
 		case FILTER_METADATA:
 			newState = updateFilter(state, action);
