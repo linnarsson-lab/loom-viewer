@@ -154,7 +154,7 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		Nothing, but creates loom_file
 	"""
 	if schema is not None:
-		raise DeprecationWarning("Argument 'schema' is no longer supported and will be ignored")
+		raise DeprecationWarning("Argument 'schema' is no longer supported")
 	matrix_folder = os.path.join(folder, 'filtered_gene_bc_matrices', genome)
 	matrix = mmread(os.path.join(matrix_folder, "matrix.mtx")).astype("float32").todense()
 
