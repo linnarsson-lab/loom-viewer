@@ -584,6 +584,8 @@ class LoomConnection(object):
 			temp = temp.astype(casting_rule_dtype)
 			temp.resize((n_cols,))
 			temp[self.shape[1]:] = vals
+			if temp.dtype.type is np.str_:
+				temp = np.array([x.encode('ascii', 'ignore') for x in temp$
 			del self.file['/col_attrs/' + key]
 			self.file['/col_attrs/' + key] = temp
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
