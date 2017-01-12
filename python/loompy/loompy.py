@@ -22,10 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import division
-from __future__ import print_function
 import math
 import numpy as np
+import tempfile
 import h5py
 import os.path
 import pandas as pd
@@ -187,7 +186,27 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 
 	create(loom_file, matrix, row_attrs, col_attrs)
 
-def join(file1, file2, output_file, key, file_attrs={}):
+def join(files, output_file, key, file_attrs={}):
+	if len(files) == 0:
+		raise ValueError("The input file list was empty")
+
+	copyfile(files[0], output_file)
+
+	if len(files) == 1:
+		return
+
+	split = len(files) // 2
+	temp1 = tempfile.mktemp()
+	temp2 = tempfile.mktemp()
+	self.join(files[:split], temp1, key, file_attrs)
+	self.join(files[split:], temp2, key, file_attrs)
+	self.join(temp1, temp2, output_file, key, file_attrs)
+	ds = connect(output_file)
+	for a in file_attrs:
+		ds.attrs[a] = file_attrs[a]
+	ds.close()
+
+def _join(file1, file2, output_file, key, file_attrs={}):
 	"""
 	Perform a proper join of two or more loom files
 
@@ -264,7 +283,7 @@ def join(file1, file2, output_file, key, file_attrs={}):
 	ds.close()
 	ds1.close()
 	ds2.close()
-		
+
 def combine(files, output_file, key=None, file_attrs={}):
 	"""
 	Combine two or more loom files and save as a new loom file
@@ -732,6 +751,36 @@ class LoomConnection(object):
 				values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]
 			self.set_attr(name, values, axis=1)
 
+	def get_edges(self, name, axis):
+		if axis == 0:
+			return (self.file["/row_edges/" + name + "/a"], self.file["/row_edges/" + name + "/b"], self.file["/row_edges/" + name + "/w"])
+		if axis == 1:
+			return (self.file["/col_edges/" + name + "/a"], self.file["/col_edges/" + name + "/b"], self.file["/col_edges/" + name + "/w"])
+		raise ValueError("Axis must be 0 or 1")
+
+	def set_edges(self, name, a, b, w, axis=0):
+		if not a.dtype.kind == 'i':
+			raise ValueError("Nodes must be integers")
+		if not b.dtype.kind == 'i':
+			raise ValueError("Nodes must be integers")
+		if axis == 1:
+			if a.max() > self.shape[1] or a.min() < 0:
+				raise ValueError("Nodes out of range")
+			if b.max() > self.shape[1] or b.min() < 0:
+				raise ValueError("Nodes out of range")
+			self.file["/col_edges/" + name + "/a"] = a
+			self.file["/col_edges/" + name + "/b"] = b
+			self.file["/col_edges/" + name + "/w"] = w
+		if axis == 0:
+			if a.max() > self.shape[0] or a.min() < 0:
+				raise ValueError("Nodes out of range")
+			if b.max() > self.shape[0] or b.min() < 0:
+				raise ValueError("Nodes out of range")
+			self.file["/row_edges/" + name + "/a"] = a
+			self.file["/row_edges/" + name + "/b"] = b
+			self.file["/orw_edges/" + name + "/w"] = w
+		raise ValueError("Axis must be 0 or 1")
+
 	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
 		if axis == 1:
 			cols_per_chunk = batch_size
@@ -741,7 +790,7 @@ class LoomConnection(object):
 
 				selection = cells - ix
 				# Pick out the cells that are in this batch
-				selection = selection[np.where(np.logical_and(selection >= 0, selection < ix + cols_per_chunk))[0]]
+				selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
 				if selection.shape[0] == 0:
 					continue
 
@@ -763,7 +812,7 @@ class LoomConnection(object):
 
 				selection = genes - ix
 				# Pick out the genes that are in this batch
-				selection = selection[np.where(np.logical_and(selection >= 0, selection < ix + rows_per_chunk))[0]]
+				selection = selection[np.where(np.logical_and(selection >= 0, selection < rows_per_chunk))[0]]
 				if selection.shape[0] == 0:
 					continue
 
@@ -777,7 +826,7 @@ class LoomConnection(object):
 				yield (ix, selection, vals)
 				ix = ix + cols_per_chunk
 
-	def map(self, f, axis=0, chunksize=10000, selection=None):
+	def map(self, f, axis=0, chunksize=1000, selection=None):
 		"""
 		Apply a function along an axis without loading the entire dataset in memory.
 
