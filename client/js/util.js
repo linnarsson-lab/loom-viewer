@@ -443,6 +443,7 @@ export function isInteger(array) {
 // Using indexed strings can be much faster, since Uint8Arrays
 // are smaller, remove pointer indirection, and allow
 // for quicker comparisons than strings.
+/*
 export function convertToIndexed(uniques, data) {
 	let un = uniques.slice(0);
 	// sort uniques by most frequent, so
@@ -486,6 +487,7 @@ export function convertToIndexed(uniques, data) {
 		hasZeros,
 	};
 }
+*/
 
 export function arrayConstr(arrayType) {
 	switch (arrayType) {
