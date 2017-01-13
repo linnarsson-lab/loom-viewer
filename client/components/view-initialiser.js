@@ -58,8 +58,8 @@ export const ViewInitialiser = function (props) {
 	if (datasets === undefined) {
 		dispatch(fetchProjects());
 		return (
-				<div className='view centered' ><h1>Fetching projects list</h1></div>
-		)
+			<div className='view centered' ><h1>Fetching projects list</h1></div>
+		);
 	} else {
 		const dataset = datasets[path];
 		if (dataset) {
@@ -82,7 +82,7 @@ export const ViewInitialiser = function (props) {
 		} else {
 			// likely a mangled path URL
 			return (
-				<div className='view centered' ><h1>Error: path <pre>{path}</pre> not found in datasets</h1></div>
+				<div className='view centered' ><h1>Error: <i>{path}</i> not found in datasets</h1></div>
 			);
 		}
 	}
