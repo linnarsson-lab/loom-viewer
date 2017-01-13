@@ -9,10 +9,10 @@ import {
 import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
-	const { dispatch, dataSet } = props;
-	const attrs = dataSet.rowAttrs;
+	const { dispatch, dataset } = props;
+	const attrs = dataset.data.row.attrs;
 	const { coordinateAttrs, asMatrix, colorAttr, colorMode,
-		logscale, jitter, filterZeros } = dataSet.viewState.genescape;
+		logscale, jitter, filterZeros } = dataset.viewState.genescape;
 
 	// filter out undefined attributes from selection;
 	let newAttrs = [];
@@ -37,13 +37,18 @@ export const GenescapeSidepanel = function (props) {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'genescape',
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				viewState: { genescape: { coordinateAttrs: newVals } },
 			});
 		};
 	};
 
-	const rowAttrOptions = dataSet.rowKeys.sort();
+	const rowAttrOptions = dataset.data.row.keys
+		.slice(0)
+		.filter((key) => {
+			return attrs[key].uniqueVal === undefined;
+		})
+		.sort();
 
 	let coordinateDropdowns = [];
 
@@ -64,7 +69,7 @@ export const GenescapeSidepanel = function (props) {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'genescape',
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				viewState: { genescape: { [field]: value } },
 			});
 		};
@@ -86,7 +91,7 @@ export const GenescapeSidepanel = function (props) {
 				dispatch({
 					type: SET_VIEW_PROPS,
 					stateName: 'genescape',
-					datasetName: dataSet.dataset,
+					path: dataset.path,
 					viewState: { genescape: { coordinateAttrs: newVals } },
 				});
 			};
@@ -113,7 +118,7 @@ export const GenescapeSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				stateName: 'genescape',
 				attr: 'rowAttrs',
 				key: colorAttr,
@@ -137,7 +142,7 @@ export const GenescapeSidepanel = function (props) {
 							{setSFDP}
 						</ButtonGroup>
 					</ListGroupItem>
-				) : null }
+				) : null}
 				<ListGroupItem>
 					{coordinateDropdowns}
 					<ButtonGroup justified>
@@ -193,13 +198,6 @@ export const GenescapeSidepanel = function (props) {
 							Plot Matrix
 						</Button>
 					</ButtonGroup>
-					<ButtonGroup>
-						<Button
-							bsStyle={asMatrix ? 'success' : 'default'}
-							onClick={() => { asMatrixHC(!asMatrix); } }>
-							Plot Matrix
-						</Button>
-					</ButtonGroup>
 				</ListGroupItem>
 				<ListGroupItem>
 					<label>Color</label>
@@ -218,7 +216,7 @@ export const GenescapeSidepanel = function (props) {
 									dispatch({
 										type: SET_VIEW_PROPS,
 										stateName: 'genescape',
-										datasetName: dataSet.dataset,
+										path: dataset.path,
 										viewState: { genescape: { colorMode: 'Heatmap' } },
 									});
 								} }>
@@ -231,7 +229,7 @@ export const GenescapeSidepanel = function (props) {
 									dispatch({
 										type: SET_VIEW_PROPS,
 										stateName: 'genescape',
-										datasetName: dataSet.dataset,
+										path: dataset.path,
 										viewState: { genescape: { colorMode: 'Heatmap2' } },
 									});
 								} }>
@@ -245,7 +243,7 @@ export const GenescapeSidepanel = function (props) {
 									dispatch({
 										type: SET_VIEW_PROPS,
 										stateName: 'genescape',
-										datasetName: dataSet.dataset,
+										path: dataset.path,
 										viewState: { genescape: { colorMode: 'Categorical' } },
 									});
 								} }>
@@ -265,6 +263,6 @@ export const GenescapeSidepanel = function (props) {
 };
 
 GenescapeSidepanel.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

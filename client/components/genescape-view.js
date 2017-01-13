@@ -7,22 +7,22 @@ import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
 const GenescapeComponent = function (props) {
-	const { dispatch, dataSet } = props;
+	const { dispatch, dataset } = props;
 	const { coordinateAttrs, colorAttr, colorMode,
-		logscale, jitter, filterZeros, asMatrix } = dataSet.viewState.genescape;
+		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.genescape;
 
 	// filter out undefined attributes;
-	let attrs = [];
+	let selectedAttrs = [];
 	for (let i = 0; i < coordinateAttrs.length; i++) {
 		let attr = coordinateAttrs[i];
 		if (attr) {
-			attrs.push(attr);
+			selectedAttrs.push(attr);
 		}
 	}
-
-	const color = dataSet.rowAttrs[colorAttr];
+	const { row } = dataset.data;
+	const color = row.attrs[colorAttr];
 	let plot;
-	if (asMatrix && attrs.length > 2) {
+	if (asMatrix && selectedAttrs.length > 2) {
 		const cellStyle = {
 			border: '1px solid lightgrey',
 			flex: '1 1 auto',
@@ -36,13 +36,13 @@ const GenescapeComponent = function (props) {
 			flex: '1 1 auto',
 		};
 		let matrix = [];
-		for (let j = 0; j < attrs.length; j++) {
-			let row = [];
-			for (let i = 0; i < attrs.length; i++) {
-				const x = dataSet.rowAttrs[attrs[i]];
-				const y = dataSet.rowAttrs[attrs[j]];
+		for (let j = 0; j < selectedAttrs.length; j++) {
+			let selectedRow = [];
+			for (let i = 0; i < selectedAttrs.length; i++) {
+				const x = row.attrs[selectedAttrs[i]];
+				const y = row.attrs[selectedAttrs[j]];
 				const paint = i <= j ? scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros) : null;
-				row.push(
+				selectedRow.push(
 					<Canvas
 						key={j + '_' + i}
 						style={i <= j ? cellStyle : cellStyleNoBorder}
@@ -57,14 +57,14 @@ const GenescapeComponent = function (props) {
 					key={j}
 					className={'view'}
 					style={rowStyle}>
-					{row}
+					{selectedRow}
 				</div>
 			);
 		}
 		plot = <div className={'view-vertical'}>{matrix}</div>;
 	} else {
-		let x = dataSet.rowAttrs[attrs[0]];
-		let y = dataSet.rowAttrs[attrs[1]];
+		let x = row.attrs[selectedAttrs[0]];
+		let y = row.attrs[selectedAttrs[1]];
 		plot = (
 			<Canvas
 				paint={scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros)}
@@ -78,10 +78,10 @@ const GenescapeComponent = function (props) {
 	return (
 		<div className='view' >
 			<GenescapeSidepanel
-				dataSet={dataSet}
+				dataset={dataset}
 				dispatch={dispatch}
 				/>
-			<RemountOnResize watchedVal={attrs.length}>
+			<RemountOnResize watchedVal={selectedAttrs.length}>
 				{plot}
 			</RemountOnResize>
 		</div>
@@ -91,7 +91,7 @@ const GenescapeComponent = function (props) {
 
 GenescapeComponent.propTypes = {
 	// Passed down by ViewInitialiser
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -114,13 +114,14 @@ export const GenescapeViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
+
 	);
 };
 
 GenescapeViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -132,7 +133,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 
