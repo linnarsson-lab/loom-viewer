@@ -19,6 +19,7 @@ import {
 	SORT_GENE_METADATA,
 	SORT_CELL_METADATA,
 	REQUEST_GENE,
+	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 	FILTER_GENE,
@@ -329,6 +330,7 @@ function datasets(state = {}, action) {
 		case RECEIVE_DATASET:
 		case SEARCH_DATASETS:
 		case REQUEST_GENE:
+		case REQUEST_GENE_FETCH:
 		case RECEIVE_GENE:
 		case REQUEST_GENE_FAILED:
 			return update(state, action);
