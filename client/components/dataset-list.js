@@ -6,7 +6,7 @@ import { SortableTable } from './sortabletable';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
-import { findIndices, sortFromIndices } from '../js/util';
+import { stableSortInPlace } from '../js/util';
 
 import Fuse from 'fuse.js';
 
@@ -101,13 +101,11 @@ const DatasetList = function (props) {
 
 	if (datasets) {
 		for (let i = 0; i < datasets.length; i++) {
-			let proj = datasets[i];
-			const {project, title, description, lastModified, totalCells, dataset, url, doi } = proj;
-			let path = project + '/' + dataset;
+			const { path, project, title, description, lastModified, totalCells, dataset, url, doi } = datasets[i];
 			// create new datasets object with proper tags
 			// strip '.loom' ending
 			const titleURL = (
-				<div>
+				<div key={path + '_title'}>
 					<Link
 						to={'dataset/cellmetadata/' + path}
 						title={'Open ' + path}>
@@ -121,6 +119,7 @@ const DatasetList = function (props) {
 			const downloadURL = '/clone/' + path;
 			const downloadButton = (
 				<Button
+					key={path + '_download'}
 					bsSize='xsmall'
 					bsStyle='link'
 					href={downloadURL}
@@ -131,9 +130,10 @@ const DatasetList = function (props) {
 				</Button>
 			);
 			const paperButton = doi === '' ? (
-				<Glyphicon glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
+				<Glyphicon key={path + '_doi'} glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
 					<Button
+						key={path + '_doi'}
 						bsSize='xsmall'
 						bsStyle='link'
 						href={'http://dx.doi.org/' + doi}
@@ -144,9 +144,10 @@ const DatasetList = function (props) {
 					</Button>
 				);
 			const urlButton = url === '' ? (
-				<Glyphicon glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
+				<Glyphicon key={path + '_url'} glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
 					<Button
+						key={path + '_url'}
 						bsSize='xsmall'
 						bsStyle='link'
 						href={url}
@@ -161,7 +162,7 @@ const DatasetList = function (props) {
 				project, description, lastModified, totalCells,
 				title: titleURL,
 				buttons: (
-					<div style={{ textAlign: 'center' }}>
+					<div key={path} style={{ textAlign: 'center' }}>
 						{[paperButton, urlButton, downloadButton]}
 					</div>
 				),
@@ -202,10 +203,12 @@ class SearchDataSetViewComponent extends Component {
 	}
 
 	componentWillMount() {
-		const {dispatch, list, order, search } = this.props;
+		let { dispatch, list, order, search } = this.props;
 		if (!list) {
 			dispatch(fetchProjects());
 		} else {
+			// convert to array
+			list = Object.keys(list).map((key) => { return list[key]; });
 			this.filterProjects(list, order, search);
 		}
 	}
@@ -241,14 +244,13 @@ class SearchDataSetViewComponent extends Component {
 				vj = vj.toLowerCase();
 			}
 
-			return vi < vj ? -retVal :
-				vi > vj ? retVal :
-					i - j;
+			return (
+				vi < vj ? -retVal :
+					vi > vj ? retVal :
+						i - j
+			);
 		};
-		let indices = findIndices(list, comparator);
-		console.log({list});
-		list = sortFromIndices(list, indices);
-		console.log({list});
+		stableSortInPlace(list, comparator);
 		if (!search) {
 			// if there is no search, filtered is
 			// just a sorted version of list.
