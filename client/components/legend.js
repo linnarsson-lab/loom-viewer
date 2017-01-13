@@ -4,14 +4,14 @@ import * as colors from '../js/colors';
 
 export function AttrLegend(props) {
 	const { filterFunc, attr, mode } = props;
-	const { mostFrequent, indexedVal } = attr;
-	let l = Math.min(mostFrequent.length, 20);
+	const { uniques, indexedVal } = attr;
+	let l = Math.min(uniques.length, 20);
 	let visibleData = [];
 	const isFloat = attr.arrayType === 'float32' ||
 			attr.arrayType === 'number'||
 			attr.arrayType === 'float64';
 	for (let i = 0; i < l; i++) {
-		let { val, count, filtered } = mostFrequent[i];
+		let { val, count, filtered } = uniques[i];
 		const filter = filterFunc(val);
 		const cellStyle = {
 			display: 'inline-block',
@@ -20,10 +20,7 @@ export function AttrLegend(props) {
 			textDecoration: (filtered ? 'line-through' : null),
 		};
 
-		let dataVal = val;
-		if (indexedVal){
-			dataVal = indexedVal[val];
-		}
+		let dataVal = indexedVal ? indexedVal[val] : val;
 		if (isFloat){
 			dataVal = dataVal.toExponential(3);
 		}
@@ -37,9 +34,9 @@ export function AttrLegend(props) {
 		);
 	}
 
-	if (l < mostFrequent.length) {
+	if (l < uniques.length) {
 		let rest = 0;
-		while (l < mostFrequent.length) { rest += mostFrequent[l++].count; }
+		while (l < uniques.length) { rest += uniques[l++].count; }
 		visibleData.push(
 			<td key={20} style={{ display: 'inline-block' }}>
 				<span style={{ fontStyle: 'normal' }}>□ </span>(other): {rest}

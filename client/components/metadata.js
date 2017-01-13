@@ -116,12 +116,15 @@ export class MetadataComponent extends Component {
 			const onClick = onClickAttrFactory(key);
 			let tableRow = { name: <div onClick={onClick} style={{ width: '100%', height: '100%', cursor: 'pointer' }}><span>{key}</span></div> };
 			const attr = attributes[key];
-			let { filteredData, indexedVal, mostFrequent, arrayType } = attr;
+			const { filteredData, indexedVal, arrayType, uniques, uniqueVal } = attr;
 
-			if (mostFrequent.length === 1 || mostFrequent[0].count === 1) {
-				// only one string, or unique strings
+			if (uniqueVal !== undefined){ // only one values
+				tableRow.val = (
+					<span>{uniqueVal}</span>
+				);
+			} else if (uniques[0].count === 1) { // every value is unique
 				let list = filteredData[0];
-				const l = Math.min(mostFrequent.length, 5);
+				const l = Math.min(uniques.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
 					for (let i = 1; i < l; i++) {
@@ -132,13 +135,13 @@ export class MetadataComponent extends Component {
 						list += `, ${filteredData[i]}`;
 					}
 				}
-				if (l < mostFrequent.length) {
+				if (l < uniques.length) {
 					list += ', ...';
 				}
-				tableRow.val = <span>{list}</span>;
+				tableRow.val = (
+					<span>{list}</span>
+				);
 			} else {
-
-
 				const filterFunc = (val) => { return onClickFilterFactory(key, val); };
 				switch (arrayType) {
 					case 'indexedString':
@@ -155,7 +158,7 @@ export class MetadataComponent extends Component {
 							<MetadataPlot
 								attr={attr}
 								mode={ /* guess default category based on nr of unique values*/
-									mostFrequent.length <= 20 ? 'Categorical' : 'Bars'}
+									uniques.length <= 20 ? 'Categorical' : 'Bars'}
 								filterFunc={filterFunc} />
 						);
 				}

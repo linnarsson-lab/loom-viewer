@@ -6,8 +6,8 @@ import { SET_VIEW_PROPS, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/
 
 class GeneMDComponent extends Component {
 	componentWillMount() {
-		const { dispatch, dataSet} = this.props;
-		const datasetName = dataSet.dataset;
+		const { dispatch, dataset} = this.props;
+		const datasetName = dataset.dataset;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
@@ -47,9 +47,9 @@ class GeneMDComponent extends Component {
 	}
 
 	render() {
-		const { dataSet, dispatch } = this.props;
+		const { dataset, dispatch } = this.props;
 		const { onClickAttrFactory, onClickFilterFactory, searchMetadata } = this.state;
-		let { searchVal } = dataSet.viewState.geneMD;
+		let { searchVal } = dataset.viewState.geneMD;
 		const searchField = (
 			<FormControl
 				type='text'
@@ -58,17 +58,17 @@ class GeneMDComponent extends Component {
 				/>
 		);
 
-		const { rowOrder } = dataSet;
+		const { row } = dataset.data;
+		const { attrs, keys, order } = row;
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
-		for (let i = 0; i < Math.min(rowOrder.length, 4); i++){
-			const val = rowOrder[i];
+		for (let i = 0; i < Math.min(order.length, 4); i++){
+			const val = order[i];
 			sortOrderList.push(
 				<span key={i}>
 					{val.key}
 					<Glyphicon
 						glyph={ val.ascending ?
 						'sort-by-attributes' : 'sort-by-attributes-alt' } />
-					&nbsp;,&nbsp;&nbsp;&nbsp;
 				</span>
 			);
 		}
@@ -76,11 +76,10 @@ class GeneMDComponent extends Component {
 
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
-				<h1>Gene Metadata of {dataSet.dataset}</h1>
+				<h1>Gene Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataComponent
-					attributes={dataSet.rowAttrs}
-					attrKeys={dataSet.rowKeys}
-					indices={dataSet.rowIndicesFiltered}
+					attributes={attrs}
+					attrKeys={keys}
 					dispatch={dispatch}
 					onClickAttrFactory={onClickAttrFactory}
 					onClickFilterFactory={onClickFilterFactory}
@@ -94,7 +93,7 @@ class GeneMDComponent extends Component {
 }
 
 GeneMDComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -109,13 +108,13 @@ const GeneMetadataViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
 	);
 };
 
 GeneMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -127,7 +126,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 

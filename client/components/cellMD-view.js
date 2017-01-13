@@ -6,8 +6,8 @@ import { SET_VIEW_PROPS, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/
 
 class CellMDComponent extends Component {
 	componentWillMount() {
-		const { dispatch, dataSet} = this.props;
-		const datasetName = dataSet.dataset;
+		const { dispatch, dataset} = this.props;
+		const datasetName = dataset.dataset;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
@@ -48,9 +48,10 @@ class CellMDComponent extends Component {
 	}
 
 	render() {
-		const { dataSet, dispatch } = this.props;
 		const { onClickAttrFactory, onClickFilterFactory, searchMetadata } = this.state;
-		let { searchVal } = dataSet.viewState.cellMD;
+		const { dataset, dispatch } = this.props;
+
+		let { searchVal } = dataset.viewState.cellMD;
 		const searchField = (
 			<FormControl
 				type='text'
@@ -60,17 +61,17 @@ class CellMDComponent extends Component {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { colOrder } = dataSet;
+		const { col } = dataset.data;
+		const { attrs, keys, order } = col;
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
-		for (let i = 0; i < Math.min(colOrder.length, 4); i++){
-			const val = colOrder[i];
+		for (let i = 0; i < Math.min(order.length, 4); i++){
+			const val = order[i];
 			sortOrderList.push(
 				<span key={i}>
 					{val.key}
 					<Glyphicon
 						glyph={ val.ascending ?
 						'sort-by-attributes' : 'sort-by-attributes-alt' } />
-					&nbsp;,&nbsp;&nbsp;&nbsp;
 				</span>
 			);
 		}
@@ -78,11 +79,10 @@ class CellMDComponent extends Component {
 
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
-				<h1>Cell Metadata of {dataSet.dataset}</h1>
+				<h1>Cell Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataComponent
-					attributes={dataSet.colAttrs}
-					attrKeys={dataSet.colKeys}
-					indices={dataSet.colIndicesFiltered}
+					attributes={attrs}
+					attrKeys={keys}
 					dispatch={dispatch}
 					onClickAttrFactory={onClickAttrFactory}
 					onClickFilterFactory={onClickFilterFactory}
@@ -96,7 +96,7 @@ class CellMDComponent extends Component {
 }
 
 CellMDComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -111,13 +111,13 @@ const CellMetadataViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
 	);
 };
 
 CellMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -129,7 +129,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 
