@@ -186,9 +186,10 @@ function convertData(x, y, color, filterZeros) {
 	let ymin = (y.hasZeros && y.min > 0) ? 0 : y.min;
 	let ymax = y.max;
 
+	// If we have an unindexed string array,
+	// convert it to numbers as a form of
 	x = convertStringArray(x);
 	y = convertStringArray(y);
-
 
 	// Filter out zeroes if requested in the process
 	// (this has to happen before log/jitter for
@@ -224,7 +225,7 @@ function convertData(x, y, color, filterZeros) {
 				}
 			}
 		}
-		// Convert to typed array.
+		// Convert back to typed array.
 		xData = Float32Array.from(xData);
 		yData = Float32Array.from(yData);
 		let constr = arrayConstr(color.arrayType);
@@ -234,57 +235,50 @@ function convertData(x, y, color, filterZeros) {
 }
 
 function convertStringArray(data) {
-	const l = data.filteredData.length;
-	let retVal;
-	switch (data.arrayType) {
-		case 'string':
-			if (l < 256) {
-				retVal = new Uint8Array(l);
-			} else if (l < 65535) {
-				retVal = new Uint16Array(l);
-			} else {
-				retVal = new Uint32Array(l);
-			}
-			for (let i = 0; i < l; i++) {
-				retVal[i] = i + 1;
-			}
-			return retVal;
-		case 'indexedString':
+	if (data.arrayType === 'string' && !data.indexedVal) {
+		let retVal;
+		const l = data.filteredData.length;
+		if (l < 256) {
 			retVal = new Uint8Array(l);
-			for (let i = 0; i < l; i++) {
-				retVal[i] = data.colorIndices[data.filteredData[i]] | 0;
-				if (retVal[i] > 20) { retVal[i] = 0; }
-			}
-			return retVal;
-		default:
-			return data.filteredData;
+		} else if (l < 65535) {
+			retVal = new Uint16Array(l);
+		} else {
+			retVal = new Uint32Array(l);
+		}
+
+		for (let i = 0; i < l; i++) {
+			retVal[i] = i + 1;
+		}
+		return retVal;
 	}
+	return data.filteredData;
 }
 
 
+// sort by x, then by y, so that we render zero values first, 
+// and then from back-to-front. This has to be done after
+// jittering to maintain the tiling behaviour that is desired.
 function sortByAxes(xData, yData, cIdx) {
 	let indices = new Uint32Array(cIdx.length), i;
 	for (i = 0; i < cIdx.length; i++) {
 		indices[i] = i;
 	}
 
-	// sort by x, then by y, so that we render zero values first, 
-	// and then from back-to-front. This has to be done after
-	// jittering to maintain the tiling behaviour that is desired.
 	indices.sort((a, b) => {
 		return (
 			yData[a] < yData[b] ? 1 : yData[a] > yData[b] ? -1 :
 				xData[a] < xData[b] ? -1 : xData[a] > xData[b] ? 1 :
-					a < b ? -1 : 1
+					a - b
 		);
 	});
 	let x = new Float32Array(cIdx.length),
 		y = new Float32Array(cIdx.length),
 		c = new Uint32Array(cIdx.length);
 	for (i = 0; i < x.length; i++) {
-		x[i] = xData[indices[i]];
-		y[i] = yData[indices[i]];
-		c[i] = cIdx[indices[i]];
+		const idx = indices[i];
+		x[i] = xData[idx];
+		y[i] = yData[idx];
+		c[i] = cIdx[idx];
 	}
 	return { x, y, c };
 }
