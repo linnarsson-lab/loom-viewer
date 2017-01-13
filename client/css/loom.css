@@ -45,11 +45,21 @@ body {
   flex: 1 1 auto;
 }
 
+.view.centered {
+  justify-content: center;
+  align-items: center;
+}
+
 /* aligns elements top-to-bottom */
 .view-vertical {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+}
+
+.view-vertical.centered {
+  justify-content: center;
+  align-items: center;
 }
 
 .sidepanel {
