@@ -300,6 +300,7 @@ def combine(files, output_file, key=None, file_attrs={}):
 	The input files must (1) have exactly the same number of rows and in the same order, (2) have
 	exactly the same sets of row and column attributes.
 	"""
+	logging.warn("loompy.combine is deprecated, please use join() instead")
 	if len(files) == 0:
 		raise ValueError("The input file list was empty")
 
@@ -782,7 +783,7 @@ class LoomConnection(object):
 				raise ValueError("Nodes out of range")
 			self.file["/row_edges/" + name + "/a"] = a
 			self.file["/row_edges/" + name + "/b"] = b
-			self.file["/orw_edges/" + name + "/w"] = w
+			self.file["/row_edges/" + name + "/w"] = w
 		raise ValueError("Axis must be 0 or 1")
 
 	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
