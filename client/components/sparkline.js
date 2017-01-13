@@ -30,7 +30,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// =====================
 	// Prep data for plotter
 	// =====================
-	const { data, filteredData, arrayType, indexedVal } = attr;
+	let { data, filteredData, arrayType, indexedVal, uniqueVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
@@ -55,6 +55,9 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// and point 6 will only be 0.3 times the width.
 
 	let range = {};
+	if (uniqueVal !== undefined){
+		data = filteredData = [uniqueVal];
+	}
 
 	// If dataRange is undefined, use the whole (filtered) dataset.
 	range.left = dataRange ? dataRange[0] : 0;
@@ -87,11 +90,11 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	}
 
 	return (context) => {
-		sparklinePainter(context, paint, attr, mode, range, orientation, unfiltered);
+		sparklinePainter(context, paint, attr, mode, range, orientation);
 	};
 }
 
-function sparklinePainter(context, paint, attr, mode, range, orientation, unfiltered) {
+function sparklinePainter(context, paint, attr, mode, range, orientation) {
 	const { colorIndices } = attr;
 
 	// All of our plotting functions draw horizontaly

@@ -11,21 +11,21 @@ import {
 import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const SparklineSidepanel = function (props) {
-	const { dispatch, dataSet } = props;
-	const { sparkline } = dataSet.viewState;
-
+	const { dispatch, dataset } = props;
+	const { sparkline } = dataset.viewState;
+	const { col } = dataset.data;
 	// The old column attribute values that we displayed in the "legend"
 	// if colAttr does not exist (for example, the default values
 	// in the Loom interface is not present), pick the first column
-	const attrKey = sparkline.colAttr ? sparkline.colAttr : dataSet.colKeys[0];
-	const legendData = dataSet.colAttrs[attrKey];
+	const attrKey = sparkline.colAttr ? sparkline.colAttr : col.keys[0];
+	const legendData = col.attrs[attrKey];
 
 	const handleChangeFactory = (field) => {
 		return (val) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				viewState: { sparkline: { [field]: val } },
 			});
 		};
@@ -35,7 +35,7 @@ export const SparklineSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				datasetName: dataSet.dataset,
+				datasetName: dataset.dataset,
 				stateName: 'sparkline',
 				attr: 'colAttrs',
 				key: attrKey,
@@ -45,7 +45,7 @@ export const SparklineSidepanel = function (props) {
 	};
 
 
-	const colAttrsOptions = Object.keys(dataSet.colAttrs).sort();
+	const colAttrsOptions = Object.keys(col.attrs).sort();
 	const colAttrsHC = handleChangeFactory('colAttr');
 
 	const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
@@ -91,7 +91,7 @@ export const SparklineSidepanel = function (props) {
 				<ListGroupItem>
 					<label>Show genes</label>
 					<FetchGeneComponent
-						dataSet={dataSet}
+						dataset={dataset}
 						dispatch={dispatch}
 						onChange={genesHC}
 						value={sparkline.genes}
@@ -117,6 +117,6 @@ export const SparklineSidepanel = function (props) {
 };
 
 SparklineSidepanel.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

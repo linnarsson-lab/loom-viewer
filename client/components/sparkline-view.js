@@ -7,23 +7,25 @@ import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 
 const SparklineViewComponent = (props) => {
-	const { dataSet, dispatch } = props;
-	const sl = dataSet.viewState.sparkline;
+	const { dispatch, dataset} = props;
+	const { col } = dataset.data;
+	const sl = dataset.viewState.sparkline;
 	// The old column attribute values that we displayed in the "legend"
-	let legendData = dataSet.colAttrs[sl.colAttr];
+	let legendData = col.attrs[sl.colAttr];
 	// if colAttr does not exist (for example, the default values
 	// in the Loom interface is not present), pick the first column
 	if (legendData === undefined) {
-		legendData = dataSet.colAttrs[dataSet.colKeys[0]];
+		legendData = col.attrs[col.keys[0]];
 	}
 
 	// selected genes in state
 	const selection = sl.genes;
 
 	// only show the genes that actually have been fetched
+	// note that genes are now stored in col.attrs
 	let sparklines = [], j = 0;
 	for (let i = 0; i < selection.length; i++) {
-		let geneData = dataSet.fetchedGenes[selection[i]];
+		let geneData = dataset.data.col.attrs[selection[i]];
 		// no point trying to generate genes without data
 		if (geneData) {
 			sparklines.push(
@@ -89,8 +91,8 @@ const SparklineViewComponent = (props) => {
 		<div className='view' style={{ overflowX: 'hidden' }}>
 			<div style={{ overflowY: 'auto' }}>
 				<SparklineSidepanel
-					dataSet={dataSet}
 					dispatch={dispatch}
+					dataset={dataset}
 					/>
 			</div>
 			{sparklineview}
@@ -100,7 +102,7 @@ const SparklineViewComponent = (props) => {
 
 
 SparklineViewComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -119,13 +121,13 @@ export const SparklineViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
 	);
 };
 
 SparklineViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -137,7 +139,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 
