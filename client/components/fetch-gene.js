@@ -12,7 +12,7 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillMount() {
-		this.setState(this.createOptions(this.props.dataSet.rowAttrs.Gene.data));
+		this.setState(this.createOptions(this.props.dataset.data.row.attrs.Gene.data));
 		if (this.props.value) {
 			let values = null;
 			if (this.props.multi) {
@@ -29,8 +29,8 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const prevSG = this.props.dataSet.rowAttrs.Gene.data;
-		const nextSG = nextProps.dataSet.rowAttrs.Gene.data;
+		const prevSG = this.props.dataset.data.row.attrs.Gene.data;
+		const nextSG = nextProps.dataset.data.row.attrs.Gene.data;
 		if (!isEqual(prevSG, nextSG)) {
 			this.setState(this.createOptions(nextSG));
 		}
@@ -57,7 +57,7 @@ export class FetchGeneComponent extends Component {
 
 	handleChange(value) {
 		this.setState({ value });
-		let { dataSet, dispatch, onChange, multi, clearable } = this.props;
+		let { dataset, dispatch, onChange, multi, clearable } = this.props;
 		// If multi is set, use an array of gene name strings.
 		// Otherwise, send a single string.
 		let genes = multi ? [] : '';
@@ -66,11 +66,11 @@ export class FetchGeneComponent extends Component {
 				for (let i = 0; i < value.length; i++) {
 					genes.push(value[i].value);
 				}
-				dispatch(fetchGene(dataSet, genes));
+				dispatch(fetchGene(dataset, genes));
 			} else {
 				genes = value.value;
 				// fetchGene always expects an array of strings
-				dispatch(fetchGene(dataSet, [genes]));
+				dispatch(fetchGene(dataset, [genes]));
 			}
 			onChange ? onChange(genes) : null;
 		} else {
@@ -99,7 +99,7 @@ export class FetchGeneComponent extends Component {
 
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	value: PropTypes.oneOfType([
 		PropTypes.arrayOf(PropTypes.string),
 		PropTypes.string,
