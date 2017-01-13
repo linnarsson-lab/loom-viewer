@@ -155,7 +155,7 @@ export function convertArray(data, name) {
 		// range for non-zero values, but also need to know
 		// if zero-values are present. We also use this information
 		// to determine integer size, so we pre-calc this.
-		const { min, max, hasZeros } = calcMinMax(array.data, true);
+		const { min, max, hasZeros } = calcMinMax(data, true);
 		array.min = min;
 		array.max = max;
 		array.hasZeros = hasZeros;
@@ -215,25 +215,27 @@ export function convertArray(data, name) {
 				break;
 			case 'string':
 			default:
-				// For string arrays, convert to indexed
-				// form if fewer than 256 unique strings
-				if (uniques.length < 256) {
-					array = convertToIndexed(array);
-					break;
-				}
-				array.data = data;
-				array.filteredData = Array.from(data);
 				// in case of string arrays, we assume they represent
 				// categories when plotted as x/y attributes. For this
 				// we need to set min/max to the number of unique categories
 				array.min = 0;
-				array.max = array.uniques.length;
+				array.max = array.uniques.length-1;
+
+				// convert to indexed form if fewer than 256 unique strings
+				array.data = data;
+				if (uniques.length < 256) {
+					array = convertToIndexed(array);
+					uniques = array.uniques;
+					break;
+				} else {
+					array.filteredData = Array.from(data);
+				}
 				array.hasZeros = true;
 				break;
 		}
 
-		// store uniques filtered after conversion, 
-		// so that it's updated for indexed arrays
+		// We set filtered flags after conversion, 
+		// in case array.uniques had to be updated for indexedData
 		for (let i = 0; i < array.uniques.length; i++) {
 			array.uniques[i].filtered = false;
 		}
@@ -245,6 +247,7 @@ export function convertArray(data, name) {
 			mostFreq: {},
 			max: {},
 		};
+
 		uniques.sort((a, b) => {
 			return (
 				a.count < b.count ? -1 :
@@ -253,15 +256,16 @@ export function convertArray(data, name) {
 			);
 		});
 		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			array.colorIndices.max[uniques[i].val] = i + 1;
+			array.colorIndices.mostFreq[uniques[i].val] = i;
 		}
+
 		uniques.sort((a, b) => {
 			return (
 				a.val < b.val ? -1 : 1
 			);
 		});
 		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			array.colorIndices.mostFreq[uniques[i].val] = i + 1;
+			array.colorIndices.max[uniques[i].val] = i;
 		}
 	}
 	return array;
@@ -414,26 +418,32 @@ export function convertToIndexed(mdArray) {
 		return (
 			a.count > b.count ? -1 :
 				a.count < b.count ? 1 :
-					a.val > b.val ? -1 : 1
+					a.val < b.val ? -1 : 1
 		);
 	});
 
-	let indexedData = new Uint8Array(data.length);
-	mdArray.indexedVal = new Array(un.length);
+	// Store original values
+	let indexedVal = [];
 	for (let i = 0; i < un.length; i++) {
-		const { val } = un[i];
-		mdArray.indexedVal[i] = un[i].val;
-		for (let j = 0; j < data.length; j++) {
-			if (data[j] === val) {
-				indexedData[j] = un.length - i;
+		indexedVal.push(un[i].val);
+	}
+	mdArray.indexedVal = indexedVal;
+
+	// Create array of index values
+	let indexedData = new Uint8Array(data.length);
+	for (let j = 0; j < data.length; j++) {
+		for (let i = 0; i < indexedVal.length; i++) {
+			if (data[j] === indexedVal[i]) {
+				indexedData[j] = i;
 			}
 		}
 	}
 	mdArray.data = indexedData;
+
 	mdArray.filteredData = Uint8Array.from(indexedData);
 	mdArray.hasZeros = false;
-	mdArray.min = 1;
-	mdArray.max = un.length;
+	mdArray.min = 0;
+	mdArray.max = un.length-1;
 	mdArray.uniques = countElements(indexedData);
 	return mdArray;
 }
@@ -457,7 +467,6 @@ export function arrayConstr(arrayType) {
 		case 'uint16':
 			return Uint16Array;
 		case 'uint8':
-		case 'indexedString':
 			return Uint8Array;
 		default:
 	}
