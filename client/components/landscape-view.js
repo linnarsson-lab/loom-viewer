@@ -6,30 +6,23 @@ import { Canvas } from './canvas';
 import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
-function makeData(attr, gene, fetchedGenes, colAttrs) {
-	return ((attr === '(gene)' && fetchedGenes[gene]) ?
-		fetchedGenes[gene] : colAttrs[attr]);
-}
-
 const LandscapeComponent = function (props) {
-	const { dispatch, dataSet } = props;
-	const { fetchedGenes, viewState, colAttrs } = dataSet;
-	const { coordinateAttrs, coordinateGenes,
-		colorAttr, colorGene, colorMode,
-		logscale, jitter, filterZeros, asMatrix } = viewState.landscape;
+	const { dispatch, dataset } = props;
+	const { coordinateAttrs, colorAttr, colorMode,
+		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.landscape;
+	const { col } = dataset.data;
 
 	// filter out undefined attributes;
-	let attrs = [], genes = [];
+	let attrs = [];
 	for (let i = 0; i < coordinateAttrs.length; i++) {
 		let attr = coordinateAttrs[i];
 		if (attr) {
 			attrs.push(attr);
-			genes.push(coordinateGenes[i]);
 		}
 	}
 
 
-	const color = makeData(colorAttr, colorGene, fetchedGenes, colAttrs);
+	const color = col.attrs[colorAttr];
 	let plot;
 	if (asMatrix && attrs.length > 2) {
 		const cellStyle = {
@@ -50,8 +43,8 @@ const LandscapeComponent = function (props) {
 			for (let i = 0; i < attrs.length; i++) {
 				let paint;
 				if (i <= j) {
-					const x = makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
-					const y = makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
+					const x = col.attrs[attrs[i]];// makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
+					const y = col.attrs[attrs[j]];// makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
 					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
 				}
 				row.push(
@@ -76,8 +69,8 @@ const LandscapeComponent = function (props) {
 		}
 		plot = <div className={'view-vertical'}>{matrix}</div>;
 	} else {
-		let x = makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
-		let y = makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
+		let x = col.attrs[attrs[0]];// makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
+		let y = col.attrs[attrs[1]];// makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
 		const paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
 		plot = (
 			<Canvas
@@ -93,7 +86,7 @@ const LandscapeComponent = function (props) {
 	return (
 		<div className='view'>
 			<LandscapeSidepanel
-				dataSet={dataSet}
+				dataset={dataset}
 				dispatch={dispatch}
 				/>
 			<RemountOnResize watchedVal={attrs.length}>
@@ -104,7 +97,7 @@ const LandscapeComponent = function (props) {
 };
 
 LandscapeComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -128,13 +121,13 @@ export const LandscapeViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
 	);
 };
 
 LandscapeViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -146,7 +139,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 
