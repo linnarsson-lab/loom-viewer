@@ -2,6 +2,12 @@ import { nMostFrequent, arrayConstr } from '../js/util';
 import * as colors from '../js/colors';
 
 export function sparkline(attr, mode, dataRange, label, orientation, unfiltered) {
+
+	if (attr === undefined) {
+		console.log('sparkline() called without defined attr!');
+		return () => {};
+	}
+
 	// Determine plotter
 	let paint = null;
 	switch (mode) {
@@ -21,29 +27,10 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 			paint = textPaint;
 	}
 
-	return (context) => {
-		sparklinePainter(context, paint, attr, mode, dataRange, orientation, unfiltered);
-	};
-}
-
-function sparklinePainter(context, paint, attr, mode, dataRange, orientation, unfiltered) {
-	if (attr === undefined) {
-		return;
-	}
-	const { data, filteredData, arrayType, indexedVal, mostFrequent, colorIndices } = attr;
-
-	// All of our plotting functions draw horizontaly
-	// To get a vertical plot, we simply rotate the canvas
-	// before invoking them. To not mess up the context
-	// settings, we save before and restore at the end
-	if (orientation === 'vertical') {
-		context.save();
-		context.translate(context.width, 0);
-		context.rotate(90 * Math.PI / 180);
-		let t = context.width;
-		context.width = context.height;
-		context.height = t;
-	}
+	// =====================
+	// Prep data for plotter
+	// =====================
+	const { data, filteredData, arrayType, indexedVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
@@ -67,53 +54,75 @@ function sparklinePainter(context, paint, attr, mode, dataRange, orientation, un
 	// will only be 0.6 times the width of the other datapoints,
 	// and point 6 will only be 0.3 times the width.
 
-	// If dataRange is undefined, use the whole dataset.
-	dataRange = dataRange ? dataRange : [0, (unfiltered ? data.length : filteredData.length)];
+	let range = {};
 
-	let leftRange = dataRange[0];
-	let rightRange = dataRange[1];
+	// If dataRange is undefined, use the whole (filtered) dataset.
+	range.left = dataRange ? dataRange[0] : 0;
+	range.right = dataRange ? dataRange[1] : (unfiltered ? data.length : filteredData.length);
 
 	// While we return if our total data range is zero, it *is*
 	// allowed to be out of bounds for the dataset. For the
 	// "datapoints" out of the range we simply don't display anything.
 	// This allows us to zoom out!
 
-	const unboundedRange = rightRange - leftRange;
-	const totalRange = Math.ceil(rightRange) - Math.floor(leftRange);
-	if (totalRange <= 0) { return; }
+	range.total = Math.ceil(range.right) - Math.floor(range.left);
+	if (range.total <= 0) { return () => {}; }
+	// If we're not displaying text, then indexed string arrays 
+	// should remain Uint8Arrays, as they are more efficient
+	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
+	let source = unfiltered ? data : filteredData;
+	// When dealing with out of bounds ranges we rely on JS returning
+	// "undefined" for empty indices, effectively padding the data
+	// with undefined entries on either or both ends.
+	// (for typed arrays, JS converts undefined to 0)
+	range.data = new array(range.total);
+	if (mode === 'Text' && indexedVal){
+		for (let i = 0, i0 = Math.floor(range.left); i < range.total; i++) {
+			range.data[i] = indexedVal[source[i0 + i]];
+		}
+	} else {
+		for (let i = 0, i0 = Math.floor(range.left); i < range.total; i++) {
+			range.data[i] = source[i0 + i];
+		}
+	}
 
+	return (context) => {
+		sparklinePainter(context, paint, attr, mode, range, orientation, unfiltered);
+	};
+}
+
+function sparklinePainter(context, paint, attr, mode, range, orientation, unfiltered) {
+	const { colorIndices } = attr;
+
+	// All of our plotting functions draw horizontaly
+	// To get a vertical plot, we simply rotate the canvas
+	// before invoking them. To not mess up the context
+	// settings, we save before and restore at the end
+	if (orientation === 'vertical') {
+		context.save();
+		context.translate(context.width, 0);
+		context.rotate(90 * Math.PI / 180);
+		let t = context.width;
+		context.width = context.height;
+		context.height = t;
+	}
+	
+	range.unrounded = range.right - range.left;
 	// We need to find the effective rangeWidth spanned by all bars.
 	// Mathematically speaking the following equation is true:
 	//   rangeWidth/context.width = totalRange/unroundedRange
 	// Therefore:
-	let rangeWidth = (context.width * totalRange / unboundedRange) | 0;
+	range.width = (context.width * range.total / range.unrounded) | 0;
 
 	// Note that the bars should have a width of:
-	//   barWidth = rangeWidth / totalRange
-	//            = context.width / unroundedRange;
+	//   barWidth = range.width / range.total
+	//            = context.width / range.unrounded;
 	// Total pixels by which the first bar is outside the canvas:
-	//   xOffset = -leftRangeFrac * barWidth
+	//   xOffset = range.leftFrac * barWidth
 	// Which is equal to:
-	const leftRangeFrac = Math.floor(leftRange) - leftRange;
-	const xOffset = (leftRangeFrac * context.width / unboundedRange) | 0;
-
-	// When dealing with out of bounds ranges we rely on JS returning
-	// "undefined" for empty indices, effectively padding the data
-	// with undefined entries on either or both ends.
-	let array = arrayType === 'indexedString' && mode === 'Text' ? Array : arrayConstr(arrayType);
-	let source = unfiltered ? data : filteredData;
-	let rangeData = new array(totalRange);
-	if (indexedVal && mode === 'Text'){
-		for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
-			rangeData[i] = indexedVal[source[i0 + i]];
-		}
-	} else {
-		for (let i = 0, i0 = Math.floor(leftRange); i < totalRange; i++) {
-			rangeData[i] = source[i0 + i];
-		}
-	}
-
-	paint(context, rangeData, xOffset, rangeWidth, mostFrequent, colorIndices);
+	range.leftFrac = Math.floor(range.left) - range.left;
+	range.xOffset = (range.leftFrac * context.width / range.unrounded) | 0;
+	paint(context, range, colorIndices);
 
 	// Make sure our rotation from before is undone
 	if (orientation === 'vertical') {
@@ -126,35 +135,36 @@ function sparklinePainter(context, paint, attr, mode, dataRange, orientation, un
 
 // Helper functions
 
-function calcMeans(rangeData, rangeWidth) {
+function calcMeans(range) {
+	const { data, width } = range;
 	// determine real start and end of range,
 	// skipping undefined padding if present.
 	let start = 0;
-	let end = rangeData.length;
-	while (rangeData[start] === undefined && start < end) { start++; }
-	while (rangeData[end] === undefined && end > start) { end--; }
+	let end = data.length;
+	while (data[start] === undefined && start < end) { start++; }
+	while (data[end] === undefined && end > start) { end--; }
 
 	let barWidth = 0;
 	// outlier = visually most relevant datapoint
 	let means, minima, maxima, outliers;
-	if (rangeData.length <= rangeWidth) {
+	if (data.length <= width) {
 		// more pixels than data
-		barWidth = rangeWidth / rangeData.length;
-		means = rangeData;
-		minima = rangeData;
-		maxima = rangeData;
-		outliers = rangeData;
+		barWidth = width / data.length;
+		means = data;
+		minima = data;
+		maxima = data;
+		outliers = data;
 	} else {
 		// more data than pixels
 		barWidth = 1;
 
 		// calculate means, find minima and maxima
-		means = new Array(rangeWidth);
-		minima = new Array(rangeWidth);
-		maxima = new Array(rangeWidth);
-		for (let i = 0; i < rangeWidth; i++) {
-			let i0 = (i * rangeData.length / rangeWidth) | 0;
-			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
+		means = new Array(width);
+		minima = new Array(width);
+		maxima = new Array(width);
+		for (let i = 0; i < width; i++) {
+			let i0 = (i * data.length / width) | 0;
+			let i1 = (((i + 1) * data.length / width) | 0);
 			// skip the zero-padding on both sides
 			if (i0 < start || i0 >= end) {
 				means[i] = 0;
@@ -162,10 +172,10 @@ function calcMeans(rangeData, rangeWidth) {
 			}
 			i1 = i1 < end ? i1 : end;
 			let sum = 0;
-			minima[i0] = rangeData[i0];
-			maxima[i0] = rangeData[i0];
+			minima[i0] = data[i0];
+			maxima[i0] = data[i0];
 			for (let j = i0; j < i1; j++) {
-				let val = rangeData[j];
+				let val = data[j];
 				sum += val;
 				minima[j] = val < minima[j] ? val : minima[j];
 				maxima[j] = val > maxima[j] ? val : maxima[j];
@@ -177,10 +187,10 @@ function calcMeans(rangeData, rangeWidth) {
 		// Variant of the Largest Triangle Three Buckets algorithm
 		// by Sven Steinnarson. Essentially: keep the value with
 		// the largest difference to the surrounding averages.
-		outliers = new Array(rangeWidth);
-		for (let i = 0; i < rangeWidth; i++) {
-			let i0 = (i * rangeData.length / rangeWidth) | 0;
-			let i1 = (((i + 1) * rangeData.length / rangeWidth) | 0);
+		outliers = new Array(width);
+		for (let i = 0; i < width; i++) {
+			let i0 = (i * data.length / width) | 0;
+			let i1 = (((i + 1) * data.length / width) | 0);
 			if (i0 < start || i0 >= end) {
 				// skip zero-padding
 				outliers[i] = 0;
@@ -195,13 +205,13 @@ function calcMeans(rangeData, rangeWidth) {
 			let mean = (meanPrev + meanNext) * 0.5;
 
 			// find largest difference to the surrounding averages
-			let max = rangeData[i0];
+			let max = data[i0];
 			let diff = Math.abs(max - mean);
 			for (let j = i0 + 1; j < i1; j++) {
-				let newDiff = Math.abs(rangeData[j] - mean);
+				let newDiff = Math.abs(data[j] - mean);
 				if (newDiff > diff) {
 					diff = newDiff;
-					max = rangeData[j];
+					max = data[j];
 				}
 			}
 			outliers[i] = max;
@@ -224,13 +234,14 @@ function calcMeans(rangeData, rangeWidth) {
 // If we have strings for data, we concatenate them.
 
 
-function categoriesPainter(context, rangeData, xOffset, rangeWidth, mostFrequent, colorIndices) {
-	if (rangeData.length <= rangeWidth) {
+function categoriesPainter(context, range, colorIndices) {
+	const { data, width, xOffset } = range;
+	if (data.length <= width) {
 		// more pixels than data
-		const barWidth = rangeWidth / rangeData.length;
-		for (let i = 0; i < rangeData.length; i++) {
-			if (rangeData[i] !== undefined) {
-				const cIdx = colorIndices[rangeData[i]];
+		const barWidth = width / data.length;
+		for (let i = 0; i < data.length; i++) {
+			if (data[i] !== undefined) {
+				const cIdx = colorIndices.mostFreq[data[i]];
 				context.fillStyle = colors.category20[cIdx];
 				// force to pixel grid
 				const x = xOffset + i * barWidth;
@@ -240,13 +251,13 @@ function categoriesPainter(context, rangeData, xOffset, rangeWidth, mostFrequent
 		}
 	} else {
 		// more data than pixels
-		for (let i = 0; i < rangeWidth; i++) {
-			const i0 = (i * rangeData.length / rangeWidth) | 0;
-			const i1 = ((i + 1) * rangeData.length / rangeWidth) | 0;
-			const slice = rangeData.slice(i0, i1);
+		for (let i = 0; i < width; i++) {
+			const i0 = (i * data.length / width) | 0;
+			const i1 = ((i + 1) * data.length / width) | 0;
+			const slice = data.slice(i0, i1);
 			const commonest = nMostFrequent(slice, 1).values[0];
 			if (commonest !== undefined) {
-				const cIdx = colorIndices[commonest];
+				const cIdx = colorIndices.mostFreq[commonest];
 				context.fillStyle = colors.category20[cIdx];
 				context.fillRect(xOffset + i, 0, 1, context.height);
 			}
@@ -256,23 +267,24 @@ function categoriesPainter(context, rangeData, xOffset, rangeWidth, mostFrequent
 
 
 function barPainter(attr, label) {
-	return (context, rangeData, xOffset, rangeWidth) => {
-		barPaint(context, rangeData, xOffset, rangeWidth, attr, label);
-	};
-}
-
-
-function barPaint(context, rangeData, xOffset, rangeWidth, attr, label) {
 	let { min, max, hasZeros } = attr;
 	if (hasZeros){
 		min = min < 0 ? min : 0;
 	}
-	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
+	return (context, range) => {
+		barPaint(context, range, min, max, label);
+	};
+}
+
+
+function barPaint(context, range, min, max, label) {	
+
+	const { outliers, barWidth } = calcMeans(range);
 	// factor to multiply the mean values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
 	const scaleMean = context.height / (max * 1.1);
 	context.fillStyle = '#404040';
-	for (let i = 0, x = xOffset; i < outliers.length; i++) {
+	for (let i = 0, x = range.xOffset; i < outliers.length; i++) {
 		// Even if outliers[i] is non a number, OR-masking forces it to 0
 		let barHeight = (outliers[i] * scaleMean) | 0;
 		// canvas defaults to positive y going *down*, so to
@@ -301,19 +313,19 @@ function barPaint(context, rangeData, xOffset, rangeWidth, attr, label) {
 
 
 function heatmapPainter(attr, label, colorLUT) {
-	return (context, rangeData, xOffset, rangeWidth) => {
-		heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT);
-	};
-}
-
-function heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT) {
 	let { min, max, hasZeros } = attr;
 	if (hasZeros){
 		min = min < 0 ? min : 0;
 	}
-	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
+	return (context, range) => {
+		heatmapPaint(context, range, min, max, label, colorLUT);
+	};
+}
+
+function heatmapPaint(context, range, min, max, label, colorLUT) {
+	const { outliers, barWidth } = calcMeans(range);
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
-	for (let i = 0, x = xOffset; i < outliers.length; i++) {
+	for (let i = 0, x = range.xOffset; i < outliers.length; i++) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
 		let colorIdx = ((outliers[i] - min) * colorIdxScale) | 0;
 		context.fillStyle = colorLUT[colorIdx];
@@ -330,8 +342,8 @@ function heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colo
 }
 
 
-function textPaint(context, rangeData, xOffset, rangeWidth) {
-	const lineSize = (rangeWidth / rangeData.length) | 0;
+function textPaint(context, range) {
+	const lineSize = (range.width / range.data.length) | 0;
 	// only draw if we have six pixels per
 	const minLineSize = 8;
 	if (lineSize >= minLineSize) {
@@ -346,8 +358,8 @@ function textPaint(context, rangeData, xOffset, rangeWidth) {
 		// and draw at (0, 0) and translate().
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
-		context.translate(2, lineSize / 2 + xOffset);
-		rangeData.forEach((label) => {
+		context.translate(2, lineSize / 2 + range.xOffset);
+		range.data.forEach((label) => {
 			if (label) { context.drawText(label, 0, 0); }
 			context.translate(0, lineSize);
 		});
