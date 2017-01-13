@@ -45,24 +45,22 @@ export const SortableTable = function (props) {
 				</th>
 			);
 		}
-		headerRows.push(<tr key={i} >{headerCells}</tr>);
+		headerRows.push(<tr key={i+1} >{headerCells}</tr>);
 	}
 
 
-	// Data
-	const sortedData = data.slice(0);
 	let dataRows = [];
-	for (let i = 0; i < sortedData.length; i++) {
+	for (let i = 0; i < data.length; i++) {
 		let rowCells = [];
 		for (let j = 0; j < columns.length; j++) {
 			const {dataStyle, key, keys, mergeRows } = columns[j];
-			const cell = mapToCell(sortedData[i], key, keys);
+			const cell = mapToCell(data[i], key, keys);
 			let rowSpan = 1;
 			if (mergeRows) {
-				if (isEqual(cell, mapToCell(sortedData[i - 1], key, keys))) {
+				if (isEqual(cell, mapToCell(data[i - 1], key, keys))) {
 					continue;
 				} else {
-					while (isEqual(cell, mapToCell(sortedData[i + rowSpan], key, keys))) { rowSpan++; }
+					while (isEqual(cell, mapToCell(data[i + rowSpan], key, keys))) { rowSpan++; }
 				}
 			}
 			rowCells.push(
@@ -74,7 +72,7 @@ export const SortableTable = function (props) {
 				</td>
 			);
 		}
-		dataRows.push(<tr key={i} >{rowCells}</tr>);
+		dataRows.push(<tr key={data[i].path} >{rowCells}</tr>);
 	}
 
 	return (
