@@ -132,54 +132,50 @@ export function calcMinMax(data, ignoreZeros) {
 // Convert plain array to object with
 // typed/indexed array and metadata
 export function convertArray(data, name) {
-	let array = { name };
 	let uniques = countElements(data);
 	if (uniques.length === 1) {
-		array.uniqueVal = uniques[0].val;
+		return { name, uniqueVal: uniques[0].val };
 	} else {
-		array.uniques = uniques;
 		// Convert arrays to compact (possibly indexed) format
 
 		// Data is either a string or a number; assumes no
 		// invalid input is given here (no objects, arrays,
 		// and so on)
-		array.arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
+		let arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
 
-		if (array.arrayType === 'number') {
+		if (arrayType === 'number') {
 			// Test whether values are actually integers,
 			// if so convert to typed integer arrays.
-			array.arrayType = isInteger(data) ? 'integer' : 'float32';
+			arrayType = isInteger(data) ? 'integer' : 'float32';
 		}
 
 		// For our plotters we often need to know the dynamic
 		// range for non-zero values, but also need to know
 		// if zero-values are present. We also use this information
 		// to determine integer size, so we pre-calc this.
-		const { min, max, hasZeros } = calcMinMax(data, true);
-		array.min = min;
-		array.max = max;
-		array.hasZeros = hasZeros;
+		let { min, max, hasZeros } = calcMinMax(data, true);
 
 		// convert number values to typed arrays matching the schema,
 		// and string arrays with few unique values to indexedString
-		switch (array.arrayType) {
+		let filteredData, indexedVal, data32;
+		switch (arrayType) {
 			case 'float32':
 				// the only way to force to Float32 is using a 
 				// typed Float32Array. So we do that first,
 				// and see if any information gets truncated
 				// If so, we'll use doubles instead.
-				array.data = Float32Array.from(data);
+				data32 = Float32Array.from(data);
 				for (let i = 0; i < data.length; i++) {
-					if (array.data[i] !== data[i]) {
-						array.arrayType = 'float64';
+					if (data32[i] !== data[i]) {
+						arrayType = 'float64';
 						break;
 					}
 				}
-				if (array.arrayType === 'float64') {
-					array.data = Float64Array.from(data);
-					array.filteredData = Float64Array.from(array.data);
+				if (arrayType === 'float64') {
+					filteredData = Float64Array.from(data);
 				} else {
-					array.filteredData = Float32Array.from(array.data);
+					data = data32;
+					filteredData = Float32Array.from(data32);
 				}
 				break;
 			case 'integer':
@@ -187,30 +183,30 @@ export function convertArray(data, name) {
 				// for better performance.
 				if (min >= 0) {
 					if (max < 256) {
-						array.data = Uint8Array.from(data);
-						array.filteredData = Uint8Array.from(array.data);
-						array.arrayType = 'uint8';
+						data = Uint8Array.from(data);
+						filteredData = Uint8Array.from(data);
+						arrayType = 'uint8';
 					} else if (max < 65535) {
-						array.data = Uint16Array.from(data);
-						array.filteredData = Uint16Array.from(array.data);
-						array.arrayType = 'uint16';
+						data = Uint16Array.from(data);
+						filteredData = Uint16Array.from(data);
+						arrayType = 'uint16';
 					} else {
-						array.data = Uint32Array.from(data);
-						array.filteredData = Uint32Array.from(array.data);
-						array.arrayType = 'uint32';
+						data = Uint32Array.from(data);
+						filteredData = Uint32Array.from(data);
+						arrayType = 'uint32';
 					}
 				} else if (min > -128 && max < 128) {
-					array.data = Int8Array.from(data);
-					array.filteredData = Int8Array.from(array.data);
-					array.arrayType = 'int8';
+					data = Int8Array.from(data);
+					filteredData = Int8Array.from(data);
+					arrayType = 'int8';
 				} else if (min > -32769 && max < 32768) {
-					array.data = Int16Array.from(data);
-					array.filteredData = Int16Array.from(array.data);
-					array.arrayType = 'int16';
+					data = Int16Array.from(data);
+					filteredData = Int16Array.from(data);
+					arrayType = 'int16';
 				} else {
-					array.data = Int32Array.from(data);
-					array.filteredData = Int32Array.from(array.data);
-					array.arrayType = 'int32';
+					data = Int32Array.from(data);
+					filteredData = Int32Array.from(data);
+					arrayType = 'int32';
 				}
 				break;
 			case 'string':
@@ -218,32 +214,61 @@ export function convertArray(data, name) {
 				// in case of string arrays, we assume they represent
 				// categories when plotted as x/y attributes. For this
 				// we need to set min/max to the number of unique categories
-				array.min = 0;
-				array.max = array.uniques.length-1;
+				min = 0;
+				max = uniques.length - 1;
 
 				// convert to indexed form if fewer than 256 unique strings
-				array.data = data;
+				// Using indexed strings can be much faster, since Uint8Arrays
+				// are smaller, remove pointer indirection, and allow
+				// for quicker comparisons than strings.
 				if (uniques.length < 256) {
-					array = convertToIndexed(array);
-					uniques = array.uniques;
+					// sort uniques by most frequent, so
+					// the indices grow from most to least
+					// common
+					uniques.sort((a, b) => {
+						return (
+							a.count > b.count ? -1 :
+								a.count < b.count ? 1 :
+									a.val < b.val ? -1 : 1
+						);
+					});
+					// Store original values
+					indexedVal = [];
+					for (let i = 0; i < uniques.length; i++) {
+						indexedVal.push(uniques[i].val);
+					}
+
+					// Create array of index values
+					data = new Uint8Array(data.length);
+					for (let j = 0; j < data.length; j++) {
+						for (let i = 0; i < indexedVal.length; i++) {
+							if (data[j] === indexedVal[i]) {
+								data[j] = i;
+							}
+						}
+					}
+					filteredData = Uint8Array.from(data);
+					uniques = countElements(data);
+					min = 0;
+					max = uniques.length - 1;
+					hasZeros = true;
 					break;
 				} else {
-					array.filteredData = Array.from(data);
+					filteredData = data.slice(0);
 				}
-				array.hasZeros = true;
 				break;
 		}
 
 		// We set filtered flags after conversion, 
 		// in case array.uniques had to be updated for indexedData
-		for (let i = 0; i < array.uniques.length; i++) {
-			array.uniques[i].filtered = false;
+		for (let i = 0; i < uniques.length; i++) {
+			uniques[i].filtered = false;
 		}
 
 		// create lookup table to convert attribute values
 		// to color indices (so a look-up table for finding
 		// indices for another lookup table).
-		array.colorIndices = {
+		let colorIndices = {
 			mostFreq: {},
 			max: {},
 		};
@@ -256,7 +281,7 @@ export function convertArray(data, name) {
 			);
 		});
 		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			array.colorIndices.mostFreq[uniques[i].val] = i;
+			colorIndices.mostFreq[uniques[i].val] = i;
 		}
 
 		uniques.sort((a, b) => {
@@ -265,10 +290,20 @@ export function convertArray(data, name) {
 			);
 		});
 		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			array.colorIndices.max[uniques[i].val] = i;
+			colorIndices.max[uniques[i].val] = i;
 		}
+		return {
+			arrayType,
+			data,
+			filteredData,
+			indexedVal,
+			uniques,
+			colorIndices,
+			min,
+			max,
+			hasZeros,
+		};
 	}
-	return array;
 }
 
 
@@ -295,10 +330,10 @@ export function stableSortInPlace(array, comparator) {
 	return sortFromIndices(array, findIndices(array, comparator));
 }
 
-export function stableSortedCopy(array, comparator){
+export function stableSortedCopy(array, comparator) {
 	let indices = findIndices(array, comparator);
 	let sortedArray = [];
-	for (let i = 0; i < array.length; i++){
+	for (let i = 0; i < array.length; i++) {
 		sortedArray.push(array[indices[i]]);
 	}
 	return sortedArray;
@@ -327,7 +362,7 @@ export function stableSortedCopy(array, comparator){
  *  // ==> [2, 0, 1]
  * ```
  */
-export function findIndices(array, comparator){
+export function findIndices(array, comparator) {
 	// Assumes we don't have to worry about sorting more than 
 	// 4 billion elements; if you know the upper bounds of your
 	// input you could replace it with a smaller typed array
@@ -338,7 +373,7 @@ export function findIndices(array, comparator){
 	// after sorting, `indices[i]` gives the index from where
 	// `array[i]` should take the value from, so 
 	// `array[i]` should have the value at `array[indices[i]]`
-	return indices.sort(comparator);	
+	return indices.sort(comparator);
 }
 
 /**
@@ -408,9 +443,8 @@ export function isInteger(array) {
 // Using indexed strings can be much faster, since Uint8Arrays
 // are smaller, remove pointer indirection, and allow
 // for quicker comparisons than strings.
-export function convertToIndexed(mdArray) {
-	let un = mdArray.uniques.slice(0);
-	let data = mdArray.data;
+export function convertToIndexed(uniques, data) {
+	let un = uniques.slice(0);
 	// sort uniques by most frequent, so
 	// the indices grow from most to least
 	// common
@@ -427,7 +461,6 @@ export function convertToIndexed(mdArray) {
 	for (let i = 0; i < un.length; i++) {
 		indexedVal.push(un[i].val);
 	}
-	mdArray.indexedVal = indexedVal;
 
 	// Create array of index values
 	let indexedData = new Uint8Array(data.length);
@@ -438,14 +471,20 @@ export function convertToIndexed(mdArray) {
 			}
 		}
 	}
-	mdArray.data = indexedData;
-
-	mdArray.filteredData = Uint8Array.from(indexedData);
-	mdArray.hasZeros = false;
-	mdArray.min = 0;
-	mdArray.max = un.length-1;
-	mdArray.uniques = countElements(indexedData);
-	return mdArray;
+	let filteredData = Uint8Array.from(indexedData);
+	uniques = countElements(indexedData);
+	let min = 0;
+	let max = un.length - 1;
+	let hasZeros = true;
+	return {
+		data: indexedData,
+		filteredData,
+		indexedVal,
+		uniques,
+		min,
+		max,
+		hasZeros,
+	};
 }
 
 export function arrayConstr(arrayType) {
