@@ -174,12 +174,12 @@ function prepData(attrs){
 	data.attrs = newAttrs;
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
-	data.filtedataount = new Uint16Array(attrs[origOrderKey].data.length);
+	data.filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
 	return data;
 }
 
 function originalOrder(array) {
-	let indices = new Int32Array(array.length);
+	let indices = new Uint32Array(array.length);
 	for (let i = 0; i < array.length; i++) {
 		indices[i] = i;
 	}
@@ -208,9 +208,9 @@ export function fetchDataSet(datasets, path) {
 		// Announce that the request has been started
 		dispatch(requestDataSet(path));
 		// See if the dataset already exists in the store
-		// If so, we use cached version.
-		// If not, perform the request (async)
-		if (!datasets.list[path].data) {
+		// If so, we can use cached version.
+		// If not, perform the actual fetch request (async)
+		if (!datasets[path].data) {
 			return (fetch(`/loom/${path}`)
 				.then((response) => {
 					// convert the JSON to a JS object, and
@@ -225,7 +225,7 @@ export function fetchDataSet(datasets, path) {
 				.catch((err) => {
 					// Or, if fetch request failed, dispatch
 					// an action to set the error flag
-					console.log({ err });
+					console.log({ err }, err);
 					dispatch(requestDataSetFailed(path));
 				}));
 		}

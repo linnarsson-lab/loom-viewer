@@ -5,19 +5,16 @@ import { fetchDataSet } from '../actions/actions';
 // dispatches a fetchDataSet action.
 export class FetchDatasetComponent extends Component {
 	componentWillMount() {
-		const { dispatch, dataSets, dataset, project } = this.props;
-		dispatch(fetchDataSet({ dataSets, project, dataset}));
+		this.props.dispatch(fetchDataSet(this.props.datasets, this.props.path));
 	}
 
 	render() {
-		const { dataset } = this.props;
-		return <div className='view' >Fetching dataset: {dataset}</div>;
+		return <div className='view centered' ><h1>Fetching dataset: {this.props.path}</h1></div>;
 	}
 }
 
 FetchDatasetComponent.propTypes = {
-	dataSets: PropTypes.object.isRequired,
-	dataset: PropTypes.string.isRequired,
-	project: PropTypes.string.isRequired,
+	datasets: PropTypes.object.isRequired,
+	path: PropTypes.string.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

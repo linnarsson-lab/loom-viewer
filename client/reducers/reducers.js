@@ -44,19 +44,19 @@ function update(state, action) {
 }
 
 function updateViewState(state, action) {
-	let { datasetName, viewState } = action;
-	viewState = merge(state.dataSets[datasetName].viewState, viewState);
+	let { path, viewState } = action;
+	viewState = merge(state.list[path].viewState, viewState);
 	return merge(state,
 		{
-			dataSets: {
-				[datasetName]: { viewState },
+			list: {
+				[path]: { viewState },
 			},
 		}
 	);
 }
 
 function setViewStateURL(state, action) {
-	let { stateName, datasetName } = action;
+	let { stateName, path } = action;
 	let view = 'unknown';
 	switch (stateName) {
 		case 'heatmap':
@@ -77,8 +77,8 @@ function setViewStateURL(state, action) {
 		case 'cellMD':
 			view = 'cellmetadata';
 	}
-	const { project, viewState } = state.dataSets[datasetName];
-	const url = `/dataset/${view}/${project}/${datasetName}/${JSURL.stringify(viewState)}`;
+	const { viewState } = state.list[path];
+	const url = `/dataset/${view}/${path}/${JSURL.stringify(viewState)}`;
 	browserHistory.replace(url);
 	return state;
 }
