@@ -35,7 +35,7 @@ export const SparklineSidepanel = function (props) {
 		return () => {
 			dispatch({
 				type: FILTER_METADATA,
-				datasetName: dataset.dataset,
+				path: dataset.path,
 				stateName: 'sparkline',
 				attr: 'colAttrs',
 				key: attrKey,
@@ -45,7 +45,9 @@ export const SparklineSidepanel = function (props) {
 	};
 
 
-	const colAttrsOptions = Object.keys(col.attrs).sort();
+	const colAttrsOptions = col.keys.filter((key) => {
+		return col.attrs[key] && col.attrs[key].uniqueVal === undefined;
+	}).sort();
 	const colAttrsHC = handleChangeFactory('colAttr');
 
 	const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
