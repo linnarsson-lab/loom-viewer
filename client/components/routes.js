@@ -30,17 +30,17 @@ const Routes = (
 				<Route name='data-set-list' component={DataSetList}
 					path='/dataset' />
 				<Route name='data-set-heatmap' component={HeatmapView}
-					path='/dataset/heatmap/:project/:dataset(/:viewsettings)' />
+					path='/dataset/heatmap/:project/:filename(/:viewsettings)' />
 				<Route name='data-set-sparklines' component={SparklineView}
-					path='/dataset/sparklines/:project/:dataset(/:viewsettings)' />
+					path='/dataset/sparklines/:project/:filename(/:viewsettings)' />
 				<Route name='data-set-cells' component={LandscapeView}
-					path='/dataset/cells/:project/:dataset(/:viewsettings)' />
+					path='/dataset/cells/:project/:filename(/:viewsettings)' />
 				<Route name='data-set-genescape' component={GenescapeView}
-					path='/dataset/genes/:project/:dataset(/:viewsettings)' />
+					path='/dataset/genes/:project/:filename(/:viewsettings)' />
 				<Route name='data-set-gene-metadata' component={GeneMetadataView}
-					path='/dataset/genemetadata/:project/:dataset(/:viewsettings)' />
+					path='/dataset/genemetadata/:project/:filename(/:viewsettings)' />
 				<Route name='data-set-cell-metadata' component={CellMetadataView}
-					path='/dataset/cellmetadata/:project/:dataset(/:viewsettings)' />
+					path='/dataset/cellmetadata/:project/:filename(/:viewsettings)' />
 			</Route>
 		</Router>
 	</Provider>
