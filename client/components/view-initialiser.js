@@ -90,9 +90,9 @@ export const ViewInitialiser = function (props) {
 
 ViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	datasets: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	View: PropTypes.func.isRequired,
 	stateName: PropTypes.string.isRequired,
 	initialState: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 };
