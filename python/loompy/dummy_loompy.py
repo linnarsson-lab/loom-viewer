@@ -505,8 +505,9 @@ class LoomConnection(object):
                 self._load_attr(key, axis=1)
 
         self.attrs = LoomAttributeManager(self.file)
+        matrix = self.file["matrix"][:]
         self.file.close()
-        self.file = FakeH5File(self.matrix, self.row_attrs, self.col_attrs)
+        self.file = FakeH5File(matrix, self.row_attrs, self.col_attrs)
 
     def _save_attr(self, name, values, axis):
         """Save an attribute to the file, nothing else
@@ -526,995 +527,995 @@ class LoomConnection(object):
         self.file[a + name] = values
         self.file.flush()
 
-        def _load_attr(self, name, axis):
-            """
-            Load an attribute from the file, nothing else
+    def _load_attr(self, name, axis):
+        """
+        Load an attribute from the file, nothing else
 
-            Remarks:
-                    Handles ascii to unicode conversion
-                    Updates the attribute cache as well as the class attributes
-            """
-            a = ["/row_attrs/", "/col_attrs/"][axis]
+        Remarks:
+                Handles ascii to unicode conversion
+                Updates the attribute cache as well as the class attributes
+        """
+        a = ["/row_attrs/", "/col_attrs/"][axis]
 
-            if self.file[a][name].dtype.kind == 'S':
-                vals = np.array([x.decode('utf8') for x in self.file[a][name][:]])
-            else:
-                vals = self.file[a][name][:]
+        if self.file[a][name].dtype.kind == 'S':
+            vals = np.array([x.decode('utf8') for x in self.file[a][name][:]])
+        else:
+            vals = self.file[a][name][:]
 
-            if axis == 0:
-                self.row_attrs[name] = vals
-                if not hasattr(LoomConnection, name):
-                    setattr(self, name, self.row_attrs[name])
-            else:
-                self.col_attrs[name] = vals
-                if not hasattr(LoomConnection,name):
-                    setattr(self, name, self.col_attrs[name])
+        if axis == 0:
+            self.row_attrs[name] = vals
+            if not hasattr(LoomConnection, name):
+                setattr(self, name, self.row_attrs[name])
+        else:
+            self.col_attrs[name] = vals
+            if not hasattr(LoomConnection,name):
+                setattr(self, name, self.col_attrs[name])
 
-        def _repr_html_(self):
-            """
-            Return an HTML representation of the loom file, showing the upper-left 10x10 corner.
-            """
-            rm = min(10, self.shape[0])
-            cm = min(10, self.shape[1])
-            html = "<p>"
-            if self.attrs.__contains__("title"):
-                html += "<strong>" + self.attrs["title"] + "</strong> "
-            html += "(" + str(self.shape[0]) + " genes, " + str(self.shape[1]) + " cells)<br/>"
-            html += self.file.filename + "<br/>"
-            if self.attrs.__contains__("description"):
-                html += "<em>" + self.attrs["description"] + "</em><br/>"
-            html += "<table>"
-            # Emit column attributes
-            for ca in self.col_attrs.keys():
-                html += "<tr>"
-                for ra in self.row_attrs.keys():
-                    html += "<td>&nbsp;</td>"  # Space for row attrs
-                html += "<td><strong>" + ca + ":" + self.schema["col_attrs"][ca] + "</strong></td>"  # Col attr name
-                for v in self.col_attrs[ca][:cm]:
-                    html += "<td>" + str(v) + "</td>"
-                if self.shape[1] > cm:
-                    html += "<td>...</td>"
-                html += "</tr>"
-
-            # Emit row attribute names
+    def _repr_html_(self):
+        """
+        Return an HTML representation of the loom file, showing the upper-left 10x10 corner.
+        """
+        rm = min(10, self.shape[0])
+        cm = min(10, self.shape[1])
+        html = "<p>"
+        if self.attrs.__contains__("title"):
+            html += "<strong>" + self.attrs["title"] + "</strong> "
+        html += "(" + str(self.shape[0]) + " genes, " + str(self.shape[1]) + " cells)<br/>"
+        html += self.file.filename + "<br/>"
+        if self.attrs.__contains__("description"):
+            html += "<em>" + self.attrs["description"] + "</em><br/>"
+        html += "<table>"
+        # Emit column attributes
+        for ca in self.col_attrs.keys():
             html += "<tr>"
             for ra in self.row_attrs.keys():
-                html += "<td><strong>" + ra + ":" + self.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name
-            html += "<td>&nbsp;</td>"  # Space for col attrs
-            for v in range(cm):
-                html += "<td>&nbsp;</td>"
+                html += "<td>&nbsp;</td>"  # Space for row attrs
+            html += "<td><strong>" + ca + ":" + self.schema["col_attrs"][ca] + "</strong></td>"  # Col attr name
+            for v in self.col_attrs[ca][:cm]:
+                html += "<td>" + str(v) + "</td>"
             if self.shape[1] > cm:
                 html += "<td>...</td>"
             html += "</tr>"
 
-            # Emit row attr values and matrix values
-            for row in range(rm):
-                html += "<tr>"
-                for ra in self.row_attrs.keys():
-                    html += "<td>" + str(self.row_attrs[ra][row]) + "</td>"
-                html += "<td>&nbsp;</td>"  # Space for col attrs
+        # Emit row attribute names
+        html += "<tr>"
+        for ra in self.row_attrs.keys():
+            html += "<td><strong>" + ra + ":" + self.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name
+        html += "<td>&nbsp;</td>"  # Space for col attrs
+        for v in range(cm):
+            html += "<td>&nbsp;</td>"
+        if self.shape[1] > cm:
+            html += "<td>...</td>"
+        html += "</tr>"
 
-                for v in self[row, :cm]:
-                    html += "<td>" + str(v) + "</td>"
-                if self.shape[1] > cm:
-                    html += "<td>...</td>"
-                html += "</tr>"
-            # Emit ellipses
-            if self.shape[0] > rm:
-                html += "<tr>"
-                for v in range(rm + 1 + len(self.row_attrs.keys())):
-                    html += "<td>...</td>"
-                if self.shape[1] > cm:
-                    html += "<td>...</td>"
-                html += "</tr>"
-            html += "</table>"
-            return html
+        # Emit row attr values and matrix values
+        for row in range(rm):
+            html += "<tr>"
+            for ra in self.row_attrs.keys():
+                html += "<td>" + str(self.row_attrs[ra][row]) + "</td>"
+            html += "<td>&nbsp;</td>"  # Space for col attrs
 
-        def __getitem__(self, slice):
-            """
-            Get a slice of the main matrix.
+            for v in self[row, :cm]:
+                html += "<td>" + str(v) + "</td>"
+            if self.shape[1] > cm:
+                html += "<td>...</td>"
+            html += "</tr>"
+        # Emit ellipses
+        if self.shape[0] > rm:
+            html += "<tr>"
+            for v in range(rm + 1 + len(self.row_attrs.keys())):
+                html += "<td>...</td>"
+            if self.shape[1] > cm:
+                html += "<td>...</td>"
+            html += "</tr>"
+        html += "</table>"
+        return html
 
-            Args:
-                    slice (slice):  A slice object (see http://docs.h5py.org/en/latest/high/dataset.html)
+    def __getitem__(self, slice):
+        """
+        Get a slice of the main matrix.
 
-            Returns:
-                    Nothing.
-            """
-            return self.file['matrix'].__getitem__(slice)
+        Args:
+                slice (slice):  A slice object (see http://docs.h5py.org/en/latest/high/dataset.html)
 
-        def close(self):
-            """
-            Close the connection. After this, the connection object becomes invalid.
-            """
-            self.file.close()
+        Returns:
+                Nothing.
+        """
+        return self.file['matrix'].__getitem__(slice)
 
-        def add_columns(self, submatrix, col_attrs):
-            """
-            Add columns of data and attribute values to the dataset.
+    def close(self):
+        """
+        Close the connection. After this, the connection object becomes invalid.
+        """
+        self.file.close()
 
-            Args:
-                    submatrix (numpy.ndarray):      An N-by-M matrix of float32s (N rows, M columns)
+    def add_columns(self, submatrix, col_attrs):
+        """
+        Add columns of data and attribute values to the dataset.
 
-                    col_attrs (dict):                       Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
+        Args:
+                submatrix (numpy.ndarray):      An N-by-M matrix of float32s (N rows, M columns)
 
-            Returns:
-                    Nothing.
+                col_attrs (dict):                       Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
 
-            Note that this will modify the underlying HDF5 file, which will interfere with any concurrent readers.
-            """
-            if not np.isfinite(submatrix).all():
-                raise ValueError("INF and NaN not allowed in loom matrix")
+        Returns:
+                Nothing.
 
-            if submatrix.shape[0] != self.shape[0]:
-                raise ValueError("New submatrix must have same number of rows as existing matrix")
+        Note that this will modify the underlying HDF5 file, which will interfere with any concurrent readers.
+        """
+        if not np.isfinite(submatrix).all():
+            raise ValueError("INF and NaN not allowed in loom matrix")
 
-            submatrix = submatrix.astype("float32")
+        if submatrix.shape[0] != self.shape[0]:
+            raise ValueError("New submatrix must have same number of rows as existing matrix")
 
-            for key in self.col_attrs.keys():
-                if not key in col_attrs:
-                    raise KeyError("Every column attribute must be provided ('%s' is missing)" % key)
+        submatrix = submatrix.astype("float32")
 
-            for key, vals in col_attrs.items():
-                if not key in self.col_attrs:
-                    raise KeyError("Extra column attributes are not allowed ('%s' is not in file)" % key)
-                if len(vals) != submatrix.shape[1]:
-                    raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
+        for key in self.col_attrs.keys():
+            if not key in col_attrs:
+                raise KeyError("Every column attribute must be provided ('%s' is missing)" % key)
 
-            n_cols = submatrix.shape[1] + self.shape[1]
-            for key, vals in col_attrs.items():
-                vals = np.array(vals)
-                temp = self.file['/col_attrs/' + key][:]
-                casting_rule_dtype = np.result_type(temp, vals)
-                vals = vals.astype(casting_rule_dtype)
-                temp = temp.astype(casting_rule_dtype)
-                temp.resize((n_cols,))
-                temp[self.shape[1]:] = vals
-                if temp.dtype.type is np.str_:
-                    temp = np.array([x.encode('ascii', 'ignore') for x in temp])
-                del self.file['/col_attrs/' + key]
-                self.file['/col_attrs/' + key] = temp
-                self.col_attrs[key] = self.file['/col_attrs/' + key]
-            self.file['/matrix'].resize(n_cols, axis=1)
-            self.file['/matrix'][:, self.shape[1]:n_cols] = submatrix
-            self.shape = (self.shape[0], n_cols)
-            self.file.flush()
+        for key, vals in col_attrs.items():
+            if not key in self.col_attrs:
+                raise KeyError("Extra column attributes are not allowed ('%s' is not in file)" % key)
+            if len(vals) != submatrix.shape[1]:
+                raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
 
-        def add_loom(self, other_file, key=None):
-            """
-            Add the content of another loom file
+        n_cols = submatrix.shape[1] + self.shape[1]
+        for key, vals in col_attrs.items():
+            vals = np.array(vals)
+            temp = self.file['/col_attrs/' + key][:]
+            casting_rule_dtype = np.result_type(temp, vals)
+            vals = vals.astype(casting_rule_dtype)
+            temp = temp.astype(casting_rule_dtype)
+            temp.resize((n_cols,))
+            temp[self.shape[1]:] = vals
+            if temp.dtype.type is np.str_:
+                temp = np.array([x.encode('ascii', 'ignore') for x in temp])
+            del self.file['/col_attrs/' + key]
+            self.file['/col_attrs/' + key] = temp
+            self.col_attrs[key] = self.file['/col_attrs/' + key]
+        self.file['/matrix'].resize(n_cols, axis=1)
+        self.file['/matrix'][:, self.shape[1]:n_cols] = submatrix
+        self.shape = (self.shape[0], n_cols)
+        self.file.flush()
 
-            Args:
-                    other_file (str):       filename of the loom file to append
+    def add_loom(self, other_file, key=None):
+        """
+        Add the content of another loom file
 
-            Returns:
-                    Nothing, but adds the loom file. Note that the other loom file must have exactly the same
-                    number of rows, in the same order, and must have exactly the same column attributes.
-            """
-            # Connect to the loom files
-            other = connect(other_file)
+        Args:
+                other_file (str):       filename of the loom file to append
 
-            # Sanity checks
-            if other.shape[0] != self.shape[0]:
-                raise ValueError("The two loom files have different numbers of rows")
-            if key is not None:
-                pk1 = other.row_attrs[key]
-                pk2 = self.row_attrs[key]
-                for ix,val in enumerate(pk1):
-                    if pk2[ix] != val:
-                        raise ValueError("Primary keys are not identical")
+        Returns:
+                Nothing, but adds the loom file. Note that the other loom file must have exactly the same
+                number of rows, in the same order, and must have exactly the same column attributes.
+        """
+        # Connect to the loom files
+        other = connect(other_file)
 
-            todel = []
-            for ca in other.col_attrs.keys():
-                if not ca in self.col_attrs:
-                    logging.warn("Removing column attribute %s which was missing in one file", ca)
-                    todel.append(ca)
-            for ca in todel:
-                other.delete_attr(ca, axis=1)
+        # Sanity checks
+        if other.shape[0] != self.shape[0]:
+            raise ValueError("The two loom files have different numbers of rows")
+        if key is not None:
+            pk1 = other.row_attrs[key]
+            pk2 = self.row_attrs[key]
+            for ix,val in enumerate(pk1):
+                if pk2[ix] != val:
+                    raise ValueError("Primary keys are not identical")
 
-            todel = []
-            for ca in self.col_attrs.keys():
-                if not ca in other.col_attrs:
-                    logging.warn("Removing column attribute %s which was missing in one file", ca)
-                    todel.append(ca)
-            for ca in todel:
-                self.delete_attr(ca, axis=1)
+        todel = []
+        for ca in other.col_attrs.keys():
+            if not ca in self.col_attrs:
+                logging.warn("Removing column attribute %s which was missing in one file", ca)
+                todel.append(ca)
+        for ca in todel:
+            other.delete_attr(ca, axis=1)
 
-            self.add_columns(other[:, :], other.col_attrs)
+        todel = []
+        for ca in self.col_attrs.keys():
+            if not ca in other.col_attrs:
+                logging.warn("Removing column attribute %s which was missing in one file", ca)
+                todel.append(ca)
+        for ca in todel:
+            self.delete_attr(ca, axis=1)
 
-        def delete_attr(self, name, axis=0, raise_on_missing=True):
-            """
-            Permanently delete an existing attribute and all its values
+        self.add_columns(other[:, :], other.col_attrs)
 
-            Args:
+    def delete_attr(self, name, axis=0, raise_on_missing=True):
+        """
+        Permanently delete an existing attribute and all its values
 
-                    name (str):     Name of the attribute to remove
-                    axis (int):             Axis of the attribute (0 = rows, 1 = columns)
+        Args:
 
-            Returns:
-                    Nothing.
-            """
-            if axis == 0:
-                if not name in self.row_attrs:
-                    if raise_on_missing:
-                        raise KeyError("Row attribute " + name + " does not exist")
-                    else:
-                        return
-                del self.row_attrs[name]
-                del self.file['/row_attrs/' + name]
-                if hasattr(self, name):
-                    delattr(self, name)
+                name (str):     Name of the attribute to remove
+                axis (int):             Axis of the attribute (0 = rows, 1 = columns)
 
-            elif axis == 1:
-                if not name in self.col_attrs:
-                    if raise_on_missing:
-                        raise KeyError("Column attribute " + name + " does not exist")
-                    else:
-                        return
-                del self.col_attrs[name]
-                del self.file['/col_attrs/' + name]
-                if hasattr(self, name):
-                    delattr(self, name)
-            else:
-                raise ValueError("Axis must be 0 or 1")
-
-            self.file.flush()
-
-        def set_attr(self, name, values, axis=0, dtype=None):
-            """
-            Create or modify an attribute.
-
-            Args:
-                    name (str):                     Name of the attribute
-                    values (numpy.ndarray): Array of values of length equal to the axis length
-                    axis (int):                             Axis of the attribute (0 = rows, 1 = columns)
-
-            Returns:
-                    Nothing.
-
-            This will overwrite any existing attribute of the same name.
-            """
-            if dtype is not None:
-                raise DeprecationWarning("Data type should no longer be provided")
-
-            self.delete_attr(name, axis, raise_on_missing=False)
-            self._save_attr(name, values, axis)
-            self._load_attr(name, axis)
-
-        def set_attr_bydict(self, name, fromattr, dict, new_dtype=None, axis=0, default=None):
-            """
-            Create or modify an attribute by mapping source values to target values.
-
-            Args:
-                    name (str):                     Name of the destination attribute
-
-                    fromattr (str):                 Name of the source attribute
-
-                    dict (dict):                    Key-value mapping from source to target values
-
-                    axis (int):                             Axis of the attribute (0 = rows, 1 = columns)
-
-                    default: (float or str):        Default target value to use if no mapping exists for a source value
-
-            Returns:
-                    Nothing.
-
-            This will overwrite any existing attribute of the same name. It is perfectly possible to map an
-            attribute to itself (in-place).
-            """
-            if new_dtype is not None:
-                raise DeprecationWarning("'new_dtype' should no longer be provided and will be ignored")
-            if axis == 0:
-                if not self.row_attrs.__contains__(fromattr):
-                    raise KeyError("Row attribute %s does not exist" % fromattr)
-                if default == None:
-                    values = [dict[x] if dict.__contains__(x) else x for x in self.row_attrs[fromattr]]
+        Returns:
+                Nothing.
+        """
+        if axis == 0:
+            if not name in self.row_attrs:
+                if raise_on_missing:
+                    raise KeyError("Row attribute " + name + " does not exist")
                 else:
-                    values = [dict[x] if dict.__contains__(x) else default for x in self.row_attrs[fromattr]]
-                self.set_attr(name, values, axis=0)
+                    return
+            del self.row_attrs[name]
+            del self.file['/row_attrs/' + name]
+            if hasattr(self, name):
+                delattr(self, name)
 
-            if axis == 1:
-                if not self.col_attrs.__contains__(fromattr):
-                    raise KeyError("Column attribute %s does not exist" % fromattr)
-                if default == None:
-                    values = [dict[x] if dict.__contains__(x) else x for x in self.col_attrs[fromattr]]
+        elif axis == 1:
+            if not name in self.col_attrs:
+                if raise_on_missing:
+                    raise KeyError("Column attribute " + name + " does not exist")
                 else:
-                    values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]
-                self.set_attr(name, values, axis=1)
-
-        def get_edges(self, name, axis):
-            if axis == 0:
-                return (self.file["/row_edges/" + name + "/a"], self.file["/row_edges/" + name + "/b"], self.file["/row_edges/" + name + "/w"])
-            if axis == 1:
-                return (self.file["/col_edges/" + name + "/a"], self.file["/col_edges/" + name + "/b"], self.file["/col_edges/" + name + "/w"])
+                    return
+            del self.col_attrs[name]
+            del self.file['/col_attrs/' + name]
+            if hasattr(self, name):
+                delattr(self, name)
+        else:
             raise ValueError("Axis must be 0 or 1")
 
-        def set_edges(self, name, a, b, w, axis=0):
-            if not a.dtype.kind == 'i':
-                raise ValueError("Nodes must be integers")
-            if not b.dtype.kind == 'i':
-                raise ValueError("Nodes must be integers")
-            if axis == 1:
-                if a.max() > self.shape[1] or a.min() < 0:
-                    raise ValueError("Nodes out of range")
-                if b.max() > self.shape[1] or b.min() < 0:
-                    raise ValueError("Nodes out of range")
-                self.file["/col_edges/" + name + "/a"] = a
-                self.file["/col_edges/" + name + "/b"] = b
-                self.file["/col_edges/" + name + "/w"] = w
-            elif axis == 0:
-                if a.max() > self.shape[0] or a.min() < 0:
-                    raise ValueError("Nodes out of range")
-                if b.max() > self.shape[0] or b.min() < 0:
-                    raise ValueError("Nodes out of range")
-                self.file["/row_edges/" + name + "/a"] = a
-                self.file["/row_edges/" + name + "/b"] = b
-                self.file["/row_edges/" + name + "/w"] = w
+        self.file.flush()
+
+    def set_attr(self, name, values, axis=0, dtype=None):
+        """
+        Create or modify an attribute.
+
+        Args:
+                name (str):                     Name of the attribute
+                values (numpy.ndarray): Array of values of length equal to the axis length
+                axis (int):                             Axis of the attribute (0 = rows, 1 = columns)
+
+        Returns:
+                Nothing.
+
+        This will overwrite any existing attribute of the same name.
+        """
+        if dtype is not None:
+            raise DeprecationWarning("Data type should no longer be provided")
+
+        self.delete_attr(name, axis, raise_on_missing=False)
+        self._save_attr(name, values, axis)
+        self._load_attr(name, axis)
+
+    def set_attr_bydict(self, name, fromattr, dict, new_dtype=None, axis=0, default=None):
+        """
+        Create or modify an attribute by mapping source values to target values.
+
+        Args:
+                name (str):                     Name of the destination attribute
+
+                fromattr (str):                 Name of the source attribute
+
+                dict (dict):                    Key-value mapping from source to target values
+
+                axis (int):                             Axis of the attribute (0 = rows, 1 = columns)
+
+                default: (float or str):        Default target value to use if no mapping exists for a source value
+
+        Returns:
+                Nothing.
+
+        This will overwrite any existing attribute of the same name. It is perfectly possible to map an
+        attribute to itself (in-place).
+        """
+        if new_dtype is not None:
+            raise DeprecationWarning("'new_dtype' should no longer be provided and will be ignored")
+        if axis == 0:
+            if not self.row_attrs.__contains__(fromattr):
+                raise KeyError("Row attribute %s does not exist" % fromattr)
+            if default == None:
+                values = [dict[x] if dict.__contains__(x) else x for x in self.row_attrs[fromattr]]
             else:
-                raise ValueError("Axis must be 0 or 1")
+                values = [dict[x] if dict.__contains__(x) else default for x in self.row_attrs[fromattr]]
+            self.set_attr(name, values, axis=0)
 
-        def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
-            if axis == 1:
-                cols_per_chunk = batch_size
-                ix = 0
-                while ix < self.shape[1]:
-                    cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
+        if axis == 1:
+            if not self.col_attrs.__contains__(fromattr):
+                raise KeyError("Column attribute %s does not exist" % fromattr)
+            if default == None:
+                values = [dict[x] if dict.__contains__(x) else x for x in self.col_attrs[fromattr]]
+            else:
+                values = [dict[x] if dict.__contains__(x) else default for x in self.col_attrs[fromattr]]
+            self.set_attr(name, values, axis=1)
 
-                    selection = cells - ix
-                    # Pick out the cells that are in this batch
-                    selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
-                    if selection.shape[0] == 0:
-                        continue
+    def get_edges(self, name, axis):
+        if axis == 0:
+            return (self.file["/row_edges/" + name + "/a"], self.file["/row_edges/" + name + "/b"], self.file["/row_edges/" + name + "/w"])
+        if axis == 1:
+            return (self.file["/col_edges/" + name + "/a"], self.file["/col_edges/" + name + "/b"], self.file["/col_edges/" + name + "/w"])
+        raise ValueError("Axis must be 0 or 1")
 
-                    # Load the whole chunk from the file, then extract genes and cells using fancy indexing
-                    vals = self[:, ix:ix + cols_per_chunk]
-                    if genes is not None:
-                        vals = vals[genes, :]
-                    if cells is not None:
-                        vals = vals[:, selection]
+    def set_edges(self, name, a, b, w, axis=0):
+        if not a.dtype.kind == 'i':
+            raise ValueError("Nodes must be integers")
+        if not b.dtype.kind == 'i':
+            raise ValueError("Nodes must be integers")
+        if axis == 1:
+            if a.max() > self.shape[1] or a.min() < 0:
+                raise ValueError("Nodes out of range")
+            if b.max() > self.shape[1] or b.min() < 0:
+                raise ValueError("Nodes out of range")
+            self.file["/col_edges/" + name + "/a"] = a
+            self.file["/col_edges/" + name + "/b"] = b
+            self.file["/col_edges/" + name + "/w"] = w
+        elif axis == 0:
+            if a.max() > self.shape[0] or a.min() < 0:
+                raise ValueError("Nodes out of range")
+            if b.max() > self.shape[0] or b.min() < 0:
+                raise ValueError("Nodes out of range")
+            self.file["/row_edges/" + name + "/a"] = a
+            self.file["/row_edges/" + name + "/b"] = b
+            self.file["/row_edges/" + name + "/w"] = w
+        else:
+            raise ValueError("Axis must be 0 or 1")
 
-                    yield (ix, selection, vals)
-                    ix = ix + cols_per_chunk
+    def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
+        if axis == 1:
+            cols_per_chunk = batch_size
+            ix = 0
+            while ix < self.shape[1]:
+                cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
 
-            if axis == 0:
-                rows_per_chunk = batch_size
-                ix = 0
-                while ix < self.shape[0]:
-                    rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
+                selection = cells - ix
+                # Pick out the cells that are in this batch
+                selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
+                if selection.shape[0] == 0:
+                    continue
 
-                    selection = genes - ix
-                    # Pick out the genes that are in this batch
-                    selection = selection[np.where(np.logical_and(selection >= 0, selection < rows_per_chunk))[0]]
-                    if selection.shape[0] == 0:
-                        continue
+                # Load the whole chunk from the file, then extract genes and cells using fancy indexing
+                vals = self[:, ix:ix + cols_per_chunk]
+                if genes is not None:
+                    vals = vals[genes, :]
+                if cells is not None:
+                    vals = vals[:, selection]
 
-                    # Load the whole chunk from the file, then extract genes and cells using fancy indexing
-                    vals = ds[ix:ix + rows_per_chunk, :]
-                    if genes is not None:
-                        vals = vals[selection, :]
-                    if cells is not None:
-                        vals = vals[:, cells]
+                yield (ix, selection, vals)
+                ix = ix + cols_per_chunk
 
-                    yield (ix, selection, vals)
-                    ix = ix + cols_per_chunk
+        if axis == 0:
+            rows_per_chunk = batch_size
+            ix = 0
+            while ix < self.shape[0]:
+                rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
 
-        def map(self, f, axis=0, chunksize=1000, selection=None):
-            """
-            Apply a function along an axis without loading the entire dataset in memory.
+                selection = genes - ix
+                # Pick out the genes that are in this batch
+                selection = selection[np.where(np.logical_and(selection >= 0, selection < rows_per_chunk))[0]]
+                if selection.shape[0] == 0:
+                    continue
 
-            Args:
-                    f (func or list of func):               Function(s) that takes a numpy ndarray as argument
+                # Load the whole chunk from the file, then extract genes and cells using fancy indexing
+                vals = ds[ix:ix + rows_per_chunk, :]
+                if genes is not None:
+                    vals = vals[selection, :]
+                if cells is not None:
+                    vals = vals[:, cells]
 
-                    axis (int):             Axis along which to apply the function (0 = rows, 1 = columns)
+                yield (ix, selection, vals)
+                ix = ix + cols_per_chunk
 
-                    chunksize (int): Number of rows (columns) to load per chunk
+    def map(self, f, axis=0, chunksize=1000, selection=None):
+        """
+        Apply a function along an axis without loading the entire dataset in memory.
 
-                    selection (array of bool): Columns (rows) to include
+        Args:
+                f (func or list of func):               Function(s) that takes a numpy ndarray as argument
 
-            Returns:
-                    numpy.ndarray result of function application
+                axis (int):             Axis along which to apply the function (0 = rows, 1 = columns)
 
-                    If you supply a list of functions, the result will be a list of numpy arrays. This is more
-                    efficient than repeatedly calling map() one function at a time.
-            """
-            f_list = f
-            if hasattr(f, '__call__'):
-                f_list = [f]
+                chunksize (int): Number of rows (columns) to load per chunk
 
-            result = []
-            if axis == 0:
-                rows_per_chunk = chunksize
+                selection (array of bool): Columns (rows) to include
+
+        Returns:
+                numpy.ndarray result of function application
+
+                If you supply a list of functions, the result will be a list of numpy arrays. This is more
+                efficient than repeatedly calling map() one function at a time.
+        """
+        f_list = f
+        if hasattr(f, '__call__'):
+            f_list = [f]
+
+        result = []
+        if axis == 0:
+            rows_per_chunk = chunksize
+            for i in range(len(f_list)):
+                result.append(np.zeros(self.shape[0]))
+            ix = 0
+            while ix < self.shape[0]:
+                rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
+                if selection is not None:
+                    chunk = self[ix:ix + rows_per_chunk, :][:, selection]
+                else:
+                    chunk = self[ix:ix + rows_per_chunk, :]
                 for i in range(len(f_list)):
-                    result.append(np.zeros(self.shape[0]))
-                ix = 0
-                while ix < self.shape[0]:
-                    rows_per_chunk = min(self.shape[0] - ix, rows_per_chunk)
-                    if selection is not None:
-                        chunk = self[ix:ix + rows_per_chunk, :][:, selection]
-                    else:
-                        chunk = self[ix:ix + rows_per_chunk, :]
-                    for i in range(len(f_list)):
-                        result[i][ix:ix + rows_per_chunk] = np.apply_along_axis(f_list[i], 1, chunk)
-                    ix = ix + rows_per_chunk
-            elif axis == 1:
-                cols_per_chunk = chunksize
+                    result[i][ix:ix + rows_per_chunk] = np.apply_along_axis(f_list[i], 1, chunk)
+                ix = ix + rows_per_chunk
+        elif axis == 1:
+            cols_per_chunk = chunksize
+            for i in range(len(f_list)):
+                result.append(np.zeros(self.shape[1]))
+            ix = 0
+            while ix < self.shape[1]:
+                cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
+                if selection is not None:
+                    chunk = self[:, ix:ix + cols_per_chunk][selection, :]
+                else:
+                    chunk = self[:, ix:ix + cols_per_chunk]
                 for i in range(len(f_list)):
-                    result.append(np.zeros(self.shape[1]))
-                ix = 0
-                while ix < self.shape[1]:
-                    cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
-                    if selection is not None:
-                        chunk = self[:, ix:ix + cols_per_chunk][selection, :]
-                    else:
-                        chunk = self[:, ix:ix + cols_per_chunk]
-                    for i in range(len(f_list)):
-                        result[i][ix:ix + cols_per_chunk] = np.apply_along_axis(f_list[i], 0, chunk)
-                    ix = ix + cols_per_chunk
-            if hasattr(f, '__call__'):
-                return result[0]
-            return result
+                    result[i][ix:ix + cols_per_chunk] = np.apply_along_axis(f_list[i], 0, chunk)
+                ix = ix + cols_per_chunk
+        if hasattr(f, '__call__'):
+            return result[0]
+        return result
 
-        def pairwise(self, f, asfile, axis=0, pass_attrs=False):
-            """
-            Compute a matrix of pairwise values by applying f to each pair of rows (columns)
+    def pairwise(self, f, asfile, axis=0, pass_attrs=False):
+        """
+        Compute a matrix of pairwise values by applying f to each pair of rows (columns)
 
-            Args:
-                    f (lambda):                     The function f(a,b) which will be called with vectors a and b and should return a single float
-                    asfile (str):           The name of a new loom file which will be created to hold the result
-                    axis (int):                     The axis over which to apply the function (0 = rows, 1 = columns)
-                    pass_attrs (bool):      If true, dicts of attributes will be passed as extra arguments to f(a,b,attr1,attr2)
-            Returns:
-                    Nothing, but a new .loom file will be created
+        Args:
+                f (lambda):                     The function f(a,b) which will be called with vectors a and b and should return a single float
+                asfile (str):           The name of a new loom file which will be created to hold the result
+                axis (int):                     The axis over which to apply the function (0 = rows, 1 = columns)
+                pass_attrs (bool):      If true, dicts of attributes will be passed as extra arguments to f(a,b,attr1,attr2)
+        Returns:
+                Nothing, but a new .loom file will be created
 
-            The function f() will be called with two vectors, a and b, corresponding to pairs of rows (if axis = 0) or
-            columns (if axis = 1). Optionally, the corresponding row (column) attributes will be passed as two extra
-            arguments to f, each as a dictionary of key/value pairs.
+        The function f() will be called with two vectors, a and b, corresponding to pairs of rows (if axis = 0) or
+        columns (if axis = 1). Optionally, the corresponding row (column) attributes will be passed as two extra
+        arguments to f, each as a dictionary of key/value pairs.
 
-            Note that the full result does not need to fit in main memory. A new loom file will be created with the same
-            row attributes (if axis == 0) or column attributes (if axis == 1) as the current file, but they will be
-            duplicated as both row and column attributes.
-            """
-            ds = None  # The loom output dataset connection
-            if axis == 0:
-                ix = 0
-                rows_per_chunk = max(1, int(15000000/self.shape[1]))
-                while ix < self.shape[0]:
-                    a = self[ix:ix + rows_per_chunk, :]
-                    submatrix = np.zeros((self.shape[0], a.shape[0]))
-                    jx = 0
-                    while jx < self.shape[0]:
-                        b = self[jx:jx + rows_per_chunk, :]
-                        for i in range(a.shape[0]):
-                            for j in range(b.shape[0]):
-                                if pass_attrs:
-                                    attr1 = {key: v[ix + i] for (key, v) in self.row_attrs.items()}
-                                    attr2 = {key: v[jx + j] for (key, v) in self.row_attrs.items()}
-                                    submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
-                                else:
-                                    submatrix[jx + j, i] = f(a[i], b[j])
-                        jx += rows_per_chunk
-                    # Get the subset of row attrs for this chunk
-                    ca = {key: v[ix:ix + rows_per_chunk] for (key, v) in self.row_attrs.items()}
-                    if ds == None:
-                        create(asfile, submatrix, self.row_attrs, ca)
-                        ds = connect(asfile)
-                    else:
-                        ds.add_columns(submatrix, ca)
-                    ix += rows_per_chunk
-            if axis == 1:
-                ix = 0
-                cols_per_chunk = max(1, int(15000000/self.shape[0]))
-                while ix < self.shape[1]:
-                    a = self[:, ix:ix + cols_per_chunk]
-                    submatrix = np.zeros((self.shape[1], a.shape[1]))
-                    jx = 0
-                    while jx < self.shape[1]:
-                        b = self[:, jx:jx + cols_per_chunk]
-                        for i in range(a.shape[1]):
-                            for j in range(b.shape[1]):
-                                if pass_attrs:
-                                    attr1 = {key: v[ix + i] for (key, v) in self.col_attrs.items()}
-                                    attr2 = {key: v[jx + j] for (key, v) in self.col_attrs.items()}
-                                    submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
-                                else:
-                                    submatrix[jx + j, i] = f(a[i], b[j])
-                        jx += cols_per_chunk
-                    # Get the subset of row attrs for this chunk
-                    ca = {key: v[ix:ix + cols_per_chunk] for (key, v) in self.col_attrs.items()}
-                    if ds == None:
-                        create(asfile, submatrix, self.col_attrs, ca)
-                        ds = connect(asfile)
-                    else:
-                        ds.add_columns(submatrix, ca)
-                    ix += cols_per_chunk
-            if ds != None:
-                ds.close()
+        Note that the full result does not need to fit in main memory. A new loom file will be created with the same
+        row attributes (if axis == 0) or column attributes (if axis == 1) as the current file, but they will be
+        duplicated as both row and column attributes.
+        """
+        ds = None  # The loom output dataset connection
+        if axis == 0:
+            ix = 0
+            rows_per_chunk = max(1, int(15000000/self.shape[1]))
+            while ix < self.shape[0]:
+                a = self[ix:ix + rows_per_chunk, :]
+                submatrix = np.zeros((self.shape[0], a.shape[0]))
+                jx = 0
+                while jx < self.shape[0]:
+                    b = self[jx:jx + rows_per_chunk, :]
+                    for i in range(a.shape[0]):
+                        for j in range(b.shape[0]):
+                            if pass_attrs:
+                                attr1 = {key: v[ix + i] for (key, v) in self.row_attrs.items()}
+                                attr2 = {key: v[jx + j] for (key, v) in self.row_attrs.items()}
+                                submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
+                            else:
+                                submatrix[jx + j, i] = f(a[i], b[j])
+                    jx += rows_per_chunk
+                # Get the subset of row attrs for this chunk
+                ca = {key: v[ix:ix + rows_per_chunk] for (key, v) in self.row_attrs.items()}
+                if ds == None:
+                    create(asfile, submatrix, self.row_attrs, ca)
+                    ds = connect(asfile)
+                else:
+                    ds.add_columns(submatrix, ca)
+                ix += rows_per_chunk
+        if axis == 1:
+            ix = 0
+            cols_per_chunk = max(1, int(15000000/self.shape[0]))
+            while ix < self.shape[1]:
+                a = self[:, ix:ix + cols_per_chunk]
+                submatrix = np.zeros((self.shape[1], a.shape[1]))
+                jx = 0
+                while jx < self.shape[1]:
+                    b = self[:, jx:jx + cols_per_chunk]
+                    for i in range(a.shape[1]):
+                        for j in range(b.shape[1]):
+                            if pass_attrs:
+                                attr1 = {key: v[ix + i] for (key, v) in self.col_attrs.items()}
+                                attr2 = {key: v[jx + j] for (key, v) in self.col_attrs.items()}
+                                submatrix[jx + j, i] = f(a[i], b[j], attr1, attr2)
+                            else:
+                                submatrix[jx + j, i] = f(a[i], b[j])
+                    jx += cols_per_chunk
+                # Get the subset of row attrs for this chunk
+                ca = {key: v[ix:ix + cols_per_chunk] for (key, v) in self.col_attrs.items()}
+                if ds == None:
+                    create(asfile, submatrix, self.col_attrs, ca)
+                    ds = connect(asfile)
+                else:
+                    ds.add_columns(submatrix, ca)
+                ix += cols_per_chunk
+        if ds != None:
+            ds.close()
 
-        def corr_matrix(self, axis = 0, log=False):
-            """
-            Compute correlation matrix without casting to float64.
+    def corr_matrix(self, axis = 0, log=False):
+        """
+        Compute correlation matrix without casting to float64.
 
-            Args:
-                    axis (int):                     The axis along which to compute the correlation matrix.
+        Args:
+                axis (int):                     The axis along which to compute the correlation matrix.
 
-                    log (bool):                     If true, compute correlation on log(x+1) values
+                log (bool):                     If true, compute correlation on log(x+1) values
 
-            Returns:
-                    numpy.ndarray of float32 correlation coefficents
+        Returns:
+                numpy.ndarray of float32 correlation coefficents
 
-            This function avoids casting intermediate values to double (float64), to reduce memory footprint.
-            If row attribute _Excluded exists, those rows will be excluded.
-            """
+        This function avoids casting intermediate values to double (float64), to reduce memory footprint.
+        If row attribute _Excluded exists, those rows will be excluded.
+        """
+        if self.row_attrs.__contains__("_Excluded"):
+            selection = (1-self.row_attrs["_Excluded"]).astype('bool')
+            data = self[selection,:]
+
+        if axis == 1:
+            data = data.T
+        N = data.shape[1]
+        if log:
+            data = np.log(data + 1)
+        data -= data.mean(axis=1, keepdims=True)
+        data = (np.dot(data, data.T) / (N-1))
+        d = np.diagonal(data)
+        data = data / np.sqrt(np.outer(d,d))
+        if axis == 1:
+            return data.T
+        return np.nan_to_num(data)
+
+    def permute(self, ordering, axis):
+        """
+        Permute the dataset along the indicated axis.
+
+        Args:
+                ordering (list of int):         The desired order along the axis
+
+                axis (int):                                     The axis along which to permute
+
+        Returns:
+                Nothing.
+        """
+        if self.file.__contains__("tiles"):
+            del self.file['tiles']
+
+        ordering = list(np.array(ordering).flatten())   # Flatten the ordering, in case we got a column vector
+        if axis == 0:
+            chunksize = 5000
+            start = 0
+            while start < self.shape[1]:
+                submatrix = self.file['matrix'][:, start:start + chunksize]
+                self.file['matrix'][:, start:start + chunksize] = submatrix[ordering, :]
+                start = start + chunksize
+            for key in self.row_attrs.keys():
+                self.row_attrs[key] = self.row_attrs[key][ordering]
+            self.file.flush()
+        if axis == 1:
+            chunksize = 100000000//self.shape[1]
+            start = 0
+            while start < self.shape[0]:
+                submatrix = self.file['matrix'][start:start + chunksize, :]
+                self.file['matrix'][start:start + chunksize, :] = submatrix[:, ordering]
+                start = start + chunksize
+            for key in self.col_attrs.keys():
+                self.col_attrs[key] = self.col_attrs[key][ordering]
+            self.file.flush()
+
+    #####################
+    # FEATURE SELECTION #
+    #####################
+
+    def _valid_gene(data):
+        """
+                Amit's criteria:
+                valid = find(sum(data>0,2)>20 & sum(data>0,2)<length(data(1,:))*0.6);
+        """
+        nnz = np.count_nonzero(data)
+        return nnz >= 20 and nnz < (0.6*data.shape[0])
+
+    def feature_selection(self, n_genes, method="SVR", cells=None):
+        """
+        Fits a noise model (CV vs mean)
+
+        Args:
+                n_genes (int):  number of genes to include
+                cells (array of bool): cells to include when computing mean and CV (or None)
+
+        Returns:
+                Nothing.
+
+        This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
+        """
+        (mu, std, valid) = self.map((np.mean, np.std, _valid_gene), axis=0, selection=cells)
+        cv = std/mu
+        log2_m = np.log2(mu)
+        excluded = (log2_m == float("-inf"))
+        log2_m[log2_m == float("-inf")] = 0
+        log2_cv = np.log2(cv)
+        excluded = np.logical_or(excluded, log2_cv == float("nan"))
+        log2_cv = np.nan_to_num(log2_cv)
+        excluded = np.logical_or(excluded, np.logical_not(valid))
+
+        logging.debug("Selecting %i genes" % n_genes)
+        if method == "SVR":
+            logging.info("Fitting CV vs mean using SVR")
+            svr_gamma = 1000./len(mu)
+            clf = SVR(gamma=svr_gamma)
+            clf.fit(log2_m[:, np.newaxis], log2_cv)
+            fitted_fun = clf.predict
+            # Score is the relative position with respect of the fitted curve
+            score = np.log2(cv) - fitted_fun(log2_m[:, np.newaxis])
+            score = np.nan_to_num(score)
+        else:
+            logging.info("Fitting CV vs mean using least squares")
+            #Define the objective function to fit (least squares)
+            fun = lambda x, log2_m, log2_cv: sum(abs(np.log2((2.**log2_m)**(-x[0])+x[1])-log2_cv))
+            #Fit using Nelder-Mead algorythm
+            x0 = [0.5, 0.5]
+            optimization = minimize(fun, x0, args=(log2_m, log2_cv), method='Nelder-Mead')
+            params = optimization.x
+            #The fitted function
+            fitted_fun = lambda log_mu: np.log2((2.**log_mu)**(-params[0])+params[1])
+
+            # Score is the relative position with respect of the fitted curve
+            score = np.log2(cv) - fitted_fun(np.log2(mu))
+            score = np.nan_to_num(score)
+
+        threshold = np.percentile(score, 100. - n_genes/self.shape[0]*100.)
+        excluded = np.logical_or(excluded, (score < threshold)).astype('int')
+
+        logging.debug("Excluding %i genes" % excluded.sum())
+        logging.debug("Keeping %i genes" % (1-excluded).sum())
+        self.set_attr("_Noise", score, axis = 0)
+        self.set_attr("_Excluded", excluded, axis = 0)
+
+    def backspin(self,
+            numLevels=2,
+            first_run_iters=10,
+            first_run_step=0.1,
+            runs_iters=8,
+            runs_step=0.3,
+            split_limit_g=2,
+            split_limit_c=2,
+            stop_const = 1.15,
+            low_thrs=0.2):
+        """
+        Perform BackSPIN clustering
+
+        Args:
+                numLevels (int):                Number of levels (default 2)
+                first_run_iters (int):  Number of iterations at first cycle (default 10)
+                first_run_step (float): Step size for first cycle (default 0.1)
+                runs_iters (int):               Number of iterations per cycle (default 8)
+                runs_step (float):              Step size (default 0.3)
+                split_limit_g (int):    Minimum genes per cluster (default 2)
+                split_limit_c (int):    Minimum cells per cluster (default 2)
+                stop_const (float):             Stopping constant (default 1.15)
+                low_thrs (float):               Low threshold (default 0.2)
+
+        Returns:
+                Nothing, but creates attributes BackSPIN_level_{n}_group.
+        """
+        loom_backspin(self,numLevels,first_run_iters,first_run_step,runs_iters,runs_step,split_limit_g,split_limit_c,stop_const,low_thrs)
+
+
+    def compute_stats(self):
+        """
+        Compute standard aggregate statistics
+
+        Args:
+
+        Returns:
+                Nothing, but adds row and column attributes _LogMean, _LogCV, _Total
+        """
+        (mu, std, sums) = self.map((np.mean, np.std, np.sum), axis=0)
+        log2_m = np.log2(mu)
+        excluded = (log2_m == float("-inf"))
+        log2_m[log2_m == float("-inf")] = 0
+        log2_cv = np.log2(std/mu)
+        excluded = np.logical_or(excluded, log2_cv == float("nan"))
+        log2_cv = np.nan_to_num(log2_cv)
+        self.set_attr("_LogMean", log2_m, axis=0)
+        self.set_attr("_LogCV", log2_cv, axis=0)
+        self.set_attr("_Total", sums, axis=0)
+
+        (mu, std, sums) = self.map((np.mean, np.std, np.sum), axis=1)
+        log2_m = np.log2(mu)
+        excluded = (log2_m == float("-inf"))
+        log2_m[log2_m == float("-inf")] = 0
+        log2_cv = np.log2(std/mu)
+        excluded = np.logical_or(excluded, log2_cv == float("nan"))
+        log2_cv = np.nan_to_num(log2_cv)
+        self.set_attr("_LogMean", log2_m, axis=1)
+        self.set_attr("_LogCV", log2_cv, axis=1)
+        self.set_attr("_Total", sums, axis=1)
+
+
+    ##############
+    # PROJECTION #
+    ##############
+
+    def project_to_2d(self, axis = 1, perplexity = 20, n_components = 10):
+        """
+        Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
+
+        Args:
+                axis (int):                     Axis to project (0 for rows, 1 for columns, 2 for both)
+                perplexity (int):       Perplexity to use for tSNE
+                n_components (int):     Number of PCA components to use
+
+        Returns:
+                Nothing.
+
+        This method first computes a PCA using scikit-learn IncrementalPCA (which doesn't load the whole
+        dataset in RAM), then uses the top principal components to compute a tSNE projection. If row
+        attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
+        """
+        if axis == 0 or axis == 2:
+            logging.debug("Projection on rows")
+
+            # First perform PCA out of band
+            batch_size = 1000
+            logging.debug("Incremental PCA with " + str(n_components) + " components")
+            ipca = IncrementalPCA(n_components=n_components)
+            row = 0
+            while row < self.shape[0]:
+                batch = self[row:row+batch_size,:]
+                batch = np.log2(batch + 1)
+                ipca.partial_fit(batch)
+                row = row + batch_size
+
+            # Project to PCA space
+            Xtransformed = []
+            row = 0
+            while row < self.shape[0]:
+                batch = self[row:row+batch_size,:]
+                batch = np.log2(batch + 1)
+                Xbatch = ipca.transform(batch)
+                Xtransformed.append(Xbatch)
+                row = row + batch_size
+            Xtransformed = np.concatenate(Xtransformed)
+
+            # Save first two dimensions as column attributes
+            pc1 = Xtransformed[:,0]
+            pc2 = Xtransformed[:,1]
+            self.set_attr("_PC1", pc1, axis = 0)
+            self.set_attr("_PC2", pc2, axis = 0)
+
+            # Then, perform tSNE based on the top components
+            # Precompute the distance matrix
+            # This is necessary to work around a bug in sklearn TSNE 0.17
+            # (caused because pairwise_distances may give very slightly negative distances)
+            logging.debug("Computing distance matrix")
+            dists = squareform(pdist(Xtransformed, "cosine"))
+            np.clip(dists, 0, 1, dists)
+            logging.debug("Computing t-SNE")
+            model = TSNE(metric='precomputed', perplexity=perplexity)
+            tsne = model.fit_transform(dists)
+
+            # Save first two dimensions as column attributes
+            tsne1 = tsne[:,0]
+            tsne2 = tsne[:,1]
+            self.set_attr("_tSNE1", tsne1, axis = 0)
+            self.set_attr("_tSNE2", tsne2, axis = 0)
+            logging.debug("Row projection completed")
+
+        if axis == 1 or axis == 2:
+            logging.debug("Projection on columns")
+
+            # First perform PCA out of band
+            batch_size = 1000
+            selection = np.ones(self.shape[0]).astype('bool')
             if self.row_attrs.__contains__("_Excluded"):
                 selection = (1-self.row_attrs["_Excluded"]).astype('bool')
-                data = self[selection,:]
 
-            if axis == 1:
-                data = data.T
-            N = data.shape[1]
-            if log:
-                data = np.log(data + 1)
-            data -= data.mean(axis=1, keepdims=True)
-            data = (np.dot(data, data.T) / (N-1))
-            d = np.diagonal(data)
-            data = data / np.sqrt(np.outer(d,d))
-            if axis == 1:
-                return data.T
-            return np.nan_to_num(data)
+            logging.debug("Incremental PCA with " + str(n_components) + " components")
+            ipca = IncrementalPCA(n_components=n_components)
+            col = 0
+            while col < self.shape[1]:
+                batch = self[selection,col:col+batch_size].T
+                batch = np.log2(batch + 1)
+                ipca.partial_fit(batch)
+                col = col + batch_size
 
-        def permute(self, ordering, axis):
-            """
-            Permute the dataset along the indicated axis.
+            # Project to PCA space
+            Xtransformed = []
+            col = 0
+            while col < self.shape[1]:
+                batch = self.file['matrix'][selection,col:col+batch_size].T
+                batch = np.log2(batch + 1)
+                Xbatch = ipca.transform(batch)
+                Xtransformed.append(Xbatch)
+                col = col + batch_size
+            Xtransformed = np.concatenate(Xtransformed)
 
-            Args:
-                    ordering (list of int):         The desired order along the axis
+            # Save first two dimensions as column attributes
+            pc1 = Xtransformed[:,0]
+            pc2 = Xtransformed[:,1]
+            self.set_attr("_PC1", pc1, axis = 1)
+            self.set_attr("_PC2", pc2, axis = 1)
 
-                    axis (int):                                     The axis along which to permute
+            # Then, perform tSNE based on the top components
+            # Precompute the distance matrix
+            # This is necessary to work around a bug in sklearn TSNE 0.17
+            # (caused because pairwise_distances may give very slightly negative distances)
+            logging.debug("Computing distance matrix")
+            dists = squareform(pdist(Xtransformed, "cosine"))
+            np.clip(dists, 0, 1, dists)
+            logging.debug("Computing t-SNE")
+            model = TSNE(metric='precomputed', perplexity=perplexity)
+            tsne = model.fit_transform(dists)
 
-            Returns:
-                    Nothing.
-            """
-            if self.file.__contains__("tiles"):
-                del self.file['tiles']
+            # Save first two dimensions as column attributes
+            tsne1 = tsne[:,0]
+            tsne2 = tsne[:,1]
+            self.set_attr("_tSNE1", tsne1, axis = 1)
+            self.set_attr("_tSNE2", tsne2, axis = 1)
+            logging.debug("Column projection completed")
 
-            ordering = list(np.array(ordering).flatten())   # Flatten the ordering, in case we got a column vector
-            if axis == 0:
-                chunksize = 5000
-                start = 0
-                while start < self.shape[1]:
-                    submatrix = self.file['matrix'][:, start:start + chunksize]
-                    self.file['matrix'][:, start:start + chunksize] = submatrix[ordering, :]
-                    start = start + chunksize
-                for key in self.row_attrs.keys():
-                    self.row_attrs[key] = self.row_attrs[key][ordering]
-                self.file.flush()
-            if axis == 1:
-                chunksize = 100000000//self.shape[1]
-                start = 0
-                while start < self.shape[0]:
-                    submatrix = self.file['matrix'][start:start + chunksize, :]
-                    self.file['matrix'][start:start + chunksize, :] = submatrix[:, ordering]
-                    start = start + chunksize
-                for key in self.col_attrs.keys():
-                    self.col_attrs[key] = self.col_attrs[key][ordering]
-                self.file.flush()
+    #############
+    # DEEP ZOOM #
+    #############
 
-        #####################
-        # FEATURE SELECTION #
-        #####################
+    def prepare_heatmap(self):
+        if self.file.__contains__("tiles"):
+            logging.debug("Removing previous tile pyramid")
+            del self.file['tiles']
+        self.dz_get_zoom_image(0,0,8)
 
-        def _valid_gene(data):
-            """
-                    Amit's criteria:
-                    valid = find(sum(data>0,2)>20 & sum(data>0,2)<length(data(1,:))*0.6);
-            """
-            nnz = np.count_nonzero(data)
-            return nnz >= 20 and nnz < (0.6*data.shape[0])
+    def dz_get_max_byrow(self):
+        """
+        Calculate maximal values by row and cache in the file.
+        """
+        try:
+            maxes = self.file['tiles/maxvalues']
+        except KeyError:
+            logging.debug("Calculating and cacheing max values by row")
+            maxes = self.map(max, 0)
+            self.file['tiles/maxvalues'] = maxes
+            self.file.flush()
+        return maxes
 
-        def feature_selection(self, n_genes, method="SVR", cells=None):
-            """
-            Fits a noise model (CV vs mean)
+    def dz_get_min_byrow(self):
+        """
+        Calculate minimum values by row and cache in the file.
+        """
+        try:
+            mins = self.file['tiles/minvalues']
+        except KeyError:
+            logging.debug("Calculating and cacheing min values by row")
+            mins = self.map(min, 0)
+            self.file['tiles/minvalues'] = mins
+            self.file.flush()
+        return mins
 
-            Args:
-                    n_genes (int):  number of genes to include
-                    cells (array of bool): cells to include when computing mean and CV (or None)
+    def dz_zoom_range(self):
+        """
+        Determine the zoom limits for this file.
 
-            Returns:
-                    Nothing.
+        Returns:
+                Tuple (middle, min_zoom, max_zoom) of integer zoom levels.
+        """
+        return (8, int(max(np.ceil(np.log2(self.shape)))), int(max(np.ceil(np.log2(self.shape)))+8))
 
-            This method creates new row attributes _Noise (CV relative to predicted CV), _Excluded (1/0).
-            """
-            (mu, std, valid) = self.map((np.mean, np.std, _valid_gene), axis=0, selection=cells)
-            cv = std/mu
-            log2_m = np.log2(mu)
-            excluded = (log2_m == float("-inf"))
-            log2_m[log2_m == float("-inf")] = 0
-            log2_cv = np.log2(cv)
-            excluded = np.logical_or(excluded, log2_cv == float("nan"))
-            log2_cv = np.nan_to_num(log2_cv)
-            excluded = np.logical_or(excluded, np.logical_not(valid))
+    def dz_dimensions(self):
+        """
+        Determine the total size of the deep zoom image.
 
-            logging.debug("Selecting %i genes" % n_genes)
-            if method == "SVR":
-                logging.info("Fitting CV vs mean using SVR")
-                svr_gamma = 1000./len(mu)
-                clf = SVR(gamma=svr_gamma)
-                clf.fit(log2_m[:, np.newaxis], log2_cv)
-                fitted_fun = clf.predict
-                # Score is the relative position with respect of the fitted curve
-                score = np.log2(cv) - fitted_fun(log2_m[:, np.newaxis])
-                score = np.nan_to_num(score)
-            else:
-                logging.info("Fitting CV vs mean using least squares")
-                #Define the objective function to fit (least squares)
-                fun = lambda x, log2_m, log2_cv: sum(abs(np.log2((2.**log2_m)**(-x[0])+x[1])-log2_cv))
-                #Fit using Nelder-Mead algorythm
-                x0 = [0.5, 0.5]
-                optimization = minimize(fun, x0, args=(log2_m, log2_cv), method='Nelder-Mead')
-                params = optimization.x
-                #The fitted function
-                fitted_fun = lambda log_mu: np.log2((2.**log_mu)**(-params[0])+params[1])
+        Returns:
+                Tuple (x,y) of integers
+        """
+        (y,x) = np.divide(self.shape,256)*256*pow(2,8)
+        return (x,y)
 
-                # Score is the relative position with respect of the fitted curve
-                score = np.log2(cv) - fitted_fun(np.log2(mu))
-                score = np.nan_to_num(score)
+    # Returns a PIL image 256x256 pixels
+    def dz_get_zoom_image(self, x, y, z):
+        """
+        Create a 256x256 pixel PIL image corresponding to the tile at x,y and z.
 
-            threshold = np.percentile(score, 100. - n_genes/self.shape[0]*100.)
-            excluded = np.logical_or(excluded, (score < threshold)).astype('int')
+        Args:
+                x (int):        Horizontal tile index (0 is left-most)
 
-            logging.debug("Excluding %i genes" % excluded.sum())
-            logging.debug("Keeping %i genes" % (1-excluded).sum())
-            self.set_attr("_Noise", score, axis = 0)
-            self.set_attr("_Excluded", excluded, axis = 0)
+                y (int):        Vertical tile index (0 is top-most)
 
-        def backspin(self,
-                numLevels=2,
-                first_run_iters=10,
-                first_run_step=0.1,
-                runs_iters=8,
-                runs_step=0.3,
-                split_limit_g=2,
-                split_limit_c=2,
-                stop_const = 1.15,
-                low_thrs=0.2):
-            """
-            Perform BackSPIN clustering
+                z (int):        Zoom level (8 is 'middle' where pixels correspond to data values)
 
-            Args:
-                    numLevels (int):                Number of levels (default 2)
-                    first_run_iters (int):  Number of iterations at first cycle (default 10)
-                    first_run_step (float): Step size for first cycle (default 0.1)
-                    runs_iters (int):               Number of iterations per cycle (default 8)
-                    runs_step (float):              Step size (default 0.3)
-                    split_limit_g (int):    Minimum genes per cluster (default 2)
-                    split_limit_c (int):    Minimum cells per cluster (default 2)
-                    stop_const (float):             Stopping constant (default 1.15)
-                    low_thrs (float):               Low threshold (default 0.2)
+        Returns:
+                Python image library Image object
+        """
+        tile = self.dz_get_zoom_tile(x, y, z)
+        tile[tile == 255] = 254
 
-            Returns:
-                    Nothing, but creates attributes BackSPIN_level_{n}_group.
-            """
-            loom_backspin(self,numLevels,first_run_iters,first_run_step,runs_iters,runs_step,split_limit_g,split_limit_c,stop_const,low_thrs)
+        # Crop outside matrix dimensions
+        (zmin, zmid, zmax) = self.dz_zoom_range()
+        (max_x, max_y) = (int(pow(2,z-zmid)*self.shape[1])-x*256, int(pow(2,z-zmid)*self.shape[0])-y*256)
+        if max_x < 0:
+            max_x = -1
+        if max_y < 0:
+            max_y = -1
+        if max_x < 255:
+            tile[:,max_x+1:256] = 255
+        if max_y < 255:
+            tile[max_y+1:256,:] = 255
+        return scipy.misc.toimage(tile, cmin=0, cmax=255, pal = _bluewhitered)
 
+    # Returns a submatrix scaled to 0-255 range
+    def dz_get_zoom_tile(self, x, y, z):
+        """
+        Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
 
-        def compute_stats(self):
-            """
-            Compute standard aggregate statistics
+        Args:
+                x (int):        Horizontal tile index (0 is left-most)
 
-            Args:
+                y (int):        Vertical tile index (0 is top-most)
 
-            Returns:
-                    Nothing, but adds row and column attributes _LogMean, _LogCV, _Total
-            """
-            (mu, std, sums) = self.map((np.mean, np.std, np.sum), axis=0)
-            log2_m = np.log2(mu)
-            excluded = (log2_m == float("-inf"))
-            log2_m[log2_m == float("-inf")] = 0
-            log2_cv = np.log2(std/mu)
-            excluded = np.logical_or(excluded, log2_cv == float("nan"))
-            log2_cv = np.nan_to_num(log2_cv)
-            self.set_attr("_LogMean", log2_m, axis=0)
-            self.set_attr("_LogCV", log2_cv, axis=0)
-            self.set_attr("_Total", sums, axis=0)
+                z (int):        Zoom level (8 is 'middle' where pixels correspond to data values)
 
-            (mu, std, sums) = self.map((np.mean, np.std, np.sum), axis=1)
-            log2_m = np.log2(mu)
-            excluded = (log2_m == float("-inf"))
-            log2_m[log2_m == float("-inf")] = 0
-            log2_cv = np.log2(std/mu)
-            excluded = np.logical_or(excluded, log2_cv == float("nan"))
-            log2_cv = np.nan_to_num(log2_cv)
-            self.set_attr("_LogMean", log2_m, axis=1)
-            self.set_attr("_LogCV", log2_cv, axis=1)
-            self.set_attr("_Total", sums, axis=1)
-
-
-        ##############
-        # PROJECTION #
-        ##############
-
-        def project_to_2d(self, axis = 1, perplexity = 20, n_components = 10):
-            """
-            Project to 2D and create new column attributes _tSNE1, _tSNE2 and _PC1, _PC2.
-
-            Args:
-                    axis (int):                     Axis to project (0 for rows, 1 for columns, 2 for both)
-                    perplexity (int):       Perplexity to use for tSNE
-                    n_components (int):     Number of PCA components to use
-
-            Returns:
-                    Nothing.
-
-            This method first computes a PCA using scikit-learn IncrementalPCA (which doesn't load the whole
-            dataset in RAM), then uses the top principal components to compute a tSNE projection. If row
-            attribute '_Excluded' exists, the projection will be based only on non-excluded genes.
-            """
-            if axis == 0 or axis == 2:
-                logging.debug("Projection on rows")
-
-                # First perform PCA out of band
-                batch_size = 1000
-                logging.debug("Incremental PCA with " + str(n_components) + " components")
-                ipca = IncrementalPCA(n_components=n_components)
-                row = 0
-                while row < self.shape[0]:
-                    batch = self[row:row+batch_size,:]
-                    batch = np.log2(batch + 1)
-                    ipca.partial_fit(batch)
-                    row = row + batch_size
-
-                # Project to PCA space
-                Xtransformed = []
-                row = 0
-                while row < self.shape[0]:
-                    batch = self[row:row+batch_size,:]
-                    batch = np.log2(batch + 1)
-                    Xbatch = ipca.transform(batch)
-                    Xtransformed.append(Xbatch)
-                    row = row + batch_size
-                Xtransformed = np.concatenate(Xtransformed)
-
-                # Save first two dimensions as column attributes
-                pc1 = Xtransformed[:,0]
-                pc2 = Xtransformed[:,1]
-                self.set_attr("_PC1", pc1, axis = 0)
-                self.set_attr("_PC2", pc2, axis = 0)
-
-                # Then, perform tSNE based on the top components
-                # Precompute the distance matrix
-                # This is necessary to work around a bug in sklearn TSNE 0.17
-                # (caused because pairwise_distances may give very slightly negative distances)
-                logging.debug("Computing distance matrix")
-                dists = squareform(pdist(Xtransformed, "cosine"))
-                np.clip(dists, 0, 1, dists)
-                logging.debug("Computing t-SNE")
-                model = TSNE(metric='precomputed', perplexity=perplexity)
-                tsne = model.fit_transform(dists)
-
-                # Save first two dimensions as column attributes
-                tsne1 = tsne[:,0]
-                tsne2 = tsne[:,1]
-                self.set_attr("_tSNE1", tsne1, axis = 0)
-                self.set_attr("_tSNE2", tsne2, axis = 0)
-                logging.debug("Row projection completed")
-
-            if axis == 1 or axis == 2:
-                logging.debug("Projection on columns")
-
-                # First perform PCA out of band
-                batch_size = 1000
-                selection = np.ones(self.shape[0]).astype('bool')
-                if self.row_attrs.__contains__("_Excluded"):
-                    selection = (1-self.row_attrs["_Excluded"]).astype('bool')
-
-                logging.debug("Incremental PCA with " + str(n_components) + " components")
-                ipca = IncrementalPCA(n_components=n_components)
-                col = 0
-                while col < self.shape[1]:
-                    batch = self[selection,col:col+batch_size].T
-                    batch = np.log2(batch + 1)
-                    ipca.partial_fit(batch)
-                    col = col + batch_size
-
-                # Project to PCA space
-                Xtransformed = []
-                col = 0
-                while col < self.shape[1]:
-                    batch = self.file['matrix'][selection,col:col+batch_size].T
-                    batch = np.log2(batch + 1)
-                    Xbatch = ipca.transform(batch)
-                    Xtransformed.append(Xbatch)
-                    col = col + batch_size
-                Xtransformed = np.concatenate(Xtransformed)
-
-                # Save first two dimensions as column attributes
-                pc1 = Xtransformed[:,0]
-                pc2 = Xtransformed[:,1]
-                self.set_attr("_PC1", pc1, axis = 1)
-                self.set_attr("_PC2", pc2, axis = 1)
-
-                # Then, perform tSNE based on the top components
-                # Precompute the distance matrix
-                # This is necessary to work around a bug in sklearn TSNE 0.17
-                # (caused because pairwise_distances may give very slightly negative distances)
-                logging.debug("Computing distance matrix")
-                dists = squareform(pdist(Xtransformed, "cosine"))
-                np.clip(dists, 0, 1, dists)
-                logging.debug("Computing t-SNE")
-                model = TSNE(metric='precomputed', perplexity=perplexity)
-                tsne = model.fit_transform(dists)
-
-                # Save first two dimensions as column attributes
-                tsne1 = tsne[:,0]
-                tsne2 = tsne[:,1]
-                self.set_attr("_tSNE1", tsne1, axis = 1)
-                self.set_attr("_tSNE2", tsne2, axis = 1)
-                logging.debug("Column projection completed")
-
-        #############
-        # DEEP ZOOM #
-        #############
-
-        def prepare_heatmap(self):
-            if self.file.__contains__("tiles"):
-                logging.debug("Removing previous tile pyramid")
-                del self.file['tiles']
-            self.dz_get_zoom_image(0,0,8)
-
-        def dz_get_max_byrow(self):
-            """
-            Calculate maximal values by row and cache in the file.
-            """
-            try:
-                maxes = self.file['tiles/maxvalues']
-            except KeyError:
-                logging.debug("Calculating and cacheing max values by row")
-                maxes = self.map(max, 0)
-                self.file['tiles/maxvalues'] = maxes
-                self.file.flush()
-            return maxes
-
-        def dz_get_min_byrow(self):
-            """
-            Calculate minimum values by row and cache in the file.
-            """
-            try:
-                mins = self.file['tiles/minvalues']
-            except KeyError:
-                logging.debug("Calculating and cacheing min values by row")
-                mins = self.map(min, 0)
-                self.file['tiles/minvalues'] = mins
-                self.file.flush()
-            return mins
-
-        def dz_zoom_range(self):
-            """
-            Determine the zoom limits for this file.
-
-            Returns:
-                    Tuple (middle, min_zoom, max_zoom) of integer zoom levels.
-            """
-            return (8, int(max(np.ceil(np.log2(self.shape)))), int(max(np.ceil(np.log2(self.shape)))+8))
-
-        def dz_dimensions(self):
-            """
-            Determine the total size of the deep zoom image.
-
-            Returns:
-                    Tuple (x,y) of integers
-            """
-            (y,x) = np.divide(self.shape,256)*256*pow(2,8)
-            return (x,y)
-
-        # Returns a PIL image 256x256 pixels
-        def dz_get_zoom_image(self, x, y, z):
-            """
-            Create a 256x256 pixel PIL image corresponding to the tile at x,y and z.
-
-            Args:
-                    x (int):        Horizontal tile index (0 is left-most)
-
-                    y (int):        Vertical tile index (0 is top-most)
-
-                    z (int):        Zoom level (8 is 'middle' where pixels correspond to data values)
-
-            Returns:
-                    Python image library Image object
-            """
-            tile = self.dz_get_zoom_tile(x, y, z)
-            tile[tile == 255] = 254
-
-            # Crop outside matrix dimensions
-            (zmin, zmid, zmax) = self.dz_zoom_range()
-            (max_x, max_y) = (int(pow(2,z-zmid)*self.shape[1])-x*256, int(pow(2,z-zmid)*self.shape[0])-y*256)
-            if max_x < 0:
-                max_x = -1
-            if max_y < 0:
-                max_y = -1
-            if max_x < 255:
-                tile[:,max_x+1:256] = 255
-            if max_y < 255:
-                tile[max_y+1:256,:] = 255
-            return scipy.misc.toimage(tile, cmin=0, cmax=255, pal = _bluewhitered)
-
-        # Returns a submatrix scaled to 0-255 range
-        def dz_get_zoom_tile(self, x, y, z):
-            """
-            Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
-
-            Args:
-                    x (int):        Horizontal tile index (0 is left-most)
-
-                    y (int):        Vertical tile index (0 is top-most)
-
-                    z (int):        Zoom level (8 is 'middle' where pixels correspond to data values)
-
-            Returns:
-                    Numpy ndarray of shape (256,256)
-            """
+        Returns:
+                Numpy ndarray of shape (256,256)
+        """
 #               logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
-            (zmin, zmid, zmax) = self.dz_zoom_range()
-            if z < zmin:
-                raise ValueError("z cannot be less than %s" % zmin)
-            if z > zmax:
-                raise ValueError("z cannot be greater than %s" % zmax)
-            if x < 0:
-                raise ValueError("x cannot be less than zero")
-            if y < 0:
-                raise ValueError("y cannot be less than zero")
+        (zmin, zmid, zmax) = self.dz_zoom_range()
+        if z < zmin:
+            raise ValueError("z cannot be less than %s" % zmin)
+        if z > zmax:
+            raise ValueError("z cannot be greater than %s" % zmax)
+        if x < 0:
+            raise ValueError("x cannot be less than zero")
+        if y < 0:
+            raise ValueError("y cannot be less than zero")
 
-            if z == zmid:
-                # Get the right tile from the matrix
-                if x*256 > self.shape[1] or y*256 > self.shape[0]:
-                    return np.zeros((256,256),dtype='float32')
-                else:
-                    tile = self.file['matrix'][y*256:y*256+256,x*256:x*256 + 256]
-                # Pad if needed to make it 256x256
-                if tile.shape[0] < 256 or tile.shape[1] < 256:
-                    tile = np.pad(tile,((0,256-tile.shape[0]),(0,256-tile.shape[1])),'constant',constant_values=0)
-                # Rescale
-                maxes = self.dz_get_max_byrow()[y*256:y*256+256]
-                mins = self.dz_get_min_byrow()[y*256:y*256+256]
-                if maxes.shape[0] < 256:
-                    maxes = np.pad(maxes, (0, 256 - maxes.shape[0]), 'constant', constant_values = 0)
-                    mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values = 0)
-                tile = (np.log2(tile.transpose()-mins+1)/np.log2(maxes-mins+1)*255).transpose()
-                #tile = (tile+1)/(maxes+1)*256
-                return tile
+        if z == zmid:
+            # Get the right tile from the matrix
+            if x*256 > self.shape[1] or y*256 > self.shape[0]:
+                return np.zeros((256,256),dtype='float32')
+            else:
+                tile = self.file['matrix'][y*256:y*256+256,x*256:x*256 + 256]
+            # Pad if needed to make it 256x256
+            if tile.shape[0] < 256 or tile.shape[1] < 256:
+                tile = np.pad(tile,((0,256-tile.shape[0]),(0,256-tile.shape[1])),'constant',constant_values=0)
+            # Rescale
+            maxes = self.dz_get_max_byrow()[y*256:y*256+256]
+            mins = self.dz_get_min_byrow()[y*256:y*256+256]
+            if maxes.shape[0] < 256:
+                maxes = np.pad(maxes, (0, 256 - maxes.shape[0]), 'constant', constant_values = 0)
+                mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values = 0)
+            tile = (np.log2(tile.transpose()-mins+1)/np.log2(maxes-mins+1)*255).transpose()
+            #tile = (tile+1)/(maxes+1)*256
+            return tile
 
-            if z > zmid:
-                scale = pow(2,z - zmid)
-                # Get the z = zmid tile that contains this tile
-                x1_tile = self.dz_get_zoom_tile(x//scale,y//scale,zmid)
-                # Take the right submatrix
-                x = x - x//scale*scale # This works because of rounding down at the first division
-                y = y - y//scale*scale
-                tile = x1_tile[y*256//scale:y*256//scale + 256//scale, x*256//scale:x*256//scale + 256//scale]
-                # Resample
-                for ix in range(z - zmid):
-                    temp = np.empty((tile.shape[0]*2, tile.shape[1]*2) , dtype='float32')
-                    temp[0::2,0::2] = tile
-                    temp[1::2,1::2] = tile
-                    temp[0::2,1::2] = tile
-                    temp[1::2,0::2] = tile
-                    tile = temp
-                return tile
+        if z > zmid:
+            scale = pow(2,z - zmid)
+            # Get the z = zmid tile that contains this tile
+            x1_tile = self.dz_get_zoom_tile(x//scale,y//scale,zmid)
+            # Take the right submatrix
+            x = x - x//scale*scale # This works because of rounding down at the first division
+            y = y - y//scale*scale
+            tile = x1_tile[y*256//scale:y*256//scale + 256//scale, x*256//scale:x*256//scale + 256//scale]
+            # Resample
+            for ix in range(z - zmid):
+                temp = np.empty((tile.shape[0]*2, tile.shape[1]*2) , dtype='float32')
+                temp[0::2,0::2] = tile
+                temp[1::2,1::2] = tile
+                temp[0::2,1::2] = tile
+                temp[1::2,0::2] = tile
+                tile = temp
+            return tile
 
-            if z < zmid:
-                # Get the tile from cache if possible
-                try:
-                    tile = self.file['tiles/%sz/%sx_%sy' % (z, x, y)][:,:]
-                except KeyError:
-                # Get the four less zoomed-out tiles required to make this tile
-                    temp = np.empty((512,512), dtype = 'float32')
-                    temp[0:256,0:256] = self.dz_get_zoom_tile(x*2,y*2,z+1)
-                    temp[0:256,256:512] = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
-                    temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
-                    temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
-                    tile = temp[0::2,0::2]
-                    self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
-                    # self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
-                    self.file.flush()
-                return tile
+        if z < zmid:
+            # Get the tile from cache if possible
+            try:
+                tile = self.file['tiles/%sz/%sx_%sy' % (z, x, y)][:,:]
+            except KeyError:
+            # Get the four less zoomed-out tiles required to make this tile
+                temp = np.empty((512,512), dtype = 'float32')
+                temp[0:256,0:256] = self.dz_get_zoom_tile(x*2,y*2,z+1)
+                temp[0:256,256:512] = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
+                temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
+                temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
+                tile = temp[0::2,0::2]
+                self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
+                # self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
+                self.file.flush()
+            return tile
 
 class _CEF(object):
     def __init__(self):
