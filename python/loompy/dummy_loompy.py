@@ -508,24 +508,23 @@ class LoomConnection(object):
         self.file.close()
         self.file = FakeH5File(self.matrix, self.row_attrs, self.col_attrs)
 
-	def _save_attr(self, name, values, axis):
-		"""
-		Save an attribute to the file, nothing else
+    def _save_attr(self, name, values, axis):
+        """Save an attribute to the file, nothing else
 
-		Remarks:
-			Handles unicode to ascii conversion (lossy, but HDF5 supports only ascii)
-			Does not update the attribute cache (use _load_attr for this)
-		"""
-		if values.dtype.type is np.str_:
-			values = np.array([x.encode('ascii', 'ignore') for x in values])
+        Remarks:
+            Handles unicode to ascii conversion (lossy, but HDF5 supports only ascii)
+            Does not update the attribute cache (use _load_attr for this)
+        """
+        if values.dtype.type is np.str_:
+            values = np.array([x.encode('ascii', 'ignore') for x in values])
 
-		a = ["/row_attrs/", "/col_attrs/"][axis]
-		if len(values) != self.shape[axis]:
-			raise ValueError("Attribute must have exactly %d values" % self.shape[0])
-		if self.file[a].__contains__(name):
-			del self.file[a + name]
-		self.file[a + name] = values
-		self.file.flush()
+        a = ["/row_attrs/", "/col_attrs/"][axis]
+        if len(values) != self.shape[axis]:
+            raise ValueError("Attribute must have exactly %d values" % self.shape[0])
+        if self.file[a].__contains__(name):
+            del self.file[a + name]
+        self.file[a + name] = values
+        self.file.flush()
 
 	def _load_attr(self, name, axis):
 		"""
