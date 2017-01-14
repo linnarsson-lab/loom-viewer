@@ -784,7 +784,7 @@ class LoomConnection(object):
 			self.file["/col_edges/" + name + "/a"] = a
 			self.file["/col_edges/" + name + "/b"] = b
 			self.file["/col_edges/" + name + "/w"] = w
-		if axis == 0:
+		elif axis == 0:
 			if a.max() > self.shape[0] or a.min() < 0:
 				raise ValueError("Nodes out of range")
 			if b.max() > self.shape[0] or b.min() < 0:
@@ -792,7 +792,8 @@ class LoomConnection(object):
 			self.file["/row_edges/" + name + "/a"] = a
 			self.file["/row_edges/" + name + "/b"] = b
 			self.file["/row_edges/" + name + "/w"] = w
-		raise ValueError("Axis must be 0 or 1")
+		else:
+			raise ValueError("Axis must be 0 or 1")
 
 	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
 		if axis == 1:
