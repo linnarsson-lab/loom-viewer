@@ -47,7 +47,7 @@ def strip(s):
 		return s[2:-1]
 	return s
 
-def create(filename, matrix, row_attrs, col_attrs, row_attr_types=None, col_attr_types=None):
+def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None):
 	"""
 	Create a new .loom file from the given data.
 
@@ -84,6 +84,9 @@ def create(filename, matrix, row_attrs, col_attrs, row_attr_types=None, col_attr
 
 	for key, vals in col_attrs.items():
 		ds.set_attr(key, vals, axis = 1)
+
+	for a in file_attrs:
+		ds.attrs[a] = file_attrs[a]
 
 	ds.close()
 
@@ -187,20 +190,29 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 	create(loom_file, matrix, row_attrs, col_attrs)
 
 def join(files, output_file, key, file_attrs={}):
+	logging.warn("loompy.join is broken, please use combine() instead (but it will not join by key)")
 	if len(files) == 0:
 		raise ValueError("The input file list was empty")
-
+	logging.info("joining " + str(files))
 	copyfile(files[0], output_file)
 
 	if len(files) == 1:
 		return
 
 	split = len(files) // 2
-	temp1 = tempfile.mktemp()
-	temp2 = tempfile.mktemp()
-	self.join(files[:split], temp1, key, file_attrs)
-	self.join(files[split:], temp2, key, file_attrs)
-	self.join(temp1, temp2, output_file, key, file_attrs)
+	files1 = files[:split]
+	files2 = files[split:]
+	logging.info(files1)
+	logging.info(files2)
+	if len(files1) > 1:
+		temp1 = tempfile.mktemp()
+		join(files1, temp1, key, file_attrs)
+		files1 = [temp1]
+	if len(files2) > 1:
+		temp2 = tempfile.mktemp()
+		join(files2, temp2, key, file_attrs)
+		files2 = [temp2]
+	_join(files1[0], files2[0], output_file, key, file_attrs)
 	ds = connect(output_file)
 	for a in file_attrs:
 		ds.attrs[a] = file_attrs[a]
@@ -221,9 +233,6 @@ def _join(file1, file2, output_file, key, file_attrs={}):
 
 	File attributes that are not given as function args, are taken instead from the first file
 	"""
-	if len(files) == 0:
-		raise ValueError("The input file list was empty")
-
 	if type(key) == str:
 		key1 = key
 		key2 = key
@@ -239,11 +248,11 @@ def _join(file1, file2, output_file, key, file_attrs={}):
 
 	a=pd.DataFrame({
 			'key': keys1,
-			'ix_a': np.fromiter(range(keys1.shape[0]))
+			'ix_a': np.fromiter(range(keys1.shape[0]), dtype='int')
 		})
 	b=pd.DataFrame({
 			'key': keys2,
-			'ix_b': np.fromiter(range(keys2.shape[0]))
+			'ix_b': np.fromiter(range(keys2.shape[0]), dtype='int')
 		})
 	joined = pd.merge(a, b, on='key')
 
@@ -300,7 +309,6 @@ def combine(files, output_file, key=None, file_attrs={}):
 	The input files must (1) have exactly the same number of rows and in the same order, (2) have
 	exactly the same sets of row and column attributes.
 	"""
-	logging.warn("loompy.combine is deprecated, please use join() instead")
 	if len(files) == 0:
 		raise ValueError("The input file list was empty")
 
