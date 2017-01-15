@@ -48,13 +48,14 @@ class FakeH5File(object):
         self.matrix = matrix
         self.row_attrs = row_attrs
         self.col_attrs = col_attrs
-        self.attrs = {'url':"{url}",
+        self.attrs = {'url':"_url_",
         'schema':{"col_attrs": {"Target_Num_Cells": "int", "_tSNE2": "float64", "NGI_PlateWell": "string", "ChipID": "string", "SampleID": "string", "Comments": "string", "Label": "string", "Mean Reads per Cell": "string", "_KMeans_10": "float64", "_LogMean": "float64", "Sex": "string", "Seq_Comment": "string", "_PC2": "float64", "_LogCV": "float64", "cDNA_Lib_Ok": "string", "_Total": "float64", "Cell_Conc": "int", "ngperul_cDNA": "float64", "PCR_Cycles": "int", "Reads Mapped Confidently to Exonic Regions": "string", "Reads Mapped Confidently to Intergenic Regions": "string", "_tSNE1": "float64", "Sample_Index": "string", "Date_Captured": "string", "Number of Reads": "string", "Serial_Number": "int", "Reads Mapped Confidently to Intronic Regions": "string", "Transcriptome": "string", "Median UMI Counts per Cell\\r": "string", "Age": "string", "cDNA PCR Duplication": "string", "Plug_Date": "string", "Project": "string", "DonorID": "string", "_PC1": "float64", "Num_Pooled_Animals": "int", "CellID": "string", "Seq_Lib_Date": "string", "Median Genes per Cell": "string", "Reads Mapped Confidently to Transcriptome": "string", "Seq_Lib_Ok": "string", "Number of Cells": "string", "Q30 Bases in Read 1": "string", "Tissue": "string", "Strain": "string", "Valid Barcodes": "string", "Fraction Reads in Cells": "string", "Q30 Bases in UMI": "string", "Species": "string", "Q30 Bases in Barcode": "string"},
         "row_attrs": {"_LogMean": "float64", "_Total": "float64", "Gene": "string", "Accession": "string", "_LogCV": "float64"},
         "matrix": "float32"},
-        'description':"{description}",
-        'generation_date':"{generation_date}",
-        'title':"{title}"}
+        'description':"_description_",
+        'generation_date':"_generation_date_",
+        'title':"_title_",
+        "filename":"_filename_"}
 
     def parse_key(self, key):
         parsed_list = key.strip("/").split("/")
