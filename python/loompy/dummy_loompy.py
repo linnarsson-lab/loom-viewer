@@ -486,7 +486,7 @@ class LoomConnection(object):
             self.file = h5py.File(filename, 'r+')
         else:
             logging.info("Loading data as fake file")
-            self.file = FakeH5File(matrix, self.row_attrs, self.col_attrs)
+            self.file = FakeH5File(matrix, row_attrs, col_attrs)
 
         self.shape = self.file['matrix'].shape
 
