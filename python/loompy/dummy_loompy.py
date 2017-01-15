@@ -584,7 +584,7 @@ class LoomConnection(object):
             html += "<tr>"
             for ra in self.row_attrs.keys():
                 html += "<td>&nbsp;</td>"  # Space for row attrs
-            html += "<td><strong>" + ca + ":" + self.schema["col_attrs"][ca] + "</strong></td>"  # Col attr name
+            html += "<td><strong>" + ca + ":" + self.file.schema["col_attrs"][ca] + "</strong></td>"  # Col attr name
             for v in self.col_attrs[ca][:cm]:
                 html += "<td>" + str(v) + "</td>"
             if self.shape[1] > cm:
@@ -594,7 +594,7 @@ class LoomConnection(object):
         # Emit row attribute names
         html += "<tr>"
         for ra in self.row_attrs.keys():
-            html += "<td><strong>" + ra + ":" + self.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name
+            html += "<td><strong>" + ra + ":" + self.file.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name
         html += "<td>&nbsp;</td>"  # Space for col attrs
         for v in range(cm):
             html += "<td>&nbsp;</td>"
