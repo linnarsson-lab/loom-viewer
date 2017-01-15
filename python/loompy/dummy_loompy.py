@@ -469,7 +469,7 @@ class LoomAttributeManager():
             return default
 
 class LoomConnection(object):
-    def __init__(self, filename):
+    def __init__(self, filename=None, matrix=None, row_attrs=None, col_attrs=None):
         """
         Establish a connection to a .loom file.
 
@@ -481,12 +481,16 @@ class LoomConnection(object):
 
         Row and column attributes are loaded into memory for fast access.
         """
-        logging.info("Connecting to: " + filename)
-        self.file = h5py.File(filename, 'r+')
+        if filename:
+            logging.info("Connecting to: " + filename)
+            self.file = h5py.File(filename, 'r+')
+        else:
+            logging.info("Loading data as fake file")
+            self.file = FakeH5File(matrix, self.row_attrs, self.col_attrs)
+
         self.shape = self.file['matrix'].shape
 
         self.row_attrs = {}
-
         for key in self.file['row_attrs'].keys():
             self._load_attr(key, axis=0)
             v = self.row_attrs[key]
@@ -505,9 +509,11 @@ class LoomConnection(object):
                 self._load_attr(key, axis=1)
 
         self.attrs = LoomAttributeManager(self.file)
-        matrix = self.file["matrix"][:]
-        self.file.close()
-        self.file = FakeH5File(matrix, self.row_attrs, self.col_attrs)
+
+        if filename:
+            matrix = self.file["matrix"][:]
+            self.file.close()
+            self.file = FakeH5File(matrix, self.row_attrs, self.col_attrs)
 
     def _save_attr(self, name, values, axis):
         """Save an attribute to the file, nothing else
