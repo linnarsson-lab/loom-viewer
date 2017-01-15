@@ -54,8 +54,8 @@ class FakeH5File(object):
         "matrix": "float32"},
         'description':"_description_",
         'generation_date':"_generation_date_",
-        'title':"_title_",
-        "filename":"_filename_"}
+        'title':"_title_"}
+        self.filename = "_filename_"
 
     def parse_key(self, key):
         parsed_list = key.strip("/").split("/")
