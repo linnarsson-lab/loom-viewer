@@ -56,6 +56,7 @@ class FakeH5File(object):
         'generation_date':"_generation_date_",
         'title':"_title_"}
         self.filename = "_filename_"
+        self.schema = self.attrs["schema"]
 
     def parse_key(self, key):
         parsed_list = key.strip("/").split("/")
