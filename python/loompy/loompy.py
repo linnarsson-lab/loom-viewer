@@ -71,7 +71,8 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	f = h5py.File(filename, 'w')
 
 	# Save the main matrix
-	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
+	# f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
+	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
 	f.flush()
@@ -795,7 +796,11 @@ class LoomConnection(object):
 		else:
 			raise ValueError("Axis must be 0 or 1")
 
-	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=5000):
+	def batch_scan(self, cells=None, genes=None, axis=0, batch_size=1000):
+		if cells is None:
+			cells = np.fromiter(range(self.shape[1]), dtype='int')
+		if genes is None:
+			genes = np.fromiter(range(self.shape[0]), dtype='int')
 		if axis == 1:
 			cols_per_chunk = batch_size
 			ix = 0
@@ -810,12 +815,10 @@ class LoomConnection(object):
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
 				vals = self[:, ix:ix + cols_per_chunk]
-				if genes is not None:
-					vals = vals[genes, :]
-				if cells is not None:
-					vals = vals[:, selection]
+				vals = vals[genes, :]
+				vals = vals[:, selection]
 
-				yield (ix, selection, vals)
+				yield (ix, ix + selection, vals)
 				ix = ix + cols_per_chunk
 
 		if axis == 0:
@@ -831,14 +834,12 @@ class LoomConnection(object):
 					continue
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
-				vals = ds[ix:ix + rows_per_chunk, :]
-				if genes is not None:
-					vals = vals[selection, :]
-				if cells is not None:
-					vals = vals[:, cells]
+				vals = self[ix:ix + rows_per_chunk, :]
+				vals = vals[selection, :]
+				vals = vals[:, cells]
 
-				yield (ix, selection, vals)
-				ix = ix + cols_per_chunk
+				yield (ix, ix + selection, vals)
+				ix = ix + rows_per_chunk
 
 	def map(self, f, axis=0, chunksize=1000, selection=None):
 		"""
