@@ -34,7 +34,7 @@ class ViewStateInitialiser extends Component {
 				dispatch={dispatch}
 				dataset={dataset}
 				/>
-		) : <div className='view'>Initialising View Settings - {stateName}</div>;
+		) : <div className='view centered'><h1>Initialising View Settings - {stateName}</h1></div>;
 	}
 }
 
