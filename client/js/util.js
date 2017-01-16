@@ -134,7 +134,19 @@ export function calcMinMax(data, ignoreZeros) {
 export function convertArray(data, name) {
 	let uniques = countElements(data);
 	if (uniques.length === 1) {
-		return { name, uniqueVal: uniques[0].val };
+		const uniqueVal = uniques[0].val;
+		let min = uniqueVal, max = uniqueVal;
+		if (typeof uniqueVal === 'string'){
+			min = max = 0;
+		}
+		return { 
+			name, 
+			uniqueVal,
+			min,
+			max,
+			hasZeros: uniqueVal === 0,
+			length: data.length,
+		};
 	} else {
 		// Convert arrays to compact (possibly indexed) format
 
@@ -232,26 +244,27 @@ export function convertArray(data, name) {
 									a.val < b.val ? -1 : 1
 						);
 					});
-					// Store original values
-					indexedVal = [];
+					// Store original values, with zero value as null
+					indexedVal = [null];
 					for (let i = 0; i < uniques.length; i++) {
 						indexedVal.push(uniques[i].val);
 					}
 
 					// Create array of index values
-					data = new Uint8Array(data.length);
+					let indexedData = new Uint8Array(data.length);
 					for (let j = 0; j < data.length; j++) {
-						for (let i = 0; i < indexedVal.length; i++) {
+						for (let i = 1; i < indexedVal.length; i++) {
 							if (data[j] === indexedVal[i]) {
-								data[j] = i;
+								indexedData[j] = i;
 							}
 						}
 					}
+					data = indexedData;
 					filteredData = Uint8Array.from(data);
 					uniques = countElements(data);
-					min = 0;
-					max = uniques.length - 1;
-					hasZeros = true;
+					min = 1;
+					max = uniques.length;
+					hasZeros = false;
 					break;
 				} else {
 					filteredData = data.slice(0);
