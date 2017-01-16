@@ -62,6 +62,8 @@ function receiveProjects(json) {
 		let ds = json[i];
 		ds.path = ds.project + '/' + ds.filename;
 		ds.viewState = {};
+		ds.col = null;
+		ds.row = null;
 		list[ds.path] = ds;
 	}
 
@@ -146,11 +148,20 @@ function receiveDataSet(data, path) {
 	}
 	let col = prepData(data.colAttrs);
 	col.geneKeys = geneKeys;
+	let viewState = {
+		heatmap: {
+			zoomRange: data.zoomRange,
+			fullZoomHeight: data.fullZoomHeight,
+			fullZoomWidth: data.fullZoomWidth,
+			shape: data.shape,
+		},
+	};
 	return {
 		type: RECEIVE_DATASET,
 		state: {
 			list: {
-				[path]: { data: { row, col } },
+				[path]: { 
+					viewState, col, row },
 			},
 		},
 	};
@@ -210,7 +221,7 @@ export function fetchDataSet(datasets, path) {
 		// See if the dataset already exists in the store
 		// If so, we can use cached version.
 		// If not, perform the actual fetch request (async)
-		if (!datasets[path].data) {
+		if (!datasets[path].col) {
 			return (fetch(`/loom/${path}`)
 				.then((response) => {
 					// convert the JSON to a JS object, and

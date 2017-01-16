@@ -7,51 +7,51 @@ import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export const HeatmapSidepanel = function (props) {
-	const { dispatch, dataSet } = props;
-	const { heatmap } = dataSet.viewState;
+	const { dispatch, dataset } = props;
+	const hms = dataset.viewState.heatmap;
 
 	const handleChangeFactory = (field) => {
 		return (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'heatmap',
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				viewState: { heatmap: { [field]: value } },
 			});
 		};
 	};
 
 
-	let colAttrOptions = Object.keys(dataSet.colAttrs);
+	let colAttrOptions = dataset.col.keys.slice(0);
 	colAttrOptions.sort();
 	colAttrOptions.push('(gene)');
 	const colAttrHC = handleChangeFactory('colAttr');
 	const colModeHC = handleChangeFactory('colMode');
-	if (heatmap.colAttr === '(gene)') {
+	if (hms.colAttr === '(gene)') {
 		// abusing JS' weird function scoping
 		var colGeneHC = handleChangeFactory('colGene');
 		var fetchColGene = (
 			<FetchGeneComponent
-				dataSet={dataSet}
+				dataset={dataset}
 				dispatch={dispatch}
 				onChange={colGeneHC}
-				value={heatmap.colGene} />
+				value={hms.colGene} />
 		);
 	}
-	let rowAttrOptions = Object.keys(dataSet.rowAttrs);
+	let rowAttrOptions = dataset.row.keys.slice(0);
 	rowAttrOptions.sort();
 	rowAttrOptions.push('(gene positions)');
 	const rowAttrHC = handleChangeFactory('rowAttr');
 	const rowModeHC = handleChangeFactory('rowMode');
-	if (heatmap.rowAttr === '(gene positions)') {
+	if (hms.rowAttr === '(gene positions)') {
 		// var is on purpose here; abusing function-scope
 		var rowGeneHC = handleChangeFactory('rowGene');
 		var fetchRowGene = (
 			<FetchGeneComponent
-				dataSet={dataSet}
+				dataset={dataset}
 				dispatch={dispatch}
 				onChange={rowGeneHC}
-				value={heatmap.rowGene}
+				value={hms.rowGene}
 				multi clearable />
 		);
 	}
@@ -67,14 +67,14 @@ export const HeatmapSidepanel = function (props) {
 				<ListGroupItem>
 					<label>Cell attribute to show</label>
 					<DropdownMenu
-						value={heatmap.colAttr}
+						value={hms.colAttr}
 						options={colAttrOptions}
 						onChange={colAttrHC}
 						/>
 					{fetchColGene}
 					<label>Show cell attribute as</label>
 					<DropdownMenu
-						value={heatmap.colMode}
+						value={hms.colMode}
 						options={optionNames}
 						onChange={colModeHC}
 						/>
@@ -82,14 +82,14 @@ export const HeatmapSidepanel = function (props) {
 				<ListGroupItem>
 					<label>Gene attribute to display</label>
 					<DropdownMenu
-						value={heatmap.rowAttr}
+						value={hms.rowAttr}
 						options={rowAttrOptions}
 						onChange={rowAttrHC}
 						/>
 					{fetchRowGene}
 					<label>Display gene attribute as</label>
 					<DropdownMenu
-						value={heatmap.rowMode}
+						value={hms.rowMode}
 						options={optionNames}
 						onChange={rowModeHC}
 						/>
@@ -100,6 +100,6 @@ export const HeatmapSidepanel = function (props) {
 };
 
 HeatmapSidepanel.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };

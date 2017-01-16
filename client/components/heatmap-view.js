@@ -20,9 +20,9 @@ class HeatmapMapComponent extends Component {
 	}
 
 	render() {
-		const { dispatch, dataSet } = this.props;
-		const { fetchedGenes } = dataSet;
-		const hms = dataSet.viewState.heatmap;
+		const { dispatch, dataset } = this.props;
+		const { col, row } = dataset;
+		const hms = dataset.viewState.heatmap;
 		if (this.state) {
 			// Calculate the layout of everything, which we can only
 			// do after mounting because we rely on the parent node.
@@ -41,15 +41,15 @@ class HeatmapMapComponent extends Component {
 			const { dataBounds } = hms;
 
 			const colGeneSelected = (hms.colAttr === '(gene)') &&
-				fetchedGenes.hasOwnProperty(hms.colGene);
+				col.attrs.hasOwnProperty(hms.colGene);
 
-			const colData = colGeneSelected ? fetchedGenes[hms.colGene]
-				: dataSet.colAttrs[hms.colAttr];
+			const colData = colGeneSelected ? col.attrs[hms.colGene]
+				: col.attrs[hms.colAttr];
 
-			let rowData = dataSet.rowAttrs[hms.rowAttr];
+			let rowData = row.attrs[hms.rowAttr];
 			if (hms.rowAttr === '(gene positions)') {
 				const shownGenes = hms.rowGenes.trim().split(/[ ,\r\n]+/);
-				const allGenes = dataSet.rowAttrs['Gene'];
+				const allGenes = row.attrs['Gene'];
 				rowData = new Array(allGenes.length);
 				for (let i = 0; i < allGenes.length; i++) {
 					rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
@@ -73,14 +73,14 @@ class HeatmapMapComponent extends Component {
 					<div className='view'>
 						<div style={heatmapSize}>
 							<Heatmap
-								dataSet={dataSet}
+								dataset={dataset}
 								onViewChanged={
 									(val) => {
 										const { dataBounds, zoom, center } = val;
 										dispatch({
 											type: SET_VIEW_PROPS,
 											stateName: 'heatmap',
-											datasetName: dataSet.dataset,
+											path: dataset.path,
 											viewState: { heatmap: { dataBounds, zoom, center } },
 										});
 									}
@@ -113,17 +113,17 @@ class HeatmapMapComponent extends Component {
 }
 
 HeatmapMapComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
 const HeatmapComponent = function (props) {
-	const { dataSet, dispatch } = props;
+	const { dispatch, dataset } = props;
 	return (
 		<div className='view'>
 			<div className='sidepanel'>
 				<HeatmapSidepanel
-					dataSet={dataSet}
+					dataset={dataset}
 					dispatch={dispatch}
 					/>
 			</div>
@@ -132,7 +132,7 @@ const HeatmapComponent = function (props) {
 				so we unmount and remount it on resize events */
 				>
 				<HeatmapMapComponent
-					dataSet={dataSet}
+					dataset={dataset}
 					dispatch={dispatch} />
 			</RemountOnResize>
 		</div>
@@ -140,7 +140,7 @@ const HeatmapComponent = function (props) {
 };
 
 HeatmapComponent.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -160,13 +160,13 @@ export const HeatmapViewInitialiser = function (props) {
 			initialState={initialState}
 			dispatch={props.dispatch}
 			params={props.params}
-			data={props.data} />
+			datasets={props.datasets} />
 	);
 };
 
 HeatmapViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	data: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -178,7 +178,7 @@ import { connect } from 'react-redux';
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,
-		data: state.data,
+		datasets: state.datasets.list,
 	};
 };
 

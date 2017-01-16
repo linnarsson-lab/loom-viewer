@@ -4,9 +4,9 @@ import React, {PropTypes} from 'react';
 export class Heatmap extends React.Component {
 
 	componentDidMount() {
-		const { zoomRange, fullZoomWidth, fullZoomHeight,
-			dataset, project, viewState } = this.props.dataSet;
+		const { dataset, project, viewState } = this.props.dataset;
 		const hms = viewState.heatmap;
+		const { zoomRange } = hms;
 
 		L.Icon.Default.imagePath = '/static/img';
 		const map = L.map(
@@ -31,8 +31,8 @@ export class Heatmap extends React.Component {
 			}
 		).addTo(map);
 
-		const southWest = map.unproject([0, fullZoomHeight], map.getMaxZoom());
-		const northEast = map.unproject([fullZoomWidth, 0], map.getMaxZoom());
+		const southWest = map.unproject([0, hms.fullZoomHeight], map.getMaxZoom());
+		const northEast = map.unproject([hms.fullZoomWidth, 0], map.getMaxZoom());
 		map.fitBounds(new L.LatLngBounds(southWest, northEast));
 		const center = hms.center ? hms.center :
 			L.latLng((southWest.lat + northEast.lat) * 0.5,
@@ -68,6 +68,6 @@ export class Heatmap extends React.Component {
 }
 
 Heatmap.propTypes = {
-	dataSet: PropTypes.object.isRequired,
+	dataset: PropTypes.object.isRequired,
 	onViewChanged: PropTypes.func.isRequired,
 };
