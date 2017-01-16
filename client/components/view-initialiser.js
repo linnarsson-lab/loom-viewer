@@ -14,8 +14,11 @@ class ViewStateInitialiser extends Component {
 			path, stateName } = this.props;
 
 		// URL-encoded state >> existing state >> initial state
-		let viewState = viewsettings ? JSURL.parse(viewsettings) : dataset.viewState;
-		viewState = viewState[stateName] ? viewState : merge(viewState, { [stateName]: initialState });
+		const viewState = merge(
+			{ [stateName]: initialState },
+			(viewsettings ?
+				JSURL.parse(viewsettings) : dataset.viewState)
+		);
 
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
