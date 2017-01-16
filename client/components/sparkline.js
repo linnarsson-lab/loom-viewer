@@ -5,7 +5,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 
 	if (attr === undefined) {
 		console.log('sparkline() called without defined attr!');
-		return () => {};
+		return () => { };
 	}
 
 	// Determine plotter
@@ -55,7 +55,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// and point 6 will only be 0.3 times the width.
 
 	let range = {};
-	if (uniqueVal !== undefined){
+	if (uniqueVal !== undefined) {
 		data = filteredData = [uniqueVal];
 	}
 
@@ -69,7 +69,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// This allows us to zoom out!
 
 	range.total = Math.ceil(range.right) - Math.floor(range.left);
-	if (range.total <= 0) { return () => {}; }
+	if (range.total <= 0) { return () => { }; }
 	// If we're not displaying text, then indexed string arrays 
 	// should remain Uint8Arrays, as they are more efficient
 	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
@@ -79,7 +79,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// with undefined entries on either or both ends.
 	// (for typed arrays, JS converts undefined to 0)
 	range.data = new array(range.total);
-	if (mode === 'Text' && indexedVal){
+	if (mode === 'Text' && indexedVal) {
 		for (let i = 0, i0 = Math.floor(range.left); i < range.total; i++) {
 			range.data[i] = indexedVal[source[i0 + i]];
 		}
@@ -109,7 +109,7 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 		context.width = context.height;
 		context.height = t;
 	}
-	
+
 	range.unrounded = range.right - range.left;
 	// We need to find the effective rangeWidth spanned by all bars.
 	// Mathematically speaking the following equation is true:
@@ -242,15 +242,24 @@ function categoriesPainter(context, range, colorIndices) {
 	if (data.length <= width) {
 		// more pixels than data
 		const barWidth = width / data.length;
-		for (let i = 0; i < data.length; i++) {
-			if (data[i] !== undefined) {
-				const cIdx = colorIndices.mostFreq[data[i]];
-				context.fillStyle = colors.category20[cIdx];
-				// force to pixel grid
-				const x = xOffset + i * barWidth;
-				const roundedWidth = ((xOffset + (i+1) * barWidth) | 0) - (x|0);
-				context.fillRect(x|0, 0, roundedWidth, context.height);
+		let i = 0;
+		while (i < data.length) {
+			const val = data[i];
+			const cIdx = val === undefined ? 0 : colorIndices.mostFreq[val];
+			context.fillStyle = colors.category20[cIdx];
+
+			let j = i+1;
+			let nextVal = data[j];
+			// advance while value doesn't change 
+			while (val === nextVal && i+j < data.length){ 
+				nextVal = data[++j];
 			}
+
+			// force to pixel grid
+			const x = xOffset + i * barWidth;
+			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
+			context.fillRect(x | 0, 0, roundedWidth, context.height);
+			i = j;
 		}
 	} else {
 		// more data than pixels
@@ -259,11 +268,9 @@ function categoriesPainter(context, range, colorIndices) {
 			const i1 = ((i + 1) * data.length / width) | 0;
 			const slice = data.slice(i0, i1);
 			const commonest = nMostFrequent(slice, 1).values[0];
-			if (commonest !== undefined) {
-				const cIdx = colorIndices.mostFreq[commonest];
-				context.fillStyle = colors.category20[cIdx];
-				context.fillRect(xOffset + i, 0, 1, context.height);
-			}
+			const cIdx = commonest === undefined ? 0 : colorIndices.mostFreq[commonest];
+			context.fillStyle = colors.category20[cIdx];
+			context.fillRect(xOffset + i, 0, 1, context.height);
 		}
 	}
 }
@@ -271,11 +278,11 @@ function categoriesPainter(context, range, colorIndices) {
 
 function barPainter(attr, label) {
 	let { min, max, hasZeros, uniqueVal } = attr;
-	if (uniqueVal){
+	if (uniqueVal) {
 		min = max = uniqueVal;
 		hasZeros = uniqueVal === 0;
 	}
-	if (hasZeros){
+	if (hasZeros) {
 		min = min < 0 ? min : 0;
 	}
 	return (context, range) => {
@@ -284,23 +291,39 @@ function barPainter(attr, label) {
 }
 
 
-function barPaint(context, range, min, max, label) {	
+function barPaint(context, range, min, max, label) {
 
 	const { outliers, barWidth } = calcMeans(range);
 	// factor to multiply the mean values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
 	const scaleMean = context.height / (max * 1.1);
 	context.fillStyle = '#404040';
-	for (let i = 0, x = range.xOffset; i < outliers.length; i++) {
-		// Even if outliers[i] is non a number, OR-masking forces it to 0
-		let barHeight = (outliers[i] * scaleMean) | 0;
-		// canvas defaults to positive y going *down*, so to
-		// draw from bottom to top we start at height and
-		// subtract the height.
-		let y = context.height - barHeight;
-		// force to pixel grid
-		context.fillRect(x|0, y, ((x+barWidth)|0) - (x|0), barHeight);
-		x += barWidth;
+	let i = 0, x = range.xOffset;
+	while (i < outliers.length) {
+
+		const val = outliers[i];
+		let j = i + 1;
+		let nextVal = outliers[j];
+		// advance while value doesn't change 
+		while (val === nextVal && i + j < outliers.length) {
+			nextVal = outliers[++j];
+		}
+		const w = (j - i) * barWidth;
+
+		// zero values are an extremely common case,
+		// so skip those pointless draw calls
+		if (val > 0) {
+			// Even if outliers[i] is non a number, OR-masking forces it to 0
+			let barHeight = (val * scaleMean) | 0;
+			// canvas defaults to positive y going *down*, so to
+			// draw from bottom to top we start at height and
+			// subtract the height.
+			let y = context.height - barHeight;
+
+			// force to pixel grid
+			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
+		}
+		i = j; x += w;
 	}
 	const ratio = context.pixelRatio;
 	context.textStyle();
@@ -321,9 +344,7 @@ function barPaint(context, range, min, max, label) {
 
 function heatmapPainter(attr, label, colorLUT) {
 	let { min, max, hasZeros } = attr;
-	if (hasZeros){
-		min = min < 0 ? min : 0;
-	}
+	if (hasZeros) { min = min < 0 ? min : 0; }
 	return (context, range) => {
 		heatmapPaint(context, range, min, max, label, colorLUT);
 	};
@@ -332,13 +353,24 @@ function heatmapPainter(attr, label, colorLUT) {
 function heatmapPaint(context, range, min, max, label, colorLUT) {
 	const { outliers, barWidth } = calcMeans(range);
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
-	for (let i = 0, x = range.xOffset; i < outliers.length; i++) {
-		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let colorIdx = ((outliers[i] - min) * colorIdxScale) | 0;
+	let i = 0, x = range.xOffset;
+	while (i < outliers.length) {
+		const val = outliers[i];
+		// Even if val is not a number, OR-masking forces it to 0
+		let colorIdx = ((val - min) * colorIdxScale) | 0;
 		context.fillStyle = colorLUT[colorIdx];
+
+		let j = i + 1;
+		let nextVal = outliers[j];
+		// advance while value doesn't change 
+		while (val === nextVal && i + j < outliers.length) {
+			nextVal = outliers[++j];
+		} 
+		const w = (j - i) * barWidth;
+
 		// force to pixel grid
-		context.fillRect(x|0, 0, ((x+barWidth)|0) - (x|0), context.height);
-		x += barWidth;
+		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
+		i = j; x += w;
 	}
 	context.textStyle();
 	if (label) {
