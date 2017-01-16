@@ -267,7 +267,7 @@ function requestGeneFetch(gene, geneKeys, path, datasetName) {
 		state: {
 			list: {
 				[path]: {
-					data: { col: { geneKeys } },
+					col: { geneKeys },
 				},
 			},
 		},
@@ -290,7 +290,7 @@ function requestGeneFailed(gene, geneKeys, path, datasetName) {
 		state: {
 			list: {
 				[path]: {
-					data: { col: { geneKeys } },
+					col: { geneKeys },
 				},
 			},
 		},	
@@ -307,7 +307,11 @@ function receiveGene(gene, path, indices, data) {
 		state: {
 			list: {
 				[path]: {
-					data: { col: { attrs: { [gene]: convertedData } } },
+					col: { 
+						attrs: { 
+							[gene]: convertedData,
+						},
+					},
 				},
 			},
 		},
@@ -319,9 +323,8 @@ function receiveGene(gene, path, indices, data) {
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataset, genes) {
-	const { title, path, data } = dataset;
-	const { Gene } = data.row.attrs;
-	const col = data.col;
+	const { title, path, col, row } = dataset;
+	const { Gene } = row.attrs;
 	return (dispatch) => {
 		if (Gene === undefined) { return; }
 		for (let i = 0; i < genes.length; i++) {
