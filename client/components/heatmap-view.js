@@ -15,15 +15,32 @@ import * as _ from 'lodash';
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
 
+	componentWillMount() {
+		const { dispatch, dataset } = this.props;
+		const onViewChanged = _.debounce(
+			(val) => {
+				const { dataBounds, zoom, center } = val;
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'heatmap',
+					path: dataset.path,
+					viewState: { heatmap: { dataBounds, zoom, center } },
+				});
+			},
+			50
+		);
+		this.setState({ onViewChanged });
+	}
+
 	componentDidMount() {
 		this.setState({ mounted: true });
 	}
 
 	render() {
-		const { dispatch, dataset } = this.props;
+		const { dataset } = this.props;
 		const { col, row } = dataset;
 		const hms = dataset.viewState.heatmap;
-		if (this.state) {
+		if (this.state.mounted) {
 			// Calculate the layout of everything, which we can only
 			// do after mounting because we rely on the parent node.
 			const el = this.refs.heatmapContainer;
@@ -74,17 +91,7 @@ class HeatmapMapComponent extends Component {
 						<div style={heatmapSize}>
 							<Heatmap
 								dataset={dataset}
-								onViewChanged={
-									(val) => {
-										const { dataBounds, zoom, center } = val;
-										dispatch({
-											type: SET_VIEW_PROPS,
-											stateName: 'heatmap',
-											path: dataset.path,
-											viewState: { heatmap: { dataBounds, zoom, center } },
-										});
-									}
-								} />
+								onViewChanged={this.state.onViewChanged} />
 						</div>
 						<Canvas
 							width={sparklineHeight}
@@ -117,27 +124,42 @@ HeatmapMapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const HeatmapComponent = function (props) {
-	const { dispatch, dataset } = props;
-	return (
-		<div className='view'>
-			<div className='sidepanel'>
-				<HeatmapSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-					/>
+class HeatmapComponent extends Component {
+
+	componentWillMount() {
+		this.setState({ heatmapState: this.props.dataset.viewState.heatmap });
+	}
+
+	componentWillReceiveProps(nextProps) {
+		this.setState({ heatmapState: nextProps.dataset.viewState.heatmap });
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		return !_.isEqual(nextState.heatmapState, this.state.heatmapState);
+	}
+
+	render() {
+		const { dispatch, dataset } = this.props;
+		return (
+			<div className='view'>
+				<div className='sidepanel'>
+					<HeatmapSidepanel
+						dataset={dataset}
+						dispatch={dispatch}
+						/>
+				</div>
+				<RemountOnResize
+					/* Leaflet's canvas interferes with CSS layouting,
+					so we unmount and remount it on resize events */
+					>
+					<HeatmapMapComponent
+						dataset={dataset}
+						dispatch={dispatch} />
+				</RemountOnResize>
 			</div>
-			<RemountOnResize
-				/* Leaflet's canvas interferes with CSS layouting,
-				so we unmount and remount it on resize events */
-				>
-				<HeatmapMapComponent
-					dataset={dataset}
-					dispatch={dispatch} />
-			</RemountOnResize>
-		</div>
-	);
-};
+		);
+	}
+}
 
 HeatmapComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
