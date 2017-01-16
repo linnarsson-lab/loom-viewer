@@ -8,7 +8,7 @@ import { sparkline } from './sparkline';
 
 const SparklineViewComponent = (props) => {
 	const { dispatch, dataset} = props;
-	const { col } = dataset.data;
+	const { col } = dataset;
 	const sl = dataset.viewState.sparkline;
 	// The old column attribute values that we displayed in the "legend"
 	let legendData = col.attrs[sl.colAttr];
@@ -25,7 +25,7 @@ const SparklineViewComponent = (props) => {
 	// note that genes are now stored in col.attrs
 	let sparklines = [], j = 0;
 	for (let i = 0; i < selection.length; i++) {
-		let geneData = dataset.data.col.attrs[selection[i]];
+		let geneData = dataset.col.attrs[selection[i]];
 		// no point trying to generate genes without data
 		if (geneData) {
 			sparklines.push(

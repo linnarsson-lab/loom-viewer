@@ -15,7 +15,7 @@ export const PrintSettings = function (props) {
 		return (value) => {
 			dispatch({
 				type: actionType,
-				datasetName: dataSet.dataset,
+				path: dataset.path,
 				[stateName]: merge(
 					state,
 					{

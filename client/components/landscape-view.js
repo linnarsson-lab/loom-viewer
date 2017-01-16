@@ -10,7 +10,7 @@ const LandscapeComponent = function (props) {
 	const { dispatch, dataset } = props;
 	const { coordinateAttrs, colorAttr, colorMode,
 		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.landscape;
-	const { col } = dataset.data;
+	const { col } = dataset;
 
 	// filter out undefined attributes;
 	let attrs = [];

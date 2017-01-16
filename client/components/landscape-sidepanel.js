@@ -11,9 +11,9 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataset } = props;
-	const { data } = dataset;
-	const geneData = data.row.attrs.Gene.data;
-	const attrs = data.col.attrs, lss = dataset.viewState.landscape;
+	const { row, col } = dataset;
+	const geneData = row.attrs.Gene.data;
+	const attrs = col.attrs, lss = dataset.viewState.landscape;
 	const { coordinateAttrs, asMatrix,
 		colorAttr, colorMode,
 		logscale, jitter, filterZeros } = lss;
@@ -32,7 +32,7 @@ export const LandscapeSidepanel = function (props) {
 			let newVals = newAttrs.slice(0);
 			if (value) {
 				newVals[idx] = value;
-				if (geneData.indexOf(value) !== -1 && data.col.geneKeys.indexOf(value) === -1) {
+				if (geneData.indexOf(value) !== -1 && col.geneKeys.indexOf(value) === -1) {
 					dispatch(fetchGene(dataset, [value]));
 				}
 			} else {
@@ -50,7 +50,7 @@ export const LandscapeSidepanel = function (props) {
 		};
 	};
 
-	const colAttrsOptions = data.col.keys
+	const colAttrsOptions = col.keys
 		.concat(geneData)
 		.sort();
 

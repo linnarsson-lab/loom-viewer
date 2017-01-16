@@ -66,7 +66,7 @@ export const ViewInitialiser = function (props) {
 	} else {
 		const dataset = datasets[path];
 		if (dataset) {
-			return (dataset.data === undefined ?
+			return (!(dataset.col && dataset.row) ?
 				<FetchDatasetComponent
 					dispatch={dispatch}
 					datasets={datasets}

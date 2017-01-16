@@ -12,7 +12,7 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillMount() {
-		this.setState(this.createOptions(this.props.dataset.data.row.attrs.Gene.data));
+		this.setState(this.createOptions(this.props.dataset.row.attrs.Gene.data));
 		if (this.props.value) {
 			let values = null;
 			if (this.props.multi) {
@@ -29,8 +29,8 @@ export class FetchGeneComponent extends Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const prevSG = this.props.dataset.data.row.attrs.Gene.data;
-		const nextSG = nextProps.dataset.data.row.attrs.Gene.data;
+		const prevSG = this.props.dataset.row.attrs.Gene.data;
+		const nextSG = nextProps.dataset.row.attrs.Gene.data;
 		if (!isEqual(prevSG, nextSG)) {
 			this.setState(this.createOptions(nextSG));
 		}

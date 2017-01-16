@@ -7,13 +7,13 @@ import { SET_VIEW_PROPS, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/
 class CellMDComponent extends Component {
 	componentWillMount() {
 		const { dispatch, dataset} = this.props;
-		const datasetName = dataset.dataset;
+		const path = dataset.path;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
 				dispatch({
 					type: SORT_CELL_METADATA,
-					datasetName,
+					path,
 					key,
 					stateName: 'cellMD',
 				});
@@ -24,7 +24,7 @@ class CellMDComponent extends Component {
 			return () => {
 				dispatch({
 					type: FILTER_METADATA,
-					datasetName,
+					path,
 					stateName: 'cellMD',
 					attr: 'colAttrs',
 					key,
@@ -37,7 +37,7 @@ class CellMDComponent extends Component {
 			let searchVal = event.target.value ? event.target.value : '';
 			dispatch({
 				type: SET_VIEW_PROPS,
-				datasetName,
+				path,
 				stateName: 'cellMD',
 				viewState: { cellMD: { searchVal } },
 
@@ -61,7 +61,7 @@ class CellMDComponent extends Component {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { col } = dataset.data;
+		const { col } = dataset;
 		const { attrs, keys, order } = col;
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
@@ -117,7 +117,7 @@ const CellMetadataViewInitialiser = function (props) {
 
 CellMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	datasets: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 

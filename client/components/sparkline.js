@@ -270,7 +270,11 @@ function categoriesPainter(context, range, colorIndices) {
 
 
 function barPainter(attr, label) {
-	let { min, max, hasZeros } = attr;
+	let { min, max, hasZeros, uniqueVal } = attr;
+	if (uniqueVal){
+		min = max = uniqueVal;
+		hasZeros = uniqueVal === 0;
+	}
 	if (hasZeros){
 		min = min < 0 ? min : 0;
 	}

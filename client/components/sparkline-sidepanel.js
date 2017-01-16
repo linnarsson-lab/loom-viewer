@@ -13,7 +13,7 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 export const SparklineSidepanel = function (props) {
 	const { dispatch, dataset } = props;
 	const { sparkline } = dataset.viewState;
-	const { col } = dataset.data;
+	const { col } = dataset;
 	// The old column attribute values that we displayed in the "legend"
 	// if colAttr does not exist (for example, the default values
 	// in the Loom interface is not present), pick the first column

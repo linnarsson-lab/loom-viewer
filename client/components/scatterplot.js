@@ -97,7 +97,7 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 		if (colorMode === 'Categorical') {
 			let { colorIndices } = color;
 			for (let i = 0; i < cIdx.length; i++) {
-				cIdx[i] = colorIndices[colData[i]] | 0;
+				cIdx[i] = colorIndices.mostFreq[colData[i]]+1 | 0;
 			}
 		} else {
 			let { min, max, hasZeros } = color;

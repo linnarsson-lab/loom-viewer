@@ -19,7 +19,7 @@ const GenescapeComponent = function (props) {
 			selectedAttrs.push(attr);
 		}
 	}
-	const { row } = dataset.data;
+	const { row } = dataset;
 	const color = row.attrs[colorAttr];
 	let plot;
 	if (asMatrix && selectedAttrs.length > 2) {

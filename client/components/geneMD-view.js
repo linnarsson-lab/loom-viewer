@@ -7,13 +7,13 @@ import { SET_VIEW_PROPS, SORT_GENE_METADATA, FILTER_METADATA } from '../actions/
 class GeneMDComponent extends Component {
 	componentWillMount() {
 		const { dispatch, dataset} = this.props;
-		const datasetName = dataset.dataset;
+		const path = dataset.path;
 
 		const onClickAttrFactory = (key) => {
 			return () => {
 				dispatch({
 					type: SORT_GENE_METADATA,
-					datasetName,
+					path,
 					key,
 					stateName: 'geneMD',
 				});
@@ -24,7 +24,7 @@ class GeneMDComponent extends Component {
 			return () => {
 				dispatch({
 					type: FILTER_METADATA,
-					datasetName,
+					path,
 					stateName: 'geneMD',
 					attr: 'rowAttrs',
 					key,
@@ -37,7 +37,7 @@ class GeneMDComponent extends Component {
 			let searchVal = event.target.value ? event.target.value : '';
 			dispatch({
 				type: SET_VIEW_PROPS,
-				datasetName,
+				path,
 				stateName: 'geneMD',
 				viewState: { geneMD: { searchVal } },
 			});
@@ -58,7 +58,7 @@ class GeneMDComponent extends Component {
 				/>
 		);
 
-		const { row } = dataset.data;
+		const { row } = dataset;
 		const { attrs, keys, order } = row;
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){

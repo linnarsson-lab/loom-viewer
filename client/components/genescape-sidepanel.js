@@ -10,7 +10,7 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataset } = props;
-	const attrs = dataset.data.row.attrs;
+	const attrs = dataset.row.attrs;
 	const { coordinateAttrs, asMatrix, colorAttr, colorMode,
 		logscale, jitter, filterZeros } = dataset.viewState.genescape;
 
@@ -43,7 +43,7 @@ export const GenescapeSidepanel = function (props) {
 		};
 	};
 
-	const rowAttrOptions = dataset.data.row.keys
+	const rowAttrOptions = dataset.row.keys
 		.slice(0)
 		.filter((key) => {
 			return attrs[key].uniqueVal === undefined;
