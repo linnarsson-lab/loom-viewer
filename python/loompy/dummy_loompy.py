@@ -874,24 +874,24 @@ class LoomConnection(object):
         if genes is None:
             genes = np.fromiter(range(self.shape[0]), dtype='int')
         if axis == 1:
-            cols_per_chunk = batch_size
-            ix = 0
-            while ix < self.shape[1]:
-                cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
+                cols_per_chunk = batch_size
+                ix = 0
+                while ix < self.shape[1]:
+                    cols_per_chunk = min(self.shape[1] - ix, cols_per_chunk)
 
-                selection = cells - ix
-                # Pick out the cells that are in this batch
-                selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
-                if selection.shape[0] == 0:
-                    continue
+                    selection = cells - ix
+                    # Pick out the cells that are in this batch
+                    selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
+                    if selection.shape[0] == 0:
+                        continue
 
-                # Load the whole chunk from the file, then extract genes and cells using fancy indexing
-                vals = self[:, ix:ix + cols_per_chunk]
-                vals = vals[genes, :]
-                vals = vals[:, selection]
+                    # Load the whole chunk from the file, then extract genes and cells using fancy indexing
+                    vals = self[:, ix:ix + cols_per_chunk]
+                    vals = vals[genes, :]
+                    vals = vals[:, selection]
 
-                yield (ix, ix + selection, vals)
-                ix = ix + cols_per_chunk
+                    yield (ix, ix + selection, vals)
+                    ix = ix + cols_per_chunk
 
         if axis == 0:
             rows_per_chunk = batch_size
