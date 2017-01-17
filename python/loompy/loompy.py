@@ -142,7 +142,7 @@ def create_from_pandas(df, loom_file):
 	# f.close()
 	# pass
 
-def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotation={}, schema=None, genome='mm10'):
+def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotation={}, genome='mm10'):
 	"""
 	Create a .loom file from 10X Genomics cellranger output
 
@@ -156,8 +156,6 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 	Returns:
 		Nothing, but creates loom_file
 	"""
-	if schema is not None:
-		raise DeprecationWarning("Argument 'schema' is no longer supported")
 	matrix_folder = os.path.join(folder, 'filtered_gene_bc_matrices', genome)
 	matrix = mmread(os.path.join(matrix_folder, "matrix.mtx")).astype("float32").todense()
 
@@ -380,9 +378,6 @@ class LoomAttributeManager():
 		return self.f.attrs.__contains__(name)
 
 	def __setitem__(self, name, value):
-		if name == "schema":
-			raise KeyError("Attribute 'schema' is protected and cannot be set")
-
 		self.f.attrs[name] = value.encode('utf-8')
 		self.f.flush()
 
@@ -508,7 +503,7 @@ class LoomConnection(object):
 			html += "<tr>"
 			for ra in self.row_attrs.keys():
 				html += "<td>&nbsp;</td>"  # Space for row attrs
-			html += "<td><strong>" + ca + ":" + self.schema["col_attrs"][ca] + "</strong></td>"  # Col attr name
+			html += "<td><strong>" + ca + "</strong></td>"  # Col attr name
 			for v in self.col_attrs[ca][:cm]:
 				html += "<td>" + str(v) + "</td>"
 			if self.shape[1] > cm:
@@ -518,7 +513,7 @@ class LoomConnection(object):
 		# Emit row attribute names
 		html += "<tr>"
 		for ra in self.row_attrs.keys():
-			html += "<td><strong>" + ra + ":" + self.schema["row_attrs"][ra] + "</strong></td>"  # Row attr name
+			html += "<td><strong>" + ra + "</strong></td>"  # Row attr name
 		html += "<td>&nbsp;</td>"  # Space for col attrs
 		for v in range(cm):
 			html += "<td>&nbsp;</td>"
@@ -569,7 +564,6 @@ class LoomConnection(object):
 		self.file = None
 		self.row_attrs = {}
 		self.col_attrs = {}
-		self.schema = {}
 		self.shape = (0, 0)
 
 	def add_columns(self, submatrix, col_attrs):
