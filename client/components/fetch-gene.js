@@ -6,6 +6,7 @@ import createFilterOptions from 'react-select-fast-filter-options';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
+
 	constructor(props) {
 		super(props);
 		this.handleChange = this.handleChange.bind(this);
@@ -91,6 +92,7 @@ export class FetchGeneComponent extends Component {
 				multi={this.props.multi}
 				clearable={this.props.clearable === true}
 				style={this.props.style}
+				maxHeight={100}
 				/>
 		);
 	}
