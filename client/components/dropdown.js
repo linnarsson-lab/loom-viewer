@@ -1,6 +1,6 @@
 import React, { Component, PropTypes } from 'react';
-import Select from 'react-select';
-
+import Select from 'react-virtualized-select';
+import createFilterOptions from 'react-select-fast-filter-options';
 
 //TODO: document what DropdownMenu expects
 export class DropdownMenu extends Component {
@@ -12,7 +12,20 @@ export class DropdownMenu extends Component {
 	}
 
 	componentWillMount() {
-		let { value, multi } = this.props;
+		const { options, unsorted, value, multi  } = this.props;
+		const sorted = unsorted ? options : options.slice(0).sort();
+		let sortedOptions = new Array(sorted.length);
+		for (let i = 0; i <= sorted.length; i++) {
+			sortedOptions[i] = {
+				value: sorted[i],
+				label: sorted[i],
+			};
+		}
+
+		this.setState({ 
+			options: sortedOptions,
+			filterOptions: createFilterOptions({ options: sortedOptions }),
+		});
 		this.setButtonName(value, multi);
 	}
 
@@ -58,25 +71,17 @@ export class DropdownMenu extends Component {
 	}
 
 	render() {
-		const { options, unsorted } = this.props;
-
-		const sorted = unsorted ? options : options.slice(0).sort();
-		let sortedOptions = new Array(sorted.length);
-		for (let i = 0; i <= sorted.length; i++) {
-			sortedOptions[i] = {
-				value: sorted[i],
-				label: sorted[i],
-			};
-		}
-
+		const { options, filterOptions, value } = this.state;
 		return (
 			<Select
-				value={this.state}
-				options={sortedOptions}
+				value={value}
+				options={options}
+				filterOptions={filterOptions}
 				onChange={this.handleChange}
 				multi={this.props.multi}
 				clearable={this.props.clearable === true}
 				style={this.props.style}
+				maxHeight={100}
 				/>
 		);
 	}
