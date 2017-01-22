@@ -416,7 +416,6 @@ class LoomConnection(object):
 
 		Row and column attributes are loaded into memory for fast access.
 		"""
-		logging.info("Connecting to: " + filename)
 		self.file = h5py.File(filename, 'r+')
 		self.shape = self.file['matrix'].shape
 
@@ -454,7 +453,7 @@ class LoomConnection(object):
 
 		a = ["/row_attrs/", "/col_attrs/"][axis]
 		if len(values) != self.shape[axis]:
-			raise ValueError("Attribute must have exactly %d values" % self.shape[0])
+			raise ValueError("Attribute must have exactly %d values" % self.shape[axis])
 		if self.file[a].__contains__(name):
 			del self.file[a + name]
 		self.file[a + name] = values
