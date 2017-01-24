@@ -3,6 +3,7 @@ from flask import request
 from flask import make_response
 from flask_compress import Compress
 from werkzeug.utils import secure_filename
+from werkzeug.routing import BaseConverter
 from functools import wraps, update_wrapper
 import os
 import os.path
@@ -67,6 +68,19 @@ def cache(expires=None, round_to_minute=False):
 
 app = flask.Flask(__name__)
 app.cache = None
+
+# Advanced routing for fetching multiple rows/columns at once
+# creates list of integers based on a '+' separated string
+class IntDictConverter(BaseConverter):
+
+	def to_python(self, value):
+		return [int(v) for v in value.split('+')]
+
+	def to_url(self, values):
+		urlValues = [BaseConverter.to_url(value) for value in values]
+		return '+'.join(urlValues)
+
+app.url_map.converters['intdict'] = IntDictConverter
 
 # enable GZIP compression
 compress = Compress()
@@ -185,25 +199,45 @@ def get_clone(project, filename):
 
 	return flask.send_file(path, mimetype='application/octet-stream')
 
-# Get one row of data (i.e. all the expression values for a single gene)
-@app.route('/loom/<string:project>/<string:filename>/row/<int:row>')
+# Get one or more rows of data (i.e. all the expression values for a single gene)
+@app.route('/loom/<string:project>/<string:filename>/row/<intdict:rows>')
 @cache(expires=None)
-def send_row(project, filename, row):
+def send_row(project, filename, rows):
 	(u,p) = get_auth(request)
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	return flask.Response(json.dumps(ds[row,:].tolist()), mimetype="application/json")
+	elif len(rows) == 1:
+		# only one row requested, send one row of data.
+		# this is transition code and will be removed once the client-side
+		# is updated to use dicts
+		return flask.Response(json.dumps(ds[rows[0], :].tolist()), mimetype="application/json")
+	elif len(rows) > 1:
+		# return a dictionary of rows
+		retRows = {}
+		for row in rows:
+			retRows[row] = ds[row, :].tolist()
+		return flask.Response(json.dumps(retRows), mimetype="application/json")
 
-# Get one column of data (i.e. all the expression values for a single cell)
-@app.route('/loom/<string:project>/<string:filename>/col/<int:col>')
+# Get one or more columns of data (i.e. all the expression values for a single cell)
+@app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
 @cache(expires=None)
-def send_col(project, filename, col):
+def send_col(project, filename, cols):
 	(u,p) = get_auth(request)
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	return flask.Response(json.dumps(ds[:,col].tolist()), mimetype="application/json")
+	elif len(cols) == 1:
+		# only one col requested, send one col of data.
+		# this is transition code and will be removed once the client-side
+		# is updated to use dicts
+		return flask.Response(json.dumps(ds[:, cols[0]].tolist()), mimetype="application/json")
+	elif len(cols) > 1:
+		# return a dictionary of cols
+		retCols = {}
+		for col in cols:
+			retCols[col] = ds[:, col].tolist()
+		return flask.Response(json.dumps(retCols), mimetype="application/json")
 
 
 #
@@ -247,7 +281,7 @@ def start_server(dataset_path, show_browser, port, debug):
 		else:
 			webbrowser.open(url)
 	try:
-		app.run(debug=debug, host="0.0.0.0", port=port)
+		app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
 	except socket_error as serr:
 		logging.error(serr)
 		if port < 1024:
