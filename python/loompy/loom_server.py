@@ -214,9 +214,9 @@ def send_row(project, filename, rows):
 		return flask.Response(json.dumps(ds[rows[0], :].tolist()), mimetype="application/json")
 	elif len(rows) > 1:
 		# return a dictionary of rows
-		retRows = {}
+		retRows = []
 		for row in rows:
-			retRows[row] = ds[row, :].tolist()
+			retRows.append({ 'idx': row, 'data': ds[row, :].tolist()})
 		return flask.Response(json.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
@@ -233,10 +233,11 @@ def send_col(project, filename, cols):
 		# is updated to use dicts
 		return flask.Response(json.dumps(ds[:, cols[0]].tolist()), mimetype="application/json")
 	elif len(cols) > 1:
-		# return a dictionary of cols
-		retCols = {}
+		# return a list of {idx, data} objects.
+		# This is easier to iterate over client-side
+		retCols = []
 		for col in cols:
-			retCols[col] = ds[:, col].tolist()
+			retCols.append({ 'idx': col, 'data': ds[:, col].tolist()})
 		return flask.Response(json.dumps(retCols), mimetype="application/json")
 
 
