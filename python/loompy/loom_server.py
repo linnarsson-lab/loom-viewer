@@ -23,6 +23,9 @@ import time
 from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
+from gevent.wsgi import WSGIServer
+from gevent import monkey
+monkey.patch_all()
 
 def cache(expires=None, round_to_minute=False):
 	"""
@@ -59,7 +62,7 @@ def cache(expires=None, round_to_minute=False):
 
 				response.headers['Cache-Control'] = 'public'
 				response.headers['Expires'] = format_date_time(time.mktime(expires_time.timetuple()))
- 
+
 			return response
 		return cache_func
 	return cache_decorator
@@ -271,7 +274,8 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-def start_server(dataset_path, show_browser, port, debug):
+
+def start_server(dataset_path, show_browser=True, port="8003", debug=True):
 	app.cache = LoomCache(dataset_path)
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -282,7 +286,9 @@ def start_server(dataset_path, show_browser, port, debug):
 		else:
 			webbrowser.open(url)
 	try:
-		app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
+		#app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
+		http_server = WSGIServer(('', port), app)
+		http_server.serve_forever()
 	except socket_error as serr:
 		logging.error(serr)
 		if port < 1024:

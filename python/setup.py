@@ -17,7 +17,9 @@ setup(
         'numpy', 
         'progressbar2',
         'requests',
+        'flask',
         'flask-compress',
+        'gevent',
         'PyMySQL'
     ],
     
