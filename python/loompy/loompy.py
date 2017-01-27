@@ -41,6 +41,7 @@ from shutil import copyfile
 import logging
 import requests
 import json
+import time
 
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
@@ -88,6 +89,10 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 
 	for a in file_attrs:
 		ds.attrs[a] = file_attrs[a]
+
+	# store creation date
+	currentTime = time.localtime(time.time())
+	ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
 
 	ds.close()
 
