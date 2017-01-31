@@ -250,7 +250,7 @@ def send_col(project, filename, cols):
 
 def serve_image(img):
 	img_io = BytesIO()
-	img.save(img_io, 'PNG')
+	img.save(img_io, 'PNG', compress_level=1)
 	img_io.seek(0)
 	return flask.send_file(img_io, mimetype='image/png')
 
