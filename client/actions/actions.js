@@ -277,6 +277,13 @@ function requestGene(gene, datasetName) {
 		type: REQUEST_GENE,
 		gene,
 		datasetName,
+		state: {
+			dataSets: {
+				[datasetName]: {
+					fetchingGenes: { [gene]: true },
+				},
+			},
+		},
 	};
 }
 
@@ -301,6 +308,13 @@ function requestGeneFailed(gene, datasetName) {
 		type: REQUEST_GENE_FAILED,
 		gene,
 		datasetName,
+		state: {
+			dataSets: {
+				[datasetName]: {
+					fetchingGenes: { [gene]: false },
+				},
+			},
+		},
 	};
 }
 
@@ -320,6 +334,7 @@ function receiveGene(gene, datasetName, indices, data) {
 			dataSets: {
 				[datasetName]: {
 					fetchedGenes: { [gene]: convertedData },
+					fetchingGenes: { [gene]: false },
 				},
 			},
 		},
@@ -343,8 +358,6 @@ export function fetchGene(dataSet, genes) {
 			if (dataSet.fetchedGenes[gene] ||
 				dataSet.fetchingGenes[gene] ||
 				row === -1) {
-				// Announce gene retrieved from cache
-				dispatch(requestGeneCached(gene, dataSet.dataset));
 				continue;
 			}
 			// Announce gene request from server
