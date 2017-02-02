@@ -10,7 +10,7 @@ Loom is
 
 ## Installation
 
-1. Install [Anaconda](https://www.continuum.io/downloads).
+1. Install [Anaconda](https://www.continuum.io/downloads). Note: Loom only works with Python version 3.x.
 2. Install Loom:
 
 ```bash
