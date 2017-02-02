@@ -213,11 +213,11 @@ export function convertArray(data) {
 			} else if (min > -32769 && max < 32768) {
 				array.data = Int16Array.from(data);
 				array.filteredData = Int16Array.from(array.data);
-				array.arrayType = 'in16';
+				array.arrayType = 'int16';
 			} else {
 				array.data = Int32Array.from(data);
 				array.filteredData = Int32Array.from(array.data);
-				array.arrayType = 'in32';
+				array.arrayType = 'int32';
 			}
 			break;
 		case 'string':
