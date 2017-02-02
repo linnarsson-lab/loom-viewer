@@ -24,27 +24,24 @@ const SparklineViewComponent = (props) => {
 	let sparklines = [], j = 0;
 	for (let i = 0; i < selection.length; i++) {
 		let geneData = dataSet.fetchedGenes[selection[i]];
-		// no point trying to generate genes without data
-		if (geneData) {
-			sparklines.push(
-				<div
-					key={selection[i]}
-					style={{
-						background: ((j++ % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-						display: 'flex',
-						flexDirection: 'column',
-						minHeight: '30px',
-						maxHeight: '30px',
-					}}>
-					<Canvas
-						height={30}
-						paint={sparkline(geneData, sl.geneMode, undefined, sl.showLabels ? selection[i] : null)}
-						redraw
-						clear
-						/>
-				</div>
-			);
-		}
+		sparklines.push(
+			<div
+				key={selection[i]}
+				style={{
+					background: ((j++ % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+					display: 'flex',
+					flexDirection: 'column',
+					minHeight: '30px',
+					maxHeight: '30px',
+				}}>
+				<Canvas
+					height={30}
+					paint={sparkline(geneData, sl.geneMode, undefined, sl.showLabels ? selection[i] : null)}
+					redraw
+					clear
+					/>
+			</div>
+		);
 	}
 
 	const legend = (
