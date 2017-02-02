@@ -50,7 +50,7 @@ class LoomCache(object):
 
 		Args:
 			project (str):		Project name
-			username (str): 	Username
+			username (str):	Username
 			password (str):		Password
 			mode (str):			"read" or "write"
 

@@ -258,13 +258,41 @@ def serve_image(img):
 @cache(expires=60*20)
 def send_tile(project, filename, z,x,y):
 	(u,p) = get_auth(request)
-	ds = app.cache.connect_dataset_locally(project, filename, u, p)
-	if ds == None:
-		return "", 404
-	img = ds.dz_get_zoom_image(x,y,z)
-	if img == None:
-		return "", 404
-	return serve_image(img)
+	# path to desired tile
+	path = app.cache.get_absolute_path(project, filename, u, p)
+	tiledir = '%s.tiles/' % (path)
+	tile = 'z%02d_x%03d_y%03d.png' % (z, x, y)
+	tilepath = '%s%s' % (tiledir, tile)
+
+	# make sure the tile directory exists
+	# we use a try/error approach so that we
+	# don't have to worry about race conditions
+	# (if another process creates the same
+	#  directory we just catch the exception)
+	try:
+		os.makedirs(tiledir)
+	except OSError as exception:
+		# if the error was that the directory already
+		# exists, ignore it, since that is expected.
+		if exception.errno != errno.EEXIST:
+			raise
+
+	# if the tile doesn't exist, we're either out of range,
+	# or it still has to be generated
+	if not os.path.isfile(tilepath):
+		ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		if ds == None:
+			return "", 404
+		img = ds.dz_get_zoom_image(x, y, z)
+		if img == None:
+			return "", 404
+		# save as a PNG file
+		img_io = open(tilepath, 'wb')
+		img.save(img_io, 'PNG', compress_level=6)
+		img_io.close()
+	# this code can only be reached when a tile exists
+	img_io = open(tilepath, 'rb')
+	return flask.send_file(img_io, mimetype='image/png')
 
 def signal_handler(signal, frame):
 	print('\nShutting down.')
