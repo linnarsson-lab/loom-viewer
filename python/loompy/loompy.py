@@ -71,8 +71,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	f = h5py.File(filename, 'w')
 
 	# Save the main matrix
-	# f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
-	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
+	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
 	f.flush()
@@ -185,112 +184,8 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
 	col_attrs["_KMeans_10"] = kmeans.astype('float64')
 
-
 	create(loom_file, matrix, row_attrs, col_attrs)
 
-def join(files, output_file, key, file_attrs={}):
-	logging.warn("loompy.join is broken, please use combine() instead (but it will not join by key)")
-	if len(files) == 0:
-		raise ValueError("The input file list was empty")
-	logging.info("joining " + str(files))
-	copyfile(files[0], output_file)
-
-	if len(files) == 1:
-		return
-
-	split = len(files) // 2
-	files1 = files[:split]
-	files2 = files[split:]
-	logging.info(files1)
-	logging.info(files2)
-	if len(files1) > 1:
-		temp1 = tempfile.mktemp()
-		join(files1, temp1, key, file_attrs)
-		files1 = [temp1]
-	if len(files2) > 1:
-		temp2 = tempfile.mktemp()
-		join(files2, temp2, key, file_attrs)
-		files2 = [temp2]
-	_join(files1[0], files2[0], output_file, key, file_attrs)
-	ds = connect(output_file)
-	for a in file_attrs:
-		ds.attrs[a] = file_attrs[a]
-	ds.close()
-
-def _join(file1, file2, output_file, key, file_attrs={}):
-	"""
-	Perform a proper join of two or more loom files
-
-	Args:
-		files (list of str):	the list of input files (full paths)
-		output_file (str):		full path of the output loom file
-		key (string or (string, string)):			Primary key(s)
-		file_attrs (dict):		file attributes (title, description, url, etc.)
-
-	Returns:
-		Nothing, but creates a new loom file joining the input files.
-
-	File attributes that are not given as function args, are taken instead from the first file
-	"""
-	if type(key) == str:
-		key1 = key
-		key2 = key
-	else:
-		key1 = key[0]
-		key2 = key[1]
-
-	# Perform the join operation
-	ds1 = connect(file1)
-	ds2 = connect(file2)
-	keys1 = ds1.row_attrs[key1]
-	keys2 = ds2.row_attrs[key2]
-
-	a=pd.DataFrame({
-			'key': keys1,
-			'ix_a': np.fromiter(range(keys1.shape[0]), dtype='int')
-		})
-	b=pd.DataFrame({
-			'key': keys2,
-			'ix_b': np.fromiter(range(keys2.shape[0]), dtype='int')
-		})
-	joined = pd.merge(a, b, on='key')
-
-	# These are the indexes into the two datasets for the joined rows
-	ix_a = joined["ix_a"].values
-	ix_b = joined["ix_b"].values
-
-	# Copy dataset 1 to the output
-	ds_output = None
-	row_attrs = {}
-	for k, v in ds1.row_attrs.items():
-		row_attrs[k] = v[ix_a]
-	batch_size = 5000
-	ix = 0
-	while True:
-		m = ds1[ix_a, ix:ix + batch_size]
-		col_attrs = {}
-		for k, v in ds1.col_attrs.items():
-			col_attrs[k] = v[ix:ix+batch_size]
-		if ds_output is None:
-			create(output_file, m, row_attrs, col_attrs, file_attrs=file_attrs)
-			ds_output = connect(output_file)
-			for a, v in file_attrs:
-				ds_output.attrs[a] = v
-		else:
-			ds_output.add_columns(m, col_attrs)
-		ix = ix + 1
-	# Copy dataset 2 to the output
-	ix = 0
-	while True:
-		m = ds2[ix_b, ix:ix + batch_size]
-		col_attrs = {}
-		for k, v in ds2.col_attrs.items():
-			col_attrs[k] = v[ix:ix+batch_size]
-			ds_output.add_columns(m, col_attrs)
-		ix = ix + 1
-	ds.close()
-	ds1.close()
-	ds2.close()
 
 def combine(files, output_file, key=None, file_attrs={}):
 	"""
@@ -600,14 +495,14 @@ class LoomConnection(object):
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
 			vals = np.array(vals)
+			if vals.dtype.type is np.str_:
+				vals = np.array([x.encode('ascii', 'ignore') for x in vals])
 			temp = self.file['/col_attrs/' + key][:]
 			casting_rule_dtype = np.result_type(temp, vals)
 			vals = vals.astype(casting_rule_dtype)
 			temp = temp.astype(casting_rule_dtype)
 			temp.resize((n_cols,))
 			temp[self.shape[1]:] = vals
-			if temp.dtype.type is np.str_:
-				temp = np.array([x.encode('ascii', 'ignore') for x in temp])
 			del self.file['/col_attrs/' + key]
 			self.file['/col_attrs/' + key] = temp
 			self.col_attrs[key] = self.file['/col_attrs/' + key]
@@ -804,6 +699,7 @@ class LoomConnection(object):
 				# Pick out the cells that are in this batch
 				selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
 				if selection.shape[0] == 0:
+					ix = ix + cols_per_chunk
 					continue
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
@@ -966,7 +862,7 @@ class LoomConnection(object):
 		if ds != None:
 			ds.close()
 
-	def corr_matrix(self, axis = 0, log=False):
+	def corr_matrix(self, axis=0, log=False):
 		"""
 		Compute correlation matrix without casting to float64.
 
