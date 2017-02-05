@@ -1,4 +1,3 @@
-
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -9,8 +8,10 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 });
 
 const uglifySettings = {
-	mangle: true,
-	sourcemap: false,
+	mangle: {
+		screw_ie8: true,
+		keep_fnames: false,
+	},
 	compress: {
 		warnings: false,
 		sequences: true,
@@ -21,6 +22,7 @@ const uglifySettings = {
 		if_return: true,
 		join_vars: true,
 		drop_console: true,
+		screw_ie8: true,
 	},
 	output: {
 		comments: false,
@@ -34,26 +36,23 @@ module.exports = {
 	output: {
 		path: './python/loompy',
 		filename: '[name].[hash].js',
+		sourceMapFilename: '[name].[hash].map',
 	},
 	module: {
 		loaders: [
 			{
 				test: /\.js$/,
-				exlude: /node_modules/,
-				loader: 'babel',
+				exclude: /node_modules/,
+				loader: 'babel-loader',
 				include: path.join(__dirname, 'client'),
 			},
 		],
 	},
 	plugins: [
 		new webpack.DefinePlugin({
-			'process.env': {
-				'NODE_ENV': "'debug'",
-			},
+			'process.env.NODE_ENV': JSON.stringify('production')
 		}),
-		// new webpack.optimize.DedupePlugin(),
-		// new webpack.optimize.OccurenceOrderPlugin(),
-		// new webpack.optimize.UglifyJsPlugin(uglifySettings),
+		new webpack.optimize.UglifyJsPlugin(uglifySettings),
 		HTMLWebpackPluginConfig,
 	],
 };

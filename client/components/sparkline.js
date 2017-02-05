@@ -2,6 +2,9 @@ import { nMostFrequent, arrayConstr } from '../js/util';
 import * as colors from '../js/colors';
 
 export function sparkline(attr, mode, dataRange, label, orientation, unfiltered) {
+	if (!attr){
+		return () => {};
+	}
 	// Determine plotter
 	let paint = null;
 	switch (mode) {
@@ -263,7 +266,7 @@ function barPainter(attr, label) {
 
 
 function barPaint(context, rangeData, xOffset, rangeWidth, attr, label) {
-	let { min, max, hasZeros } = attr;
+	let { hasZeros } = attr, min = attr.min||0, max = attr.max||0;
 	if (hasZeros){
 		min = min < 0 ? min : 0;
 	}
@@ -307,7 +310,7 @@ function heatmapPainter(attr, label, colorLUT) {
 }
 
 function heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT) {
-	let { min, max, hasZeros } = attr;
+let { hasZeros } = attr, min = attr.min||0, max = attr.max||0;
 	if (hasZeros){
 		min = min < 0 ? min : 0;
 	}

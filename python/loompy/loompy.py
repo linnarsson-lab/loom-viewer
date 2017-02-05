@@ -41,13 +41,14 @@ from shutil import copyfile
 import logging
 import requests
 import json
+import time
 
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
 		return s[2:-1]
 	return s
 
-def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None):
+def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(10,10), matrix_dtype="float32", compression_opts=None):
 	"""
 	Create a new .loom file from the given data.
 
@@ -56,7 +57,10 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 		matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
 		row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N
 		col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
-
+		chunks (tuple):         The chunking of the matrix. Defaults to (10,10). Note (10,10) is slow for loading big chunks but fast for single column/row retrieval.
+		                        For good speed of I reccomend (256,256) otherwise (64,64) is a good compromise.
+		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
+		compression_opts (int): Strenght of the gzip compression. Default None.
 	Returns:
 		Nothing. To work with the file, use loom.connect(filename).
 	"""
@@ -71,7 +75,10 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	f = h5py.File(filename, 'w')
 
 	# Save the main matrix
-	f.create_dataset('matrix', data=matrix.astype('float32'), dtype='float32', compression='gzip', maxshape=(matrix.shape[0], None), chunks=(min(10, matrix.shape[0]), min(10, matrix.shape[1])))
+	if compression_opts:
+		f.create_dataset('matrix', data=matrix.astype(matrix_dtype), maxshape=(matrix.shape[0], None), chunks=(min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1])))
+	else:
+		f.create_dataset('matrix', data=matrix.astype(matrix_dtype), maxshape=(matrix.shape[0], None), chunks=(min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1])), compression="gzip",compression_opts=compression_opts)
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
 	f.flush()
@@ -88,6 +95,10 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	for a in file_attrs:
 		ds.attrs[a] = file_attrs[a]
 
+	# store creation date
+	currentTime = time.localtime(time.time())
+	ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
+	ds.attrs['chunks'] = chunks
 	ds.close()
 
 def create_from_cef(cef_file, loom_file):
