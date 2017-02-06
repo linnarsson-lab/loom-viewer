@@ -87,6 +87,8 @@ app.url_map.converters['intdict'] = IntDictConverter
 
 # enable GZIP compression
 compress = Compress()
+app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
+app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
 #
@@ -279,7 +281,10 @@ def send_tile(project, filename, z,x,y):
 
 	# if the tile doesn't exist, we're either out of range,
 	# or it still has to be generated
-	if not os.path.isfile(tilepath):
+	if os.path.isfile(tilepath):
+		img_io = open(tilepath, 'rb')
+		flask.send_file(img_io, mimetype='image/png')
+	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
 			return "", 404
@@ -288,11 +293,12 @@ def send_tile(project, filename, z,x,y):
 			return "", 404
 		# save as a PNG file
 		img_io = open(tilepath, 'wb')
-		img.save(img_io, 'PNG', compress_level=6)
+		img.save(img_io, 'PNG', compress_level=1)
 		img_io.close()
-	# this code can only be reached when a tile exists
-	img_io = open(tilepath, 'rb')
-	return flask.send_file(img_io, mimetype='image/png')
+		img_buf = BytesIO()
+		img.save(img_buf, 'PNG', compress_level=1)
+		img_buf.seek(0)
+		return flask.send_file(img_io, mimetype='image/png')
 
 def signal_handler(signal, frame):
 	print('\nShutting down.')
