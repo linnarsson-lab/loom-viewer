@@ -98,8 +98,8 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	# store creation date
 	currentTime = time.localtime(time.time())
 	ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
-	ds.attrs['chunks'] = chunks
-	ds.close()
+	ds.attrs['chunks'] = str(chunks)
+	return ds
 
 def create_from_cef(cef_file, loom_file):
 	"""
