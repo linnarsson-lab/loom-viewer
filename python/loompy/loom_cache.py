@@ -114,9 +114,9 @@ class LoomCache(object):
 		# of equal size. The length equals total cells/genes
 		total_cells = ds.shape[1]
 		total_genes = ds.shape[0]
-		last_mod = self.format_time(project, filename)
-		# default to last_modified for older files that do 
+		# default to last_modified for older files that do
 		# not have a creation_date field
+		last_mod = self.format_time(project, filename)
 		creation_date = ds.attrs.get("creation_date", last_mod)
 		return {
 			"project": project,
@@ -131,6 +131,7 @@ class LoomCache(object):
 			"totalCells": total_cells,
 			"totalGenes": total_genes,
 		}
+
 	def format_time(self, project, filename):
 		"""
 		Returns the last time the file was modified as a string,

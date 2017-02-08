@@ -26,6 +26,7 @@ import math
 import numpy as np
 import tempfile
 import h5py
+import h5py_cache
 import os.path
 import pandas as pd
 import scipy
@@ -48,17 +49,26 @@ def strip(s):
 		return s[2:-1]
 	return s
 
-def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(10,10), matrix_dtype="float32", compression_opts=None):
+def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None):
 	"""
 	Create a new .loom file from the given data.
 
 	Args:
-		filename (str):			The filename (typically using a '.loom' file extension)
-		matrix (numpy.ndarray):	Two-dimensional (N-by-M) numpy ndarray of float values
-		row_attrs (dict):		Row attributes, where keys are attribute names and values are numpy arrays (float or string) of length N
-		col_attrs (dict):		Column attributes, where keys are attribute names and values are numpy arrays (float or string) of length M
-		chunks (tuple):         The chunking of the matrix. Defaults to (10,10). Note (10,10) is slow for loading big chunks but fast for single column/row retrieval.
-		                        For good speed of I reccomend (256,256) otherwise (64,64) is a good compromise.
+		filename (str):         The filename (typically using a `.loom` file extension)
+		matrix (numpy.ndarray): Two-dimensional (N-by-M) numpy ndarray of float values
+		row_attrs (dict):       Row attributes, where keys are attribute names and values 
+		                        are numpy arrays (float or string) of length N
+		col_attrs (dict):       Column attributes, where keys are attribute names and 
+		                        values are numpy arrays (float or string) of length M
+		chunks (tuple):         The chunking of the matrix. Small chunks are slow
+		                        when loading a large batch of rows/columns in sequence,
+		                        but fast for single column/row retrieval.
+		                        Defaults to (64,64).
+		chunk_cache (int):      Sets the chunk cache used by the HDF5 format inside
+		                        the loom file, in MB. If the cache is too small to
+		                        contain all chunks of a row/column in memory, then
+		                        sequential row/column access will be a lot slower.
+		                        Defaults to 512.
 		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
 		compression_opts (int): Strenght of the gzip compression. Default None.
 	Returns:
@@ -71,8 +81,9 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
-	# Create the file
-	f = h5py.File(filename, 'w')
+	# Create the file. We use h5py_cache to set a larger chunk cache size than
+	# the excessively small default used by HDF5, which is 1MB.
+	f = h5py_cache.File(filename, chunk_cache_mem_size=chunk_cache*1024*1024, 'w')
 
 	# Save the main matrix
 	if compression_opts:
