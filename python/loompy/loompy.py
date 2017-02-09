@@ -85,11 +85,29 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	# the excessively small default used by HDF5, which is 1MB.
 	f = h5py_cache.File(name=filename, mode='w', chunk_cache_mem_size=chunk_cache*1024*1024)
 
+	#make sure chunk size is not bigger than actual matrix size
+	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
+
 	# Save the main matrix
+
 	if compression_opts:
-		f.create_dataset('matrix', data=matrix.astype(matrix_dtype), maxshape=(matrix.shape[0], None), chunks=(min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1])))
+		f.create_dataset(
+			'matrix', data=matrix.astype(matrix_dtype),
+			maxshape=(matrix.shape[0], None),
+			chunks=chunks,
+			fletcher32=True
+		)
 	else:
-		f.create_dataset('matrix', data=matrix.astype(matrix_dtype), maxshape=(matrix.shape[0], None), chunks=(min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1])), compression="gzip",compression_opts=compression_opts)
+		f.create_dataset(
+			'matrix',
+			data=matrix.astype(matrix_dtype),
+			maxshape=(matrix.shape[0], None),
+			chunks=chunks,
+			fletcher32=True,
+			compression="gzip",
+			shuffle=True,
+			compression_opts=compression_opts
+		)
 	f.create_group('/row_attrs')
 	f.create_group('/col_attrs')
 	f.flush()
@@ -239,17 +257,19 @@ def combine(files, output_file, key=None, file_attrs={}):
 			ds.add_loom(f, key)
 	ds.close()
 
-def connect(filename):
+def connect(filename, mode='r+'):
 	"""
 	Establish a connection to a .loom file.
 
 	Args:
-		filename (str):		Name of the .loom file to open
+		filename (str):      Name of the .loom file to open
+		mode (str):          read/write mode, accepts 'r+' (read/write) or
+		                     'r' (read-only), defaults to 'r+'
 
 	Returns:
 		A LoomConnection instance.
 	"""
-	return LoomConnection(filename)
+	return LoomConnection(filename, mode)
 
 def upload(path, server, project, filename, username, password):
 	"""
