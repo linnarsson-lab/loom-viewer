@@ -72,7 +72,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
 		compression_opts (int): Strenght of the gzip compression. Default None.
 	Returns:
-		Nothing. To work with the file, use loom.connect(filename).
+		Nothing. To work with the file, use loompy.connect(filename).
 	"""
 	if not row_attr_types is None:
 		raise DeprecationWarning("row_attr_types are no longer supported and will be ignored")
@@ -245,7 +245,6 @@ def connect(filename):
 
 	Args:
 		filename (str):		Name of the .loom file to open
-		infer (bool):		Infer data types for attributes
 
 	Returns:
 		A LoomConnection instance.
@@ -321,19 +320,27 @@ class LoomAttributeManager():
 			return default
 
 class LoomConnection(object):
-	def __init__(self, filename):
+	def __init__(self, filename, mode='r+'):
 		"""
 		Establish a connection to a .loom file.
 
 		Args:
-			filename (str):		Name of the .loom file to open
+			filename (str):      Name of the .loom file to open
+			mode (str):          read/write mode, accepts 'r+' (read/write) or
+			                     'r' (read-only), defaults to 'r+'
 
 		Returns:
 			Nothing.
 
 		Row and column attributes are loaded into memory for fast access.
 		"""
-		self.file = h5py.File(filename, 'r+')
+
+		# make sure a valid mode was passed, if not default to read-only
+		# because you probably are doing something that you don't want to
+		if mode != 'r+' and mode != 'r':
+			logging.warn("Wrong mode passed to LoomConnection, using read-only to not destroy data")
+			mode = 'r'
+		self.file = h5py.File(filename, mode)
 		self.shape = self.file['matrix'].shape
 
 		self.row_attrs = {}
@@ -342,18 +349,22 @@ class LoomConnection(object):
 			self._load_attr(key, axis=0)
 			v = self.row_attrs[key]
 			if type(v[0]) is np.str_ and len(v[0]) >= 3 and v[0][:2] == "b'" and v[0][-1] == "'":
-				logging.warn("Fixing unicode bug by re-setting row attribute '" + key + "'")
-				self._save_attr(key, np.array([x[2:-1] for x in v]), axis=0)
-				self._load_attr(key, axis=0)
+				logging.warn("Unicode bug detected in row %s" % key)
+				if mode == 'r+':
+					logging.warn("Fixing unicode bug by re-setting row attribute '" + key + "'")
+					self._save_attr(key, np.array([x[2:-1] for x in v]), axis=0)
+					self._load_attr(key, axis=0)
 
 		self.col_attrs = {}
 		for key in self.file['col_attrs'].keys():
 			self._load_attr(key, axis=1)
 			v = self.col_attrs[key]
 			if type(v[0]) is np.str_ and len(v[0]) >= 3 and v[0][:2] == "b'" and v[0][-1] == "'":
-				logging.warn("Fixing unicode bug by re-setting column attribute '" + key + "'")
-				self._save_attr(key, np.array([x[2:-1] for x in v]), axis=1)
-				self._load_attr(key, axis=1)
+				logging.warn("Unicode bug detected in column %s" % key)
+				if mode == 'r+':
+					logging.warn("Fixing unicode bug by re-setting column attribute '" + key + "'")
+					self._save_attr(key, np.array([x[2:-1] for x in v]), axis=1)
+					self._load_attr(key, axis=1)
 
 		self.attrs = LoomAttributeManager(self.file)
 
