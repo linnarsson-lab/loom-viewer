@@ -83,7 +83,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 
 	# Create the file. We use h5py_cache to set a larger chunk cache size than
 	# the excessively small default used by HDF5, which is 1MB.
-	f = h5py_cache.File(filename, chunk_cache_mem_size=chunk_cache*1024*1024, 'w')
+	f = h5py_cache.File(name=filename, mode='w', chunk_cache_mem_size=chunk_cache*1024*1024)
 
 	# Save the main matrix
 	if compression_opts:
@@ -1415,7 +1415,7 @@ class _CEF(object):
 		#Delete all the stored information
 		self.__init__()
 		#Start parsing
-		with open(filepath, 'rbU') as fin:
+		with open(filepath, 'rU') as fin:
 			# Read cef file first line
 			self.header, self.row_attr, self.col_attr, self.rows,\
 			self.cols, self.flags = fin.readline().rstrip('\n').split('\t')[1:7]

@@ -316,9 +316,9 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
-	elif args.command == "from_cef":
+	elif args.command == "from-cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
-	elif args.command == "from_cellranger":
+	elif args.command == "from-cellranger":
 		fromcellranger_command(args.dataset_path, args.infolder, args.outfile, args.project)
-	elif args.command == "from_sql":
+	elif args.command == "from-sql":
 		fromsql_command(args.dataset_path, args.outfile, args.project, args.row_attrs, args.col_attrs, args.sql, args.transcriptome)
