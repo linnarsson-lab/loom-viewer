@@ -163,11 +163,15 @@ def clone_command(dataset_path, project, url, username, password):
 		logging.error("Too many redirects")
 		sys.exit(1)
 
-def fromloom_command(dataset_path, infile, outfile, project, chunks, chunk_cache, compression_opts):
+def fromloom_command(dataset_path, infile, outfile, project, dtype, chunks, chunk_cache, compression_opts):
 	if project != None:
 		outfile = os.path.join(dataset_path, project, outfile)
 	logging.info("Converting %s to %s" % (infile, outfile))
+
 	ds = loompy.connect(infile, 'r')
+
+	if dtype == None:
+		dtype = 'float32'
 
 	chunks = make_tuple(chunks)
 	if type(chunks != tuple) or len(chunks) != 2:
@@ -177,7 +181,7 @@ def fromloom_command(dataset_path, infile, outfile, project, chunks, chunk_cache
 		compression_opts = ds.file.compression_opts
 
 	#loompy.create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None)
-	loompy.create(outfile, ds.file, ds.row_attrs, ds.col_attrs, ds.attrs, None, None, chunks, chunk_cache, ds.file.matrix_dtype, compression_opts)
+	loompy.create(outfile, ds.file['matrix'], ds.row_attrs, ds.col_attrs, ds.attrs, None, None, chunks, chunk_cache, dtype, compression_opts)
 
 
 def fromcef_command(dataset_path, infile, outfile, project):
@@ -291,7 +295,8 @@ if __name__ == '__main__':
 		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
 		loom_parser.add_argument('-i','--infile', help="Name of input file in loom format", required=True)
 		loom_parser.add_argument('--project', help="Project name")
-		loom_parser.add_argument('--chunks', help='Chunk size as tuple, i.e. "--chunks (200,50)" (defaults to (64,64))', default='(64,64)')
+		loom_parser.add_argument('--dtype', help='Matrix data type. Defaults to "float32"', default="float32")
+		loom_parser.add_argument('--chunks', help='Chunk size as tuple, i.e. "--chunks (200,50)" (defaults to (64,64))', default="(64,64)")
 		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
 		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Deafult: no compression', type=int)
 
