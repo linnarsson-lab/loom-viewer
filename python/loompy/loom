@@ -287,13 +287,13 @@ if __name__ == '__main__':
 		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
 
 		# loom from-loom
-		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of varios settings on performance")
+		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of various settings on performance")
 		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
 		loom_parser.add_argument('-i','--infile', help="Name of input file in loom format", required=True)
 		loom_parser.add_argument('--project', help="Project name")
 		loom_parser.add_argument('--chunks', help='Chunk size as tuple, i.e. "--chunks (200,50)" (defaults to (64,64))', default='(64,64)')
 		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
-		loom_parser.add_argument('--compression_opts', help='Compression options')
+		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Deafult: no compression', type=int)
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
