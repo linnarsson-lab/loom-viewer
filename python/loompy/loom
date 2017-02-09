@@ -15,6 +15,8 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 
+from ast import literal_eval as make_tuple
+
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):
 		self.print_help()
@@ -161,6 +163,23 @@ def clone_command(dataset_path, project, url, username, password):
 		logging.error("Too many redirects")
 		sys.exit(1)
 
+def fromloom_command(dataset_path, infile, outfile, project, chunks, chunk_cache, compression_opts):
+	if project != None:
+		outfile = os.path.join(dataset_path, project, outfile)
+	logging.info("Converting %s to %s" % (infile, outfile))
+	ds = loompy.connect(infile, 'r')
+
+	chunks = make_tuple(chunks)
+	if type(chunks != tuple) or len(chunks) != 2:
+		chunks = (64,64)
+
+	if compression_opts == None:
+		compression_opts = ds.file.compression_opts
+
+	#loompy.create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None)
+	loompy.create(outfile, ds.file, ds.row_attrs, ds.col_attrs, ds.attrs, None, None, chunks, chunk_cache, ds.file.matrix_dtype, compression_opts)
+
+
 def fromcef_command(dataset_path, infile, outfile, project):
 	if project != None:
 		outfile = os.path.join(dataset_path, project, outfile)
@@ -245,8 +264,8 @@ if __name__ == '__main__':
 		clone_parser = subparsers.add_parser('clone', help="Clone a remote dataset")
 		clone_parser.add_argument("url", help="URL of the loom file to clone")
 		clone_parser.add_argument('--project', help="Project name")
-		clone_parser.add_argument('-u','--username', help="Username")	
-		clone_parser.add_argument('-p','--password', help="Password")	
+		clone_parser.add_argument('-u','--username', help="Username")
+		clone_parser.add_argument('-p','--password', help="Password")
 		
 		# loom tsne
 		tsne_parser = subparsers.add_parser('tsne', help="Compute t-SNE projection to 2D")
@@ -266,6 +285,15 @@ if __name__ == '__main__':
 		backspin_parser.add_argument("file", help="Loom input file")
 		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=500)
 		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
+
+		# loom from-loom
+		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of varios settings on performance")
+		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
+		loom_parser.add_argument('-i','--infile', help="Name of input file in loom format", required=True)
+		loom_parser.add_argument('--project', help="Project name")
+		loom_parser.add_argument('--chunks', help='Chunk size as tuple, i.e. "--chunks (200,50)" (defaults to (64,64))', default='(64,64)')
+		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
+		loom_parser.add_argument('--compression_opts', help='Compression options')
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
@@ -316,6 +344,8 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
+	elif args.command == "from-loom":
+		fromloom_command(args.dataset_path, args.infile, args.outfile, args.project, args.chunks, args.chunk_cache, args.compression_opts)
 	elif args.command == "from-cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
 	elif args.command == "from-cellranger":
