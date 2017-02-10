@@ -666,9 +666,9 @@ class LoomConnection(object):
 
 	def get_edges(self, name, axis):
 		if axis == 0:
-			return (self.file["/row_edges/" + name + "/a"], self.file["/row_edges/" + name + "/b"], self.file["/row_edges/" + name + "/w"])
+			return (self.file["/row_edges/" + name + "/a"][:], self.file["/row_edges/" + name + "/b"][:], self.file["/row_edges/" + name + "/w"][:])
 		if axis == 1:
-			return (self.file["/col_edges/" + name + "/a"], self.file["/col_edges/" + name + "/b"], self.file["/col_edges/" + name + "/w"])
+			return (self.file["/col_edges/" + name + "/a"][:], self.file["/col_edges/" + name + "/b"][:], self.file["/col_edges/" + name + "/w"][:])
 		raise ValueError("Axis must be 0 or 1")
 
 	def set_edges(self, name, a, b, w, axis=0):
@@ -737,7 +737,6 @@ class LoomConnection(object):
 				vals = self[ix:ix + rows_per_chunk, :]
 				vals = vals[selection, :]
 				vals = vals[:, cells]
-
 				yield (ix, ix + selection, vals)
 				ix = ix + rows_per_chunk
 
