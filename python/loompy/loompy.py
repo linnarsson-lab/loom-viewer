@@ -90,9 +90,10 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 
 	# Save the main matrix
 
-	if compression_opts:
+	if compression_opts == None:
 		f.create_dataset(
-			'matrix', data=matrix.astype(matrix_dtype),
+			'matrix', 
+			data=matrix.astype(matrix_dtype),
 			maxshape=(matrix.shape[0], None),
 			chunks=chunks,
 			fletcher32=True
@@ -105,7 +106,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 			chunks=chunks,
 			fletcher32=True,
 			compression="gzip",
-			shuffle=True,
+			shuffle=False,
 			compression_opts=compression_opts
 		)
 	f.create_group('/row_attrs')
@@ -121,14 +122,94 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	for key, vals in col_attrs.items():
 		ds.set_attr(key, vals, axis = 1)
 
-	for a in file_attrs:
-		ds.attrs[a] = file_attrs[a]
+	for vals in file_attrs:
+		ds.attrs[vals] = file_attrs[vals]
 
 	# store creation date
 	currentTime = time.localtime(time.time())
 	ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
-	ds.attrs['chunks'] = chunks
+	ds.attrs['chunks'] = str(chunks) #we can't store tuples in HDF5
 	ds.close()
+
+def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None, shuffle=False, fletcher32=True):
+	"""
+	Create a new .loom file from another .loom file, with potentially different HDF5 settings.
+
+	Args:
+		infile (str):           The input loomfile
+		outfile (str):          The output loomfile
+		chunks (tuple):         The chunking of the matrix. Small chunks are slow
+		                        when loading a large batch of rows/columns in sequence,
+		                        but fast for single column/row retrieval.
+		                        Defaults to (64,64).
+		chunk_cache (int):      Sets the chunk cache used by the HDF5 format inside
+		                        the loom file, in MB. If the cache is too small to
+		                        contain all chunks of a row/column in memory, then
+		                        sequential row/column access will be a lot slower.
+		                        Defaults to 512.
+		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
+		compression_opts (int): Strenght of the gzip compression. Default None.
+	Returns:
+		Nothing. To work with the file, use loompy.connect(filename).
+	"""
+	# open the old file in read-only mode
+	ds = connect(infile, 'r')
+	matrix = ds.file['matrix'][()]
+	if not np.isfinite(matrix).all():
+		raise ValueError("INF and NaN not allowed in loom matrix")
+
+	# Create the file. We use h5py_cache to set a larger chunk cache size than
+	# the excessively small default used by HDF5, which is 1MB.
+	f = h5py_cache.File(name=outfile, mode='w', chunk_cache_mem_size=chunk_cache*1024*1024)
+
+	# make sure chunk size is not bigger than actual matrix size
+	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
+
+	if matrix_dtype == None:
+		matrix_dtype = matrix.type
+
+	# Save the main matrix
+
+	if compression_opts == None:
+		f.create_dataset(
+			'matrix', 
+			data=matrix.astype(matrix_dtype),
+			maxshape=(matrix.shape[0], None),
+			chunks=chunks,
+			fletcher32=fletcher32
+		)
+	else:
+		f.create_dataset(
+			'matrix',
+			data=matrix.astype(matrix_dtype),
+			maxshape=(matrix.shape[0], None),
+			chunks=chunks,
+			fletcher32=fletcher32,
+			compression="gzip",
+			shuffle=shuffle,
+			compression_opts=compression_opts
+		)
+	f.create_group('/row_attrs')
+	f.create_group('/col_attrs')
+	f.flush()
+	f.close()
+
+	new_ds = connect(outfile)
+
+	for key, vals in ds.row_attrs.items():
+		new_ds.set_attr(key, vals, axis = 0)
+
+	for key, vals in ds.col_attrs.items():
+		new_ds.set_attr(key, vals, axis = 1)
+
+	for vals in ds.attrs:
+		new_ds.attrs[vals] = ds.attrs[vals]
+
+	# store creation date
+	currentTime = time.localtime(time.time())
+	new_ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
+	new_ds.attrs['chunks'] = str(chunks) #we can't store tuples in HDF5
+	new_ds.close()
 
 def create_from_cef(cef_file, loom_file):
 	"""
@@ -314,7 +395,10 @@ class LoomAttributeManager():
 		return self.f.attrs.__contains__(name)
 
 	def __setitem__(self, name, value):
-		self.f.attrs[name] = value.encode('utf-8')
+		if type(value) == bytes:
+			self.f.attrs[name] = value
+		else:
+			self.f.attrs[name] = value.encode('utf-8')
 		self.f.flush()
 
 	def __getitem__(self, name):
@@ -329,6 +413,10 @@ class LoomAttributeManager():
 			val = val[2:-1]
 
 		return val
+
+	def __iter__(self):
+		for val in self.f.attrs:
+			yield val
 
 	def __len__(self):
 		return len(self.f.attrs)
@@ -1397,9 +1485,10 @@ class LoomConnection(object):
 				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
 				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
 				tile = temp[0::2,0::2]
-				self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
+				# We no longer store tiles internally
+				# self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
 				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
-				self.file.flush()
+				# self.file.flush()
 			return tile
 
 class _CEF(object):
