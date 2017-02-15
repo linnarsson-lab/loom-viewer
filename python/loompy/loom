@@ -15,6 +15,9 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 
+import timeit
+import random
+
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):
 		self.print_help()
@@ -214,6 +217,25 @@ def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, t
 	pipeline.create_loom(dataset_path, project, filename, transcriptome)
 	logging("Done")
 
+def benchmark_command(infile):
+	logging.info("Benchmarking %s random row access, 10 x 100" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r"); rmax = ds.file["matrix"].shape[0]-1' % infile
+	testfunc = 'for i in range(0,100): ds[random.randint(0, rmax),:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+
+	logging.info("Benchmarking %s loading 100 rows at once, 10 x" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
+	testfunc = 'ds[0:100,:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+
+	logging.info("Benchmarking %s sequential row access, 10 x 100" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
+	testfunc = 'for i in range(0,100): ds[i,:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+	
 class Empty(object):
 	pass
 
@@ -287,7 +309,7 @@ if __name__ == '__main__':
 		# loom from-loom
 		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of various settings on performance")
 		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
-		loom_parser.add_argument('-i','--infile', help="Name of input file in loom format", required=True)
+		loom_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
 		loom_parser.add_argument('--project', help="Project name")
 		loom_parser.add_argument('--dtype', help='Matrix data type. Defaults to "float32"', default="float32")
 		loom_parser.add_argument('--chunks', help='Chunk tile size, i.e. "--chunks 10" (defaults to 64)', type=int, default=64)
@@ -316,6 +338,10 @@ if __name__ == '__main__':
 		sql_parser.add_argument('-s','--sql', help="SQL server hostname", required=True)
 		sql_parser.add_argument('-t','--transcriptome', help="Transcriptome", required=True)
 		sql_parser.add_argument('--project', help="Project name")
+
+		# loom benchmark
+		benchmark_parser = subparsers.add_parser('benchmark', help="Benchmark random row access")
+		benchmark_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
 
 		args = parser.parse_args()
 
@@ -353,3 +379,5 @@ if __name__ == '__main__':
 		fromcellranger_command(args.dataset_path, args.infolder, args.outfile, args.project)
 	elif args.command == "from-sql":
 		fromsql_command(args.dataset_path, args.outfile, args.project, args.row_attrs, args.col_attrs, args.sql, args.transcriptome)
+	elif args.command == "benchmark":
+		benchmark_command(args.infile)
