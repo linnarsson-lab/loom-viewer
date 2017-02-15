@@ -141,7 +141,7 @@ class LoomCache(object):
 		mtime = time.gmtime(os.path.getmtime(path))
 		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
 
-	def connect_dataset_locally(self, project, filename, username=None, password=None):
+	def connect_dataset_locally(self, project, filename, username=None, password=None, mode='r'):
 		"""
 		Download the dataset (if needed) and connect it as a local loom file.
 
@@ -167,7 +167,7 @@ class LoomCache(object):
 			return self.looms[key]
 
 		try:
-			result = loompy.connect(absolute_path)
+			result = loompy.connect(absolute_path, mode)
 		except:
 			return None
 		self.looms[key] = result
