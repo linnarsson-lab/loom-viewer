@@ -26,7 +26,6 @@ import math
 import numpy as np
 import tempfile
 import h5py
-import h5py_cache
 import os.path
 import pandas as pd
 import scipy
@@ -81,15 +80,11 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
-	# Create the file. We use h5py_cache to set a larger chunk cache size than
-	# the excessively small default used by HDF5, which is 1MB.
-	f = h5py_cache.File(name=filename, mode='w', chunk_cache_mem_size=chunk_cache*1024*1024)
-
+	# Create the file. 
+	f = h5py.File(name=filename, mode='w')
 	#make sure chunk size is not bigger than actual matrix size
 	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
-
 	# Save the main matrix
-
 	if compression_opts == None:
 		f.create_dataset(
 			'matrix', 
@@ -158,18 +153,13 @@ def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dt
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
-	# Create the file. We use h5py_cache to set a larger chunk cache size than
-	# the excessively small default used by HDF5, which is 1MB.
-	f = h5py_cache.File(name=outfile, mode='w', chunk_cache_mem_size=chunk_cache*1024*1024)
-
+	# Create the file. 
+	f = h5py.File(name=outfile, mode='w')
 	# make sure chunk size is not bigger than actual matrix size
 	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
-
 	if matrix_dtype == None:
 		matrix_dtype = matrix.type
-
 	# Save the main matrix
-
 	if compression_opts == None:
 		f.create_dataset(
 			'matrix', 
@@ -435,7 +425,8 @@ class LoomConnection(object):
 		Args:
 			filename (str):      Name of the .loom file to open
 			mode (str):          read/write mode, accepts 'r+' (read/write) or
-			                     'r' (read-only), defaults to 'r+'
+			                     'r' (read-only), defaults to 'r+' without arguments,
+			                     and to 'r' with incorrect arguments
 
 		Returns:
 			Nothing.
@@ -448,6 +439,7 @@ class LoomConnection(object):
 		if mode != 'r+' and mode != 'r':
 			logging.warn("Wrong mode passed to LoomConnection, using read-only to not destroy data")
 			mode = 'r'
+		self.filename = filename
 		self.file = h5py.File(filename, mode)
 		self.shape = self.file['matrix'].shape
 
@@ -1330,9 +1322,9 @@ class LoomConnection(object):
 
 	def prepare_heatmap(self):
 		if self.file.__contains__("tiles"):
-			logging.debug("Removing previous tile pyramid")
+			logging.debug("Removing deprecated tile pyramid, use h5repack to reclaim space")
 			del self.file['tiles']
-		self.dz_get_zoom_image(0,0,8)
+		self.dz_get_zoom_tile(0,0,8)
 
 	def dz_get_max_byrow(self):
 		"""
@@ -1379,25 +1371,8 @@ class LoomConnection(object):
 		(y,x) = np.divide(self.shape,256)*256*pow(2,8)
 		return (x,y)
 
-	# Returns a PIL image 256x256 pixels
-	def dz_get_zoom_image(self, x, y, z):
-		"""
-		Create a 256x256 pixel PIL image corresponding to the tile at x,y and z.
-
-		Args:
-			x (int):	Horizontal tile index (0 is left-most)
-
-			y (int): 	Vertical tile index (0 is top-most)
-
-			z (int): 	Zoom level (8 is 'middle' where pixels correspond to data values)
-
-		Returns:
-			Python image library Image object
-		"""
-		tile = self.dz_get_zoom_tile(x, y, z)
-		tile[tile == 255] = 254
-
-		# Crop outside matrix dimensions
+	def dz_tile_to_image(self, x, y, z, tile):
+			# Crop outside matrix dimensions
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		(max_x, max_y) = (int(pow(2,z-zmid)*self.shape[1])-x*256, int(pow(2,z-zmid)*self.shape[0])-y*256)
 		if max_x < 0:
@@ -1409,6 +1384,50 @@ class LoomConnection(object):
 		if max_y < 255:
 			tile[max_y+1:256,:] = 255
 		return scipy.misc.toimage(tile, cmin=0, cmax=255, pal = _bluewhitered)
+
+	def dz_save_tile(self, x, y, z, tile, truncate=False):
+		(zmin, zmid, zmax) = self.dz_zoom_range()
+		if (z < zmin or z > zmid or 
+			x < 0 or y < 0 or 
+			x * 256 * 2**(zmid-z) > self.shape[1] or 
+			y * 256 * 2**(zmid-z) > self.shape[0]):
+			#logging.info("Trying to save out of bound tile: x: %02d y: %02d z: %02d" % (x, y, z))
+			return
+
+		tiledir = '%s.tiles/z%02d/' % (self.filename, z)
+		tilepath = 	'%sx%03d_y%03d.png' % (tiledir, x, y)
+
+		# make sure the tile directory exists
+		# we use a try/error approach so that we
+		# don't have to worry about race conditions
+		# (if another process creates the same
+		#  directory we just catch the exception)
+		try:
+			os.makedirs(tiledir, exist_ok=True)
+		except OSError as exception:
+			# if the error was that the directory already
+			# exists, ignore it, since that is expected.
+			if exception.errno != errno.EEXIST:
+				raise
+
+		if os.path.isfile(tilepath) and not truncate:
+			return scipy.misc.imread(tilepath, mode='P')
+		else:
+			img = self.dz_tile_to_image(x, y, z, tile)
+			# save to file, overwriting the old one
+			with open(tilepath, 'wb') as img_io:
+				img.save(img_io, 'PNG', compress_level=4)
+			return img
+	
+	
+
+	def dz_merge_tile(self, tl, tr, bl, br):
+		temp = np.empty((512,512), dtype = 'float32')
+		temp[0:256,0:256] = tl
+		temp[0:256,256:512] = tr
+		temp[256:512,0:256] = bl
+		temp[256:512,256:512] = br
+		return temp[0::2,0::2]
 
 	# Returns a submatrix scaled to 0-255 range
 	def dz_get_zoom_tile(self, x, y, z):
@@ -1425,7 +1444,7 @@ class LoomConnection(object):
 		Returns:
 			Numpy ndarray of shape (256,256)
 		"""
-#		logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
+		#logging.debug("Computing tile at x=%i y=%i z=%i" % (x,y,z))
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if z < zmin:
 			raise ValueError("z cannot be less than %s" % zmin)
@@ -1436,12 +1455,11 @@ class LoomConnection(object):
 		if y < 0:
 			raise ValueError("y cannot be less than zero")
 
+		if x * 256 * 2**(zmid-z) > self.shape[1] or y * 256 * 2**(zmid-z) > self.shape[0]:
+			return np.zeros((256,256),dtype='float32')
+
 		if z == zmid:
-			# Get the right tile from the matrix
-			if x*256 > self.shape[1] or y*256 > self.shape[0]:
-				return np.zeros((256,256),dtype='float32')
-			else:
-				tile = self.file['matrix'][y*256:y*256+256,x*256:x*256 + 256]
+			tile = self.file['matrix'][y*256:y*256+256,x*256:x*256 + 256]
 			# Pad if needed to make it 256x256
 			if tile.shape[0] < 256 or tile.shape[1] < 256:
 				tile = np.pad(tile,((0,256-tile.shape[0]),(0,256-tile.shape[1])),'constant',constant_values=0)
@@ -1453,43 +1471,26 @@ class LoomConnection(object):
 				mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values = 0)
 			tile = (np.log2(tile.transpose()-mins+1)/np.log2(maxes-mins+1)*255).transpose()
 			#tile = (tile+1)/(maxes+1)*256
-			return tile
-
-		if z > zmid:
-			scale = pow(2,z - zmid)
-			# Get the z = zmid tile that contains this tile
-			x1_tile = self.dz_get_zoom_tile(x//scale,y//scale,zmid)
-			# Take the right submatrix
-			x = x - x//scale*scale # This works because of rounding down at the first division
-			y = y - y//scale*scale
-			tile = x1_tile[y*256//scale:y*256//scale + 256//scale, x*256//scale:x*256//scale + 256//scale]
-			# Resample
-			for ix in range(z - zmid):
-				temp = np.empty((tile.shape[0]*2, tile.shape[1]*2) , dtype='float32')
-				temp[0::2,0::2] = tile
-				temp[1::2,1::2] = tile
-				temp[0::2,1::2] = tile
-				temp[1::2,0::2] = tile
-				tile = temp
+			self.dz_save_tile(x, y, z, tile, truncate=False)
 			return tile
 
 		if z < zmid:
-			# Get the tile from cache if possible
-			try:
-				tile = self.file['tiles/%sz/%sx_%sy' % (z, x, y)][:,:]
-			except KeyError:
 			# Get the four less zoomed-out tiles required to make this tile
-				temp = np.empty((512,512), dtype = 'float32')
-				temp[0:256,0:256] = self.dz_get_zoom_tile(x*2,y*2,z+1)
-				temp[0:256,256:512] = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
-				temp[256:512,0:256] = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
-				temp[256:512,256:512] = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
-				tile = temp[0::2,0::2]
-				# We no longer store tiles internally
-				# self.file.create_dataset('tiles/%sz/%sx_%sy' % (z, x, y), data=tile, compression='gzip')
-				# self.file['tiles/%sz/%sx_%sy' % (z, x, y)] = tile
-				# self.file.flush()
+			tl = self.dz_get_zoom_tile(x*2,y*2,z+1)
+			tr = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
+			bl = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
+			br = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
+			# merge into zoomed out tiles
+			tile = self.dz_merge_tile(tl, tr, bl, br)
+			self.dz_save_tile(x, y, z, tile, truncate=False)
 			return tile
+	
+
+	def dz_get_zoom_tile_star(args):
+		"""
+		A wrapper around dz_get_zoom_tile to make it easier to pass to multiprocess.Pool.map
+		"""
+		return self.dz_get_zoom_tile(*args)
 
 class _CEF(object):
 	def __init__(self):
