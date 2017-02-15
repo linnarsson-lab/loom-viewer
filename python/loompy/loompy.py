@@ -71,7 +71,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
 		compression_opts (int): Strenght of the gzip compression. Default None.
 	Returns:
-		Nothing. To work with the file, use loompy.connect(filename).
+		LoomConnection to created loom file.
 	"""
 	if not row_attr_types is None:
 		raise DeprecationWarning("row_attr_types are no longer supported and will be ignored")
@@ -124,7 +124,8 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	currentTime = time.localtime(time.time())
 	ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
 	ds.attrs['chunks'] = str(chunks) #we can't store tuples in HDF5
-	ds.close()
+	ds.attrs['chunks'] = str(chunks)
+	return ds
 
 def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None, shuffle=False, fletcher32=True):
 	"""
@@ -788,9 +789,9 @@ class LoomConnection(object):
 
 	def get_edges(self, name, axis):
 		if axis == 0:
-			return (self.file["/row_edges/" + name + "/a"], self.file["/row_edges/" + name + "/b"], self.file["/row_edges/" + name + "/w"])
+			return (self.file["/row_edges/" + name + "/a"][:], self.file["/row_edges/" + name + "/b"][:], self.file["/row_edges/" + name + "/w"][:])
 		if axis == 1:
-			return (self.file["/col_edges/" + name + "/a"], self.file["/col_edges/" + name + "/b"], self.file["/col_edges/" + name + "/w"])
+			return (self.file["/col_edges/" + name + "/a"][:], self.file["/col_edges/" + name + "/b"][:], self.file["/col_edges/" + name + "/w"][:])
 		raise ValueError("Axis must be 0 or 1")
 
 	def set_edges(self, name, a, b, w, axis=0):
@@ -859,7 +860,6 @@ class LoomConnection(object):
 				vals = self[ix:ix + rows_per_chunk, :]
 				vals = vals[selection, :]
 				vals = vals[:, cells]
-
 				yield (ix, ix + selection, vals)
 				ix = ix + rows_per_chunk
 
