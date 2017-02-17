@@ -134,191 +134,251 @@ export function calcMinMax(data, ignoreZeros) {
 export function convertArray(data, name) {
 	let uniques = countElements(data);
 	if (uniques.length === 1) {
-		const uniqueVal = uniques[0].val;
-		let min = uniqueVal, max = uniqueVal;
-		if (typeof uniqueVal === 'string'){
-			min = max = 0;
-		}
-		return { 
-			name, 
-			uniqueVal,
-			min,
-			max,
-			hasZeros: uniqueVal === 0,
-			length: data.length,
-		};
+		return convertUnique(data, name, uniques, uniques[0].val);
 	} else {
-		// Convert arrays to compact (possibly indexed) format
-
-		// Data is either a string or a number; assumes no
-		// invalid input is given here (no objects, arrays,
-		// and so on)
-		let arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
-
-		if (arrayType === 'number') {
-			// Test whether values are actually integers,
-			// if so convert to typed integer arrays.
-			arrayType = isInteger(data) ? 'integer' : 'float32';
-		}
-
-		// For our plotters we often need to know the dynamic
-		// range for non-zero values, but also need to know
-		// if zero-values are present. We also use this information
-		// to determine integer size, so we pre-calc this.
-		let { min, max, hasZeros } = calcMinMax(data, true);
-
-		// convert number values to typed arrays matching the schema,
-		// and string arrays with few unique values to indexedString
-		let filteredData, indexedVal, data32;
-		switch (arrayType) {
-			case 'float32':
-				// the only way to force to Float32 is using a 
-				// typed Float32Array. So we do that first,
-				// and see if any information gets truncated
-				// If so, we'll use doubles instead.
-				data32 = Float32Array.from(data);
-				for (let i = 0; i < data.length; i++) {
-					if (data32[i] !== data[i]) {
-						arrayType = 'float64';
-						break;
-					}
-				}
-				if (arrayType === 'float64') {
-					filteredData = Float64Array.from(data);
-				} else {
-					data = data32;
-					filteredData = Float32Array.from(data32);
-				}
-				break;
-			case 'integer':
-				// convert to most compact integer representation
-				// for better performance.
-				if (min >= 0) {
-					if (max < 256) {
-						data = Uint8Array.from(data);
-						filteredData = Uint8Array.from(data);
-						arrayType = 'uint8';
-					} else if (max < 65535) {
-						data = Uint16Array.from(data);
-						filteredData = Uint16Array.from(data);
-						arrayType = 'uint16';
-					} else {
-						data = Uint32Array.from(data);
-						filteredData = Uint32Array.from(data);
-						arrayType = 'uint32';
-					}
-				} else if (min > -128 && max < 128) {
-					data = Int8Array.from(data);
-					filteredData = Int8Array.from(data);
-					arrayType = 'int8';
-				} else if (min > -32769 && max < 32768) {
-					data = Int16Array.from(data);
-					filteredData = Int16Array.from(data);
-					arrayType = 'int16';
-				} else {
-					data = Int32Array.from(data);
-					filteredData = Int32Array.from(data);
-					arrayType = 'int32';
-				}
-				break;
-			case 'string':
-			default:
-				// in case of string arrays, we assume they represent
-				// categories when plotted as x/y attributes. For this
-				// we need to set min/max to the number of unique categories
-				min = 0;
-				max = uniques.length - 1;
-
-				// convert to indexed form if fewer than 256 unique strings
-				// Using indexed strings can be much faster, since Uint8Arrays
-				// are smaller, remove pointer indirection, and allow
-				// for quicker comparisons than strings.
-				if (uniques.length < 256) {
-					// sort uniques by most frequent, so
-					// the indices grow from most to least
-					// common
-					uniques.sort((a, b) => {
-						return (
-							a.count > b.count ? -1 :
-								a.count < b.count ? 1 :
-									a.val < b.val ? -1 : 1
-						);
-					});
-					// Store original values, with zero value as null
-					indexedVal = [null];
-					for (let i = 0; i < uniques.length; i++) {
-						indexedVal.push(uniques[i].val);
-					}
-
-					// Create array of index values
-					let indexedData = new Uint8Array(data.length);
-					for (let j = 0; j < data.length; j++) {
-						for (let i = 1; i < indexedVal.length; i++) {
-							if (data[j] === indexedVal[i]) {
-								indexedData[j] = i;
-							}
-						}
-					}
-					data = indexedData;
-					filteredData = Uint8Array.from(data);
-					uniques = countElements(data);
-					min = 1;
-					max = uniques.length;
-					hasZeros = false;
-					break;
-				} else {
-					filteredData = data.slice(0);
-				}
-				break;
-		}
-
-		// We set filtered flags after conversion, 
-		// in case array.uniques had to be updated for indexedData
-		for (let i = 0; i < uniques.length; i++) {
-			uniques[i].filtered = false;
-		}
-
-		// create lookup table to convert attribute values
-		// to color indices (so a look-up table for finding
-		// indices for another lookup table).
-		let colorIndices = {
-			mostFreq: {},
-			max: {},
-		};
-
-		uniques.sort((a, b) => {
-			return (
-				a.count < b.count ? -1 :
-					a.count > b.count ? 1 :
-						a.val < b.val ? -1 : 1
-			);
-		});
-		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			colorIndices.mostFreq[uniques[i].val] = i;
-		}
-
-		uniques.sort((a, b) => {
-			return (
-				a.val < b.val ? -1 : 1
-			);
-		});
-		for (let i = 0; i < 20 && i < uniques.length; i++) {
-			colorIndices.max[uniques[i].val] = i;
-		}
-		return {
-			arrayType,
-			data,
-			filteredData,
-			indexedVal,
-			uniques,
-			colorIndices,
-			min,
-			max,
-			hasZeros,
-		};
+		return convertWholeArray(data, name, uniques);
 	}
 }
 
+function convertWholeArray(data, name, uniques) {
+	// Data is either a string or a number; assumes no
+	// invalid input is given here (no objects, arrays,
+	// and so on)
+	let arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
+
+	if (arrayType === 'number') {
+		// Test whether values are actually integers,
+		// if so convert to typed integer arrays.
+		arrayType = isInteger(data) ? 'integer' : 'float32';
+	}
+
+	// For our plotters we often need to know the dynamic
+	// range for non-zero values, but also need to know
+	// if zero-values are present. We also use this information
+	// to determine integer size, so we pre-calc this.
+	let { min, max, hasZeros } = calcMinMax(data, true);
+
+	// convert number values to typed arrays matching the schema,
+	// and string arrays with few unique values to indexedString
+	let filteredData, indexedVal, data32;
+	switch (arrayType) {
+		case 'float32':
+			// the only way to force to Float32 is using a 
+			// typed Float32Array. So we do that first,
+			// and see if any information gets truncated
+			// If so, we'll use doubles instead.
+			data32 = Float32Array.from(data);
+			for (let i = 0; i < data.length; i++) {
+				if (data32[i] !== data[i]) {
+					arrayType = 'float64';
+					break;
+				}
+			}
+			if (arrayType === 'float64') {
+				filteredData = Float64Array.from(data);
+			} else {
+				data = data32;
+				filteredData = Float32Array.from(data32);
+			}
+			break;
+		case 'integer':
+			// convert to most compact integer representation
+			// for better performance.
+			if (min >= 0) {
+				if (max < 256) {
+					data = Uint8Array.from(data);
+					filteredData = Uint8Array.from(data);
+					arrayType = 'uint8';
+				} else if (max < 65535) {
+					data = Uint16Array.from(data);
+					filteredData = Uint16Array.from(data);
+					arrayType = 'uint16';
+				} else {
+					data = Uint32Array.from(data);
+					filteredData = Uint32Array.from(data);
+					arrayType = 'uint32';
+				}
+			} else if (min > -128 && max < 128) {
+				data = Int8Array.from(data);
+				filteredData = Int8Array.from(data);
+				arrayType = 'int8';
+			} else if (min > -32769 && max < 32768) {
+				data = Int16Array.from(data);
+				filteredData = Int16Array.from(data);
+				arrayType = 'int16';
+			} else {
+				data = Int32Array.from(data);
+				filteredData = Int32Array.from(data);
+				arrayType = 'int32';
+			}
+			break;
+		case 'string':
+		default:
+			// in case of string arrays, we assume they represent
+			// categories when plotted as x/y attributes. For this
+			// we need to set min/max to the number of unique categories
+			min = 0;
+			max = uniques.length - 1;
+
+			// convert to indexed form if fewer than 256 unique strings
+			// Using indexed strings can be much faster, since Uint8Arrays
+			// are smaller, remove pointer indirection, and allow
+			// for quicker comparisons than strings.
+			if (uniques.length < 256) {
+				// sort uniques by most frequent, so
+				// the indices grow from most to least
+				// common
+				uniques.sort((a, b) => {
+					return (
+						a.count > b.count ? -1 :
+							a.count < b.count ? 1 :
+								a.val < b.val ? -1 : 1
+					);
+				});
+				// Store original values, with zero value as null
+				indexedVal = [null];
+				for (let i = 0; i < uniques.length; i++) {
+					indexedVal.push(uniques[i].val);
+				}
+
+				// Create array of index values
+				let indexedData = new Uint8Array(data.length);
+				for (let j = 0; j < data.length; j++) {
+					for (let i = 1; i < indexedVal.length; i++) {
+						if (data[j] === indexedVal[i]) {
+							indexedData[j] = i;
+						}
+					}
+				}
+				data = indexedData;
+				filteredData = Uint8Array.from(data);
+				uniques = countElements(data);
+				min = 1;
+				max = uniques.length;
+				hasZeros = false;
+				break;
+			} else {
+				filteredData = data.slice(0);
+			}
+			break;
+	}
+
+	// We set filtered flags after conversion, 
+	// in case array.uniques had to be updated for indexedData
+	for (let i = 0; i < uniques.length; i++) {
+		uniques[i].filtered = false;
+	}
+
+	// create lookup table to convert attribute values
+	// to color indices (so a look-up table for finding
+	// indices for another lookup table).
+	let colorIndices = {
+		mostFreq: {},
+		max: {},
+	};
+
+	uniques.sort((a, b) => {
+		return (
+			a.count < b.count ? -1 :
+				a.count > b.count ? 1 :
+					a.val < b.val ? -1 : 1
+		);
+	});
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		colorIndices.mostFreq[uniques[i].val] = i + 1;
+	}
+
+	uniques.sort((a, b) => {
+		return (
+			a.val < b.val ? -1 : 1
+		);
+	});
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		colorIndices.max[uniques[i].val] = i + 1;
+	}
+	return {
+		arrayType,
+		data,
+		filteredData,
+		indexedVal,
+		uniques,
+		colorIndices,
+		min,
+		max,
+		hasZeros,
+	};
+}
+
+// if we know all values are the same,
+// we can convert the array much easier
+function convertUnique(data, name, uniques, uniqueVal) {
+	let arrayType = (typeof uniqueVal) === 'number' ? 'number' : 'string';
+
+	if (arrayType === 'number') {
+		arrayType = uniqueVal === (uniqueVal | 0) ? 'integer' : 'float32';
+	}
+
+	let min = uniqueVal,
+		max = uniqueVal,
+		hasZeros = uniqueVal === 0;
+
+	let filteredData, indexedVal, data32;
+	if (arrayType === 'string') {
+		indexedVal = [null, uniqueVal];
+		data = new Uint8Array(data.length).fill(1);
+		filteredData = Uint8Array.from(data);
+		uniques[0].val = 1;
+		min = 1;
+		max = 1;
+		hasZeros = false;
+	} else { // this is not an else-if bug
+		if (arrayType === 'integer') {
+			if (min >= 0) {
+				if (max < 256) {
+					arrayType = 'uint8';
+				} else if (max < 65535) {
+					arrayType = 'uint16';
+				} else {
+					arrayType = 'uint32';
+				}
+			} else if (min > -128 && max < 128) {
+				arrayType = 'int8';
+			} else if (min > -32769 && max < 32768) {
+				arrayType = 'int16';
+			} else {
+				arrayType = 'int32';
+			}
+		} else {
+			data32 = new Float32Array(1);
+			data32[0] = uniqueVal;
+			if (data32[0] !== uniqueVal) {
+				arrayType = 'float64';
+			}
+		}
+		let arrayCon = arrayConstr(arrayType);
+		data = new arrayCon(data.length).fill(uniqueVal);
+		filteredData = arrayCon.from(data);
+	}
+
+	let colorIndices = {
+		mostFreq: { [data[0]]: 1 },
+		max: { [data[0]]: 1 },
+	};
+	uniques[0].filtered = false;
+
+	return {
+		arrayType,
+		data,
+		filteredData,
+		indexedVal,
+		uniques,
+		uniqueVal,
+		colorIndices,
+		min,
+		max,
+		hasZeros,
+	};
+}
 
 /**
  * - `array`: array to be sorted
@@ -469,13 +529,13 @@ export function convertToIndexed(uniques, data) {
 					a.val < b.val ? -1 : 1
 		);
 	});
-
+	
 	// Store original values
 	let indexedVal = [];
 	for (let i = 0; i < un.length; i++) {
 		indexedVal.push(un[i].val);
 	}
-
+	
 	// Create array of index values
 	let indexedData = new Uint8Array(data.length);
 	for (let j = 0; j < data.length; j++) {
