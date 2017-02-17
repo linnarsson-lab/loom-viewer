@@ -2,51 +2,41 @@ import React, { PropTypes } from 'react';
 import { RemountOnResize } from './remount-on-resize';
 
 
-// Attach helper functions to context prototype
-function enhanceCanvasRenderingContext2D() {
-	let prototype = CanvasRenderingContext2D.prototype;
-	if (!prototype.circle) {
-		prototype.circle = function (x, y, radius) {
-			this.moveTo(x + radius, y);
-			this.arc(x, y, radius, 0, 2 * Math.PI);
-		};
+// Passing a context is supposedly faster than prototypical lookup
+export function circle(context, x, y, radius) {
+	context.moveTo(x + radius, y);
+	context.arc(x, y, radius, 0, 2 * Math.PI);
+}
+
+export function textSize(context, size = 10) {
+	// will return an array with [ size, font ] as strings
+	const fontArgs = context.font.split(' ');
+	const font = fontArgs[fontArgs.length - 1];
+	switch (typeof size) {
+		case 'number':
+			context.font = size + 'px ' + font;
+			break;
+		case 'string':
+			context.font = size + font;
+			break;
 	}
-	if (!prototype.textSize) {
-		prototype.textSize = function (size = 10) {
-			// will return an array with [ size, font ] as strings
-			const fontArgs = this.font.split(' ');
-			const font = fontArgs[fontArgs.length - 1];
-			switch (typeof size) {
-				case 'number':
-					this.font = size + 'px ' + font;
-					break;
-				case 'string':
-					this.font = size + font;
-					break;
-			}
-		};
-	}
-	if (!prototype.textStyle) {
-		prototype.textStyle = function (fill = 'black', stroke = 'white', lineWidth = 2) {
-			this.fillStyle = fill;
-			this.strokeStyle = stroke;
-			this.lineWidth = lineWidth;
-		};
-	}
-	if (!prototype.drawText) {
-		prototype.drawText = function (text, x, y) {
-			this.strokeText(text, x, y);
-			this.fillText(text, x, y);
-		};
-	}
+}
+
+export function textStyle(context, fill = 'black', stroke = 'white', lineWidth = 2) {
+	context.fillStyle = fill;
+	context.strokeStyle = stroke;
+	context.lineWidth = lineWidth;
+}
+
+export function drawText(context, text, x, y) {
+	context.strokeText(text, x, y);
+	context.fillText(text, x, y);
 }
 
 class CanvasComponent extends React.Component {
 	constructor(props) {
 		super(props);
 		this.draw = this.draw.bind(this);
-
-		enhanceCanvasRenderingContext2D();
 	}
 
 	// Make sure we get a sharp canvas on Retina displays
@@ -72,13 +62,12 @@ class CanvasComponent extends React.Component {
 	// when canvas element has been rendered!
 	draw() {
 		if (this.state && this.props.paint) {
-			const { width, height, ratio } = this.state;
 			const canvas = this.refs.canvas;
 			let context = canvas.getContext('2d');
 			// store width, height and ratio in context for paint functions
-			context.width = width;
-			context.height = height;
-			context.pixelRatio = ratio;
+			context.width = this.state.width;
+			context.height = this.state.height;
+			context.pixelRatio = this.state.ratio;
 			// should we clear the canvas every redraw?
 			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
 			this.props.paint(context);
@@ -89,7 +78,7 @@ class CanvasComponent extends React.Component {
 		// The way canvas interacts with CSS layouting is a bit buggy
 		// and inconsistent across browsers. To make it dependent on
 		// the layout of the parent container, we only render it after
-		// mounting, after CSS layouting is done.
+		// mounting, that is: after CSS layouting is done.
 		const canvas = this.state ? (
 			<canvas
 				ref='canvas'
@@ -144,16 +133,16 @@ export function Canvas(props) {
 	}
 	return (
 		<RemountOnResize
-			/* Since canvas interferes with CSS layouting,
-			we unmount and remount it on resize events */
-			>
+		/* Since canvas interferes with CSS layouting,
+		we unmount and remount it on resize events */
+		>
 			<CanvasComponent
 				paint={props.paint}
 				clear={props.clear}
 				redraw={props.redraw}
 				className={props.className}
 				style={style}
-				/>
+			/>
 		</RemountOnResize>
 	);
 }
