@@ -283,9 +283,9 @@ function categoriesPainter(context, range, colorIndices) {
 
 function barPainter(attr, label) {
 	let { min, max, hasZeros } = attr;
-	if (hasZeros || min === undefined) {
-		min = attr.min||0, max = attr.max||0
-	}
+	min = min||0;
+	max = max||0;
+	min = hasZeros && min > 0 ? 0 : min;
 	return (context, range) => {
 		barPaint(context, range, min, max, label);
 	};
@@ -345,23 +345,16 @@ function barPaint(context, range, min, max, label) {
 
 function heatmapPainter(attr, label, colorLUT) {
 	let { min, max, hasZeros } = attr;
-	if (hasZeros) { min = min < 0 ? min : 0; }
+	min = min || 0;
+	max = max || 0;
+	min = hasZeros && min > 0 ? 0 : min;
 	return (context, range) => {
 		heatmapPaint(context, range, min, max, label, colorLUT);
 	};
 }
 
-<<<<<<< HEAD
 function heatmapPaint(context, range, min, max, label, colorLUT) {
 	const { outliers, barWidth } = calcMeans(range);
-=======
-function heatmapPaint(context, rangeData, xOffset, rangeWidth, attr, label, colorLUT) {
-let { hasZeros } = attr, min = attr.min||0, max = attr.max||0;
-	if (hasZeros){
-		min = min < 0 ? min : 0;
-	}
-	const { outliers, barWidth } = calcMeans(rangeData, rangeWidth);
->>>>>>> 068532097e7f07f5aeb5e557633340a248e5c445
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
