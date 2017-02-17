@@ -23,8 +23,14 @@ mkdir ./python/loompy/static/css
 
 # Build static assets
 
-echo "Minifying JS bundle and inserting it into HTML template"
-webpack
+if  [ "${1:-dev}" == "dev" ]; then
+  echo "Bundling development build and inserting it into HTML template"
+  webpack --config='webpack.config.dev.js' --progress --profile --colors
+else
+  echo "Minifying + bundling production build and inserting it into HTML template"
+  webpack --config='webpack.config.prod.js' --progress --profile --colors
+fi
+
 echo "Building static assets."
 uglifycss ./client/css/* > ./python/loompy/static/css/bundle.min.css
 # I can't figure out how to both generate correct paths in the HTML template

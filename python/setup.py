@@ -12,12 +12,15 @@ setup(
         'matplotlib',
         'scikit-learn',
         'h5py',
+        'h5py_cache',
         'pandas', 
         'scipy',
         'numpy', 
         'progressbar2',
         'requests',
+        'flask',
         'flask-compress',
+        'gevent',
         'PyMySQL'
     ],
     

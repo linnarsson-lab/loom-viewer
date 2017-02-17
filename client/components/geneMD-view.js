@@ -60,11 +60,12 @@ class GeneMDComponent extends Component {
 
 		const { row } = dataset;
 		const { attrs, keys, order } = row;
-		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}&nbsp;&nbsp;&nbsp;</span>];
+		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
 			const val = order[i];
 			sortOrderList.push(
 				<span key={i}>
+					&nbsp;&nbsp;&nbsp;
 					{val.key}
 					<Glyphicon
 						glyph={ val.ascending ?
@@ -72,7 +73,6 @@ class GeneMDComponent extends Component {
 				</span>
 			);
 		}
-		sortOrderList.push('...');
 
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>

@@ -256,6 +256,13 @@ function requestGene(gene, datasetName) {
 		type: REQUEST_GENE,
 		gene,
 		datasetName,
+		state: {
+			dataSets: {
+				[datasetName]: {
+					fetchingGenes: { [gene]: true },
+				},
+			},
+		},
 	};
 }
 
@@ -336,7 +343,7 @@ export function fetchGene(dataset, genes) {
 			if (col.attrs[gene] ||
 				col.geneKeys.indexOf(gene) !== -1 ||
 				row === -1) {
-				// Announce gene being fetched/retrieved from cache
+\				// Announce gene being fetched/retrieved from cache
 				dispatch(requestGeneCached(gene, title));
 				continue;
 			}

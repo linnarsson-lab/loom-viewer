@@ -118,7 +118,7 @@ export class MetadataComponent extends Component {
 			const attr = attributes[key];
 			const { filteredData, indexedVal, arrayType, uniques, uniqueVal } = attr;
 
-			if (uniqueVal !== undefined){ // only one values
+			if (uniqueVal !== undefined){ // only one value
 				tableRow.val = (
 					<span>{uniqueVal}</span>
 				);

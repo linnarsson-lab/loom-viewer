@@ -1,3 +1,5 @@
+#! /bin/bash
+
 # Create an environment variable for the correct distribution
 export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
 

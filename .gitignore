@@ -6,6 +6,7 @@
 
 # Build folder for static files, and cache for loom files
 python/static/
+python/loompy/test
 python/cache/
 python/loompy/static/
 python/loompy/cache/
@@ -103,3 +104,5 @@ docs/_build/
 # PyBuilder
 target/
 
+# Loom files
+*.loom

@@ -3,6 +3,7 @@ from flask import request
 from flask import make_response
 from flask_compress import Compress
 from werkzeug.utils import secure_filename
+from werkzeug.routing import BaseConverter
 from functools import wraps, update_wrapper
 import os
 import os.path
@@ -22,6 +23,9 @@ import time
 from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
+from gevent.wsgi import WSGIServer
+from gevent import monkey
+monkey.patch_all()
 
 def cache(expires=None, round_to_minute=False):
 	"""
@@ -58,7 +62,7 @@ def cache(expires=None, round_to_minute=False):
 
 				response.headers['Cache-Control'] = 'public'
 				response.headers['Expires'] = format_date_time(time.mktime(expires_time.timetuple()))
- 
+
 			return response
 		return cache_func
 	return cache_decorator
@@ -68,8 +72,23 @@ def cache(expires=None, round_to_minute=False):
 app = flask.Flask(__name__)
 app.cache = None
 
+# Advanced routing for fetching multiple rows/columns at once
+# creates list of integers based on a '+' separated string
+class IntDictConverter(BaseConverter):
+
+	def to_python(self, value):
+		return [int(v) for v in value.split('+')]
+
+	def to_url(self, values):
+		urlValues = [BaseConverter.to_url(value) for value in values]
+		return '+'.join(urlValues)
+
+app.url_map.converters['intdict'] = IntDictConverter
+
 # enable GZIP compression
 compress = Compress()
+app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
+app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
 #
@@ -185,48 +204,82 @@ def get_clone(project, filename):
 
 	return flask.send_file(path, mimetype='application/octet-stream')
 
-# Get one row of data (i.e. all the expression values for a single gene)
-@app.route('/loom/<string:project>/<string:filename>/row/<int:row>')
+# Get one or more rows of data (i.e. all the expression values for a single gene)
+@app.route('/loom/<string:project>/<string:filename>/row/<intdict:rows>')
 @cache(expires=None)
-def send_row(project, filename, row):
+def send_row(project, filename, rows):
 	(u,p) = get_auth(request)
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	return flask.Response(json.dumps(ds[row,:].tolist()), mimetype="application/json")
+	elif len(rows) == 1:
+		# only one row requested, send one row of data.
+		# this is transition code and will be removed once the client-side
+		# is updated to use dicts
+		return flask.Response(json.dumps(ds[rows[0], :].tolist()), mimetype="application/json")
+	elif len(rows) > 1:
+		# return a dictionary of rows
+		retRows = []
+		for row in rows:
+			retRows.append({ 'idx': row, 'data': ds[row, :].tolist()})
+		return flask.Response(json.dumps(retRows), mimetype="application/json")
 
-# Get one column of data (i.e. all the expression values for a single cell)
-@app.route('/loom/<string:project>/<string:filename>/col/<int:col>')
+# Get one or more columns of data (i.e. all the expression values for a single cell)
+@app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
 @cache(expires=None)
-def send_col(project, filename, col):
+def send_col(project, filename, cols):
 	(u,p) = get_auth(request)
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	return flask.Response(json.dumps(ds[:,col].tolist()), mimetype="application/json")
+	elif len(cols) == 1:
+		# only one col requested, send one col of data.
+		# this is transition code and will be removed once the client-side
+		# is updated to use dicts
+		return flask.Response(json.dumps(ds[:, cols[0]].tolist()), mimetype="application/json")
+	elif len(cols) > 1:
+		# return a list of {idx, data} objects.
+		# This is easier to iterate over client-side
+		retCols = []
+		for col in cols:
+			retCols.append({ 'idx': col, 'data': ds[:, col].tolist()})
+		return flask.Response(json.dumps(retCols), mimetype="application/json")
 
 
 #
 # Tiles
 #
 
-def serve_image(img):
-	img_io = BytesIO()
-	img.save(img_io, 'PNG')
-	img_io.seek(0)
-	return flask.send_file(img_io, mimetype='image/png')
+# def serve_image(img):
+# 	img_io = BytesIO()
+# 	img.save(img_io, 'PNG', compress_level=1)
+# 	img_io.seek(0)
+# 	return flask.send_file(img_io, mimetype='image/png')
 
 @app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
 @cache(expires=60*20)
 def send_tile(project, filename, z,x,y):
 	(u,p) = get_auth(request)
-	ds = app.cache.connect_dataset_locally(project, filename, u, p)
-	if ds == None:
-		return "", 404
-	img = ds.dz_get_zoom_image(x,y,z)
-	if img == None:
-		return "", 404
-	return serve_image(img)
+	# path to desired tile
+	path = app.cache.get_absolute_path(project, filename, u, p)
+	# subfolder by zoom level to get more useful sorting order
+	tiledir = '%s.tiles/z%02d/' % (path, z)
+	tile = 'x%03d_y%03d.png' % (x, y)
+	tilepath = '%s%s' % (tiledir, tile)
+
+	if not os.path.isfile(tilepath):
+		# if the tile doesn't exist, we're either out of range,
+		# or it still has to be generated
+		ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		if ds == None:
+			return "", 404 # out of range
+		ds.dz_get_zoom_tile(x, y, z)
+		# if the file still does not exist at this point,
+		# we are out of range
+		if not os.path.isfile(tilepath):
+			return "", 404
+
+	return flask.send_file(open(tilepath, 'rb'), mimetype='image/png')
 
 def signal_handler(signal, frame):
 	print('\nShutting down.')
@@ -236,7 +289,8 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-def start_server(dataset_path, show_browser, port, debug):
+
+def start_server(dataset_path, show_browser=True, port="8003", debug=True):
 	app.cache = LoomCache(dataset_path)
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -247,7 +301,9 @@ def start_server(dataset_path, show_browser, port, debug):
 		else:
 			webbrowser.open(url)
 	try:
-		app.run(debug=debug, host="0.0.0.0", port=port)
+		#app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
+		http_server = WSGIServer(('', port), app)
+		http_server.serve_forever()
 	except socket_error as serr:
 		logging.error(serr)
 		if port < 1024:

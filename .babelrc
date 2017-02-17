@@ -1,5 +1,4 @@
 {
 	"presets": ["latest", "react"],
-	"plugins": ["lodash"]
-	//"plugins": ["transform-react-constant-elements", "lodash"]	
+	"plugins": ["transform-react-constant-elements", "lodash"]	
 }
