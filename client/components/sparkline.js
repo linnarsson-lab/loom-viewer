@@ -1,10 +1,9 @@
 import { nMostFrequent, arrayConstr } from '../js/util';
 import * as colors from '../js/colors';
+import { textSize, textStyle, drawText } from './canvas';
 
 export function sparkline(attr, mode, dataRange, label, orientation, unfiltered) {
-
 	if (attr === undefined) {
-		console.log('sparkline() called without defined attr!');
 		return () => { };
 	}
 
@@ -30,7 +29,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// =====================
 	// Prep data for plotter
 	// =====================
-	let { data, filteredData, arrayType, indexedVal, uniqueVal } = attr;
+	let { data, filteredData, arrayType, indexedVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
@@ -54,14 +53,16 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// will only be 0.6 times the width of the other datapoints,
 	// and point 6 will only be 0.3 times the width.
 
-	let range = {};
-	if (uniqueVal !== undefined) {
-		data = filteredData = [uniqueVal];
-	}
-
 	// If dataRange is undefined, use the whole (filtered) dataset.
-	range.left = dataRange ? dataRange[0] : 0;
-	range.right = dataRange ? dataRange[1] : (unfiltered ? data.length : filteredData.length);
+	let range = {
+		left: (dataRange ? dataRange[0] : 0),
+		right: (
+			dataRange ? dataRange[1] : (
+				unfiltered ? data.length : filteredData.length
+			)
+		),
+	};
+
 
 	// While we return if our total data range is zero, it *is*
 	// allowed to be out of bounds for the dataset. For the
@@ -245,20 +246,22 @@ function categoriesPainter(context, range, colorIndices) {
 		let i = 0;
 		while (i < data.length) {
 			const val = data[i];
-			const cIdx = val === undefined ? 0 : colorIndices.mostFreq[val];
-			context.fillStyle = colors.category20[cIdx];
 
-			let j = i+1;
+			let j = i + 1;
 			let nextVal = data[j];
 			// advance while value doesn't change 
-			while (val === nextVal && i+j < data.length){ 
+			while (val === nextVal && i + j < data.length) {
 				nextVal = data[++j];
 			}
 
-			// force to pixel grid
-			const x = xOffset + i * barWidth;
-			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
-			context.fillRect(x | 0, 0, roundedWidth, context.height);
+			if (val !== undefined){
+				const cIdx = colorIndices.mostFreq[val];
+				context.fillStyle = colors.category20[cIdx];
+				// force to pixel grid
+				const x = xOffset + i * barWidth;
+				const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
+				context.fillRect(x | 0, 0, roundedWidth, context.height);
+			}
 			i = j;
 		}
 	} else {
@@ -268,20 +271,18 @@ function categoriesPainter(context, range, colorIndices) {
 			const i1 = ((i + 1) * data.length / width) | 0;
 			const slice = data.slice(i0, i1);
 			const commonest = nMostFrequent(slice, 1).values[0];
-			const cIdx = commonest === undefined ? 0 : colorIndices.mostFreq[commonest];
-			context.fillStyle = colors.category20[cIdx];
-			context.fillRect(xOffset + i, 0, 1, context.height);
+			if (commonest){
+				const cIdx = colorIndices.mostFreq[commonest];
+				context.fillStyle = colors.category20[cIdx];
+				context.fillRect(xOffset + i, 0, 1, context.height);
+			}
 		}
 	}
 }
 
 
 function barPainter(attr, label) {
-	let { min, max, hasZeros, uniqueVal } = attr;
-	if (uniqueVal) {
-		min = max = uniqueVal;
-		hasZeros = uniqueVal === 0;
-	}
+	let { min, max, hasZeros } = attr;
 	if (hasZeros) {
 		min = min < 0 ? min : 0;
 	}
@@ -301,20 +302,20 @@ function barPaint(context, range, min, max, label) {
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 
-		const val = outliers[i];
-		let j = i + 1;
-		let nextVal = outliers[j];
-		// advance while value doesn't change 
-		while (val === nextVal && i + j < outliers.length) {
-			nextVal = outliers[++j];
-		}
+		// Even if outliers[i] is non a number, OR-masking forces it to 0
+		const barHeight = (outliers[i] * scaleMean) | 0;
+
+		// advance while height doesn't change 
+		let j = i, nextHeight;
+		do {
+			nextHeight = (outliers[++j] * scaleMean) | 0;
+		}  while (barHeight === nextHeight && i + j < outliers.length);
+
 		const w = (j - i) * barWidth;
 
 		// zero values are an extremely common case,
 		// so skip those pointless draw calls
-		if (val > 0) {
-			// Even if outliers[i] is non a number, OR-masking forces it to 0
-			let barHeight = (val * scaleMean) | 0;
+		if (barHeight) {
 			// canvas defaults to positive y going *down*, so to
 			// draw from bottom to top we start at height and
 			// subtract the height.
@@ -326,17 +327,17 @@ function barPaint(context, range, min, max, label) {
 		i = j; x += w;
 	}
 	const ratio = context.pixelRatio;
-	context.textStyle();
+	textStyle(context);
 	if (ratio > 0.5) {
 		const minmaxSize = 8 * ratio;
-		context.textSize(minmaxSize);
-		context.drawText(min.toPrecision(3), 4 * ratio, context.height - 2);
-		context.drawText(max.toPrecision(3), 4 * ratio, 2 + minmaxSize);
+		textSize(context, minmaxSize);
+		drawText(context, min.toPrecision(3), 4 * ratio, context.height - 2);
+		drawText(context, max.toPrecision(3), 4 * ratio, 2 + minmaxSize);
 	}
 	if (label) {
 		const labelSize = Math.max(8, 10 * ratio);
-		context.textSize(labelSize);
-		context.drawText(label, 6 * ratio, (context.height + labelSize) * 0.5);
+		textSize(context, labelSize);
+		drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
 	}
 }
 
@@ -355,28 +356,27 @@ function heatmapPaint(context, range, min, max, label, colorLUT) {
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
-		const val = outliers[i];
-		// Even if val is not a number, OR-masking forces it to 0
-		let colorIdx = ((val - min) * colorIdxScale) | 0;
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		let colorIdx = ((outliers[i] - min) * colorIdxScale) | 0;
 		context.fillStyle = colorLUT[colorIdx];
 
 		let j = i + 1;
-		let nextVal = outliers[j];
-		// advance while value doesn't change 
-		while (val === nextVal && i + j < outliers.length) {
-			nextVal = outliers[++j];
-		} 
+		let nextIdx = ((outliers[j] - min) * colorIdxScale) | 0;
+		// advance while colour value doesn't change 
+		while (colorIdx === nextIdx && i + j < outliers.length) {
+			nextIdx = ((outliers[++j] - min) * colorIdxScale) | 0;
+		}
 		const w = (j - i) * barWidth;
 
 		// force to pixel grid
 		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
 		i = j; x += w;
 	}
-	context.textStyle();
+	textStyle(context);
 	if (label) {
 		const labelSize = Math.max(8, 10 * context.pixelRatio);
-		context.textSize(labelSize);
-		context.drawText(label, 6 * context.pixelRatio, (context.height + labelSize) * 0.5);
+		textSize(context, labelSize);
+		drawText(context, label, 6 * context.pixelRatio, (context.height + labelSize) * 0.5);
 	}
 }
 
@@ -386,8 +386,8 @@ function textPaint(context, range) {
 	// only draw if we have six pixels per
 	const minLineSize = 8;
 	if (lineSize >= minLineSize) {
-		context.textSize(Math.min(lineSize - 2, 12));
-		context.textStyle();
+		textSize(context, Math.min(lineSize - 2, 12));
+		textStyle(context);
 		context.save();
 		// The default is drawing horizontally,
 		// so the text should be vertical.
@@ -399,7 +399,7 @@ function textPaint(context, range) {
 		context.rotate(-Math.PI / 2);
 		context.translate(2, lineSize / 2 + range.xOffset);
 		range.data.forEach((label) => {
-			if (label) { context.drawText(label, 0, 0); }
+			if (label) { drawText(context, label, 0, 0); }
 			context.translate(0, lineSize);
 		});
 		// undo all rotations/translations

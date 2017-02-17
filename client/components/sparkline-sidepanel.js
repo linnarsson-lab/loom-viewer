@@ -46,7 +46,7 @@ export const SparklineSidepanel = function (props) {
 
 
 	const colAttrsOptions = col.keys.filter((key) => {
-		return col.attrs[key] && col.attrs[key].uniqueVal === undefined;
+		return col.attrs[key];
 	}).sort();
 	const colAttrsHC = handleChangeFactory('colAttr');
 
