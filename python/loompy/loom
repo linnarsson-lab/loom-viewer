@@ -15,6 +15,9 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 
+import timeit
+import random
+
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):
 		self.print_help()
@@ -161,6 +164,23 @@ def clone_command(dataset_path, project, url, username, password):
 		logging.error("Too many redirects")
 		sys.exit(1)
 
+def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chunk_cache, compression_opts, shuffle, fletcher32):
+	if project != None:
+		outfile = os.path.join(dataset_path, project, outfile)
+
+	if dtype == None:
+		ds = loompy.connect(infile, 'r')
+		dtype = ds.file['matrix'].type
+
+	chunks = (_chunks,_chunks)
+	if type(chunks) != tuple or len(chunks) != 2:
+		chunks = (64,64)
+
+	logging.info("Converting %s to %s" % (infile, outfile))
+	logging.info("dtype: %s, chunks size: %s, chunk cache: %s, compression: %s, shuffle: %s, fletcher32: %s" % (dtype, chunks, chunk_cache, compression_opts, shuffle, fletcher32))
+	loompy.create_from_loom(infile, outfile, chunks, chunk_cache, dtype, compression_opts, shuffle, fletcher32)
+
+
 def fromcef_command(dataset_path, infile, outfile, project):
 	if project != None:
 		outfile = os.path.join(dataset_path, project, outfile)
@@ -197,6 +217,25 @@ def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, t
 	pipeline.create_loom(dataset_path, project, filename, transcriptome)
 	logging("Done")
 
+def benchmark_command(infile):
+	logging.info("Benchmarking %s random row access, 10 x 100" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r"); rmax = ds.file["matrix"].shape[0]-1' % infile
+	testfunc = 'for i in range(0,100): ds[random.randint(0, rmax),:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+
+	logging.info("Benchmarking %s loading 100 rows at once, 10 x" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
+	testfunc = 'ds[0:100,:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+
+	logging.info("Benchmarking %s sequential row access, 10 x 100" % infile)
+	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
+	testfunc = 'for i in range(0,100): ds[i,:]'
+	t = timeit.Timer(testfunc, setup)
+	logging.info(t.timeit(10))
+	
 class Empty(object):
 	pass
 
@@ -245,8 +284,8 @@ if __name__ == '__main__':
 		clone_parser = subparsers.add_parser('clone', help="Clone a remote dataset")
 		clone_parser.add_argument("url", help="URL of the loom file to clone")
 		clone_parser.add_argument('--project', help="Project name")
-		clone_parser.add_argument('-u','--username', help="Username")	
-		clone_parser.add_argument('-p','--password', help="Password")	
+		clone_parser.add_argument('-u','--username', help="Username")
+		clone_parser.add_argument('-p','--password', help="Password")
 		
 		# loom tsne
 		tsne_parser = subparsers.add_parser('tsne', help="Compute t-SNE projection to 2D")
@@ -266,6 +305,18 @@ if __name__ == '__main__':
 		backspin_parser.add_argument("file", help="Loom input file")
 		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=500)
 		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
+
+		# loom from-loom
+		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of various settings on performance")
+		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
+		loom_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
+		loom_parser.add_argument('--project', help="Project name")
+		loom_parser.add_argument('--dtype', help='Matrix data type. Defaults to "float32"', default="float32")
+		loom_parser.add_argument('--chunks', help='Chunk tile size, i.e. "--chunks 10" (defaults to 64)', type=int, default=64)
+		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
+		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Deafult: no compression', type=int)
+		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', type=bool, default=False)
+		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to True', type=bool, default=True)
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
@@ -287,6 +338,10 @@ if __name__ == '__main__':
 		sql_parser.add_argument('-s','--sql', help="SQL server hostname", required=True)
 		sql_parser.add_argument('-t','--transcriptome', help="Transcriptome", required=True)
 		sql_parser.add_argument('--project', help="Project name")
+
+		# loom benchmark
+		benchmark_parser = subparsers.add_parser('benchmark', help="Benchmark random row access")
+		benchmark_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
 
 		args = parser.parse_args()
 
@@ -316,9 +371,13 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
-	elif args.command == "from_cef":
+	elif args.command == "from-loom":
+		fromloom_command(args.dataset_path, args.infile, args.outfile, args.project, args.dtype, args.chunks, args.chunk_cache, args.compression_opts, args.shuffle, args.fletcher32)
+	elif args.command == "from-cef":
 		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
-	elif args.command == "from_cellranger":
+	elif args.command == "from-cellranger":
 		fromcellranger_command(args.dataset_path, args.infolder, args.outfile, args.project)
-	elif args.command == "from_sql":
+	elif args.command == "from-sql":
 		fromsql_command(args.dataset_path, args.outfile, args.project, args.row_attrs, args.col_attrs, args.sql, args.transcriptome)
+	elif args.command == "benchmark":
+		benchmark_command(args.infile)

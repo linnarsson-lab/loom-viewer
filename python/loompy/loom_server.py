@@ -87,6 +87,8 @@ app.url_map.converters['intdict'] = IntDictConverter
 
 # enable GZIP compression
 compress = Compress()
+app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
+app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
 #
@@ -248,11 +250,11 @@ def send_col(project, filename, cols):
 # Tiles
 #
 
-def serve_image(img):
-	img_io = BytesIO()
-	img.save(img_io, 'PNG', compress_level=1)
-	img_io.seek(0)
-	return flask.send_file(img_io, mimetype='image/png')
+# def serve_image(img):
+# 	img_io = BytesIO()
+# 	img.save(img_io, 'PNG', compress_level=1)
+# 	img_io.seek(0)
+# 	return flask.send_file(img_io, mimetype='image/png')
 
 @app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
 @cache(expires=60*20)
@@ -260,39 +262,24 @@ def send_tile(project, filename, z,x,y):
 	(u,p) = get_auth(request)
 	# path to desired tile
 	path = app.cache.get_absolute_path(project, filename, u, p)
-	tiledir = '%s.tiles/' % (path)
-	tile = 'z%02d_x%03d_y%03d.png' % (z, x, y)
+	# subfolder by zoom level to get more useful sorting order
+	tiledir = '%s.tiles/z%02d/' % (path, z)
+	tile = 'x%03d_y%03d.png' % (x, y)
 	tilepath = '%s%s' % (tiledir, tile)
 
-	# make sure the tile directory exists
-	# we use a try/error approach so that we
-	# don't have to worry about race conditions
-	# (if another process creates the same
-	#  directory we just catch the exception)
-	try:
-		os.makedirs(tiledir)
-	except OSError as exception:
-		# if the error was that the directory already
-		# exists, ignore it, since that is expected.
-		if exception.errno != errno.EEXIST:
-			raise
-
-	# if the tile doesn't exist, we're either out of range,
-	# or it still has to be generated
 	if not os.path.isfile(tilepath):
+		# if the tile doesn't exist, we're either out of range,
+		# or it still has to be generated
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
+			return "", 404 # out of range
+		ds.dz_get_zoom_tile(x, y, z)
+		# if the file still does not exist at this point,
+		# we are out of range
+		if not os.path.isfile(tilepath):
 			return "", 404
-		img = ds.dz_get_zoom_image(x, y, z)
-		if img == None:
-			return "", 404
-		# save as a PNG file
-		img_io = open(tilepath, 'wb')
-		img.save(img_io, 'PNG', compress_level=6)
-		img_io.close()
-	# this code can only be reached when a tile exists
-	img_io = open(tilepath, 'rb')
-	return flask.send_file(img_io, mimetype='image/png')
+
+	return flask.send_file(open(tilepath, 'rb'), mimetype='image/png')
 
 def signal_handler(signal, frame):
 	print('\nShutting down.')
