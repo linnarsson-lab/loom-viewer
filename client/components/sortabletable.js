@@ -21,21 +21,22 @@ export const SortableTable = function (props) {
 			maxHeaders = Math.max(maxHeaders, columns[i].headers.length);
 		}
 	}
+
 	for (let i = 0; i < maxHeaders; i++) {
-		// Header
+		// A row of header cells
 		let headerCells = [];
 		for (let j = 0; j < columns.length; j++) {
 			const column = columns[j];
 			const { key, keys, headers, headerStyles, onHeaderClick } = column;
-			let sortIcon;
-			if (i === 0) {
-				sortIcon = (order && key === order.key) ? (
-					<Glyphicon
-						glyph={column.sortIcon + (order.asc ? '' : '-alt')} />
-				) : null;
-			}
+
+			const sortIcon = (i === 0 && order && key === order.key) ? (
+				<Glyphicon
+					glyph={column.sortIcon + (order.asc ? '' : '-alt')} />
+			) : null;
 			const header = headers ? headers[i] : null;
-			const onClick = header ? Array.isArray(onHeaderClick) ? onHeaderClick[i] : onHeaderClick : null;
+			const onClick = header ? (
+				Array.isArray(onHeaderClick) ? onHeaderClick[i] : onHeaderClick
+			) : null;
 			headerCells.push(
 				<th
 					key={keys ? keys.join(' ') : key}
@@ -45,7 +46,7 @@ export const SortableTable = function (props) {
 				</th>
 			);
 		}
-		headerRows.push(<tr key={i+1} >{headerCells}</tr>);
+		headerRows.push(<tr key={i + 1} >{headerCells}</tr>);
 	}
 
 

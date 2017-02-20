@@ -1,12 +1,14 @@
 import React, { Component, PropTypes } from 'react';
-import { Grid, Row, Col, Button, Glyphicon, FormControl } from 'react-bootstrap';
+import { Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap';
 import { Link } from 'react-router';
 
 import { SortableTable } from './sortabletable';
+import { DebouncedFormcontrol } from './debounced-formcontrol';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
 import { fetchProjects } from '../actions/actions';
 import { stableSortInPlace } from '../js/util';
+
 
 import Fuse from 'fuse.js';
 
@@ -29,17 +31,17 @@ function handleChangeFactory(field, dispatch) {
 const DatasetList = function (props) {
 	const {datasets, dispatch, search, order } = props;
 
-	const dateSearch = (<FormControl type='text' value={search.lastModified}
-		onChange={handleChangeFactory('lastModified', dispatch)} />);
+	const dateSearch = (<DebouncedFormcontrol type='text' value={search.lastModified}
+		onChange={handleChangeFactory('lastModified', dispatch)} time={500} />);
 
-	const projectSearch = (<FormControl type='text' value={search.project}
-		onChange={handleChangeFactory('project', dispatch)} />);
+	const projectSearch = (<DebouncedFormcontrol type='text' value={search.project}
+		onChange={handleChangeFactory('project', dispatch)} time={500} />);
 
-	const titleSearch = (<FormControl type='text' value={search.title}
-		onChange={handleChangeFactory('title', dispatch)} />);
+	const titleSearch = (<DebouncedFormcontrol type='text' value={search.title}
+		onChange={handleChangeFactory('title', dispatch)} time={500} />);
 
-	const descriptionSearch = (<FormControl type='text' value={search.description}
-		onChange={handleChangeFactory('description', dispatch)} />);
+	const descriptionSearch = (<DebouncedFormcontrol type='text' value={search.description}
+		onChange={handleChangeFactory('description', dispatch)} time={500} />);
 
 	const headerStyles = [{ border: 'none 0px' }, { padding: '4px' }];
 
@@ -125,7 +127,7 @@ const DatasetList = function (props) {
 					href={downloadURL}
 					title={'Download ' + path}
 					style={{ padding: 0 }}
-					>
+				>
 					<Glyphicon glyph='cloud-download' style={{ fontSize: '14px' }} />
 				</Button>
 			);
@@ -139,7 +141,7 @@ const DatasetList = function (props) {
 						href={'http://dx.doi.org/' + doi}
 						title={'Original reference: http://dx.doi.org/' + doi}
 						style={{ padding: 0 }}
-						>
+					>
 						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
 					</Button>
 				);
@@ -153,13 +155,13 @@ const DatasetList = function (props) {
 						href={url}
 						title={'External web page: ' + url}
 						style={{ padding: 0 }}
-						>
+					>
 						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
 					</Button>
 				);
 			// merge() does not play nicely with JSX
 			datasets[i] = {
-				project, description, lastModified, totalCells,
+				path, project, description, lastModified, totalCells,
 				title: titleURL,
 				buttons: (
 					<div key={path} style={{ textAlign: 'center' }}>
@@ -175,10 +177,10 @@ const DatasetList = function (props) {
 				columns={columns}
 				dispatch={dispatch}
 				order={order}
-				/>
+			/>
 		);
 	} else {
-		return (<h2>'Downloading list of available datasets...'</h2>
+		return (<div className='view centered'><h2>Downloading list of available datasets...</h2></div>
 		);
 	}
 };
@@ -213,7 +215,7 @@ class SearchDataSetViewComponent extends Component {
 		}
 	}
 
-	componentWillUpdate(nextProps) {
+	componentWillReceiveProps(nextProps) {
 		let { list } = this.state;
 
 		if (!list && nextProps.list) {
@@ -227,6 +229,7 @@ class SearchDataSetViewComponent extends Component {
 				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
 				this.filterProjects(list, order, search);
 			}
+			this.setState({ list });
 		}
 	}
 
@@ -305,7 +308,7 @@ class SearchDataSetViewComponent extends Component {
 			}
 		}
 
-		this.setState({ list, filtered });
+		this.setState({ filtered });
 	}
 
 
@@ -324,21 +327,20 @@ class SearchDataSetViewComponent extends Component {
 						lg={12}>
 						<div className='view-vertical'>
 							<h1>Dataset Search</h1>
-							<FormControl
+							<DebouncedFormcontrol
 								type='text'
 								placeholder='All fields..'
 								value={search.all}
 								onChange={handleChangeFactory('all', dispatch)}
-								style={{ width: '100%' }} />
+								style={{ width: '100%' }}
+								time={500} />
 							<br />
 							<h1>Results</h1>
-							{filtered ? (
-								<DatasetList
-									dispatch={dispatch}
-									datasets={filtered}
-									search={search}
-									order={order} />
-							) : null}
+							<DatasetList
+								dispatch={dispatch}
+								datasets={filtered}
+								search={search}
+								order={order} />
 						</div>
 					</Col>
 				</Row>
