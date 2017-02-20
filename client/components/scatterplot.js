@@ -161,16 +161,8 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter, filterZero
 
 		// blit sprites
 		const spriteOffset = (w * 0.5);
-		// first the uncoloured values
 		for (let i = 0; i < xData.length; i++) {
-			if (cIdx[i] === 0) {
-				context.drawImage(sprites[cIdx[i]], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
-			}
-		}
-		for (let i = 0; i < xData.length; i++) {
-			if (cIdx[i]) {
-				context.drawImage(sprites[cIdx[i]], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
-			}
+			context.drawImage(sprites[cIdx[i]], (xData[i] - spriteOffset) | 0, (yData[i] - spriteOffset) | 0);
 		}
 
 		context.restore();
@@ -255,9 +247,10 @@ function convertStringArray(data) {
 }
 
 
-// sort by x, then by y, so that we render zero values first, 
-// and then from back-to-front. This has to be done after
-// jittering to maintain the tiling behaviour that is desired.
+// Sort so that we render zero values first, 
+// and then from back-to-front. This has to
+// be done after jittering to maintain the
+// tiling behaviour that is desired.
 function sortByAxes(xData, yData, cIdx) {
 	let indices = new Uint32Array(cIdx.length), i;
 	for (i = 0; i < cIdx.length; i++) {
@@ -266,9 +259,10 @@ function sortByAxes(xData, yData, cIdx) {
 
 	indices.sort((a, b) => {
 		return (
-			yData[a] < yData[b] ? 1 : yData[a] > yData[b] ? -1 :
-				xData[a] < xData[b] ? -1 : xData[a] > xData[b] ? 1 :
-					a - b
+			!(cIdx[a] && cIdx[b]) ? cIdx[a] - cIdx[b] : // sort zero-values for colour
+				yData[a] < yData[b] ? 1 : yData[a] > yData[b] ? -1 : //by y-axis
+					xData[a] < xData[b] ? -1 : xData[a] > xData[b] ? 1 : // x-axis
+						a - b // and as a last resort: actual value
 		);
 	});
 	let x = new Float32Array(cIdx.length),
