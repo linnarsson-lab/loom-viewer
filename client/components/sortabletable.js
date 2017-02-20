@@ -73,7 +73,7 @@ export const SortableTable = function (props) {
 				</td>
 			);
 		}
-		dataRows.push(<tr key={data[i].path} >{rowCells}</tr>);
+		dataRows.push(<tr key={data[i].rowKey} >{rowCells}</tr>);
 	}
 
 	return (

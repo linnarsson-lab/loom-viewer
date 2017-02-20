@@ -161,10 +161,11 @@ const DatasetList = function (props) {
 				);
 			// merge() does not play nicely with JSX
 			datasets[i] = {
+				rowKey: path,
 				path, project, description, lastModified, totalCells,
 				title: titleURL,
 				buttons: (
-					<div key={path} style={{ textAlign: 'center' }}>
+					<div style={{ textAlign: 'center' }}>
 						{[paperButton, urlButton, downloadButton]}
 					</div>
 				),

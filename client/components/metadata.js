@@ -114,11 +114,19 @@ export class MetadataComponent extends Component {
 		for (let i = 0; i < filteredKeys.length; i++) {
 			const key = filteredKeys[i];
 			const onClick = onClickAttrFactory(key);
-			let tableRow = { name: <div onClick={onClick} style={{ width: '100%', height: '100%', cursor: 'pointer' }}><span>{key}</span></div> };
+			let tableRow = {
+				rowKey: key,
+				name: (
+					<div
+						onClick={onClick}
+						style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
+						<span>{key}</span>
+					</div>),
+			};
 			const attr = attributes[key];
 			const { filteredData, indexedVal, arrayType, uniques, uniqueVal } = attr;
 
-			if (uniqueVal !== undefined){ // only one value
+			if (uniqueVal !== undefined) { // only one value
 				tableRow.val = (
 					<span>{uniqueVal}</span>
 				);
@@ -144,7 +152,6 @@ export class MetadataComponent extends Component {
 			} else {
 				const filterFunc = (val) => { return onClickFilterFactory(key, val); };
 				switch (arrayType) {
-					case 'indexedString':
 					case 'string':
 						tableRow.val = (
 							<MetadataPlot
@@ -176,7 +183,7 @@ export class MetadataComponent extends Component {
 				data={tableData}
 				columns={columns}
 				dispatch={dispatch}
-				/>
+			/>
 		);
 	}
 }
