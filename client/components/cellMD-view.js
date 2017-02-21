@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
-import { FormControl, Glyphicon } from 'react-bootstrap';
+import { Glyphicon } from 'react-bootstrap';
+import { DebouncedFormcontrol } from './debounced-formcontrol';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
 import { SET_VIEW_PROPS, SORT_CELL_METADATA, FILTER_METADATA } from '../actions/actionTypes';
@@ -53,10 +54,11 @@ class CellMDComponent extends Component {
 
 		let { searchVal } = dataset.viewState.cellMD;
 		const searchField = (
-			<FormControl
+			<DebouncedFormcontrol
 				type='text'
 				onChange={searchMetadata}
 				value={searchVal}
+				time={500}
 				/>
 		);
 
