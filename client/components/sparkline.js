@@ -139,6 +139,8 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 
 // Helper functions
 
+const abs = Math.abs;
+
 function calcMeans(range) {
 	const { data, width } = range;
 	// determine real start and end of range,
@@ -163,9 +165,9 @@ function calcMeans(range) {
 		barWidth = 1;
 
 		// calculate means, find minima and maxima
-		means = new Array(width);
-		minima = new Array(width);
-		maxima = new Array(width);
+		means = [];
+		minima = [];
+		maxima = [];
 		for (let i = 0; i < width; i++) {
 			let i0 = (i * data.length / width) | 0;
 			let i1 = (((i + 1) * data.length / width) | 0);
@@ -176,22 +178,25 @@ function calcMeans(range) {
 			}
 			i1 = i1 < end ? i1 : end;
 			let sum = 0;
-			minima[i0] = data[i0];
-			maxima[i0] = data[i0];
+			minima[i] = data[i0];
+			maxima[i] = data[i0];
 			for (let j = i0; j < i1; j++) {
 				let val = data[j];
 				sum += val;
-				minima[j] = val < minima[j] ? val : minima[j];
-				maxima[j] = val > maxima[j] ? val : maxima[j];
+				minima[i] = val < minima[i] ? val : minima[i];
+				maxima[i] = val > maxima[i] ? val : maxima[i];
 			}
 			const mean = (i1 - i0) !== 0 ? sum / (i1 - i0) : sum;
 			means[i] = mean;
 		}
 
-		// Variant of the Largest Triangle Three Buckets algorithm
-		// by Sven Steinnarson. Essentially: keep the value with
-		// the largest difference to the surrounding averages.
-		outliers = new Array(width);
+		// Largest Triangle Three Buckets algorithm by Sven Steinnarson.
+		// Essentially: divide in buckets, calculate mean value per
+		// bucket, then from left to right select the value that has
+		// the biggest difference with the average of the selected value
+		// of the previous bucket, and the mean of the next bucket.
+		outliers = [];
+		let prevMax = 0;
 		for (let i = 0; i < width; i++) {
 			let i0 = (i * data.length / width) | 0;
 			let i1 = (((i + 1) * data.length / width) | 0);
@@ -202,23 +207,20 @@ function calcMeans(range) {
 			}
 			i1 = i1 < end ? i1 : end;
 
-			// this distorts the values at the edges,
-			// but keeps the code fast.
-			const meanPrev = means[i - 1] | 0;
 			const meanNext = means[i + 1] | 0;
-			let mean = (meanPrev + meanNext) * 0.5;
+			let mean = (prevMax + meanNext) * 0.5;
 
-			// find largest difference to the surrounding averages
 			let max = data[i0];
-			let diff = Math.abs(max - mean);
+			let absDiff = abs(max - mean);
 			for (let j = i0 + 1; j < i1; j++) {
-				let newDiff = Math.abs(data[j] - mean);
-				if (newDiff > diff) {
-					diff = newDiff;
+				let newAbsDiff = abs(data[j] - mean);
+				if (newAbsDiff > absDiff) {
+					absDiff = newAbsDiff;
 					max = data[j];
 				}
 			}
 			outliers[i] = max;
+			prevMax = max;
 		}
 	}
 	return { means, minima, maxima, outliers, barWidth };
@@ -247,12 +249,12 @@ function categoriesPainter(context, range, colorIndices) {
 		while (i < data.length) {
 			const val = data[i];
 
-			let j = i + 1;
-			let nextVal = data[j];
+			let j = i, nextVal;
 			// advance while value doesn't change 
-			while (val === nextVal && i + j < data.length) {
-				nextVal = data[++j];
-			}
+			do {
+				j++;
+				nextVal = data[j];
+			} while (val === nextVal && i + j < data.length);
 
 			if (val !== undefined){
 				const cIdx = colorIndices.mostFreq[val];
@@ -294,21 +296,24 @@ function barPainter(attr, label) {
 
 function barPaint(context, range, min, max, label) {
 
-	const { outliers, barWidth } = calcMeans(range);
-	// factor to multiply the mean values by, to calculate bar height
+	const { maxima, minima, means, outliers, barWidth } = calcMeans(range);
+	// factor to multiply the bar values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
-	const scaleMean = context.height / (max * 1.1);
-	context.fillStyle = '#404040';
+	const barScale = context.height / (max * 1.1);
 	let i = 0, x = range.xOffset;
+
+	// draw bars (outliers)
+	context.fillStyle = '#000000';
 	while (i < outliers.length) {
 
-		// Even if outliers[i] is non a number, OR-masking forces it to 0
-		const barHeight = (outliers[i] * scaleMean) | 0;
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		const barHeight = (outliers[i] * barScale) | 0;
 
 		// advance while height doesn't change 
 		let j = i, nextHeight;
 		do {
-			nextHeight = (outliers[++j] * scaleMean) | 0;
+			j++;
+			nextHeight = (outliers[j] * barScale) | 0;
 		}  while (barHeight === nextHeight && i + j < outliers.length);
 
 		const w = (j - i) * barWidth;
@@ -317,15 +322,39 @@ function barPaint(context, range, min, max, label) {
 		// so skip those pointless draw calls
 		if (barHeight) {
 			// canvas defaults to positive y going *down*, so to
-			// draw from bottom to top we start at height and
-			// subtract the height.
-			let y = context.height - barHeight;
+			// draw from bottom to top we start at context height and
+			// subtract the bar height.
+			let y = context.height - barHeight|0;
 
 			// force to pixel grid
 			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
 		}
 		i = j; x += w;
 	}
+
+	// draw mean values
+	context.fillStyle = '#888888';
+	i = 0; 
+	x = range.xOffset;
+	while (i < means.length){
+		const meanHeight = (means[i] * barScale) | 0;
+
+		let j = i, nextHeight;
+		do {
+			j++;
+			nextHeight = (means[j] * barScale) | 0;
+		}  while (meanHeight === nextHeight && i + j < means.length);
+
+		const w = (j - i) * barWidth;
+
+		if (meanHeight) {
+			let y = context.height - meanHeight - 1;
+
+			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), 3);
+		}
+		i = j; x += w;
+	}
+
 	const ratio = context.pixelRatio;
 	textStyle(context);
 	if (ratio > 0.5) {
@@ -354,20 +383,21 @@ function heatmapPainter(attr, label, colorLUT) {
 }
 
 function heatmapPaint(context, range, min, max, label, colorLUT) {
-	const { outliers, barWidth } = calcMeans(range);
+	const { means, outliers, barWidth } = calcMeans(range);
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let colorIdx = ((outliers[i] - min) * colorIdxScale) | 0;
+		let colorIdx = (((outliers[i]||0 + means[i]||0)*0.5 - min) * colorIdxScale) | 0;
 		context.fillStyle = colorLUT[colorIdx];
 
-		let j = i + 1;
-		let nextIdx = ((outliers[j] - min) * colorIdxScale) | 0;
+		let j = i, nextIdx;
 		// advance while colour value doesn't change 
-		while (colorIdx === nextIdx && i + j < outliers.length) {
-			nextIdx = ((outliers[++j] - min) * colorIdxScale) | 0;
-		}
+		do {
+			j++;
+			nextIdx = (((outliers[j]||0 + means[j]||0)*0.5 - min) * colorIdxScale) | 0;
+		} while (colorIdx === nextIdx && i + j < outliers.length);
+
 		const w = (j - i) * barWidth;
 
 		// force to pixel grid
