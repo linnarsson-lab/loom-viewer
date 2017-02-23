@@ -10,7 +10,6 @@ const LandscapeComponent = function (props) {
 	const { dispatch, dataset } = props;
 	const { coordinateAttrs, colorAttr, colorMode,
 		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.landscape;
-	const { col } = dataset;
 
 	// filter out undefined attributes;
 	let attrs = [];
@@ -21,9 +20,9 @@ const LandscapeComponent = function (props) {
 		}
 	}
 
-
+	const { col } = dataset;
 	const color = col.attrs[colorAttr];
-	let plot;
+	
 	if (asMatrix && attrs.length > 2) {
 		const cellStyle = {
 			border: '1px solid lightgrey',
@@ -43,57 +42,64 @@ const LandscapeComponent = function (props) {
 			for (let i = 0; i < attrs.length; i++) {
 				let paint;
 				if (i <= j) {
-					const x = col.attrs[attrs[i]];// makeData(attrs[i], genes[i], fetchedGenes, colAttrs);
-					const y = col.attrs[attrs[j]];// makeData(attrs[j], genes[j], fetchedGenes, colAttrs);
+					const x = col.attrs[attrs[i]];
+					const y = col.attrs[attrs[j]];
 					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
 				}
 				row.push(
 					<Canvas
-						key={j + '_' + i}
+						key={attrs[j] + '_' + attrs[i]}
 						style={i <= j ? cellStyle : cellStyleNoBorder}
 						paint={paint}
 						redraw
 						clear
-						/>
+					/>
 				);
 
 			}
 			matrix.push(
 				<div
-					key={j}
+					key={j + '_' + attrs[j]}
 					className={'view'}
 					style={rowStyle}>
 					{row}
 				</div>
 			);
 		}
-		plot = <div className={'view-vertical'}>{matrix}</div>;
-	} else {
-		let x = col.attrs[attrs[0]];// makeData(attrs[0], genes[0], fetchedGenes, colAttrs);
-		let y = col.attrs[attrs[1]];// makeData(attrs[1], genes[1], fetchedGenes, colAttrs);
-		const paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
-		plot = (
-			<Canvas
-				paint={paint}
-				style={{ margin: '20px' }}
-				redraw
-				clear
+		return (
+			<div className='view'>
+				<LandscapeSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
 				/>
+				{/*If our grid changes in lenght, we need to remount*/}
+				<RemountOnResize watchedVal={attrs.length}>
+					<div className={'view-vertical'}>{matrix}</div>
+				</RemountOnResize>
+			</div>
 		);
 
+
+	} else {
+		let x = col.attrs[attrs[0]];
+		let y = col.attrs[attrs[1]];
+		const paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
+		return (
+			<div className='view'>
+				<LandscapeSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
+				/>
+				<Canvas
+					paint={paint}
+					style={{ margin: '20px' }}
+					redraw
+					clear
+				/>
+			</div>
+		);
 	}
 
-	return (
-		<div className='view'>
-			<LandscapeSidepanel
-				dataset={dataset}
-				dispatch={dispatch}
-				/>
-			<RemountOnResize watchedVal={attrs.length}>
-				{plot}
-			</RemountOnResize>
-		</div>
-	);
 };
 
 LandscapeComponent.propTypes = {

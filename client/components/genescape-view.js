@@ -19,6 +19,7 @@ const GenescapeComponent = function (props) {
 			selectedAttrs.push(attr);
 		}
 	}
+
 	const { row } = dataset;
 	const color = row.attrs[colorAttr];
 	let plot;
@@ -39,22 +40,26 @@ const GenescapeComponent = function (props) {
 		for (let j = 0; j < selectedAttrs.length; j++) {
 			let selectedRow = [];
 			for (let i = 0; i < selectedAttrs.length; i++) {
-				const x = row.attrs[selectedAttrs[i]];
-				const y = row.attrs[selectedAttrs[j]];
-				const paint = i <= j ? scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros) : null;
+				// only paint lower diagonal
+				let paint;
+				if (i <= j) {
+					const x = row.attrs[selectedAttrs[i]];
+					const y = row.attrs[selectedAttrs[j]];
+					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
+				}
 				selectedRow.push(
 					<Canvas
-						key={j + '_' + i}
+						key={selectedAttrs[j] + '_' + selectedAttrs[i]}
 						style={i <= j ? cellStyle : cellStyleNoBorder}
 						paint={paint}
 						redraw
 						clear
-						/>
+					/>
 				);
 			}
 			matrix.push(
 				<div
-					key={j}
+					key={j + '_' + selectedAttrs[j]}
 					className={'view'}
 					style={rowStyle}>
 					{selectedRow}
@@ -71,7 +76,7 @@ const GenescapeComponent = function (props) {
 				style={{ margin: '20px' }}
 				redraw
 				clear
-				/>
+			/>
 		);
 	}
 
@@ -80,7 +85,7 @@ const GenescapeComponent = function (props) {
 			<GenescapeSidepanel
 				dataset={dataset}
 				dispatch={dispatch}
-				/>
+			/>
 			<RemountOnResize watchedVal={selectedAttrs.length}>
 				{plot}
 			</RemountOnResize>

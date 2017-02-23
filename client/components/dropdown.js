@@ -12,19 +12,18 @@ export class DropdownMenu extends Component {
 	}
 
 	componentWillMount() {
-		const { options, unsorted, value, multi  } = this.props;
-		const sorted = unsorted ? options : options.slice(0).sort();
-		let sortedOptions = new Array(sorted.length);
-		for (let i = 0; i <= sorted.length; i++) {
-			sortedOptions[i] = {
-				value: sorted[i],
-				label: sorted[i],
+		const { options, filterOptions, value, multi  } = this.props;
+		let newOptions = new Array(options.length);
+		for (let i = 0; i < newOptions.length; i++) {
+			newOptions[i] = {
+				value: options[i],
+				label: options[i],
 			};
 		}
 
 		this.setState({ 
-			options: sortedOptions,
-			filterOptions: createFilterOptions({ options: sortedOptions }),
+			options: newOptions,
+			filterOptions: filterOptions ? filterOptions : createFilterOptions({ options: newOptions }),
 		});
 		this.setButtonName(value, multi);
 	}
@@ -93,9 +92,9 @@ DropdownMenu.propTypes = {
 		PropTypes.string,
 	]),
 	options: PropTypes.array.isRequired,
+	filterOptions: PropTypes.func,
 	onChange: PropTypes.func.isRequired,
 	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
-	unsorted: PropTypes.bool,
 	style: PropTypes.object,
 };
