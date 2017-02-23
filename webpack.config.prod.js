@@ -10,7 +10,7 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 const uglifySettings = {
 	mangle: {
 		screw_ie8: true,
-		keep_fnames: false,
+		keep_fnames: true,
 	},
 	compress: {
 		warnings: false,
