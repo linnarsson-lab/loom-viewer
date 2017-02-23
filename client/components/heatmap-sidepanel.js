@@ -55,7 +55,7 @@ export const HeatmapSidepanel = function (props) {
 				multi clearable />
 		);
 	}
-	let optionNames = ['Text', 'Bars', 'Heatmap', 'Categorical'];
+	let optionNames = ['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
 
 	return (
 		<Panel
