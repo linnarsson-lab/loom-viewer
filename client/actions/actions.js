@@ -11,9 +11,9 @@ import {
 	// REQUEST_DATASET_CACHED,
 	REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
-	REQUEST_GENE,
+	//REQUEST_GENE,
 	REQUEST_GENE_FETCH,
-	REQUEST_GENE_CACHED,
+	//REQUEST_GENE_CACHED,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 } from './actionTypes';
@@ -160,8 +160,7 @@ function receiveDataSet(data, path) {
 		type: RECEIVE_DATASET,
 		state: {
 			list: {
-				[path]: { 
-					viewState, col, row },
+				[path]: { viewState, col, row },
 			},
 		},
 	};
@@ -251,73 +250,62 @@ export function fetchDataSet(datasets, path) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestGene(gene, datasetName) {
+function requestGenesFetch(genes, geneKeys, path, datasetName) {
+	let fetchedGenes = {};
+	for (let i = 0; i < genes.length; i++) {
+		fetchedGenes[genes[i]] = true;
+	}
 	return {
-		type: REQUEST_GENE,
-		gene,
+		type: REQUEST_GENE_FETCH,
+		genes,
+		datasetName,
+		state: {
+			list: {
+				[path]: {
+					col: { geneKeys },
+					fetchedGenes,
+				},
+			},
+		},
+	};
+}
+
+function requestGenesFailed(genes, geneKeys, path, datasetName) {
+	let fetchedGenes = {};
+	for (let i = 0; i < genes.length; i++) {
+		fetchedGenes[genes[i]] = false;
+	}
+	return {
+		type: REQUEST_GENE_FAILED,
+		genes,
 		datasetName,
 		state: {
 			dataSets: {
 				[datasetName]: {
-					fetchingGenes: { [gene]: true },
+					fetchedGenes,
 				},
 			},
 		},
 	};
 }
 
-function requestGeneFetch(gene, geneKeys, path, datasetName) {
-	return {
-		type: REQUEST_GENE_FETCH,
-		gene,
-		datasetName,
-		state: {
-			list: {
-				[path]: {
-					col: { geneKeys },
-				},
-			},
-		},
-	};
-}
-
-function requestGeneCached(gene, datasetName) {
-	return {
-		type: REQUEST_GENE_CACHED,
-		gene,
-		datasetName,
-	};
-}
-
-function requestGeneFailed(gene, geneKeys, path, datasetName) {
-	return {
-		type: REQUEST_GENE_FAILED,
-		gene,
-		datasetName,
-		state: {
-			list: {
-				[path]: {
-					col: { geneKeys },
-				},
-			},
-		},	
-	};
-}
-
-function receiveGene(gene, path, indices, data) {
-	let convertedData = convertArray(data, gene);
+function receiveGenes(genes, geneNames, path, data) {
+	let attrs = {};
+	for (let i = 0; i < data.length; i++) {
+		let row = data[i];
+		attrs[geneNames[row.idx]] = convertArray(row.data);
+	}
+	//let convertedData = convertArray(data, gene);
 	return {
 		type: RECEIVE_GENE,
-		gene,
+		genes,
 		path,
 		receivedAt: Date.now(),
 		state: {
 			list: {
 				[path]: {
-					col: { 
-						attrs: { 
-							[gene]: convertedData,
-						},
+					col: {
+						attrs,
 					},
 				},
 			},
@@ -331,41 +319,48 @@ function receiveGene(gene, path, indices, data) {
 
 export function fetchGene(dataset, genes) {
 	const { title, path, col, row } = dataset;
-	const { Gene } = row.attrs;
-	return (dispatch) => {
-		if (Gene === undefined) { return; }
-		for (let i = 0; i < genes.length; i++) {
-			const gene = genes[i];
-			const row = Gene.data.indexOf(gene);
-			dispatch(requestGene(gene, title));
-			// If gene is already cached, being fetched or
-			// not part of the dataset, skip fetching.
-			if (col.attrs[gene] ||
-				col.geneKeys.indexOf(gene) !== -1 ||
-				row === -1) {
-\				// Announce gene being fetched/retrieved from cache
-				dispatch(requestGeneCached(gene, title));
-				continue;
+	const geneNames = row.attrs.Gene ? row.attrs.Gene.data : undefined;
+	if (geneNames === undefined) {
+		return () => { };
+	} else {
+		return (dispatch) => {
+			let fetchGenes = [], cachedGenes = [], fetchRows = [];
+			for (let i = 0; i < genes.length; i++) {
+				const gene = genes[i];
+				const row = geneNames.indexOf(gene);
+				// If gene is already cached, being fetched or
+				// not part of the dataset, skip fetching.
+				if (row !== -1) {
+					if (col.attrs[gene] ||
+						col.geneKeys.indexOf(gene) !== -1) {
+						cachedGenes.push(gene);
+					} else {
+						fetchGenes.push(gene);
+						fetchRows.push(row);
+					}
+				}
 			}
-			// Announce gene request from server, add to geneKeys
-			// to indicate it is being fetched
-			let geneKeys = col.geneKeys.slice(0);
-			geneKeys.push(gene);
-			dispatch(requestGeneFetch(gene, geneKeys, path, title));
-			// Second, perform the request (async)
-			fetch(`/loom/${path}/row/${row}`)
-				.then((response) => { return response.json(); })
-				.then((json) => {
-					// Third, once the response comes in, dispatch an action to provide the data
-					const indices = col.attrs['(original order)'].filteredData;
-					dispatch(receiveGene(gene, dataset.path, indices, json));
-				})
-				// Or, if it failed, dispatch an action to set the error flag
-				.catch((err) => {
-					console.log({ err }, err);
-					geneKeys = geneKeys.slice(0, geneKeys.length-1);
-					dispatch(requestGeneFailed(gene, geneKeys, path, title));
-				});
-		}
-	};
+
+			if (fetchGenes.length > 0) {
+				// Announce gene request from server, add to geneKeys
+				// to indicate it is being fetched
+				let geneKeys = col.geneKeys.concat(fetchGenes);
+				dispatch(requestGenesFetch(fetchGenes, geneKeys, path, title));
+				// Second, perform the request (async)
+				fetch(`/loom/${path}/row/${fetchRows.join('+')}`)
+					.then((response) => { return response.json(); })
+					.then((json) => {
+						// Third, once the response comes in, dispatch an action to provide the data
+						dispatch(receiveGenes(fetchGenes, geneNames, dataset.path, json));
+					})
+					// Or, if it failed, dispatch an action to set the error flag
+					.catch((err) => {
+						console.log({ err }, err);
+						geneKeys = geneKeys.slice(0, geneKeys.length - fetchGenes.length);
+						dispatch(requestGenesFailed(fetchGenes, geneKeys, path, title));
+					});
+			}
+		};
+	}
 }
+
