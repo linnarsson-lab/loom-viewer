@@ -1,8 +1,11 @@
 import React, { Component, PropTypes } from 'react';
+import { Glyphicon } from 'react-bootstrap';
+import { DebouncedFormcontrol } from './debounced-formcontrol';
 import { AttrLegend } from './legend';
 import { SortableTable } from './sortabletable';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
+import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 import Fuse from 'fuse.js';
 
@@ -53,17 +56,16 @@ MetadataPlot.propTypes = {
 };
 
 
-export class MetadataComponent extends Component {
+class MetadataTable extends Component {
+	constructor(props) {
+		super(props);
+		this.createTableData = this.createTableData.bind(this);
+	}
+
 	// given that this component will only be rendered
 	// after the dataset has been fetched, and that the
 	// dataset is immutable, we might as well pre-process
 	// everything and store it in the state
-	constructor(props) {
-		super(props);
-
-		this.createTableData = this.createTableData.bind(this);
-	}
-
 	componentWillMount() {
 		const { columns, tableData } = this.createTableData(this.props);
 		this.setState({ columns, tableData });
@@ -71,14 +73,15 @@ export class MetadataComponent extends Component {
 
 
 	componentWillReceiveProps(nextProps) {
-		const {columns, tableData } = this.createTableData(nextProps);
+		const { columns, tableData } = this.createTableData(nextProps);
 		this.setState({ columns, tableData });
 	}
 
 	createTableData(props) {
 		const { attributes, attrKeys,
-			onClickAttrFactory, onClickFilterFactory,
-			searchField, searchVal, sortOrderList } = props;
+			searchField, searchVal, sortOrderList,
+			onClickAttrFactory, onClickFilterFactory } = props;
+
 		const sortOrderStyle = {
 			fontWeight: 'normal',
 			fontStyle: 'italic',
@@ -188,7 +191,7 @@ export class MetadataComponent extends Component {
 	}
 }
 
-MetadataComponent.propTypes = {
+MetadataTable.propTypes = {
 	attributes: PropTypes.object.isRequired,
 	attrKeys: PropTypes.array.isRequired,
 	searchField: PropTypes.node.isRequired,
@@ -197,4 +200,130 @@ MetadataComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	onClickAttrFactory: PropTypes.func.isRequired,
 	onClickFilterFactory: PropTypes.func.isRequired,
+};
+
+
+export class MetadataComponent extends Component {
+	// given that this component will only be rendered
+	// after the dataset has been fetched, and that the
+	// dataset is immutable, we might as well pre-process
+	// everything and store it in the state
+	constructor(props) {
+		super(props);
+		const { dispatch, dataset, stateName, actionType, attrName } = props;
+		const path = dataset.path;
+
+		const onClickAttrFactory = (key) => {
+			return () => {
+				dispatch({
+					type: actionType,
+					path,
+					key,
+					stateName,
+				});
+			};
+		};
+
+		const onClickFilterFactory = (key, val) => {
+			return () => {
+				dispatch({
+					type: FILTER_METADATA,
+					path,
+					stateName,
+					attr: attrName,
+					key,
+					val,
+				});
+			};
+		};
+
+		this.state = {
+			onClickAttrFactory,
+			onClickFilterFactory,
+		};
+	}
+
+	componentWillMount(){
+		const { dispatch, dataset, stateName} = this.props;
+		const path = dataset.path;
+
+		const searchMetadata = (event) => {
+			let searchVal = event.target.value ? event.target.value : '';
+			dispatch({
+				type: SET_VIEW_PROPS,
+				path,
+				stateName,
+				viewState: { [stateName]: { searchVal } },
+			});
+		};
+
+		this.setState({ searchMetadata });
+	}
+
+	render() {
+
+		const {
+			dataset, dispatch,
+			attributes, attrKeys, attrName, 
+			stateName, mdName,
+		} = this.props;
+
+		const {
+			onClickAttrFactory,
+			onClickFilterFactory,
+			searchMetadata,
+		} = this.state;
+
+		let { searchVal } = dataset.viewState[stateName];
+
+		const searchField = (
+			<DebouncedFormcontrol
+				type='text'
+				onChange={searchMetadata}
+				value={searchVal}
+				time={500}
+				/>
+		);
+
+		// Show first four attributes to use as sort keys
+		const { order } = dataset[attrName];
+		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
+		for (let i = 0; i < Math.min(order.length, 4); i++){
+			const val = order[i];
+			sortOrderList.push(
+				<span key={i}>
+					&nbsp;&nbsp;&nbsp;
+					{val.key}
+					<Glyphicon
+						glyph={ val.ascending ?
+						'sort-by-attributes' : 'sort-by-attributes-alt' } />
+				</span>
+			);
+		}
+		return (
+			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
+				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
+				<MetadataTable
+					attributes={attributes}
+					attrKeys={attrKeys}
+					searchField={searchField}
+					searchVal={searchVal}
+					sortOrderList={sortOrderList}
+					dispatch={dispatch}
+					onClickAttrFactory={onClickAttrFactory}
+					onClickFilterFactory={onClickFilterFactory} />
+			</div>
+		);
+	}
+}
+
+MetadataComponent.propTypes = {
+	attributes: PropTypes.object.isRequired,
+	attrKeys: PropTypes.array.isRequired,
+	attrName: PropTypes.string.isRequired,
+	stateName: PropTypes.string.isRequired,
+	mdName: PropTypes.string.isRequired,
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	actionType: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
