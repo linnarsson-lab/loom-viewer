@@ -1,4 +1,16 @@
 {
-	"presets": ["latest", "react"],
-	"plugins": ["transform-react-constant-elements", "lodash"]	
+	"presets": [
+		"react",
+		[
+			"es2015",
+			{
+				"loose": true,
+				"modules": false,
+			}
+		],
+	],
+	"plugins": [
+		"transform-react-constant-elements",
+		"lodash",
+	]
 }
