@@ -268,14 +268,20 @@ function convertWholeArray(data, name, uniques) {
 		uniques[i].filtered = false;
 	}
 
+
 	// create lookup table to convert attribute values
 	// to color indices (so a look-up table for finding
 	// indices for another lookup table).
-	let colorIndices = {
+	// Use an array if possible for faster lookup
+	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? ({
+		mostFreq: [],
+		max: [],
+		min: [],
+	}) : ({
 		mostFreq: {},
 		max: {},
 		min: {},
-	};
+	});
 
 	uniques.sort((a, b) => {
 		return (
@@ -370,11 +376,20 @@ function convertUnique(data, name, uniques, uniqueVal) {
 		filteredData = arrayCon.from(data);
 	}
 
-	let colorIndices = {
-		mostFreq: { [data[0]]: 1 },
-		max: { [data[0]]: 1 },
-		min: { [data[0]]: 1 },
-	};
+
+	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? ({
+		mostFreq: [],
+		max: [],
+		min: [],
+	}) : ({
+		mostFreq: {},
+		max: {},
+		min: {},
+	});
+	colorIndices.mostFreq[data[0]] = 1;
+	colorIndices.max[data[0]] = 1;
+	colorIndices.min[data[0]] = 1;
+
 	uniques[0].filtered = false;
 
 	return {
