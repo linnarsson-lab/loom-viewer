@@ -225,9 +225,8 @@ function convertWholeArray(data, name, uniques) {
 			// are smaller, remove pointer indirection, and allow
 			// for quicker comparisons than strings.
 			if (uniques.length < 256) {
-				// sort uniques by most frequent, so
-				// the indices grow from most to least
-				// common
+				// sort by most frequent, so the indices
+				// grow from most to least common
 				uniques.sort((a, b) => {
 					return (
 						a.count > b.count ? -1 :
@@ -275,12 +274,13 @@ function convertWholeArray(data, name, uniques) {
 	let colorIndices = {
 		mostFreq: {},
 		max: {},
+		min: {},
 	};
 
 	uniques.sort((a, b) => {
 		return (
-			a.count < b.count ? -1 :
-				a.count > b.count ? 1 :
+			a.count > b.count ? -1 :
+				a.count < b.count ? 1 :
 					a.val < b.val ? -1 : 1
 		);
 	});
@@ -290,12 +290,22 @@ function convertWholeArray(data, name, uniques) {
 
 	uniques.sort((a, b) => {
 		return (
-			a.val < b.val ? -1 : 1
+			a.val > b.val ? -1 : 1
 		);
 	});
 	for (let i = 0; i < 20 && i < uniques.length; i++) {
 		colorIndices.max[uniques[i].val] = i + 1;
 	}
+
+	uniques.sort((a, b) => {
+		return (
+			a.val < b.val ? -1 : 1
+		);
+	});
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		colorIndices.min[uniques[i].val] = i + 1;
+	}
+
 	return {
 		arrayType,
 		data,
@@ -363,6 +373,7 @@ function convertUnique(data, name, uniques, uniqueVal) {
 	let colorIndices = {
 		mostFreq: { [data[0]]: 1 },
 		max: { [data[0]]: 1 },
+		min: { [data[0]]: 1 },
 	};
 	uniques[0].filtered = false;
 
@@ -383,8 +394,8 @@ function convertUnique(data, name, uniques, uniqueVal) {
 /**
  * - `array`: array to be sorted
  * - `comparator`: comparison closure that takes *indices* i and j,
- *   and compares `array[i]` to `array[j]` in some way, but always
- *   ending with `i - j` as the last comparison to force stability.
+ *   and compares `array[i]` to `array[j]`. To ensure stability, it
+ *   should always end with `i - j` as the last comparison .
  * 
  * Example:
  * ```
@@ -461,8 +472,8 @@ export function findIndices(array, comparator) {
  * 
  * This function does *not* check for valid input!
  * 
- * For correct input, `indices` will be sorted afterwards,
- * `[ 0, 1, ... array.length-1 ]`.
+ * Mutates `indices`. For correct input, it will be sorted afterwards,
+ * as `[ 0, 1, ... array.length-1 ]`.
  * 
  * Example:
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
@@ -705,49 +716,49 @@ export function merge(oldObj, newObj) {
 *   ignored (and thus, does not affect the structure
 *   of the sourceTree)
 */
-export function prune(sourceTree, delTree) {
-	if (!sourceTree) {
-		// we might be trying to recursively
-		// prune on a non-existent node in
-		// sourceTree
-		return undefined;
-	} else if (!delTree) {
-		return sourceTree;
-	}
-	let sourceKeys = Object.keys(sourceTree);
-	let delKeys = Object.keys(delTree);
-	let subKeys = [];
-	for (let i = 0; i < delKeys.length; i++) {
-		let delKey = delKeys[i];
-		for (let j = 0; j < sourceKeys.length; j++) {
-			let sourceKey = sourceKeys[j];
-			if (sourceKey === delKey) {
-				// check if we need to recurse or delete
-				let val = delTree[delKey];
-				if (val === 0 || typeof val === 'object' && !Array.isArray(val)) {
-					sourceKeys[j] = sourceKeys[sourceKeys.length - 1];
-					sourceKey = sourceKeys.pop();
-					if (val) { subKeys.push(delKey); }
-				}
-				break;
-			}
-		}
-	}
+// export function prune(sourceTree, delTree) {
+// 	if (!sourceTree) {
+// 		// we might be trying to recursively
+// 		// prune on a non-existent node in
+// 		// sourceTree
+// 		return undefined;
+// 	} else if (!delTree) {
+// 		return sourceTree;
+// 	}
+// 	let sourceKeys = Object.keys(sourceTree);
+// 	let delKeys = Object.keys(delTree);
+// 	let subKeys = [];
+// 	for (let i = 0; i < delKeys.length; i++) {
+// 		let delKey = delKeys[i];
+// 		for (let j = 0; j < sourceKeys.length; j++) {
+// 			let sourceKey = sourceKeys[j];
+// 			if (sourceKey === delKey) {
+// 				// check if we need to recurse or delete
+// 				let val = delTree[delKey];
+// 				if (val === 0 || typeof val === 'object' && !Array.isArray(val)) {
+// 					sourceKeys[j] = sourceKeys[sourceKeys.length - 1];
+// 					sourceKey = sourceKeys.pop();
+// 					if (val) { subKeys.push(delKey); }
+// 				}
+// 				break;
+// 			}
+// 		}
+// 	}
 
-	let prunedObj = {};
-	// copy all values that aren't pruned
-	for (let i = 0; i < sourceKeys.length; i++) {
-		let key = sourceKeys[i];
-		prunedObj[key] = sourceTree[key];
-	}
-	// recurse on all subtrees
-	for (let i = 0; i < subKeys.length; i++) {
-		let key = subKeys[i];
-		prunedObj[key] = prune(sourceTree[key], delTree[key]);
-	}
-	// don't return prunedObj if it is empty
-	return prunedObj;
-}
+// 	let prunedObj = {};
+// 	// copy all values that aren't pruned
+// 	for (let i = 0; i < sourceKeys.length; i++) {
+// 		let key = sourceKeys[i];
+// 		prunedObj[key] = sourceTree[key];
+// 	}
+// 	// recurse on all subtrees
+// 	for (let i = 0; i < subKeys.length; i++) {
+// 		let key = subKeys[i];
+// 		prunedObj[key] = prune(sourceTree[key], delTree[key]);
+// 	}
+// 	// don't return prunedObj if it is empty
+// 	return prunedObj;
+// }
 
 // Examples:
 // let a =	{
