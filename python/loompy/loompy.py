@@ -146,7 +146,7 @@ def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dt
 		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
 		compression_opts (int): Strenght of the gzip compression. Default None.
 	Returns:
-		Nothing. To work with the file, use loompy.connect(filename).
+		LoomConnection to created loom file.
 	"""
 	# open the old file in read-only mode
 	ds = connect(infile, 'r')
@@ -200,7 +200,7 @@ def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dt
 	currentTime = time.localtime(time.time())
 	new_ds.attrs['creation_date'] = time.strftime('%Y/%m/%d %H:%M:%S', currentTime)
 	new_ds.attrs['chunks'] = str(chunks) #we can't store tuples in HDF5
-	new_ds.close()
+	return new_ds
 
 def create_from_cef(cef_file, loom_file):
 	"""
@@ -1372,7 +1372,7 @@ class LoomConnection(object):
 		return (x,y)
 
 	def dz_tile_to_image(self, x, y, z, tile):
-			# Crop outside matrix dimensions
+		# Crop outside matrix dimensions
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		(max_x, max_y) = (int(pow(2,z-zmid)*self.shape[1])-x*256, int(pow(2,z-zmid)*self.shape[0])-y*256)
 		if max_x < 0:

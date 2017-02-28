@@ -212,13 +212,10 @@ def send_row(project, filename, rows):
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	elif len(rows) == 1:
-		# only one row requested, send one row of data.
-		# this is transition code and will be removed once the client-side
-		# is updated to use dicts
-		return flask.Response(json.dumps(ds[rows[0], :].tolist()), mimetype="application/json")
-	elif len(rows) > 1:
-		# return a dictionary of rows
+	else:
+		# return a list of {idx, data} objects.
+		# This is to guarantee we match up row-numbers client-side
+		# (we can't use the index in the array)
 		retRows = []
 		for row in rows:
 			retRows.append({ 'idx': row, 'data': ds[row, :].tolist()})
@@ -232,14 +229,10 @@ def send_col(project, filename, cols):
 	ds = app.cache.connect_dataset_locally(project, filename, u, p)
 	if ds == None:
 		return "", 404
-	elif len(cols) == 1:
-		# only one col requested, send one col of data.
-		# this is transition code and will be removed once the client-side
-		# is updated to use dicts
-		return flask.Response(json.dumps(ds[:, cols[0]].tolist()), mimetype="application/json")
-	elif len(cols) > 1:
+	else:
 		# return a list of {idx, data} objects.
-		# This is easier to iterate over client-side
+		# This is to guarantee we match up column-numbers client-side
+		# (we can't use the index in the array)
 		retCols = []
 		for col in cols:
 			retCols.append({ 'idx': col, 'data': ds[:, col].tolist()})
@@ -249,12 +242,6 @@ def send_col(project, filename, cols):
 #
 # Tiles
 #
-
-# def serve_image(img):
-# 	img_io = BytesIO()
-# 	img.save(img_io, 'PNG', compress_level=1)
-# 	img_io.seek(0)
-# 	return flask.send_file(img_io, mimetype='image/png')
 
 @app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
 @cache(expires=60*20)
