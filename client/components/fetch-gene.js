@@ -1,8 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchGene } from '../actions/actions';
-import { isEqual } from 'lodash';
 import Select from 'react-virtualized-select';
-import createFilterOptions from 'react-select-fast-filter-options';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
@@ -10,10 +8,18 @@ export class FetchGeneComponent extends Component {
 	constructor(props) {
 		super(props);
 		this.handleChange = this.handleChange.bind(this);
+		const { geneKeys } = props.dataset.col;
+		let options = new Array(geneKeys.length);
+		for (let i = 0; i < options.length; i++) {
+			options[i] = {
+				value: geneKeys[i],
+				label: geneKeys[i],
+			};
+		}
+		this.state = { options };
 	}
 
 	componentWillMount() {
-		this.setState(this.createOptions(this.props.dataset.row.attrs.Gene.data));
 		if (this.props.value) {
 			let values = null;
 			if (this.props.multi) {
@@ -26,33 +32,6 @@ export class FetchGeneComponent extends Component {
 				values = { value: this.props.value, label: this.props.value };
 			}
 			this.handleChange(values);
-		}
-	}
-
-	componentWillReceiveProps(nextProps) {
-		const prevSG = this.props.dataset.row.attrs.Gene.data;
-		const nextSG = nextProps.dataset.row.attrs.Gene.data;
-		if (!isEqual(prevSG, nextSG)) {
-			this.setState(this.createOptions(nextSG));
-		}
-	}
-
-	createOptions(selectableGenes) {
-		if (selectableGenes) {
-			let options = new Array(selectableGenes.length);
-			let sorted = selectableGenes.slice(0).sort();
-			for (let i = 0; i < sorted.length; i++) {
-				options[i] = {
-					value: sorted[i],
-					label: sorted[i],
-				};
-			}
-			return {
-				options,
-				filterOptions: createFilterOptions({ options }),
-			};
-		} else {
-			return { options: null, filterOptions: null };
 		}
 	}
 
@@ -82,18 +61,18 @@ export class FetchGeneComponent extends Component {
 	}
 
 	render() {
-		const { options, filterOptions, value } = this.state;
+		const col = this.props.dataset.col;
 		return (
 			<Select
-				options={options}
-				filterOptions={filterOptions}
+				options={this.state.options}
+				filterOptions={col.dropdownOptions.keyAttr}
 				onChange={this.handleChange}
-				value={value}
+				value={this.state.value}
 				multi={this.props.multi}
 				clearable={this.props.clearable === true}
 				style={this.props.style}
 				maxHeight={100}
-				/>
+			/>
 		);
 	}
 }

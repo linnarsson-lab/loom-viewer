@@ -1,6 +1,5 @@
 import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
-import createFilterOptions from 'react-select-fast-filter-options';
 
 import { AttrLegend } from './legend';
 import {
@@ -15,8 +14,7 @@ export class ScatterplotSidepanel extends Component {
 	constructor(props) {
 		super(props);
 
-		const { dispatch, dataset, stateName, attrs, attrOptions } = props;
-
+		const { dispatch, dataset, stateName, attrs } = props;		
 		const handleChangeFactory = (field) => {
 			return (value) => {
 				dispatch({
@@ -89,8 +87,6 @@ export class ScatterplotSidepanel extends Component {
 					);
 				}
 			) : nullFunc;
-			
-		const filterOptions = createFilterOptions({options: attrOptions});
 
 		this.state = {
 			asMatrixHC,
@@ -98,7 +94,6 @@ export class ScatterplotSidepanel extends Component {
 			logscaleHC,
 			jitterHC,
 			coordinateQuickSettings,
-			filterOptions,
 		};
 	}
 
@@ -106,7 +101,7 @@ export class ScatterplotSidepanel extends Component {
 
 		const { dispatch, dataset, stateName,
 			attrs, attrOptions,
-			coordAttrFactory, filterFunc, 
+			coordAttrFactory, filterFunc, filterOptions,
 		} = this.props;
 
 		const { coordinateAttrs, asMatrix,
@@ -115,7 +110,7 @@ export class ScatterplotSidepanel extends Component {
 
 		const { asMatrixHC, colorAttrHC,
 			logscaleHC, jitterHC,
-			coordinateQuickSettings, filterOptions } = this.state;
+			coordinateQuickSettings  } = this.state;
 
 
 		// filter out undefined attributes;
@@ -252,6 +247,7 @@ export class ScatterplotSidepanel extends Component {
 						<DropdownMenu
 							value={colorAttr}
 							options={attrOptions}
+							filterOptions={filterOptions}
 							onChange={colorAttrHC}
 						/>
 					</ListGroupItem>
@@ -268,6 +264,7 @@ ScatterplotSidepanel.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	attrs: PropTypes.object.isRequired,
 	attrOptions: PropTypes.array.isRequired,
+	filterOptions: PropTypes.func.isRequired,
 	coordAttrFactory: PropTypes.func.isRequired,
 	filterFunc: PropTypes.func.isRequired,
 	viewState: PropTypes.object.isRequired,

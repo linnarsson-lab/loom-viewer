@@ -6,13 +6,10 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const LandscapeSidepanel = function (props) {
 	const { dispatch, dataset } = props;
-	const { row, col } = dataset;
-	const geneData = row.attrs.Gene.data,
-		attrs = col.attrs,
-		lss = dataset.viewState.landscape;
-	const { coordinateAttrs, colorAttr } = lss;
+	const { attrs, allKeysNoUniques, geneKeys, dropdownOptions } = dataset.col;
+	const { coordinateAttrs, colorAttr } = dataset.viewState.landscape;
 
-	// filter out undefined attributes;
+	// filter out undefined attributes from selection;
 	let newAttrs = [];
 	for (let i = 0; i < coordinateAttrs.length; i++) {
 		let attr = coordinateAttrs[i];
@@ -26,7 +23,7 @@ export const LandscapeSidepanel = function (props) {
 			let newVals = newAttrs.slice(0);
 			if (value) {
 				newVals[idx] = value;
-				if (geneData.indexOf(value) !== -1) {
+				if (geneKeys.indexOf(value) !== -1) {
 					dispatch(fetchGene(dataset, [value]));
 				}
 			} else {
@@ -43,10 +40,6 @@ export const LandscapeSidepanel = function (props) {
 			});
 		};
 	};
-
-	const colAttrOptions = col.keys.filter((key) => {
-		return attrs[key] && !attrs[key].uniqueVal;
-	}).concat(geneData);
 
 	const filterFunc = (val) => {
 		return () => {
@@ -66,11 +59,12 @@ export const LandscapeSidepanel = function (props) {
 			dataset={dataset}
 			dispatch={dispatch}
 			attrs={attrs}
-			attrOptions={colAttrOptions}
+			attrOptions={allKeysNoUniques}
+			filterOptions={dropdownOptions.allNoUniques}
 			coordAttrFactory={coordAttrFactory}
 			stateName={'landscape'}
 			filterFunc={filterFunc}
-			viewState={lss}
+			viewState={dataset.viewState.landscape}
 			/>
 	);
 };

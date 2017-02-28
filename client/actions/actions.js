@@ -1,3 +1,4 @@
+import createFilterOptions from 'react-select-fast-filter-options';
 import 'whatwg-fetch';
 
 import {
@@ -62,6 +63,7 @@ function receiveProjects(json) {
 		let ds = json[i];
 		ds.path = ds.project + '/' + ds.filename;
 		ds.viewState = {};
+		ds.fetchedGenes = {};
 		ds.col = null;
 		ds.row = null;
 		list[ds.path] = ds;
@@ -142,12 +144,34 @@ function requestDataSetFailed(path) {
 
 function receiveDataSet(data, path) {
 	let row = prepData(data.rowAttrs);
-	let geneKeys = [];
-	if (data.colAttrs['Gene']) {
-		geneKeys = data.colAttrs['Gene'].slice;
-	}
+
 	let col = prepData(data.colAttrs);
-	col.geneKeys = geneKeys;
+
+	row.cellKeys = col.attrs.CellID ? col.attrs.CellID.data.slice() : col.attrs.Cell_ID ? col.attrs.Cell_ID.data.slice() : [];
+	row.allKeys = row.keys.concat(row.cellKeys);
+	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
+
+	col.geneKeys = row.attrs.Gene ? row.attrs.Gene.data.slice() : [];
+	col.allKeys = col.keys.concat(row.geneKeys);
+	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
+
+	// Creating fastFilterOptions is a pretty slow operation, 
+	// which is why  we do it once and re-use the results.
+	row.dropdownOptions = {};
+	row.dropdownOptions.attrs = prepFilter(row.keys);
+	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
+	// fastFilterOptions doesn't scale for tens of thousands of cells :/
+//	row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
+	row.dropdownOptions.all = row.dropdownOptions.attrs; //prepFilter(row.allKeys);
+	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; //prepFilter(row.allKeysNoUniques);
+
+	col.dropdownOptions = {};
+	col.dropdownOptions.attrs = prepFilter(col.keys);
+	col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
+	col.dropdownOptions.keyAttr = prepFilter(col.geneKeys);
+	col.dropdownOptions.all = prepFilter(col.allKeys);
+	col.dropdownOptions.allNoUniques = prepFilter(col.allKeysNoUniques);
+
 	let viewState = {
 		heatmap: {
 			zoomRange: data.zoomRange,
@@ -156,6 +180,7 @@ function receiveDataSet(data, path) {
 			shape: data.shape,
 		},
 	};
+
 	return {
 		type: RECEIVE_DATASET,
 		state: {
@@ -182,6 +207,14 @@ function prepData(attrs) {
 	// meta-data so we have to add it first
 	let newAttrs = convertArrays(attrs);
 	data.attrs = newAttrs;
+
+	// Add the set of keys for non-unique values (unique values are
+	// ignored in scatterplot and sparkline views)
+	data.keysNoUniques = data.keys.filter(
+		(key) => {
+			return data.attrs[key] && !data.attrs[key].uniqueVal;
+		}
+	);
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
 	data.filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
@@ -207,6 +240,16 @@ function convertArrays(attrs) {
 	return newAttrs;
 }
 
+function prepFilter(options) {
+	let newOptions = new Array(options.length);
+	for (let i = 0; i < newOptions.length; i++) {
+		newOptions[i] = {
+			value: options[i],
+			label: options[i],
+		};
+	}
+	return createFilterOptions({ options: newOptions });
+}
 
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -250,19 +293,16 @@ export function fetchDataSet(datasets, path) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-function requestGenesFetch(genes, geneKeys, path, datasetName) {
+function requestGenesFetch(genes, path) {
 	let fetchedGenes = {};
 	for (let i = 0; i < genes.length; i++) {
 		fetchedGenes[genes[i]] = true;
 	}
 	return {
 		type: REQUEST_GENE_FETCH,
-		genes,
-		datasetName,
 		state: {
 			list: {
 				[path]: {
-					col: { geneKeys },
 					fetchedGenes,
 				},
 			},
@@ -270,7 +310,7 @@ function requestGenesFetch(genes, geneKeys, path, datasetName) {
 	};
 }
 
-function requestGenesFailed(genes, geneKeys, path, datasetName) {
+function requestGenesFailed(genes, path) {
 	let fetchedGenes = {};
 	for (let i = 0; i < genes.length; i++) {
 		fetchedGenes[genes[i]] = false;
@@ -278,10 +318,9 @@ function requestGenesFailed(genes, geneKeys, path, datasetName) {
 	return {
 		type: REQUEST_GENE_FAILED,
 		genes,
-		datasetName,
 		state: {
-			dataSets: {
-				[datasetName]: {
+			list: {
+				[path]: {
 					fetchedGenes,
 				},
 			},
@@ -289,16 +328,9 @@ function requestGenesFailed(genes, geneKeys, path, datasetName) {
 	};
 }
 
-function receiveGenes(genes, geneNames, path, data) {
-	let attrs = {};
-	for (let i = 0; i < data.length; i++) {
-		let row = data[i];
-		attrs[geneNames[row.idx]] = convertArray(row.data);
-	}
-	//let convertedData = convertArray(data, gene);
+function receiveGenes(attrs, path) {
 	return {
 		type: RECEIVE_GENE,
-		genes,
 		path,
 		receivedAt: Date.now(),
 		state: {
@@ -318,49 +350,49 @@ function receiveGenes(genes, geneNames, path, data) {
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataset, genes) {
-	const { title, path, col, row } = dataset;
-	const geneNames = row.attrs.Gene ? row.attrs.Gene.data : undefined;
-	if (geneNames === undefined) {
+	const { title, path, col, fetchedGenes } = dataset;
+	const { geneKeys } = col;
+	if (geneKeys === undefined) {
 		return () => { };
 	} else {
 		return (dispatch) => {
-			let fetchGenes = [], cachedGenes = [], fetchRows = [];
+
+			let fetchGeneNames = [], fetchRows = [];
 			for (let i = 0; i < genes.length; i++) {
 				const gene = genes[i];
-				const row = geneNames.indexOf(gene);
+				const row = geneKeys.indexOf(gene);
 				// If gene is already cached, being fetched or
 				// not part of the dataset, skip fetching.
-				if (row !== -1) {
-					if (col.attrs[gene] ||
-						col.geneKeys.indexOf(gene) !== -1) {
-						cachedGenes.push(gene);
-					} else {
-						fetchGenes.push(gene);
-						fetchRows.push(row);
-					}
+				if (!fetchedGenes[gene] && row !== -1) {
+					fetchGeneNames.push(gene);
+					fetchRows.push(row);
 				}
 			}
 
-			if (fetchGenes.length > 0) {
+			if (fetchRows.length > 0) {
 				// Announce gene request from server, add to geneKeys
 				// to indicate it is being fetched
-				let geneKeys = col.geneKeys.concat(fetchGenes);
-				dispatch(requestGenesFetch(fetchGenes, geneKeys, path, title));
+				dispatch(requestGenesFetch(fetchGeneNames, path, title));
 				// Second, perform the request (async)
 				fetch(`/loom/${path}/row/${fetchRows.join('+')}`)
+					// Third, once the response comes in, dispatch an action to provide the data
 					.then((response) => { return response.json(); })
-					.then((json) => {
-						// Third, once the response comes in, dispatch an action to provide the data
-						dispatch(receiveGenes(fetchGenes, geneNames, dataset.path, json));
+					.then((data) => {
+						// Genes are appended to the attrs object
+						let attrs = {};
+						for (let i = 0; i < data.length; i++) {
+							let row = data[i];
+							attrs[geneKeys[row.idx]] = convertArray(row.data);
+						}
+
+						dispatch(receiveGenes(attrs, dataset.path));
 					})
 					// Or, if it failed, dispatch an action to set the error flag
 					.catch((err) => {
 						console.log({ err }, err);
-						geneKeys = geneKeys.slice(0, geneKeys.length - fetchGenes.length);
-						dispatch(requestGenesFailed(fetchGenes, geneKeys, path, title));
+						dispatch(requestGenesFailed(fetchGeneNames, path, title));
 					});
 			}
 		};
 	}
 }
-

@@ -12,7 +12,7 @@ export class DropdownMenu extends Component {
 	}
 
 	componentWillMount() {
-		const { options, filterOptions, value, multi  } = this.props;
+		let { options, filterOptions, value, multi  } = this.props;
 		let newOptions = new Array(options.length);
 		for (let i = 0; i < newOptions.length; i++) {
 			newOptions[i] = {
@@ -21,9 +21,13 @@ export class DropdownMenu extends Component {
 			};
 		}
 
+		if (!filterOptions){
+			filterOptions = createFilterOptions({ options: newOptions });
+		}
+
 		this.setState({ 
 			options: newOptions,
-			filterOptions: filterOptions ? filterOptions : createFilterOptions({ options: newOptions }),
+			filterOptions,
 		});
 		this.setButtonName(value, multi);
 	}

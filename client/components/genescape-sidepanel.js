@@ -5,9 +5,8 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export const GenescapeSidepanel = function (props) {
 	const { dispatch, dataset } = props;
-	const attrs = dataset.row.attrs;
-	const genescapeState = dataset.viewState.genescape;
-	const { coordinateAttrs, colorAttr } = genescapeState;
+	const { attrs, dropdownOptions, allKeysNoUniques } = dataset.row;
+	const { coordinateAttrs, colorAttr } = dataset.viewState.genescape;
 
 	// filter out undefined attributes from selection;
 	let newAttrs = [];
@@ -38,12 +37,6 @@ export const GenescapeSidepanel = function (props) {
 		};
 	};
 
-	const rowAttrOptions = dataset.row.keys.filter(
-		(key) => {
-			return attrs[key] && !attrs[key].uniqueVal;
-		}
-	);
-
 	const filterFunc = (val) => {
 		return () => {
 			dispatch({
@@ -62,11 +55,12 @@ export const GenescapeSidepanel = function (props) {
 			dataset={dataset}
 			dispatch={dispatch}
 			attrs={attrs}
-			attrOptions={rowAttrOptions}
+			attrOptions={allKeysNoUniques}
+			filterOptions={dropdownOptions.allNoUniques}
 			coordAttrFactory={coordAttrFactory}
 			stateName={'genescape'}
 			filterFunc={filterFunc}
-			viewState={genescapeState}
+			viewState={dataset.viewState.genescape}
 			/>
 	);
 };
