@@ -2,9 +2,9 @@
  * Crude normal curve approximation by taking the average of 8 random values.
  * Returns random value between [-0.5, 0.5)
  */
+const { random } = Math;
 export function rndNorm() {
-	return ((Math.random() + Math.random() + Math.random() + Math.random() +
-		Math.random() + Math.random() + Math.random() + Math.random()) - 4) * 0.125;
+	return (random() + random() - random() - random()) * 0.25;
 }
 
 
@@ -646,6 +646,34 @@ export function isArray(obj) {
 // to happen.
 //
 
+/**
+ * Takes arrays `a` and `b`.
+ * Returns an array containing overlapping values, and
+ * mutates `a` and `b` such that they only contain their
+ * non-overlapping values. If there are any overlapping
+ * values, `a` and `b` might change order. If either
+ * array contains duplicates, this function will only
+ * only find the number of matching duplicates
+ * Example:
+ * - in: `a = [1, 2, 2, 3], b = [2, 3, 4, 5, 6]`
+ * - out: `[2, 3]; a = [1, 2]`, b = [5, 6, 4]`
+ */
+export function disjointArrays(a, b) {
+	let overlap = [], i = a.length;
+	while (i--) {
+		let aval = a[i];
+		let j = b.length;
+		while(j--) {
+			let bval = b[j];
+			if (aval === bval) {
+				overlap.push(aval);
+				a[i] = a[a.length - 1]; a.pop();
+				b[j] = b[b.length - 1]; b.pop();
+			}
+		}
+	}
+	return overlap;
+}
 
 /**
 * **IMPORTANT:** util.merge does **NOT** behave like
@@ -670,49 +698,25 @@ export function merge(oldObj, newObj) {
 	}
 	let untouchedKeys = Object.keys(oldObj);
 	let newKeys = Object.keys(newObj);
-	// Track which keys overlap, since
-	// their values may need to be merged
-	let overlappingKeys = [];
-	for (let i = 0; i < untouchedKeys.length; i++) {
-		let untouchedKey = untouchedKeys[i];
-		for (let j = 0; j < newKeys.length; j++) {
-			let newKey = newKeys[j];
-			// if a key overlaps it obviously isn't untouched
-			if (untouchedKey === newKey) {
-				// So it is removed from the untouched keys,
-				// by replacing it with the last key in the
-				// the array (unless it is the last element,
-				// in which case we just pop it).
-				untouchedKey = untouchedKeys[untouchedKeys.length - 1];
-				untouchedKeys[i--] = untouchedKey; // So we don't skip a key
-				untouchedKeys.pop();
-				// We only need to merge the value if it is an object, 
-				// otherwise we overwrite it with the value from
-				// the new object (as if it is a new key/value pair).
-				let val = newObj[newKey];
-				if (typeof val === 'object' && !isArray(val)) {
-					overlappingKeys.push(newKey);
-					newKey = newKeys[newKeys.length - 1];
-					newKeys[j] = newKey;
-					newKeys.pop();
-				}
-				break;
-			}
-		}
-	}
-	let mergedObj = {};
-	// merge object values by recursion
-	for (let i = 0; i < overlappingKeys.length; i++) {
-		let key = overlappingKeys[i];
-		mergedObj[key] = merge(oldObj[key], newObj[key]);
+	let overlappingKeys = disjointArrays(untouchedKeys, newKeys);
+
+	let mergedObj = {}, key = '', i = overlappingKeys.length;
+	while (i--) {
+		key = overlappingKeys[i];
+		let val = newObj[key];
+		// merge object values by recursion, otherwise just assign new value
+		mergedObj[key] = (typeof val === 'object' && !isArray(val)) ?
+			merge(oldObj[key], val) : val;
 	}
 	// directly assign all values that don't need merging
-	for (let i = 0; i < untouchedKeys.length; i++) {
-		let key = untouchedKeys[i];
+	i = untouchedKeys.length;
+	while (i--) {
+		key = untouchedKeys[i];
 		mergedObj[key] = oldObj[key];
 	}
-	for (let i = 0; i < newKeys.length; i++) {
-		let key = newKeys[i];
+	i = newKeys.length;
+	while (i--) {
+		key = newKeys[i];
 		mergedObj[key] = newObj[key];
 	}
 	return mergedObj;
