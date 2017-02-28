@@ -3,7 +3,7 @@ import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
 import JSURL from 'jsurl';
-import { arrayConstr, prune, merge } from '../js/util';
+import { arrayConstr, merge } from '../js/util';
 
 
 import {
@@ -40,8 +40,9 @@ import {
  * passed JSX objects, for example.
  */
 function update(state, action) {
-	let newState = action.prune ? prune(state, action.prune) : state;
-	return action.state ? merge(newState, action.state) : newState;
+	// let newState = action.prune ? prune(state, action.prune) : state;
+	// return action.state ? merge(newState, action.state) : newState;
+	return merge(state, action.state);
 }
 
 function updateViewState(state, action) {

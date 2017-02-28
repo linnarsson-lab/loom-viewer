@@ -132,7 +132,10 @@ const DatasetList = function (props) {
 				</Button>
 			);
 			const paperButton = doi === '' ? (
-				<Glyphicon key={path + '_doi'} glyph='file' style={{ fontSize: '14px', color: 'lightgrey' }} />
+				<Glyphicon
+					key={path + '_doi'}
+					glyph='file'
+					style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
 					<Button
 						key={path + '_doi'}
@@ -146,7 +149,10 @@ const DatasetList = function (props) {
 					</Button>
 				);
 			const urlButton = url === '' ? (
-				<Glyphicon key={path + '_url'} glyph='globe' style={{ fontSize: '14px', color: 'lightgrey' }} />
+				<Glyphicon
+					key={path + '_url'}
+					glyph='globe'
+					style={{ fontSize: '14px', color: 'lightgrey' }} />
 			) : (
 					<Button
 						key={path + '_url'}

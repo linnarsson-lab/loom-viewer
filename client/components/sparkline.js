@@ -296,7 +296,7 @@ function barPainter(attr, label) {
 
 function barPaint(context, range, min, max, label) {
 
-	const { maxima, minima, means, outliers, barWidth } = calcMeans(range);
+	const { means, outliers, barWidth } = calcMeans(range);
 	// factor to multiply the bar values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
 	const barScale = context.height / (max * 1.1);

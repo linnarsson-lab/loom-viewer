@@ -66,7 +66,6 @@ export const PrintSettings = function (props) {
 					options={exportTargetOptions}
 					onChange={exportTargetProps.onChange}
 					value={exportTargetProps.value}
-					unsorted
 					/>
 			</div>
 		);
@@ -81,7 +80,6 @@ export const PrintSettings = function (props) {
 						options={printSizeOptions}
 						onChange={printSizeProps.onChange}
 						value={printSizeProps.value}
-						unsorted
 						/>
 				</div>
 			);
@@ -94,7 +92,6 @@ export const PrintSettings = function (props) {
 						options={dpiOptions}
 						onChange={dpiProps.onChange}
 						value={dpiProps.value}
-						unsorted
 						/>
 				</div>
 			);
@@ -107,7 +104,6 @@ export const PrintSettings = function (props) {
 						options={orientationOptions}
 						onChange={orientationProps.onChange}
 						value={orientationProps.value}
-						unsorted
 						/>
 				</div>
 			);
@@ -122,7 +118,6 @@ export const PrintSettings = function (props) {
 						options={pixelSizeOptions}
 						onChange={pixelSizeProps.onChange}
 						value={pixelSizeProps.value}
-						unsorted
 						/>
 				</div>
 			);
