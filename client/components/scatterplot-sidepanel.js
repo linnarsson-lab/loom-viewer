@@ -7,14 +7,16 @@ import {
 	Button, ButtonToolbar, ButtonGroup,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export class ScatterplotSidepanel extends Component {
+	componentWillMount(){
+		const { 
+			dispatch, dataset, 
+			stateName, attrName } = this.props;
 
-	constructor(props) {
-		super(props);
+		const { attrs } = dataset[attrName];
 
-		const { dispatch, dataset, stateName, attrs } = props;		
 		const handleChangeFactory = (field) => {
 			return (value) => {
 				dispatch({
@@ -27,9 +29,9 @@ export class ScatterplotSidepanel extends Component {
 		};
 
 		const asMatrixHC = handleChangeFactory('asMatrix');
-		const colorAttrHC = handleChangeFactory('colorAttr');
 		const logscaleHC = handleChangeFactory('logscale');
 		const jitterHC = handleChangeFactory('jitter');
+		const colorAttrHC = handleChangeFactory('colorAttr');
 
 		const nullFunc = () => { };
 
@@ -88,30 +90,74 @@ export class ScatterplotSidepanel extends Component {
 				}
 			) : nullFunc;
 
-		this.state = {
+		const coordAttrHCFactory = (newAttrs, idx) => {
+			let newVals = newAttrs.slice(0);
+			return (value) => {
+				if (value) {
+					newVals[idx] = value;
+				} else {
+					for (let i = idx; i < newVals.length; i++) {
+						newVals[i] = newVals[i + 1];
+					}
+					newVals.pop();
+				}
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName,
+					path: dataset.path,
+					viewState: { [stateName]: { coordinateAttrs: newVals } },
+				});
+			};
+		};
+
+		const colorSettingsFactory = (colorMode) => {
+			return () => {
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName,
+					path: dataset.path,
+					viewState: { [stateName]: { colorMode } },
+				});
+			};
+		};
+
+		const heatmapOC = colorSettingsFactory('Heatmap');
+		const heatmap2OC = colorSettingsFactory('Heatmap2');
+		const categoricalOC = colorSettingsFactory('Categorical');
+
+		this.setState({
 			asMatrixHC,
-			colorAttrHC,
 			logscaleHC,
 			jitterHC,
+			colorAttrHC,
 			coordinateQuickSettings,
-		};
+			coordAttrHCFactory,
+			heatmapOC,
+			heatmap2OC,
+			categoricalOC,
+		});
 	}
 
 	render() {
 
-		const { dispatch, dataset, stateName,
-			attrs, attrOptions,
-			coordAttrFactory, filterFunc, filterOptions,
+		const { dispatch, dataset,
+			stateName, attrName,
 		} = this.props;
+
+		const { attrs, allKeysNoUniques, dropdownOptions } = dataset[attrName];
+		const filterOptions = dropdownOptions.allNoUniques;
 
 		const { coordinateAttrs, asMatrix,
 			colorAttr, colorMode,
 			logscale, jitter } = this.props.viewState;
 
-		const { asMatrixHC, colorAttrHC,
-			logscaleHC, jitterHC,
-			coordinateQuickSettings  } = this.state;
+		const { asMatrixHC, logscaleHC, jitterHC,
+			coordinateQuickSettings,
+			heatmapOC, heatmap2OC, categoricalOC,
+		} = this.state;
 
+
+		const { colorAttrHC, coordAttrHCFactory } = this.state;
 
 		// filter out undefined attributes;
 		let newAttrs = [];
@@ -124,20 +170,29 @@ export class ScatterplotSidepanel extends Component {
 
 		let coordinateDropdowns = [];
 		for (let i = 0; i <= newAttrs.length; i++) {
-			const coordHC = coordAttrFactory(i);
+			const coordHC = coordAttrHCFactory(newAttrs, i);
 			coordinateDropdowns.push(
 				<DropdownMenu
 					key={i}
 					value={newAttrs[i] ? newAttrs[i] : '<select attribute>'}
-					options={attrOptions}
+					options={allKeysNoUniques}
 					filterOptions={filterOptions}
 					onChange={coordHC}
 				/>
 			);
 		}
 
-
-
+		const colorDropdown = (
+			<ListGroupItem>
+				<label>Color</label>
+				<DropdownMenu
+					value={colorAttr}
+					options={allKeysNoUniques}
+					filterOptions={filterOptions}
+					onChange={colorAttrHC}
+				/>
+			</ListGroupItem>
+		);
 		const coordinateButtons = (
 			<ListGroupItem>
 				{coordinateDropdowns}
@@ -148,8 +203,8 @@ export class ScatterplotSidepanel extends Component {
 						Plot Matrix
 				</Button>
 				</ButtonGroup>
-				<div>X axis:</div>
-				<ButtonToolbar>
+				<label htmlFor={'xAxisButtons'} >X axis:</label>
+				<ButtonToolbar id={'xAxisButtons'}>
 					<Button
 						bsStyle={logscale.x ? 'success' : 'default'}
 						onClick={() => { logscaleHC({ x: !logscale.x }); }}>
@@ -161,8 +216,8 @@ export class ScatterplotSidepanel extends Component {
 						jitter
 				</Button>
 				</ButtonToolbar>
-				<div>Y axis:</div>
-				<ButtonToolbar>
+				<label htmlFor={'yAxisButtons'} >Y axis:</label>
+				<ButtonToolbar id={'yAxisButtons'}>
 					<Button
 						bsStyle={logscale.y ? 'success' : 'default'}
 						onClick={() => { logscaleHC({ y: !logscale.y }); }}>
@@ -183,42 +238,21 @@ export class ScatterplotSidepanel extends Component {
 					<ButtonGroup>
 						<Button
 							bsStyle={colorMode === 'Heatmap' ? 'success' : 'default'}
-							onClick={() => {
-								dispatch({
-									type: SET_VIEW_PROPS,
-									stateName,
-									path: dataset.path,
-									viewState: { [stateName]: { colorMode: 'Heatmap' } },
-								});
-							}}>
+							onClick={heatmapOC}>
 							Heatmap
 							</Button>
 					</ButtonGroup>
 					<ButtonGroup>
 						<Button
 							bsStyle={colorMode === 'Heatmap2' ? 'success' : 'default'}
-							onClick={() => {
-								dispatch({
-									type: SET_VIEW_PROPS,
-									stateName,
-									path: dataset.path,
-									viewState: { [stateName]: { colorMode: 'Heatmap2' } },
-								});
-							}}>
+							onClick={heatmap2OC}>
 							Heatmap2
 							</Button>
 					</ButtonGroup>
 					<ButtonGroup>
 						<Button
 							bsStyle={colorMode === 'Categorical' ? 'success' : 'default'}
-							onClick={() => {
-								dispatch({
-									type: SET_VIEW_PROPS,
-									stateName,
-									path: dataset.path,
-									viewState: { [stateName]: { colorMode: 'Categorical' } },
-								});
-							}}>
+							onClick={categoricalOC}>
 							Categorical
 							</Button>
 
@@ -226,7 +260,18 @@ export class ScatterplotSidepanel extends Component {
 				</ButtonGroup>
 				<AttrLegend
 					mode={colorMode}
-					filterFunc={filterFunc}
+					filterFunc={(val) => {
+						return () => {
+							dispatch({
+								type: FILTER_METADATA,
+								path: dataset.path,
+								stateName,
+								attrName,
+								key: colorAttr,
+								val,
+							});
+						};
+					}}
 					attr={attrs[colorAttr]}
 				/>
 			</ListGroupItem>
@@ -242,15 +287,7 @@ export class ScatterplotSidepanel extends Component {
 				<ListGroup fill>
 					{coordinateQuickSettings(coordinateAttrs)}
 					{coordinateButtons}
-					<ListGroupItem>
-						<label>Color</label>
-						<DropdownMenu
-							value={colorAttr}
-							options={attrOptions}
-							filterOptions={filterOptions}
-							onChange={colorAttrHC}
-						/>
-					</ListGroupItem>
+					{colorDropdown}
 					{colorSettings}
 				</ListGroup>
 			</Panel >
@@ -259,13 +296,9 @@ export class ScatterplotSidepanel extends Component {
 }
 
 ScatterplotSidepanel.propTypes = {
-	stateName: PropTypes.string.isRequired,
-	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	attrs: PropTypes.object.isRequired,
-	attrOptions: PropTypes.array.isRequired,
-	filterOptions: PropTypes.func.isRequired,
-	coordAttrFactory: PropTypes.func.isRequired,
-	filterFunc: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	stateName: PropTypes.string.isRequired,
+	attrName: PropTypes.string.isRequired,
 	viewState: PropTypes.object.isRequired,
 };
