@@ -636,7 +636,7 @@ class LoomConnection(object):
 		for key in todel:
 			self.delete_attr(key, axis=1)
 		if did_remove:
-			logging.warn("Some column attributes were removed", key)
+			logging.warn("Some column attributes were removed: " + key)
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
