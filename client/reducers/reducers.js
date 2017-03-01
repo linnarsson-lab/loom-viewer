@@ -40,6 +40,7 @@ import {
  * passed JSX objects, for example.
  */
 function update(state, action) {
+	// // We're not using prune for now, so we might as well comment it out
 	// let newState = action.prune ? prune(state, action.prune) : state;
 	// return action.state ? merge(newState, action.state) : newState;
 	return merge(state, action.state);

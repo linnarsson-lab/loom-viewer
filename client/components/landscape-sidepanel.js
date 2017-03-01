@@ -26,7 +26,7 @@ export class LandscapeSidepanel extends Component {
 			// at most, whereas `genes` or `CellID` will be in the 
 			// thousands. So it's faster to check if a value *isn't*
 			// in `keys`, than to check if it *is* in `genes`.		
-			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
+			if (value && keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}

@@ -21,12 +21,10 @@ const SparklineViewComponent = (props) => {
 	// selected genes in state
 	const selection = sl.genes;
 
-	// only show the genes that actually have been fetched
-	// note that genes are now stored in col.attrs
 	let sparklines = [], j = 0;
 	for (let i = 0; i < selection.length; i++) {
+		// genes are now stored in col.attrs
 		let geneData = dataset.col.attrs[selection[i]];
-		// no point trying to generate genes without data
 		sparklines.push(
 			<div
 				key={selection[i]}
@@ -42,7 +40,7 @@ const SparklineViewComponent = (props) => {
 					paint={sparkline(geneData, sl.geneMode, undefined, sl.showLabels ? selection[i] : null)}
 					redraw
 					clear
-					/>
+				/>
 			</div>
 		);
 	}
@@ -59,7 +57,7 @@ const SparklineViewComponent = (props) => {
 				paint={sparkline(legendData, sl.colMode)}
 				redraw
 				clear
-				/>
+			/>
 		</div>
 	);
 
@@ -91,7 +89,7 @@ const SparklineViewComponent = (props) => {
 				<SparklineSidepanel
 					dispatch={dispatch}
 					dataset={dataset}
-					/>
+				/>
 			</div>
 			{sparklineview}
 		</div>

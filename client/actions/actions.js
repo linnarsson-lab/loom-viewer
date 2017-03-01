@@ -118,22 +118,6 @@ function requestDataSet(datasetName) {
 	};
 }
 
-// function requestDataSetFetch(datasetName) {
-// 	return {
-// 		type: REQUEST_DATASET_FETCH,
-// 		datasetName: datasetName,
-// 	};
-// }
-
-
-// function requestDataSetCached(datasetName) {
-// 	return {
-// 		type: REQUEST_DATASET_CACHED,
-// 		datasetName: datasetName,
-// 	};
-
-// }
-
 function requestDataSetFailed(path) {
 	return {
 		type: REQUEST_DATASET_FAILED,
@@ -161,7 +145,7 @@ function receiveDataSet(data, path) {
 	row.dropdownOptions.attrs = prepFilter(row.keys);
 	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
 	// fastFilterOptions doesn't scale for tens of thousands of cells :/
-//	row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
+	//	row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
 	row.dropdownOptions.all = row.dropdownOptions.attrs; //prepFilter(row.allKeys);
 	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; //prepFilter(row.allKeysNoUniques);
 
@@ -355,6 +339,8 @@ export function fetchGene(dataset, genes) {
 	if (geneKeys === undefined) {
 		return () => { };
 	} else {
+		// `genes` can be either a string or an array of strings
+		genes = typeof genes === 'string' ? [genes] : genes;
 		return (dispatch) => {
 
 			let fetchGeneNames = [], fetchRows = [];
