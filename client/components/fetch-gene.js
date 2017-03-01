@@ -44,13 +44,18 @@ export class FetchGeneComponent extends Component {
 		if (value) {
 			if (multi) {
 				for (let i = 0; i < value.length; i++) {
-					genes.push(value[i].value);
+					let gene = value[i];
+					if (!dataset.fetchedGenes[gene]) {
+						genes.push(value[i].value);
+					}
 				}
-				dispatch(fetchGene(dataset, genes));
+				if (genes.length) {
+					dispatch(fetchGene(dataset, genes));
+				}
 			} else {
-				genes = value.value;
-				// fetchGene always expects an array of strings
-				dispatch(fetchGene(dataset, [genes]));
+				if (value.value) {
+					dispatch(fetchGene(dataset, value.value));
+				}
 			}
 			onChange ? onChange(genes) : null;
 		} else {

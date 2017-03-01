@@ -57,31 +57,13 @@ class HeatmapMapComponent extends Component {
 			};
 			const { dataBounds } = hms;
 
-			const colGeneSelected = (hms.colAttr === '(gene)') &&
-				col.attrs.hasOwnProperty(hms.colGene);
-
-			const colData = colGeneSelected ? col.attrs[hms.colGene]
-				: col.attrs[hms.colAttr];
-
-			let rowData = row.attrs[hms.rowAttr];
-			if (hms.rowAttr === '(gene positions)') {
-				const shownGenes = hms.rowGenes.trim().split(/[ ,\r\n]+/);
-				const allGenes = row.attrs['Gene'];
-				rowData = new Array(allGenes.length);
-				for (let i = 0; i < allGenes.length; i++) {
-					rowData[i] = _.indexOf(allGenes, shownGenes[i]) === -1 ? '' : `${allGenes[i]}`;
-				}
-			}
-			const rowMode = (hms.rowAttr === '(gene positions)') ?
-				'TextAlways' : hms.rowMode;
-
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
 						paint={
-							sparkline(colData, hms.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
+							sparkline(col.attrs[hms.colAttr], hms.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
 						}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
@@ -97,8 +79,8 @@ class HeatmapMapComponent extends Component {
 							width={sparklineHeight}
 							height={heatmapHeight}
 							paint={sparkline(
-								rowData,
-								rowMode,
+								row.attrs[hms.rowAttr],
+								hms.rowMode,
 								[dataBounds[1], dataBounds[3]],
 								null,
 								'vertical',
@@ -135,7 +117,14 @@ class HeatmapComponent extends Component {
 	}
 
 	shouldComponentUpdate(nextProps, nextState) {
-		return !_.isEqual(nextState.heatmapState, this.state.heatmapState);
+		const hms = nextState.heatmapState;
+
+		const newAttr = this.props.dataset.col.attrs[hms.colAttr];
+		const oldAttr = nextProps.dataset.col.attrs[hms.colAttr];
+		// only update if heatmapstate updated, or if 
+		// a gene that was selected has been fetched
+		return !_.isEqual(hms, this.state.heatmapState) || 
+		newAttr !== oldAttr;
 	}
 
 	render() {
@@ -169,9 +158,7 @@ HeatmapComponent.propTypes = {
 const initialState = { // Initialise heatmap state for this dataset
 	dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
 	rowMode: 'Text',
-	rowGenes: '',
 	colMode: 'Text',
-	colGene: '',
 };
 
 export const HeatmapViewInitialiser = function (props) {
