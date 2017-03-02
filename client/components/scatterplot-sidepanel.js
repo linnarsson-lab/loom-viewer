@@ -252,8 +252,8 @@ class ColorSettings extends Component {
 		return nextProps.colorAttr !== this.props.colorAttr ||
 			nextProps.colorMode !== this.props.colorMode;
 	}
-	render() {
 
+	render() {
 		const { dispatch, dataset,
 			stateName, attrName,
 			colorAttr, colorMode,

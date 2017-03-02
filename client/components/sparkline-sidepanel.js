@@ -1,4 +1,4 @@
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
 import { AttrLegend } from './legend';
@@ -10,57 +10,191 @@ import {
 
 import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
-export const SparklineSidepanel = function (props) {
-	const { dispatch, dataset } = props;
-	const { sparkline } = dataset.viewState;
-	const { col } = dataset;
-	// The old column attribute values that we displayed in the "legend"
-	// if colAttr does not exist (for example, the default values
-	// in the Loom interface is not present), pick the first column
-	const attrKey = sparkline.colAttr ? sparkline.colAttr : col.keys[0];
-	const legendData = col.attrs[attrKey];
+class LegendSettings extends Component {
+	componentWillMount() {
+		const { dispatch, dataset } = this.props;
 
-	const handleChangeFactory = (field) => {
-		return (val) => {
+		const handleChangeFactory = (field) => {
+			return (val) => {
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'sparkline',
+					path: dataset.path,
+					viewState: { sparkline: { [field]: val } },
+				});
+			};
+		};
+
+		const colAttrsHC = handleChangeFactory('colAttr');
+		const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
+		const colModeHC = handleChangeFactory('colMode');
+
+		this.setState({ colAttrsHC, colModeOptions, colModeHC });
+	}
+
+	shouldComponentUpdate(nextProps) {
+		return nextProps.colAttr !== this.props.colAttr ||
+			nextProps.colMode !== this.props.colMode;
+	}
+
+	render() {
+		const { colAttrsHC, colModeOptions, colModeHC } = this.state;
+		const { dispatch, dataset, colAttr, colMode } = this.props;
+		const { col } = dataset;
+
+		let legend;
+		if (colAttr) {
+			const legendData = col.attrs[colAttr];
+			const filterFunc = (val) => {
+				return () => {
+					dispatch({
+						type: FILTER_METADATA,
+						path: dataset.path,
+						stateName: 'sparkline',
+						attr: 'colAttrs',
+						key: colAttr,
+						val,
+					});
+				};
+			};
+			legend = (
+				<AttrLegend
+					mode={colMode}
+					filterFunc={filterFunc}
+					attr={legendData}
+				/>
+			);
+		}
+
+
+		return (
+			<ListGroupItem>
+				<label>Show cell attribute</label>
+				<DropdownMenu
+					value={colAttr}
+					options={col.allKeysNoUniques}
+					filterOptions={col.dropdownOptions.allNoUniques}
+					onChange={colAttrsHC}
+				/>
+				<DropdownMenu
+					value={colMode}
+					options={colModeOptions}
+					onChange={colModeHC}
+				/>
+				{legend}
+			</ListGroupItem>
+		);
+	}
+}
+
+LegendSettings.propTypes = {
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	colAttr: PropTypes.string.isRequired,
+	colMode: PropTypes.string.isRequired,
+};
+
+class AttributeSelection extends Component {
+	componentWillMount() {
+		const { dispatch, dataset } = this.props;
+		const genesHC = (val) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
-				viewState: { sparkline: { [field]: val } },
+				viewState: { sparkline: { genes: val } },
 			});
 		};
-	};
+		this.setState({ genesHC });
+	}
 
-	const filterFunc = (val) => {
-		return () => {
-			dispatch({
-				type: FILTER_METADATA,
-				path: dataset.path,
-				stateName: 'sparkline',
-				attr: 'colAttrs',
-				key: attrKey,
-				val,
-			});
+	shouldComponentUpdate(nextProps) {
+		return nextProps.genes !== this.props.genes;
+	}
+
+	render() {
+		const { dispatch, dataset, genes } = this.props;
+
+		return (
+			<ListGroupItem>
+				<label>Show genes</label>
+				<FetchGeneComponent
+					dataset={dataset}
+					dispatch={dispatch}
+					onChange={this.state.genesHC}
+					value={genes}
+					multi
+					clearable
+				/>
+			</ListGroupItem>
+		);
+	}
+}
+
+AttributeSelection.propTypes = {
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	genes: PropTypes.array.isRequired,
+};
+
+class ColorSettings extends Component {
+
+	componentWillMount() {
+		const { dispatch, dataset } = this.props;
+		const handleChangeFactory = (field) => {
+			return (val) => {
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'sparkline',
+					path: dataset.path,
+					viewState: { sparkline: { [field]: val } },
+				});
+			};
 		};
-	};
 
+		const geneModeOptions = ['Bars', 'Heatmap', 'Heatmap2'];
+		const geneModeHC = handleChangeFactory('geneMode');
+		const showLabelsHC = handleChangeFactory('showLabels');
+		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
+	}
 
-	const colAttrsOptions = col.keys.filter((key) => {
-		return col.attrs[key];
-	}).sort();
-	const colAttrsHC = handleChangeFactory('colAttr');
+	shouldComponentUpdate(nextProps) {
+		return (
+			this.props.showLabels !== nextProps.showLabels ||
+			this.props.geneMode !== nextProps.geneMode
+		);
+	}
 
-	const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
-	const colModeHC = handleChangeFactory('colMode');
+	render() {
+		const { geneModeOptions, geneModeHC, showLabelsHC } = this.state;
+		const { showLabels, geneMode } = this.props;
+		return (
+			<ListGroupItem>
+				<label>Show genes as</label>
+				<DropdownMenu
+					value={geneMode}
+					options={geneModeOptions}
+					onChange={geneModeHC}
+				/>
+				<Button bsStyle={showLabels ? 'success' : 'default'}
+					onClick={() => { showLabelsHC(!showLabels); }} >
+					Show labels
+					</Button>
+			</ListGroupItem>
+		);
+	}
+}
 
-	const genesHC = handleChangeFactory('genes');
+ColorSettings.propTypes = {
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	geneMode: PropTypes.string.isRequired,
+	showLabels: PropTypes.bool.isRequired,
+};
 
-	const geneModeOptions = ['Bars', 'Heatmap', 'Heatmap2'];
-	const geneModeHC = handleChangeFactory('geneMode');
-
-	const showLabels = handleChangeFactory('showLabels');
-	const showLabelsHC = () => { showLabels(!sparkline.showLabels); };
-
+export const SparklineSidepanel = function (props) {
+	const { dispatch, dataset } = props;
+	const { sparkline } = dataset.viewState;
 
 	return (
 		<Panel
@@ -72,47 +206,20 @@ export const SparklineSidepanel = function (props) {
 				<ListGroupItem>
 					<p>In process of fixing UI. For now, use Cell Metadata page to sort.</p>
 				</ListGroupItem>
-				<ListGroupItem>
-					<label>Show cell attribute</label>
-					<DropdownMenu
-						value={sparkline.colAttr}
-						options={colAttrsOptions}
-						onChange={colAttrsHC}
-						/>
-					<DropdownMenu
-						value={sparkline.colMode}
-						options={colModeOptions}
-						onChange={colModeHC}
-						/>
-					<AttrLegend
-						mode={sparkline.colMode}
-						filterFunc={filterFunc}
-						attr={legendData}
-						/>
-				</ListGroupItem>
-				<ListGroupItem>
-					<label>Show genes</label>
-					<FetchGeneComponent
-						dataset={dataset}
-						dispatch={dispatch}
-						onChange={genesHC}
-						value={sparkline.genes}
-						multi
-						clearable
-						/>
-					<label>Show genes as</label>
-					<DropdownMenu
-						value={sparkline.geneMode}
-						options={geneModeOptions}
-						onChange={geneModeHC}
-						/>
-					<Button
-						bsStyle={sparkline.showLabels ? 'success' : 'default'}
-						onClick={showLabelsHC}
-						>
-						Show labels
-					</Button>
-				</ListGroupItem>
+				<LegendSettings
+					dataset={dataset}
+					dispatch={dispatch}
+					colAttr={sparkline.colAttr}
+					colMode={sparkline.colMode} />
+				<AttributeSelection
+					dataset={dataset}
+					dispatch={dispatch}
+					genes={sparkline.genes} />
+				<ColorSettings
+					dataset={dataset}
+					dispatch={dispatch}
+					geneMode={sparkline.geneMode}
+					showLabels={sparkline.showLabels} />
 			</ListGroup >
 		</Panel >
 	);
