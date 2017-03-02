@@ -26,102 +26,108 @@ export function countElements(array) {
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
 	const sorted = array.slice(0).sort();
+	let i = sorted.length;
+	while (i-- && sorted[i] === undefined) { }
 
 	// linearly run through the array, track the
 	// unique entries and count how often they show up
-	let i = 0;
-	let uniques = [];
-	// Note that, since JS returns undefined for
-	// out of bounds values, we get a "sentinel"
-	// value for free at the end of the data.
-	while (sorted[i] !== undefined) {
+	let uniques = [], count;
+	while (i >= 0) {
 		const val = sorted[i];
-
-		// advance until a different value is found
-		let count = 0;
-		while (sorted[i + count] === val) {
-			count++;
-		}
-		// skip empty strings and null
-		// if (!(val === '' || val === null)){
-		uniques.push({ val: val, count });
-		// }
-		i += count;
+		// keep going until a different value is found
+		count = i;
+		while (i-- && sorted[i] === val) { }
+		count -= i;
+		uniques.push({ val, count });
 	}
-
-	// sort by how common the values are
-	// on equal count, sort by value itself
-	uniques.sort((a, b) => {
-		return a.count < b.count ? 1 :
-			a.count > b.count ? -1 :
-				a.val < b.val ? -1 : 1;
-	});
-
 	return uniques;
 }
 
-export function nMostFrequent(array, n) {
-	let uniques = countElements(array);
+export function findMostCommon(array){
+	const sorted = array.slice(0).sort();
 
-	// if n is undefined or zero, return the whole array
-	n = n ? Math.min(n, uniques.length) : uniques.length;
-	let values = [], count = [];
-	for (let i = 0; i < n; i++) {
-		values.push(uniques[i].val);
-		count.push(uniques[i].count);
+	let i = sorted.length;
+	while (i-- && sorted[i] === undefined) {}
+
+	// linearly run through the array, count unique values
+	let values = [], count = [], j;
+	while (i >= 0) {
+		const val = sorted[i];
+		// keep going until a different value is found
+		j = i;
+		while (i-- && sorted[i] === val) { }
+		values.push(val);
+		count.push(j - i);
 	}
-	return { values, count };
 
-	// // Sten's functional, elegant but slower original:
-	// // (also not sure if it handles undefined values)
-	// let frequence = {};
-	// array.forEach((value) => { frequency[value] = 0; });
-	// const uniques = array.filter((value) => {
-	// =>	return ++frequency[value] === 1;
-	// });
-	// const result = uniques.sort((a, b) => {
-	// =>	return frequency[b] - frequency[a];
-	// });
-	// return result[0] === '' ? result.slice(1, n + 1) : result.slice(0, n);
+	i = count.length-1;
+	let mc = count[i], mv = values[i];
+	while(i--){
+		j = count[i];
+		if (j > mc){
+			mc = j;
+			mv = values[i];
+		}
+	}
+	return mv;
 }
 
 // assumes no NaN values!
-export function calcMinMax(data, ignoreZeros) {
-	let min, max, hasZeros;
-	if (typeof data[0] === 'number') {
-		if (ignoreZeros) {
-			let i = 0;
-			while (data[i] === 0) { i++; }
-			min = data[i];
-			max = data[i];
-			hasZeros = i > 0;
-			while (i < data.length) {
-				const v = data[i];
-				if (v) {
-					min = min < v ? min : v;
-					max = max > v ? max : v;
-				}
-				hasZeros = hasZeros || v === 0;
-				i++;
-			}
-		} else {
-			min = data[0];
-			max = data[0];
-			for (let i = 1; i < data.length; i++) {
-				const v = data[i];
-				min = min < v ? min : v;
-				max = max > v ? max : v;
-				hasZeros = hasZeros || v === 0;
-			}
+export function calcMinMax(data) {
+	let min, max;
+	let i = data.length - 1;
+	let v = data[i];
+	if (typeof v === 'number') {
+		min = max = v;
+		while (i--) {
+			const v = data[i];
+			min = min < v ? min : v;
+			max = max > v ? max : v;
 		}
 	}
-	return { min, max, hasZeros };
+	return { min, max };
 }
+
+/**
+ * Tests if all values in an array are integer values
+*/
+export function isInteger(array) {
+	// |0 forces to integer value, we can
+	//  then compare strict equality
+	let i = array.length;
+	while (i-- && array[i] === (array[i] | 0)) { }
+	// if i === 0, the while loop
+	// must have gone through the whole array,
+	// so all values are integer numbers
+	return i === 0;
+}
+
+/**
+ * Tests if all values in an array are integer values
+ * and finds min and max values of the array.
+*/
+export function isIntegerMinMax(array) {
+	let min, max, isInt;
+	let i = array.length - 1;
+	let v = array[i];
+	if (typeof v === 'number') {
+		min = max = v;
+		isInt = v === (v | 0);
+		while (i--) {
+			const v = array[i];
+			min = min < v ? min : v;
+			max = max > v ? max : v;
+			isInt = isInt && v === (v | 0);
+		}
+	}
+	return { min, max, isInt };	// |0 forces to integer value, we can
+}
+
 
 // === Metadata Arrays ===
 // Instead of plain arrays, we wrap the data from our attributes
-// and genes in an object containing useful metadata about them. 
-// This includes array type (typed arrays are much faster 
+// and genes in an object containing useful metadata about them.
+// This includes array type (typed arrays are much faster
 // to use, and we also have a special format for indexed strings)
 // to which attribute and dataset the data belongs, if the array
 // has zeros, min and max value excluding zeros, which twenty
@@ -146,70 +152,50 @@ function convertWholeArray(data, name, uniques) {
 	// and so on)
 	let arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
 
-	if (arrayType === 'number') {
-		// Test whether values are actually integers,
-		// if so convert to typed integer arrays.
-		arrayType = isInteger(data) ? 'integer' : 'float32';
-	}
-
-	// For our plotters we often need to know the dynamic
-	// range for non-zero values, but also need to know
-	// if zero-values are present. We also use this information
-	// to determine integer size, so we pre-calc this.
-	let { min, max, hasZeros } = calcMinMax(data, true);
+	// For our plotters we often need to know the dynamic range
+	// for non-zero values. If all values are integers, we can
+	// also use this information to convert to smaller types
+	let { min, max, isInt } = isIntegerMinMax(data);
 
 	// convert number values to typed arrays matching the schema,
 	// and string arrays with few unique values to indexedString
-	let filteredData, indexedVal, data32;
+	let filteredData, indexedVal;
 	switch (arrayType) {
-		case 'float32':
-			// the only way to force to Float32 is using a 
-			// typed Float32Array. So we do that first,
-			// and see if any information gets truncated
-			// If so, we'll use doubles instead.
-			data32 = Float32Array.from(data);
-			for (let i = 0; i < data.length; i++) {
-				if (data32[i] !== data[i]) {
-					arrayType = 'float64';
-					break;
-				}
-			}
-			if (arrayType === 'float64') {
-				filteredData = Float64Array.from(data);
-			} else {
-				data = data32;
-				filteredData = Float32Array.from(data32);
-			}
-			break;
-		case 'integer':
-			// convert to most compact integer representation
-			// for better performance.
-			if (min >= 0) {
-				if (max < 256) {
-					data = Uint8Array.from(data);
-					filteredData = Uint8Array.from(data);
-					arrayType = 'uint8';
-				} else if (max < 65535) {
-					data = Uint16Array.from(data);
-					filteredData = Uint16Array.from(data);
-					arrayType = 'uint16';
+		case 'number':
+			if (isInt) {
+				// convert to most compact integer representation
+				// for better performance.
+				if (min >= 0) {
+					if (max < 256) {
+						data = Uint8Array.from(data);
+						filteredData = Uint8Array.from(data);
+						arrayType = 'uint8';
+					} else if (max < 65535) {
+						data = Uint16Array.from(data);
+						filteredData = Uint16Array.from(data);
+						arrayType = 'uint16';
+					} else {
+						data = Uint32Array.from(data);
+						filteredData = Uint32Array.from(data);
+						arrayType = 'uint32';
+					}
+				} else if (min > -128 && max < 128) {
+					data = Int8Array.from(data);
+					filteredData = Int8Array.from(data);
+					arrayType = 'int8';
+				} else if (min > -32769 && max < 32768) {
+					data = Int16Array.from(data);
+					filteredData = Int16Array.from(data);
+					arrayType = 'int16';
 				} else {
-					data = Uint32Array.from(data);
-					filteredData = Uint32Array.from(data);
-					arrayType = 'uint32';
+					data = Int32Array.from(data);
+					filteredData = Int32Array.from(data);
+					arrayType = 'int32';
 				}
-			} else if (min > -128 && max < 128) {
-				data = Int8Array.from(data);
-				filteredData = Int8Array.from(data);
-				arrayType = 'int8';
-			} else if (min > -32769 && max < 32768) {
-				data = Int16Array.from(data);
-				filteredData = Int16Array.from(data);
-				arrayType = 'int16';
 			} else {
-				data = Int32Array.from(data);
-				filteredData = Int32Array.from(data);
-				arrayType = 'int32';
+				data = Float32Array.from(data);
+				filteredData = Float32Array.from(data);
+				arrayType = 'float32';
 			}
 			break;
 		case 'string':
@@ -225,36 +211,39 @@ function convertWholeArray(data, name, uniques) {
 			// are smaller, remove pointer indirection, and allow
 			// for quicker comparisons than strings.
 			if (uniques.length < 256) {
-				// sort by most frequent, so the indices
-				// grow from most to least common
+				// sort by least frequent, see below
 				uniques.sort((a, b) => {
 					return (
-						a.count > b.count ? -1 :
-							a.count < b.count ? 1 :
+						a.count < b.count ? -1 :
+							a.count > b.count ? 1 :
 								a.val < b.val ? -1 : 1
 					);
 				});
 				// Store original values, with zero value as null
 				indexedVal = [null];
-				for (let i = 0; i < uniques.length; i++) {
+				let i = uniques.length;
+				while (i--) {
 					indexedVal.push(uniques[i].val);
 				}
 
 				// Create array of index values
 				let indexedData = new Uint8Array(data.length);
-				for (let j = 0; j < data.length; j++) {
-					for (let i = 1; i < indexedVal.length; i++) {
-						if (data[j] === indexedVal[i]) {
-							indexedData[j] = i;
-						}
-					}
+				let j = data.length;
+				while (j--) {
+					const dataVal = data[j];
+					i = indexedVal.length;
+					// because we sorted earlier, we tend to
+					// leave this loop as early as possible.
+					while (i-- && dataVal !== indexedVal[i]) { }
+					// indexedVal.length - i, so that the most
+					// common values have the smallest indices
+					indexedData[j] = indexedVal.length - i;
 				}
 				data = indexedData;
 				filteredData = Uint8Array.from(data);
 				uniques = countElements(data);
 				min = 1;
 				max = uniques.length;
-				hasZeros = false;
 				break;
 			} else {
 				filteredData = data.slice(0);
@@ -262,9 +251,10 @@ function convertWholeArray(data, name, uniques) {
 			break;
 	}
 
-	// We set filtered flags after conversion, 
+	// We set filtered flags after conversion,
 	// in case array.uniques had to be updated for indexedData
-	for (let i = 0; i < uniques.length; i++) {
+	let i = uniques.length;
+	while (i--) {
 		uniques[i].filtered = false;
 	}
 
@@ -276,40 +266,33 @@ function convertWholeArray(data, name, uniques) {
 	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? ({
 		mostFreq: [],
 		max: [],
-		min: [],
 	}) : ({
 		mostFreq: {},
 		max: {},
-		min: {},
 	});
-
-	uniques.sort((a, b) => {
-		return (
-			a.count > b.count ? -1 :
-				a.count < b.count ? 1 :
-					a.val < b.val ? -1 : 1
-		);
-	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		colorIndices.mostFreq[uniques[i].val] = i + 1;
-	}
 
 	uniques.sort((a, b) => {
 		return (
 			a.val > b.val ? -1 : 1
 		);
 	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
+	for (i = 0; i < 20 && i < uniques.length; i++) {
 		colorIndices.max[uniques[i].val] = i + 1;
 	}
 
-	uniques.sort((a, b) => {
-		return (
-			a.val < b.val ? -1 : 1
-		);
-	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		colorIndices.min[uniques[i].val] = i + 1;
+	// if every value is unique, we might as well keep
+	// the sort-by-max order, so don't sort if:
+	if (uniques.length < data.length) {
+		uniques.sort((a, b) => {
+			return (
+				a.count > b.count ? -1 :
+					a.count < b.count ? 1 :
+						a.val < b.val ? -1 : 1
+			);
+		});
+	}
+	for (i = 0; i < 20 && i < uniques.length; i++) {
+		colorIndices.mostFreq[uniques[i].val] = i + 1;
 	}
 
 	return {
@@ -321,7 +304,6 @@ function convertWholeArray(data, name, uniques) {
 		colorIndices,
 		min,
 		max,
-		hasZeros,
 	};
 }
 
@@ -335,9 +317,7 @@ function convertUnique(data, name, uniques, uniqueVal) {
 	}
 
 	let min = uniqueVal,
-		max = uniqueVal,
-		hasZeros = uniqueVal === 0;
-
+		max = uniqueVal;
 	let filteredData, indexedVal, data32;
 	if (arrayType === 'string') {
 		indexedVal = [null, uniqueVal];
@@ -346,8 +326,7 @@ function convertUnique(data, name, uniques, uniqueVal) {
 		uniques[0].val = 1;
 		min = 1;
 		max = 1;
-		hasZeros = false;
-	} else { // this is not an else-if bug
+	} else { // No, this is not an else-if bug
 		if (arrayType === 'integer') {
 			if (min >= 0) {
 				if (max < 256) {
@@ -402,7 +381,6 @@ function convertUnique(data, name, uniques, uniqueVal) {
 		colorIndices,
 		min,
 		max,
-		hasZeros,
 	};
 }
 
@@ -411,7 +389,7 @@ function convertUnique(data, name, uniques, uniqueVal) {
  * - `comparator`: comparison closure that takes *indices* i and j,
  *   and compares `array[i]` to `array[j]`. To ensure stability, it
  *   should always end with `i - j` as the last comparison .
- * 
+ *
  * Example:
  * ```
  *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
@@ -447,7 +425,7 @@ export function stableSortedCopy(array, comparator) {
  * - `comparator`: comparison closure that takes *index* i and j,
  *   and compares values at `array[i]` to `array[j]` in some way.
  *   To force stability, end comparison chain with with `i - j`.
- * 
+ *
  * Example:
  * ```
  *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
@@ -462,15 +440,15 @@ export function stableSortedCopy(array, comparator) {
  * ```
  */
 export function findIndices(array, comparator) {
-	// Assumes we don't have to worry about sorting more than 
+	// Assumes we don't have to worry about sorting more than
 	// 4 billion elements; if you know the upper bounds of your
 	// input you could replace it with a smaller typed array
-	let indices = new Uint32Array(array.length);
-	for (let i = 0; i < indices.length; i++) {
+	let indices = new Uint32Array(array.length), i = indices.length;
+	while (i--) {
 		indices[i] = i;
 	}
 	// after sorting, `indices[i]` gives the index from where
-	// `array[i]` should take the value from, so 
+	// `array[i]` should take the value from, so
 	// `array[i]` should have the value at `array[indices[i]]`
 	return indices.sort(comparator);
 }
@@ -478,18 +456,18 @@ export function findIndices(array, comparator) {
 /**
  * - `array`: array to be sorted
  * - `indices`: array of indices from where the value should *come from*,
- * that is: `array[i] = array[indices[i]]` (of course, this naive 
+ * that is: `array[i] = array[indices[i]]` (of course, this naive
  * assignment would destroy the value at `array[i]`, hence this function)
- * 
+ *
  * **Important:** `indices` must contain each index of `array`, and each
- * index must be present only once! In other words: indices may only 
+ * index must be present only once! In other words: indices may only
  * contain integers in the range `[0, array.length-1]`.
- * 
+ *
  * This function does *not* check for valid input!
- * 
+ *
  * Mutates `indices`. For correct input, it will be sorted afterwards,
  * as `[ 0, 1, ... array.length-1 ]`.
- * 
+ *
  * Example:
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
  * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
@@ -497,7 +475,8 @@ export function findIndices(array, comparator) {
 export function sortFromIndices(array, indices) {
 	// there might be multiple cycles, so we must
 	// walk through the whole array to check
-	for (let k = 0; k < array.length; k++) {
+	let k = array.length;
+	while (k--) {
 		// advance until we find a value in
 		// the "wrong" position
 		if (k !== indices[k]) {
@@ -524,69 +503,6 @@ export function sortFromIndices(array, indices) {
 	}
 	return array;
 }
-
-/** 
- * Tests if all values in an array are integer values
-*/
-export function isInteger(array) {
-	// |0 forces to integer value, we can
-	//  then compare strict equality
-	let i = 0;
-	while (array[i] === (array[i] | 0)) { ++i; }
-	// if i === array.length, the while loop
-	// must have gone through the whole array,
-	// so all values are integer numbers
-	return i === array.length;
-}
-
-// Using indexed strings can be much faster, since Uint8Arrays
-// are smaller, remove pointer indirection, and allow
-// for quicker comparisons than strings.
-/*
-export function convertToIndexed(uniques, data) {
-	let un = uniques.slice(0);
-	// sort uniques by most frequent, so
-	// the indices grow from most to least
-	// common
-	un.sort((a, b) => {
-		return (
-			a.count > b.count ? -1 :
-				a.count < b.count ? 1 :
-					a.val < b.val ? -1 : 1
-		);
-	});
-	
-	// Store original values
-	let indexedVal = [];
-	for (let i = 0; i < un.length; i++) {
-		indexedVal.push(un[i].val);
-	}
-	
-	// Create array of index values
-	let indexedData = new Uint8Array(data.length);
-	for (let j = 0; j < data.length; j++) {
-		for (let i = 0; i < indexedVal.length; i++) {
-			if (data[j] === indexedVal[i]) {
-				indexedData[j] = i;
-			}
-		}
-	}
-	let filteredData = Uint8Array.from(indexedData);
-	uniques = countElements(indexedData);
-	let min = 0;
-	let max = un.length - 1;
-	let hasZeros = true;
-	return {
-		data: indexedData,
-		filteredData,
-		indexedVal,
-		uniques,
-		min,
-		max,
-		hasZeros,
-	};
-}
-*/
 
 export function arrayConstr(arrayType) {
 	switch (arrayType) {
@@ -663,7 +579,7 @@ export function disjointArrays(a, b) {
 	while (i--) {
 		let aval = a[i];
 		let j = b.length;
-		while(j--) {
+		while (j--) {
 			let bval = b[j];
 			if (aval === bval) {
 				overlap.push(aval);
@@ -730,8 +646,8 @@ export function merge(oldObj, newObj) {
 *   to be an object structured like a tree.
 * - `delTree` should be a tree where the values
 *   are either subtrees (objects) that matching
-*   the structure of `sourceTree`, or a leaf with 0 
-*   to mark a field for pruning. Anything else is 
+*   the structure of `sourceTree`, or a leaf with 0
+*   to mark a field for pruning. Anything else is
 *   ignored (and thus, does not affect the structure
 *   of the sourceTree)
 */

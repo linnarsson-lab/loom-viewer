@@ -1,4 +1,4 @@
-import { nMostFrequent, arrayConstr } from '../js/util';
+import { findMostCommon, arrayConstr } from '../js/util';
 import * as colors from '../js/colors';
 import { textSize, textStyle, drawText } from './canvas';
 
@@ -71,7 +71,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 
 	range.total = Math.ceil(range.right) - Math.floor(range.left);
 	if (range.total <= 0) { return () => { }; }
-	// If we're not displaying text, then indexed string arrays 
+	// If we're not displaying text, then indexed string arrays
 	// should remain Uint8Arrays, as they are more efficient
 	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
 	let source = unfiltered ? data : filteredData;
@@ -250,7 +250,7 @@ function categoriesPainter(context, range, colorIndices) {
 			const val = data[i];
 
 			let j = i, nextVal;
-			// advance while value doesn't change 
+			// advance while value doesn't change
 			do {
 				j++;
 				nextVal = data[j];
@@ -272,9 +272,9 @@ function categoriesPainter(context, range, colorIndices) {
 			const i0 = (i * data.length / width) | 0;
 			const i1 = ((i + 1) * data.length / width) | 0;
 			const slice = data.slice(i0, i1);
-			const commonest = nMostFrequent(slice, 1).values[0];
-			if (commonest){
-				const cIdx = colorIndices.mostFreq[commonest];
+			const mostCommonValue = findMostCommon(slice);
+			if (mostCommonValue){
+				const cIdx = colorIndices.mostFreq[mostCommonValue];
 				context.fillStyle = colors.category20[cIdx];
 				context.fillRect(xOffset + i, 0, 1, context.height);
 			}
@@ -309,7 +309,7 @@ function barPaint(context, range, min, max, label) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
 		const barHeight = (outliers[i] * barScale) | 0;
 
-		// advance while height doesn't change 
+		// advance while height doesn't change
 		let j = i, nextHeight;
 		do {
 			j++;
@@ -334,7 +334,7 @@ function barPaint(context, range, min, max, label) {
 
 	// draw mean values
 	context.fillStyle = '#888888';
-	i = 0; 
+	i = 0;
 	x = range.xOffset;
 	while (i < means.length){
 		const meanHeight = (means[i] * barScale) | 0;
@@ -392,7 +392,7 @@ function heatmapPaint(context, range, min, max, label, colorLUT) {
 		context.fillStyle = colorLUT[colorIdx];
 
 		let j = i, nextIdx;
-		// advance while colour value doesn't change 
+		// advance while colour value doesn't change
 		do {
 			j++;
 			nextIdx = (((outliers[j]||0 + means[j]||0)*0.5 - min) * colorIdxScale) | 0;
