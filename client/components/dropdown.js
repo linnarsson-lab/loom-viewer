@@ -21,11 +21,11 @@ export class DropdownMenu extends Component {
 			};
 		}
 
-		if (!filterOptions){
+		if (!filterOptions && options.length > 100){
 			filterOptions = createFilterOptions({ options: newOptions });
 		}
 
-		this.setState({ 
+		this.setState({
 			options: newOptions,
 			filterOptions,
 		});
