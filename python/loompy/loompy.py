@@ -40,7 +40,6 @@ from sklearn.svm import SVR
 from shutil import copyfile
 import logging
 import requests
-import json
 import time
 
 def strip(s):
@@ -55,9 +54,9 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	Args:
 		filename (str):         The filename (typically using a `.loom` file extension)
 		matrix (numpy.ndarray): Two-dimensional (N-by-M) numpy ndarray of float values
-		row_attrs (dict):       Row attributes, where keys are attribute names and values 
+		row_attrs (dict):       Row attributes, where keys are attribute names and values
 		                        are numpy arrays (float or string) of length N
-		col_attrs (dict):       Column attributes, where keys are attribute names and 
+		col_attrs (dict):       Column attributes, where keys are attribute names and
 		                        values are numpy arrays (float or string) of length M
 		chunks (tuple):         The chunking of the matrix. Small chunks are slow
 		                        when loading a large batch of rows/columns in sequence,
@@ -80,14 +79,14 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
-	# Create the file. 
+	# Create the file.
 	f = h5py.File(name=filename, mode='w')
 	#make sure chunk size is not bigger than actual matrix size
 	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
 	# Save the main matrix
 	if compression_opts == None:
 		f.create_dataset(
-			'matrix', 
+			'matrix',
 			data=matrix.astype(matrix_dtype),
 			maxshape=(matrix.shape[0], None),
 			chunks=chunks,
@@ -154,7 +153,7 @@ def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dt
 	if not np.isfinite(matrix).all():
 		raise ValueError("INF and NaN not allowed in loom matrix")
 
-	# Create the file. 
+	# Create the file.
 	f = h5py.File(name=outfile, mode='w')
 	# make sure chunk size is not bigger than actual matrix size
 	chunks = (min(chunks[0], matrix.shape[0]), min(chunks[1], matrix.shape[1]))
@@ -163,7 +162,7 @@ def create_from_loom(infile, outfile, chunks=(64,64), chunk_cache=512, matrix_dt
 	# Save the main matrix
 	if compression_opts == None:
 		f.create_dataset(
-			'matrix', 
+			'matrix',
 			data=matrix.astype(matrix_dtype),
 			maxshape=(matrix.shape[0], None),
 			chunks=chunks,
@@ -833,7 +832,7 @@ class LoomConnection(object):
 				# Pick out the cells that are in this batch
 				selection = selection[np.where(np.logical_and(selection >= 0, selection < cols_per_chunk))[0]]
 				if selection.shape[0] == 0:
-					ix = ix + cols_per_chunk
+					ix += cols_per_chunk
 					continue
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
@@ -842,7 +841,7 @@ class LoomConnection(object):
 				vals = vals[:, selection]
 
 				yield (ix, ix + selection, vals)
-				ix = ix + cols_per_chunk
+				ix += cols_per_chunk
 
 		if axis == 0:
 			rows_per_chunk = batch_size
@@ -854,6 +853,7 @@ class LoomConnection(object):
 				# Pick out the genes that are in this batch
 				selection = selection[np.where(np.logical_and(selection >= 0, selection < rows_per_chunk))[0]]
 				if selection.shape[0] == 0:
+					ix += rows_per_chunk
 					continue
 
 				# Load the whole chunk from the file, then extract genes and cells using fancy indexing
@@ -861,7 +861,7 @@ class LoomConnection(object):
 				vals = vals[selection, :]
 				vals = vals[:, cells]
 				yield (ix, ix + selection, vals)
-				ix = ix + rows_per_chunk
+				ix += rows_per_chunk
 
 	def map(self, f, axis=0, chunksize=1000, selection=None):
 		"""
@@ -1387,9 +1387,9 @@ class LoomConnection(object):
 
 	def dz_save_tile(self, x, y, z, tile, truncate=False):
 		(zmin, zmid, zmax) = self.dz_zoom_range()
-		if (z < zmin or z > zmid or 
-			x < 0 or y < 0 or 
-			x * 256 * 2**(zmid-z) > self.shape[1] or 
+		if (z < zmin or z > zmid or
+			x < 0 or y < 0 or
+			x * 256 * 2**(zmid-z) > self.shape[1] or
 			y * 256 * 2**(zmid-z) > self.shape[0]):
 			#logging.info("Trying to save out of bound tile: x: %02d y: %02d z: %02d" % (x, y, z))
 			return
@@ -1418,8 +1418,8 @@ class LoomConnection(object):
 			with open(tilepath, 'wb') as img_io:
 				img.save(img_io, 'PNG', compress_level=4)
 			return img
-	
-	
+
+
 
 	def dz_merge_tile(self, tl, tr, bl, br):
 		temp = np.empty((512,512), dtype = 'float32')
@@ -1484,7 +1484,7 @@ class LoomConnection(object):
 			tile = self.dz_merge_tile(tl, tr, bl, br)
 			self.dz_save_tile(x, y, z, tile, truncate=False)
 			return tile
-	
+
 
 	def dz_get_zoom_tile_star(args):
 		"""
