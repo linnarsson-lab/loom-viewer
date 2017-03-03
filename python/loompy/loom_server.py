@@ -9,7 +9,7 @@ import os
 import os.path
 import sys
 from io import BytesIO
-import json
+import ujson
 from datetime import datetime, timedelta
 import argparse
 import errno
@@ -140,7 +140,7 @@ def get_auth(request):
 @cache(expires=None)
 def send_dataset_list():
 	(u, p) = get_auth(request)
-	result = json.dumps(app.cache.list_datasets(u, p))
+	result = ujson.dumps(app.cache.list_datasets(u, p))
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
@@ -163,7 +163,7 @@ def send_fileinfo(project, filename):
 		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
 		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
 	}
-	return flask.Response(json.dumps(fileinfo), mimetype="application/json")
+	return flask.Response(ujson.dumps(fileinfo), mimetype="application/json")
 
 # Upload a dataset
 # curl "http://127.0.0.1:8003/loom/Published/cortex2.loom" --upload-file ~/loom-datasets/Published/cortex.loom
@@ -215,11 +215,14 @@ def send_row(project, filename, rows):
 	else:
 		# return a list of {idx, data} objects.
 		# This is to guarantee we match up row-numbers client-side
-		# (we can't use the index in the array)
-		retRows = []
-		for row in rows:
-			retRows.append({ 'idx': row, 'data': ds[row, :].tolist()})
-		return flask.Response(json.dumps(retRows), mimetype="application/json")
+		#retRows = [{ 'idx': row, 'data': ds[row, :].tolist()} for row in rows]
+		# Serialised like this is slightly faster
+		#npRows = [ds[row, :] for row in rows]
+		#listRows = [npArray.tolist() for npArray in npRows]
+		rows.sort()
+		listRows = ds[rows,:].tolist()
+		retRows =  [{'idx': rows[i], 'data': listRows[i]} for i in range(len(rows))]
+		return flask.Response(ujson.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
 @app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
@@ -233,10 +236,10 @@ def send_col(project, filename, cols):
 		# return a list of {idx, data} objects.
 		# This is to guarantee we match up column-numbers client-side
 		# (we can't use the index in the array)
-		retCols = []
-		for col in cols:
-			retCols.append({ 'idx': col, 'data': ds[:, col].tolist()})
-		return flask.Response(json.dumps(retCols), mimetype="application/json")
+		cols.sort()
+		listCols = ds[:,cols].tolist()
+		retCols = [{ 'idx': cols[i], 'data': listCols[i]} for i in range(len(cols))]
+		return flask.Response(ujson.dumps(retCols), mimetype="application/json")
 
 
 #
@@ -259,7 +262,7 @@ def send_tile(project, filename, z,x,y):
 		# or it still has to be generated
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
-			return "", 404 # out of range
+			return "", 404
 		ds.dz_get_zoom_tile(x, y, z)
 		# if the file still does not exist at this point,
 		# we are out of range
