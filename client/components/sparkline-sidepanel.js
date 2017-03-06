@@ -69,7 +69,7 @@ class LegendSettings extends Component {
 
 		return (
 			<ListGroupItem>
-				<label>Show cell attribute</label>
+				<label>Select cell attribute legend</label>
 				<DropdownMenu
 					value={colAttr}
 					options={col.allKeysNoUniques}
@@ -117,14 +117,12 @@ class AttributeSelection extends Component {
 
 		return (
 			<ListGroupItem>
-				<label>Show genes</label>
+				<label>Select genes to display</label>
 				<FetchGeneComponent
 					dataset={dataset}
 					dispatch={dispatch}
 					onChange={this.state.genesHC}
-					value={genes}
-					multi
-					clearable
+					selectedGenes={genes}
 				/>
 			</ListGroupItem>
 		);
@@ -170,7 +168,7 @@ class ColorSettings extends Component {
 		const { showLabels, geneMode } = this.props;
 		return (
 			<ListGroupItem>
-				<label>Show genes as</label>
+				<label>Show sparklines as</label>
 				<DropdownMenu
 					value={geneMode}
 					options={geneModeOptions}

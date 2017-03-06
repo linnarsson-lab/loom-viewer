@@ -1,83 +1,93 @@
 import React, { Component, PropTypes } from 'react';
 import { fetchGene } from '../actions/actions';
 import Select from 'react-virtualized-select';
+import { FormControl, Button } from 'react-bootstrap';
+
+import { uniq } from 'lodash';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
 
 	constructor(props) {
 		super(props);
-		this.handleChange = this.handleChange.bind(this);
-		const { geneKeys } = props.dataset.col;
-		let options = new Array(geneKeys.length);
-		for (let i = 0; i < options.length; i++) {
-			options[i] = {
+		this.addSelection = this.addSelection.bind(this);
+		this.applySelection = this.applySelection.bind(this);
+		this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
+	}
+
+	componentWillMount() {
+		let { selectedGenes, dispatch, dataset } = this.props;
+		const { geneKeys } = dataset.col;
+		let selectOptions = new Array(geneKeys.length);
+		for (let i = 0; i < selectOptions.length; i++) {
+			selectOptions[i] = {
 				value: geneKeys[i],
 				label: geneKeys[i],
 			};
 		}
-		this.state = { options };
+
+		if (selectedGenes && selectedGenes.length) {
+			let validGenes = selectedGenes.filter((gene) => {
+				return dataset.col.geneKeys.indexOf(gene) !== -1;
+			});
+			selectedGenes = uniq(validGenes);
+			dispatch(fetchGene(dataset, selectedGenes));
+			selectedGenes = selectedGenes.join(',\ ');
+		}
+
+		this.setState({ selectOptions, selectedGenes });
 	}
 
-	componentWillMount() {
-		if (this.props.value) {
-			let values = null;
-			if (this.props.multi) {
-				const genes = this.props.value;
-				values = new Array(genes.length);
-				for (let i = 0; i < genes.length; i++) {
-					values[i] = { value: genes[i], label: genes[i] };
-				}
-			} else {
-				values = { value: this.props.value, label: this.props.value };
-			}
-			this.handleChange(values);
-		}
+	handleTextAreaChange(event) {
+		this.setState({ selectedGenes: event.target.value });
 	}
 
-	handleChange(value) {
-		this.setState({ value });
-		let { dataset, dispatch, onChange, multi, clearable } = this.props;
-		// If multi is set, use an array of gene name strings.
-		// Otherwise, send a single string.
-		let genes = multi ? [] : '';
-		if (value) {
-			if (multi) {
-				for (let i = 0; i < value.length; i++) {
-					let gene = value[i];
-					if (!dataset.fetchedGenes[gene]) {
-						genes.push(value[i].value);
-					}
-				}
-				if (genes.length) {
-					dispatch(fetchGene(dataset, genes));
-				}
-			} else {
-				if (value.value) {
-					dispatch(fetchGene(dataset, value.value));
-				}
-			}
-			onChange ? onChange(genes) : null;
-		} else {
-			// We also call onChange if there is no value,
-			// to handle "resetting" gene lists.
-			onChange && clearable ? onChange(genes) : null;
-		}
+	addSelection(selectValue) {
+		let { selectedGenes } = this.state;
+		selectedGenes = selectedGenes ? selectedGenes + ', ' + selectValue.value : selectValue.value;
+		this.setState({ selectedGenes });
+	}
+
+	applySelection() {
+		const { dataset, dispatch, onChange } = this.props;
+		const genes = this.state.selectedGenes.split(/[,.;\s]+/g);
+
+		let validGenes = genes.filter((gene) => {
+			return dataset.col.geneKeys.indexOf(gene) !== -1;
+		});
+		validGenes = uniq(validGenes);
+		dispatch(fetchGene(dataset, validGenes));
+		// We also call onChange if there is no value,
+		// to handle "resetting" the view
+		onChange ? onChange(validGenes) : null;
+
+		const selectedGenes = validGenes.join(',\ ');
+		this.setState({selectedGenes});
 	}
 
 	render() {
 		const col = this.props.dataset.col;
 		return (
-			<Select
-				options={this.state.options}
-				filterOptions={col.dropdownOptions.keyAttr}
-				onChange={this.handleChange}
-				value={this.state.value}
-				multi={this.props.multi}
-				clearable={this.props.clearable === true}
-				style={this.props.style}
-				maxHeight={100}
-			/>
+			<div>
+				<FormControl
+					componentClass={'textarea'}
+					placeholder={'Paste genes here or use the dropdown below to search'}
+					onChange={this.handleTextAreaChange}
+					value={this.state.selectedGenes} />
+				<Select
+					placeholder={'Type to search available genes'}
+					options={this.state.selectOptions}
+					filterOptions={col.dropdownOptions.keyAttr}
+					onChange={this.addSelection}
+					style={this.props.style}
+					maxHeight={100}
+				/>
+				<Button
+					bsStyle={'default'}
+					onClick={this.applySelection} >
+					Apply Selection
+					</Button>
+			</div>
 		);
 	}
 }
@@ -86,12 +96,7 @@ export class FetchGeneComponent extends Component {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	value: PropTypes.oneOfType([
-		PropTypes.arrayOf(PropTypes.string),
-		PropTypes.string,
-	]),
+	selectedGenes: PropTypes.arrayOf(PropTypes.string),
 	onChange: PropTypes.func,
-	multi: PropTypes.bool,
-	clearable: PropTypes.bool,
 	style: PropTypes.object,
 };
