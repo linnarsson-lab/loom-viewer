@@ -25,46 +25,36 @@ export function inBounds(r1, r2) {
 export function countElements(array) {
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
-	const sorted = array.slice(0).sort();
-	let i = sorted.length;
-	while (i-- && sorted[i] === undefined) { }
-
-	// linearly run through the array, track the
-	// unique entries and count how often they show up
-	let uniques = [], count;
-	while (i >= 0) {
-		const val = sorted[i];
+	let i = 0, j = 0, sorted = array.slice(0).sort(),
+		val = sorted[i], uniques = [];
+	while (val !== undefined) {
 		// keep going until a different value is found
-		count = i;
-		while (i-- && sorted[i] === val) { }
-		count -= i;
-		uniques.push({ val, count });
+		while (sorted[++j] === val) { }
+		uniques.push({ val, count: j - i });
+		i = j;
+		val = sorted[j];
 	}
 	return uniques;
 }
 
-export function findMostCommon(array){
-	const sorted = array.slice(0).sort();
-
-	let i = sorted.length;
-	while (i-- && sorted[i] === undefined) {}
-
+export function findMostCommon(array) {
+	let i = 0, j = 0, sorted = array.slice(0).sort(),
+		val = sorted[i], values = [], count = [];
 	// linearly run through the array, count unique values
-	let values = [], count = [], j;
-	while (i >= 0) {
-		const val = sorted[i];
+	while (val !== undefined) {
 		// keep going until a different value is found
-		j = i;
-		while (i-- && sorted[i] === val) { }
+		while (sorted[++j] === val) { }
 		values.push(val);
 		count.push(j - i);
+		i = j;
+		val = sorted[j];
 	}
 
-	i = count.length-1;
-	let mc = count[i], mv = values[i];
-	while(i--){
+	i = count.length;
+	let mc = count[i-1], mv = values[i-1];
+	while (i--) {
 		j = count[i];
-		if (j > mc){
+		if (j > mc) {
 			mc = j;
 			mv = values[i];
 		}
