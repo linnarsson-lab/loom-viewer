@@ -217,11 +217,9 @@ def send_row(project, filename, rows):
 		# This is to guarantee we match up row-numbers client-side
 		#retRows = [{ 'idx': row, 'data': ds[row, :].tolist()} for row in rows]
 		# Serialised like this is slightly faster
-		#npRows = [ds[row, :] for row in rows]
-		#listRows = [npArray.tolist() for npArray in npRows]
 		rows.sort()
-		listRows = ds[rows,:].tolist()
-		retRows =  [{'idx': rows[i], 'data': listRows[i]} for i in range(len(rows))]
+		dsRowsList = ds[rows,:].tolist()
+		retRows =  [{'idx': rows[i], 'data': dsRowsList[i]} for i in range(len(rows))]
 		return flask.Response(ujson.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
@@ -237,8 +235,8 @@ def send_col(project, filename, cols):
 		# This is to guarantee we match up column-numbers client-side
 		# (we can't use the index in the array)
 		cols.sort()
-		listCols = ds[:,cols].tolist()
-		retCols = [{ 'idx': cols[i], 'data': listCols[i]} for i in range(len(cols))]
+		dsColsList = ds[:,cols].tolist()
+		retCols = [{ 'idx': cols[i], 'data': dsColsList[i]} for i in range(len(cols))]
 		return flask.Response(ujson.dumps(retCols), mimetype="application/json")
 
 
