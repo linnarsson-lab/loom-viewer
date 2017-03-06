@@ -139,21 +139,25 @@ function receiveDataSet(data, path) {
 	col.allKeys = col.keys.concat(row.geneKeys);
 	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
 
-	// Creating fastFilterOptions is a pretty slow operation, 
-	// which is why  we do it once and re-use the results.
+	// Creating fastFilterOptions is a very slow operation,
+	// which is why we do it once and re-use the results.
+	// Also, I've commented out the filters that aren't being used
+	// right now to save some time
 	row.dropdownOptions = {};
-	row.dropdownOptions.attrs = prepFilter(row.keys);
+	//row.dropdownOptions.attrs = prepFilter(row.keys);
 	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
-	// fastFilterOptions doesn't scale for tens of thousands of cells :/
-	//	row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
-	row.dropdownOptions.all = row.dropdownOptions.attrs; //prepFilter(row.allKeys);
+	// // fastFilterOptions doesn't scale for tens of thousands of cells :/
+	//	//row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
+	// //row.dropdownOptions.all = prepFilter(row.allKeys);
+	// //row.dropdownOptions.allNoUniques = prepFilter(row.allKeysNoUiques);
+	//row.dropdownOptions.all = row.dropdownOptions.attrs;
 	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; //prepFilter(row.allKeysNoUniques);
 
 	col.dropdownOptions = {};
-	col.dropdownOptions.attrs = prepFilter(col.keys);
-	col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
+	//col.dropdownOptions.attrs = prepFilter(col.keys);
+	//col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
 	col.dropdownOptions.keyAttr = prepFilter(col.geneKeys);
-	col.dropdownOptions.all = prepFilter(col.allKeys);
+	//col.dropdownOptions.all = prepFilter(col.allKeys);
 	col.dropdownOptions.allNoUniques = prepFilter(col.allKeysNoUniques);
 
 	let viewState = {
