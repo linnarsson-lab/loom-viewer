@@ -136,6 +136,7 @@ function receiveDataSet(data, path) {
 	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
 	col.geneKeys = row.attrs.Gene ? row.attrs.Gene.data.slice() : [];
+	col.geneKeysLowerCase = col.geneKeys.map((gene) => { return gene.toLowerCase(); });
 	col.allKeys = col.keys.concat(row.geneKeys);
 	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
 
