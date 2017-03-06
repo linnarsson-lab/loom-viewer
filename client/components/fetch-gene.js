@@ -50,11 +50,16 @@ export class FetchGeneComponent extends Component {
 
 	applySelection() {
 		const { dataset, dispatch, onChange } = this.props;
-		const genes = this.state.selectedGenes.split(/[,.;\s]+/g);
+		const genes = this.state.selectedGenes.split(/[,.;'"`\s]+/g);
 
-		let validGenes = genes.filter((gene) => {
-			return dataset.col.geneKeys.indexOf(gene) !== -1;
-		});
+		let validGenes = [];
+		for (let i = 0; i < genes.length; i++){
+			let geneIdx = dataset.col.geneKeysLowerCase.indexOf(genes[i].toLowerCase());
+			if (geneIdx !== -1){
+				validGenes.push(dataset.col.geneKeys[geneIdx]);
+			}
+		}
+
 		validGenes = uniq(validGenes);
 		dispatch(fetchGene(dataset, validGenes));
 		// We also call onChange if there is no value,
