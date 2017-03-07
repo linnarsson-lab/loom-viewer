@@ -6,6 +6,7 @@ export function AttrLegend(props) {
 	const { filterFunc, attr, mode } = props;
 	const { uniques, indexedVal } = attr;
 	let visibleData = [];
+	const nullfunc = () => {};
 
 	const isFloat = attr.arrayType === 'float32' ||
 		attr.arrayType === 'number' ||
@@ -13,7 +14,7 @@ export function AttrLegend(props) {
 	let l = Math.min(uniques.length, 20);
 	for (let i = 0; i < l; i++) {
 		let { val, count, filtered } = uniques[i];
-		const filter = filterFunc(val);
+		const filter = filterFunc ? filterFunc(val) : nullfunc;
 		const cellStyle = {
 			display: 'inline-block',
 			color: filtered ? 'lightgrey' : mode === 'Categorical' ? colors.category20[i + 1] : 'black',
