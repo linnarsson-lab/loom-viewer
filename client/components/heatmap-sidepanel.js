@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 //import { PrintSettings } from './print-settings';
+import { AttrLegend } from './legend';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 import { fetchGene } from '../actions/actions';
@@ -41,7 +42,9 @@ export class HeatmapSidepanel extends Component {
 		return hms.colAttr !== nextHMS.colAttr ||
 			hms.colMode !== nextHMS.colMode ||
 			hms.rowMode !== nextHMS.rowMode ||
-			hms.rowMode !== nextHMS.rowMode;
+			hms.rowMode !== nextHMS.rowMode ||
+			this.props.dataset.col.attrs[hms.colAttr] !== nextProps.dataset.col.attrs[nextHMS.colAttr] ||
+			this.props.dataset.row.attrs[hms.rowAttr] !== nextProps.dataset.row.attrs[nextHMS.rowAttr];
 	}
 
 	componentWillUpdate(nextProps) {
@@ -55,8 +58,10 @@ export class HeatmapSidepanel extends Component {
 	render() {
 		const { col, row } = this.props.dataset;
 		const hms = this.props.dataset.viewState.heatmap;
-		const {colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
+		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
 
+		const colAttr = col.attrs[hms.colAttr];
+		const rowAttr = row.attrs[hms.rowAttr];
 		return (
 			<Panel
 				className='sidepanel'
@@ -78,6 +83,13 @@ export class HeatmapSidepanel extends Component {
 							options={modeNames}
 							onChange={colModeHC}
 						/>
+						{colAttr ? (
+							<AttrLegend
+								mode={hms.colMode}
+								attr={colAttr}
+						/>
+						) : null
+						}
 					</ListGroupItem>
 					<ListGroupItem>
 						<label>Gene attribute to show</label>
@@ -93,6 +105,14 @@ export class HeatmapSidepanel extends Component {
 							options={modeNames}
 							onChange={rowModeHC}
 						/>
+						{
+							rowAttr ? (
+								<AttrLegend
+									mode={hms.rowMode}
+									attr={rowAttr}
+								/>
+							) : null
+						}
 					</ListGroupItem>
 				</ListGroup>
 			</Panel>
