@@ -127,23 +127,23 @@ class MetadataTable extends Component {
 					</div>),
 			};
 			const attr = attributes[key];
-			const { filteredData, indexedVal, arrayType, uniques, uniqueVal } = attr;
+			const { data, indexedVal, arrayType, uniques, uniqueVal } = attr;
 
 			if (uniqueVal !== undefined) { // only one value
 				tableRow.val = (
 					<span>{uniqueVal}</span>
 				);
 			} else if (uniques[0].count === 1) { // every value is unique
-				let list = filteredData[0];
+				let list = data[0];
 				const l = Math.min(uniques.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
 					for (let i = 1; i < l; i++) {
-						list += `, ${indexedVal[filteredData[i]]}`;
+						list += `, ${indexedVal[data[i]]}`;
 					}
 				} else {
 					for (let i = 1; i < l; i++) {
-						list += `, ${filteredData[i]}`;
+						list += `, ${data[i]}`;
 					}
 				}
 				if (l < uniques.length) {
@@ -264,7 +264,7 @@ export class MetadataComponent extends Component {
 
 		const {
 			dataset, dispatch,
-			attributes, attrKeys, attrName, 
+			attributes, attrKeys, attrName,
 			stateName, mdName,
 		} = this.props;
 

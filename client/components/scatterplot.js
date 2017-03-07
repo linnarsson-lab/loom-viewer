@@ -43,7 +43,7 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter) {
 		// and make sure we're convert data to floats
 		// for the sake of plotting (we optimise storage
 		// to the smallest sensible format).
-		// Arrays of (indexed) strings are converted to 
+		// Arrays of (indexed) strings are converted to
 		// numerical arrays representing the twenty most
 		// common strings as categories, plus "other"
 		let { xData, yData } = convertCoordinates(x, y, width, height, radius, jitter, logscale);
@@ -53,7 +53,7 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter) {
 		// == Sort for tiling purposes ==
 		// ==============================
 
-		// Sort so that we render zero values first, and then from back-to-front. 
+		// Sort so that we render zero values first, and then from back-to-front.
 		// This has to be done after jittering to maintain the tiling behaviour
 		// that is desired.
 		const sorted = sortByAxes(xData, yData, cIdx, width, height);
@@ -94,7 +94,7 @@ function convertCoordinates(x, y, width, height, radius, jitter, logscale) {
 	let ymin = (y.hasZeros && y.min > 0) ? 0 : y.min;
 	let ymax = y.max;
 
-	// If we have an unindexed string array, convert it 
+	// If we have an unindexed string array, convert it
 	// to numbers as a form of categorisation
 	let xData = maybeStringArray(x);
 	let yData = maybeStringArray(y);
@@ -147,17 +147,17 @@ function convertCoordinates(x, y, width, height, radius, jitter, logscale) {
 	return { xData, yData };
 }
 
-function maybeStringArray(data) {
+function maybeStringArray(attr) {
 	// realistically, this only happens if all strings are unique
-	if (data.arrayType === 'string' && !data.indexedVal) {
-		const l = data.filteredData.length;
-		let retVal = new Float32Array(l);
-		for (let i = 0; i < l; i++) {
-			retVal[i] = i + 1;
+	if (attr.arrayType === 'string' && !attr.indexedVal) {
+		let i = attr.data.length;
+		let retVal = new Float32Array(i);
+		while (i--) {
+			retVal[i] = i+1;
 		}
 		return retVal;
 	}
-	return Float32Array.from(data.filteredData);
+	return Float32Array.from(attr.data);
 }
 
 function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius) {
@@ -178,7 +178,7 @@ function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, rad
 }
 
 function convertColordata(color, colorMode, palette) {
-	let colData = color.filteredData.slice(0);
+	let colData = color.data.slice(0);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
 	let cIdx = new Uint8Array(colData.length);
@@ -220,23 +220,29 @@ function prepareSprites(colorMode, width, height, radius) {
 	const lineW = Math.min(0.5, Math.max(0.125, radius / 10));
 	// reset all sprites to empty circles
 	for (let i = 0; i < sprites.length; i++) {
-		contexts[i] = sprites[i].getContext('2d');
-		contexts[i].clearRect(0, 0, spriteW, spriteH);
-		contexts[i].beginPath();
-		contexts[i].arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
-		contexts[i].closePath();
+		let ctx = sprites[i].getContext('2d');
+		ctx.save();
+		ctx.clearRect(0, 0, spriteW, spriteH);
+		ctx.beginPath();
+		ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
+		ctx.closePath();
 		if (radius > 2 || colorMode === 'Categorical') {
-			contexts[i].globalAlpha = 0.3;
-			contexts[i].strokeStyle = 'black';
-			contexts[i].lineWidth = lineW;
-			contexts[i].stroke();
+			ctx.globalAlpha = 0.3;
+			ctx.strokeStyle = 'black';
+			ctx.lineWidth = lineW;
+			ctx.stroke();
 		}
+		ctx.restore();
+		contexts[i] = ctx;
 	}
 	// fill the sprites that have a palette
 	for (let i = 1; i < palette.length; i++) {
-		contexts[i].globalAlpha = 0.5;
-		contexts[i].fillStyle = palette[i];
-		contexts[i].fill();
+		let ctx = contexts[i];
+		ctx.save();
+		ctx.globalAlpha = 0.5;
+		ctx.fillStyle = palette[i];
+		ctx.fill();
+		ctx.restore();
 	}
 
 	return { palette, sprites };
@@ -271,8 +277,9 @@ function sortByAxes(xData, yData, cIdx, width, height) {
 	for (i = 0; i < cIdx.length; i++) {
 		indices[i] = i;
 	}
+	const ifcIdx = width*height;
 	for (i = 0; i < cIdx.length; i++) {
-		compVal[i] = (!cIdx[i] ? 0 : 1) * width * height + y[i] * width + x[i];
+		compVal[i] = (cIdx[i] ? ifcIdx : 0) + y[i] * width + x[i];
 	}
 	indices.sort((a, b) => {
 		const cval = compVal[a] - compVal[b];

@@ -205,10 +205,10 @@ CoordinateSettings.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	stateName: PropTypes.string.isRequired,
 	attrName: PropTypes.string.isRequired,
-	coordinateAttrs: PropTypes.string.isRequired,
-	asMatrix: PropTypes.string.isRequired,
-	logscale: PropTypes.string.isRequired,
-	jitter: PropTypes.string.isRequired,
+	coordinateAttrs: PropTypes.array.isRequired,
+	asMatrix: PropTypes.bool.isRequired,
+	logscale: PropTypes.object.isRequired,
+	jitter: PropTypes.object.isRequired,
 };
 
 
@@ -249,8 +249,10 @@ class ColorSettings extends Component {
 	}
 
 	shouldComponentUpdate(nextProps) {
+
 		return nextProps.colorAttr !== this.props.colorAttr ||
-			nextProps.colorMode !== this.props.colorMode;
+			nextProps.colorMode !== this.props.colorMode ||
+			nextProps.dataset[nextProps.attrName].attrs[nextProps.colorAttr] !== this.props.dataset[this.props.attrName].attrs[this.props.colorAttr];
 	}
 
 	render() {

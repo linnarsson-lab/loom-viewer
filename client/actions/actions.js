@@ -183,13 +183,21 @@ function receiveDataSet(data, path) {
 function prepData(attrs) {
 	let data = {};
 	data.keys = Object.keys(attrs).sort();
-	// store original order attrs
+
+	// store original attribute order
+	let originalOrder = new Uint32Array(attrs[data.keys[0]].length), i = originalOrder.length;
+	while (i--) {
+		originalOrder[i] = i;
+	}
 	let origOrderKey = '(original order)';
-	attrs[origOrderKey] = originalOrder(attrs[data.keys[0]]);
+	attrs[origOrderKey] = originalOrder;
 	// Store all the keys
 	data.keys.unshift(origOrderKey);
 	// Initial sort order
-	data.order = data.keys.map((key) => { return { key, ascending: true }; });
+	data.order = [];
+	for (let i = 0; i < Math.min(4, data.keys.length); i++){
+		data.order.push({ key: data.keys[i], ascending: true });
+	}
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular
@@ -204,18 +212,12 @@ function prepData(attrs) {
 			return data.attrs[key] && !data.attrs[key].uniqueVal;
 		}
 	);
+
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
 	data.filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
+	data.sortedFilterIndices = originalOrder.slice();
 	return data;
-}
-
-function originalOrder(array) {
-	let indices = new Uint32Array(array.length);
-	for (let i = 0; i < array.length; i++) {
-		indices[i] = i;
-	}
-	return indices;
 }
 
 

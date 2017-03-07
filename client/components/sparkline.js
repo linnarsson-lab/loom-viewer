@@ -29,7 +29,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// =====================
 	// Prep data for plotter
 	// =====================
-	let { data, filteredData, arrayType, indexedVal } = attr;
+	let { data, arrayType, indexedVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
@@ -58,7 +58,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 		left: (dataRange ? dataRange[0] : 0),
 		right: (
 			dataRange ? dataRange[1] : (
-				unfiltered ? data.length : filteredData.length
+				unfiltered ? data.length : data.length
 			)
 		),
 	};
@@ -74,7 +74,7 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// If we're not displaying text, then indexed string arrays
 	// should remain Uint8Arrays, as they are more efficient
 	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
-	let source = unfiltered ? data : filteredData;
+	let source = unfiltered ? data : data;
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
 	// with undefined entries on either or both ends.

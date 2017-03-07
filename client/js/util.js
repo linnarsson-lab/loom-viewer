@@ -51,7 +51,7 @@ export function findMostCommon(array) {
 	}
 
 	i = count.length;
-	let mc = count[i-1], mv = values[i-1];
+	let mc = count[i - 1], mv = values[i - 1];
 	while (i--) {
 		j = count[i];
 		if (j > mc) {
@@ -105,8 +105,8 @@ export function isIntegerMinMax(array) {
 		isInt = v === (v | 0);
 		while (i--) {
 			const v = array[i];
-			min = min < v ? min : v;
-			max = max > v ? max : v;
+			if (v < min) { min = v; }
+			if (v > max) { max = v; }
 			isInt = isInt && v === (v | 0);
 		}
 	}
@@ -149,7 +149,7 @@ function convertWholeArray(data, name, uniques) {
 
 	// convert number values to typed arrays matching the schema,
 	// and string arrays with few unique values to indexedString
-	let filteredData, indexedVal;
+	let indexedVal;
 	switch (arrayType) {
 		case 'number':
 			if (isInt) {
@@ -157,36 +157,23 @@ function convertWholeArray(data, name, uniques) {
 				// for better performance.
 				if (min >= 0) {
 					if (max < 256) {
-						data = Uint8Array.from(data);
-						filteredData = Uint8Array.from(data);
 						arrayType = 'uint8';
 					} else if (max < 65535) {
-						data = Uint16Array.from(data);
-						filteredData = Uint16Array.from(data);
 						arrayType = 'uint16';
 					} else {
-						data = Uint32Array.from(data);
-						filteredData = Uint32Array.from(data);
 						arrayType = 'uint32';
 					}
 				} else if (min > -128 && max < 128) {
-					data = Int8Array.from(data);
-					filteredData = Int8Array.from(data);
 					arrayType = 'int8';
 				} else if (min > -32769 && max < 32768) {
-					data = Int16Array.from(data);
-					filteredData = Int16Array.from(data);
 					arrayType = 'int16';
 				} else {
-					data = Int32Array.from(data);
-					filteredData = Int32Array.from(data);
 					arrayType = 'int32';
 				}
 			} else {
-				data = Float32Array.from(data);
-				filteredData = Float32Array.from(data);
 				arrayType = 'float32';
 			}
+			data = arrayConstr(arrayType).from(data);
 			break;
 		case 'string':
 		default:
@@ -230,13 +217,10 @@ function convertWholeArray(data, name, uniques) {
 					indexedData[j] = indexedVal.length - i;
 				}
 				data = indexedData;
-				filteredData = Uint8Array.from(data);
 				uniques = countElements(data);
 				min = 1;
 				max = uniques.length;
 				break;
-			} else {
-				filteredData = data.slice(0);
 			}
 			break;
 	}
@@ -253,25 +237,35 @@ function convertWholeArray(data, name, uniques) {
 	// to color indices (so a look-up table for finding
 	// indices for another lookup table).
 	// Use an array if possible for faster lookup
-	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? ({
-		mostFreq: [],
-		max: [],
-	}) : ({
-		mostFreq: {},
-		max: {},
-	});
+	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? (
+		colorIndicesArray(uniques, data)
+	) : colorIndicesDict(uniques, data);
+
+	return {
+		arrayType,
+		data,
+		indexedVal,
+		uniques,
+		colorIndices,
+		min,
+		max,
+	};
+}
+
+// Split into separate function so mostFreq and max are type stable
+function colorIndicesArray(uniques, data) {
+	let mostFreq = [], max = [];
 
 	uniques.sort((a, b) => {
 		return (
 			a.val > b.val ? -1 : 1
 		);
 	});
-	for (i = 0; i < 20 && i < uniques.length; i++) {
-		colorIndices.max[uniques[i].val] = i + 1;
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		max[uniques[i].val] = i + 1;
 	}
 
-	// if every value is unique, we might as well keep
-	// the sort-by-max order, so don't sort if:
+	// if every value is unique, we keep the sort-by-max order
 	if (uniques.length < data.length) {
 		uniques.sort((a, b) => {
 			return (
@@ -281,20 +275,40 @@ function convertWholeArray(data, name, uniques) {
 			);
 		});
 	}
-	for (i = 0; i < 20 && i < uniques.length; i++) {
-		colorIndices.mostFreq[uniques[i].val] = i + 1;
+
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		mostFreq[uniques[i].val] = i + 1;
+	}
+	return { mostFreq, max };
+}
+
+function colorIndicesDict(uniques, data) {
+	let mostFreq = {}, max = {};
+
+	uniques.sort((a, b) => {
+		return (
+			a.val > b.val ? -1 : 1
+		);
+	});
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		max[uniques[i].val] = i + 1;
 	}
 
-	return {
-		arrayType,
-		data,
-		filteredData,
-		indexedVal,
-		uniques,
-		colorIndices,
-		min,
-		max,
-	};
+	if (uniques.length < data.length) {
+		uniques.sort((a, b) => {
+			return (
+				a.count > b.count ? -1 :
+					a.count < b.count ? 1 :
+						a.val < b.val ? -1 : 1
+			);
+		});
+	}
+
+	for (let i = 0; i < 20 && i < uniques.length; i++) {
+		mostFreq[uniques[i].val] = i + 1;
+	}
+	return { mostFreq, max };
+
 }
 
 // if we know all values are the same,
@@ -308,11 +322,10 @@ function convertUnique(data, name, uniques, uniqueVal) {
 
 	let min = uniqueVal,
 		max = uniqueVal;
-	let filteredData, indexedVal, data32;
+	let indexedVal;
 	if (arrayType === 'string') {
 		indexedVal = [null, uniqueVal];
 		data = new Uint8Array(data.length).fill(1);
-		filteredData = Uint8Array.from(data);
 		uniques[0].val = 1;
 		min = 1;
 		max = 1;
@@ -334,15 +347,10 @@ function convertUnique(data, name, uniques, uniqueVal) {
 				arrayType = 'int32';
 			}
 		} else {
-			data32 = new Float32Array(1);
-			data32[0] = uniqueVal;
-			if (data32[0] !== uniqueVal) {
-				arrayType = 'float64';
-			}
+			arrayType = 'float32';
 		}
 		let arrayCon = arrayConstr(arrayType);
 		data = new arrayCon(data.length).fill(uniqueVal);
-		filteredData = arrayCon.from(data);
 	}
 
 
@@ -364,7 +372,6 @@ function convertUnique(data, name, uniques, uniqueVal) {
 	return {
 		arrayType,
 		data,
-		filteredData,
 		indexedVal,
 		uniques,
 		uniqueVal,
@@ -561,10 +568,20 @@ export function isArray(obj) {
  * array contains duplicates, this function will only
  * only find the number of matching duplicates
  * Example:
- * - in: `a = [1, 2, 2, 3], b = [2, 3, 4, 5, 6]`
- * - out: `[2, 3]; a = [1, 2]`, b = [5, 6, 4]`
+ * - in: a = `[1, 2, 2, 3]`, b = `[2, 3, 4, 5, 6]`
+ * - out: `[2, 3]`; a = `[1, 2]`, b = `[5, 6, 4]`
+ * @param {x[]} a - will be mutated
+ * @param {x[]} b - will be mutated
+ * @returns {x[]} overlap - overlapping values
  */
 export function disjointArrays(a, b) {
+	// Having the larger array in the inner loop should
+	// be a little bit faster (less loop initialisations)
+	if (b.length < a.length) {
+		let t = a;
+		a = b;
+		b = t;
+	}
 	let overlap = [], i = a.length;
 	while (i--) {
 		let aval = a[i];
@@ -575,6 +592,7 @@ export function disjointArrays(a, b) {
 				overlap.push(aval);
 				a[i] = a[a.length - 1]; a.pop();
 				b[j] = b[b.length - 1]; b.pop();
+				break;
 			}
 		}
 	}
@@ -582,20 +600,22 @@ export function disjointArrays(a, b) {
 }
 
 /**
-* **IMPORTANT:** util.merge does **NOT** behave like
-* lodash merge!
-*
-* Returns a new object that merges `oldObj` and
-* `newObj` into one. Uses shallow copying.
-*
-* - for duplicate keys, values that are objects
-* (but not (typed) arrays) are recursively merged.
-* - in all other cases, the value from `newObj` is
-* assigned to the resulting object.
-*
-* *Again: (typed) arrays are not merged but replaced
-* by the new array!*
-**/
+ * Returns a new object that merges the values of
+ * `newObj` into `oldObj`. Uses shallow copying.
+ *
+ * **IMPORTANT:** util.merge does **NOT** behave like
+ * lodash merge!
+ *
+ * - for duplicate keys, values that are objects
+ * (but not (typed) arrays) are recursively merged.
+ * - in all other cases, the value from `newObj` is
+ * assigned to the resulting object.
+ *
+ * **TL;DR:** (typed) arrays are not merged but replaced
+ * by the newer array!
+ * @param {object} oldObj
+ * @param {object} newObj
+ */
 export function merge(oldObj, newObj) {
 	if (!oldObj) {
 		return Object.assign({}, newObj);
@@ -609,10 +629,10 @@ export function merge(oldObj, newObj) {
 	let mergedObj = {}, key = '', i = overlappingKeys.length;
 	while (i--) {
 		key = overlappingKeys[i];
-		let val = newObj[key];
+		let newVal = newObj[key];
 		// merge object values by recursion, otherwise just assign new value
-		mergedObj[key] = (typeof val === 'object' && !isArray(val)) ?
-			merge(oldObj[key], val) : val;
+		mergedObj[key] = (typeof newVal === 'object' && !isArray(newVal)) ?
+			merge(oldObj[key], newVal) : newVal;
 	}
 	// directly assign all values that don't need merging
 	i = untouchedKeys.length;
@@ -626,6 +646,38 @@ export function merge(oldObj, newObj) {
 		mergedObj[key] = newObj[key];
 	}
 	return mergedObj;
+}
+
+/**
+ * Like `merge`, but overwrites `oldObj` instead of creating
+ * a new one.
+ * @param {object} oldObj - original object to be merged into
+ * @param {object} newObj - new object to merge into oldObj
+ */
+export function mergeInplace(oldObj, newObj) {
+	if (!oldObj) {
+		return Object.assign({}, newObj);
+	} else if (!newObj) {
+		return oldObj;
+	}
+	let untouchedKeys = Object.keys(oldObj);
+	let newKeys = Object.keys(newObj);
+	let overlappingKeys = disjointArrays(untouchedKeys, newKeys);
+
+	let key = '', i = overlappingKeys.length;
+	while (i--) {
+		key = overlappingKeys[i];
+		let newVal = newObj[key];
+		// merge object values by recursion, otherwise just assign new value
+		oldObj[key] = (typeof newVal === 'object' && !isArray(newVal)) ?
+			mergeInplace(oldObj[key], newVal) : newVal;
+	}
+	i = newKeys.length;
+	while (i--) {
+		key = newKeys[i];
+		oldObj[key] = newObj[key];
+	}
+	return oldObj;
 }
 
 /**
