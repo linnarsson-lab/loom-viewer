@@ -3,7 +3,7 @@ import { fetchGene } from '../actions/actions';
 import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
 
-import { uniq } from 'lodash';
+import { uniq, difference } from 'lodash';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
@@ -13,11 +13,13 @@ export class FetchGeneComponent extends Component {
 		this.addSelection = this.addSelection.bind(this);
 		this.applySelection = this.applySelection.bind(this);
 		this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
+		this.filterValidGenes = this.filterValidGenes.bind(this);
 	}
 
 	componentWillMount() {
-		let { selectedGenes, dispatch, dataset } = this.props;
+		let { selectedGenes, dispatch, dataset, onChange } = this.props;
 		const { geneKeys } = dataset.col;
+
 		let selectOptions = new Array(geneKeys.length);
 		for (let i = 0; i < selectOptions.length; i++) {
 			selectOptions[i] = {
@@ -27,12 +29,17 @@ export class FetchGeneComponent extends Component {
 		}
 
 		if (selectedGenes && selectedGenes.length) {
-			let validGenes = selectedGenes.filter((gene) => {
-				return dataset.col.geneKeys.indexOf(gene) !== -1;
-			});
-			selectedGenes = uniq(validGenes);
-			dispatch(fetchGene(dataset, selectedGenes));
 			selectedGenes = selectedGenes.join(',\ ');
+			let validGenes = this.filterValidGenes(selectedGenes);
+			dispatch(fetchGene(dataset, validGenes));
+			let diff = difference(selectedGenes, validGenes);
+			let diff2 = difference(validGenes, selectedGenes);
+			if (diff.length+diff2.length){
+				// difference length is only non-zero when
+				// some values in validGenes have changed
+				onChange(validGenes);
+				selectedGenes = validGenes.join(',\ ');
+			}
 		}
 
 		this.setState({ selectOptions, selectedGenes });
@@ -50,17 +57,8 @@ export class FetchGeneComponent extends Component {
 
 	applySelection() {
 		const { dataset, dispatch, onChange } = this.props;
-		const genes = this.state.selectedGenes.split(/[,.;'"`\s]+/g);
 
-		let validGenes = [];
-		for (let i = 0; i < genes.length; i++){
-			let geneIdx = dataset.col.geneKeysLowerCase.indexOf(genes[i].toLowerCase());
-			if (geneIdx !== -1){
-				validGenes.push(dataset.col.geneKeys[geneIdx]);
-			}
-		}
-
-		validGenes = uniq(validGenes);
+		let validGenes = this.filterValidGenes(this.state.selectedGenes);
 		dispatch(fetchGene(dataset, validGenes));
 		// We also call onChange if there is no value,
 		// to handle "resetting" the view
@@ -70,13 +68,28 @@ export class FetchGeneComponent extends Component {
 		this.setState({selectedGenes});
 	}
 
+	filterValidGenes(selection){
+		const { col } = this.props.dataset;
+		const genes = selection.split(/[,.;'"`\s]+/g);
+
+		let validGenes = [];
+		for (let i = 0; i < genes.length; i++){
+			let geneIdx = col.geneKeysLowerCase.indexOf(genes[i].toLowerCase());
+			if (geneIdx !== -1){
+				validGenes.push(col.geneKeys[geneIdx]);
+			}
+		}
+		return uniq(validGenes);
+	}
+
 	render() {
 		const col = this.props.dataset.col;
 		return (
 			<div>
 				<FormControl
 					componentClass={'textarea'}
-					placeholder={'Paste genes here or use the dropdown below to search'}
+					rows={8}
+					placeholder={'Paste genes here or use the dropdown below to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, dots or quotations. "Apply Selection" fixes and filters this)'}
 					onChange={this.handleTextAreaChange}
 					value={this.state.selectedGenes} />
 				<Select
