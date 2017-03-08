@@ -10,5 +10,7 @@ export const store = createStore(
 	composeWithDevTools(applyMiddleware(thunk))
 );
 
-// Uncomment when access from the console is required
-// window.store = store;
+// Allow access to the store from the console in debug build
+if (process.env.NODE_ENV !== 'production') {
+	window.store = store;
+}
