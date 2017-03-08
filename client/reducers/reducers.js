@@ -18,11 +18,9 @@ import {
 	FILTER_METADATA,
 	SORT_ROW_METADATA,
 	SORT_COL_METADATA,
-	REQUEST_GENE,
 	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
-	FILTER_GENE,
 	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
@@ -94,24 +92,53 @@ function updateDatasetSortOrder(state, key) {
 }
 
 function updateFiltered(state, action) {
+	// toggle filtered state in relevant uniques entry
 	const { path, axis, attrName, val } = action;
-	const { uniques } = state.list[path][axis].attrs[attrName];
-	let newUniques = [];
-	for (let i = 0; i < uniques.length; i++) {
-		let unique = uniques[i];
-		if (val === unique.val) {
-			newUniques.push(merge(unique, { filtered: !unique.filtered }));
+	const data = state.list[path][axis];
+	let attr = data.attrs[attrName];
+	const oldUniques = attr.uniques;
+	let uniques = [], filtered;
+	for (let i = 0; i < oldUniques.length; i++) {
+		let uniqueEntry = oldUniques[i];
+		if (val === uniqueEntry.val) {
+			filtered = !uniqueEntry.filtered;
+			uniques.push(merge(uniqueEntry, { filtered }));
 		} else {
-			newUniques.push(unique);
+			uniques.push(uniqueEntry);
 		}
 	}
+
+	// update filterCount
+	let filterCount = data.filterCount.slice(0), sortedFilterIndices = [];
+	if (filtered) {
+		for (let i = 0; i < filterCount.length; i++) {
+			if (attr.data[i] === val) {
+				filterCount[i]++;
+			}
+			if (filterCount[i] === 0){
+				sortedFilterIndices.push(i);
+			}
+		}
+	} else {
+		for (let i = 0; i < filterCount.length; i++) {
+			if (attr.data[i] === val) {
+				filterCount[i]--;
+			}
+			if (filterCount[i] === 0){
+				sortedFilterIndices.push(i);
+			}
+		}
+	}
+
 	return merge(state, {
 		list: {
 			[path]: {
 				[axis]: {
+					filterCount,
+					sortedFilterIndices,
 					attrs: {
 						[attrName]: {
-							uniques: newUniques,
+							uniques,
 						},
 					},
 				},
@@ -120,13 +147,16 @@ function updateFiltered(state, action) {
 	});
 }
 
+function updateAttrSort(state, action){
+
+}
+
 function datasets(state = {}, action) {
 	let newState;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:
 		case RECEIVE_DATASET:
 		case SEARCH_DATASETS:
-		case REQUEST_GENE:
 		case REQUEST_GENE_FETCH:
 		case RECEIVE_GENE:
 		case REQUEST_GENE_FAILED:
