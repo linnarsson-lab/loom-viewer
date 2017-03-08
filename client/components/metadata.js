@@ -210,7 +210,7 @@ export class MetadataComponent extends Component {
 	// everything and store it in the state
 	constructor(props) {
 		super(props);
-		const { dispatch, dataset, stateName, actionType, attrName } = props;
+		const { dispatch, dataset, stateName, actionType, axis } = props;
 		const path = dataset.path;
 
 		const onClickAttrFactory = (key) => {
@@ -229,9 +229,8 @@ export class MetadataComponent extends Component {
 				dispatch({
 					type: FILTER_METADATA,
 					path,
-					stateName,
-					attr: attrName,
-					key,
+					axis,
+					attrName: key,
 					val,
 				});
 			};
@@ -264,7 +263,7 @@ export class MetadataComponent extends Component {
 
 		const {
 			dataset, dispatch,
-			attributes, attrKeys, attrName,
+			attributes, attrKeys, axis,
 			stateName, mdName,
 		} = this.props;
 
@@ -286,7 +285,7 @@ export class MetadataComponent extends Component {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { order } = dataset[attrName];
+		const { order } = dataset[axis];
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
 			const val = order[i];
@@ -320,7 +319,7 @@ export class MetadataComponent extends Component {
 MetadataComponent.propTypes = {
 	attributes: PropTypes.object.isRequired,
 	attrKeys: PropTypes.array.isRequired,
-	attrName: PropTypes.string.isRequired,
+	axis: PropTypes.string.isRequired,
 	stateName: PropTypes.string.isRequired,
 	mdName: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,

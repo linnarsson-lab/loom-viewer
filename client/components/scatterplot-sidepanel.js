@@ -13,9 +13,9 @@ class CoordinateSettings extends Component {
 	componentWillMount() {
 		const {
 			dispatch, dataset,
-			stateName, attrName } = this.props;
+			stateName, axis } = this.props;
 
-		const { attrs } = dataset[attrName];
+		const { attrs } = dataset[axis];
 
 		const nullFunc = () => { };
 
@@ -124,11 +124,11 @@ class CoordinateSettings extends Component {
 	}
 
 	render() {
-		const { dataset, attrName,
+		const { dataset, axis,
 			coordinateAttrs, asMatrix,
 			logscale, jitter } = this.props;
 
-		const { allKeysNoUniques, dropdownOptions } = dataset[attrName];
+		const { allKeysNoUniques, dropdownOptions } = dataset[axis];
 		const filterOptions = dropdownOptions.allNoUniques;
 
 
@@ -204,7 +204,7 @@ CoordinateSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	stateName: PropTypes.string.isRequired,
-	attrName: PropTypes.string.isRequired,
+	axis: PropTypes.string.isRequired,
 	coordinateAttrs: PropTypes.array.isRequired,
 	asMatrix: PropTypes.bool.isRequired,
 	logscale: PropTypes.object.isRequired,
@@ -252,16 +252,15 @@ class ColorSettings extends Component {
 
 		return nextProps.colorAttr !== this.props.colorAttr ||
 			nextProps.colorMode !== this.props.colorMode ||
-			nextProps.dataset[nextProps.attrName].attrs[nextProps.colorAttr] !== this.props.dataset[this.props.attrName].attrs[this.props.colorAttr];
+			nextProps.dataset[nextProps.axis].attrs[nextProps.colorAttr] !== this.props.dataset[this.props.axis].attrs[this.props.colorAttr];
 	}
 
 	render() {
 		const { dispatch, dataset,
-			stateName, attrName,
-			colorAttr, colorMode,
+			axis, colorAttr, colorMode,
 		} = this.props;
 
-		const { attrs, allKeysNoUniques, dropdownOptions } = dataset[attrName];
+		const { attrs, allKeysNoUniques, dropdownOptions } = dataset[axis];
 		const filterOptions = dropdownOptions.allNoUniques;
 
 		const { heatmapHC, heatmap2HC, categoricalHC } = this.state;
@@ -309,9 +308,8 @@ class ColorSettings extends Component {
 							dispatch({
 								type: FILTER_METADATA,
 								path: dataset.path,
-								stateName,
-								attrName,
-								key: colorAttr,
+								axis,
+								attrName: colorAttr,
 								val,
 							});
 						};
@@ -337,14 +335,14 @@ ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	stateName: PropTypes.string.isRequired,
-	attrName: PropTypes.string.isRequired,
+	axis: PropTypes.string.isRequired,
 	colorAttr: PropTypes.string.isRequired,
 	colorMode: PropTypes.string.isRequired,
 };
 
 export const ScatterplotSidepanel = (props) => {
 	const { dispatch, dataset,
-		stateName, attrName,
+		stateName, axis,
 		} = props;
 	const { coordinateAttrs, asMatrix,
 		colorAttr, colorMode,
@@ -363,7 +361,7 @@ export const ScatterplotSidepanel = (props) => {
 					dispatch={dispatch}
 					dataset={dataset}
 					stateName={stateName}
-					attrName={attrName}
+					axis={axis}
 					coordinateAttrs={coordinateAttrs}
 					asMatrix={asMatrix}
 					logscale={logscale}
@@ -373,7 +371,7 @@ export const ScatterplotSidepanel = (props) => {
 					dispatch={dispatch}
 					dataset={dataset}
 					stateName={stateName}
-					attrName={attrName}
+					axis={axis}
 					colorAttr={colorAttr}
 					colorMode={colorMode}
 				/>
@@ -386,6 +384,6 @@ ScatterplotSidepanel.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	stateName: PropTypes.string.isRequired,
-	attrName: PropTypes.string.isRequired,
+	axis: PropTypes.string.isRequired,
 	viewState: PropTypes.object.isRequired,
 };

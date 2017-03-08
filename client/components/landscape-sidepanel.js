@@ -23,9 +23,9 @@ export class LandscapeSidepanel extends Component {
 		for (let i = 0; i < coordinateAttrs.length; i++) {
 			let value = coordinateAttrs[i];
 			// `keys` will be in the range of a few dozen attributes
-			// at most, whereas `genes` or `CellID` will be in the 
+			// at most, whereas `genes` or `CellID` will be in the
 			// thousands. So it's faster to check if a value *isn't*
-			// in `keys`, than to check if it *is* in `genes`.		
+			// in `keys`, than to check if it *is* in `genes`.
 			if (value && keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
@@ -47,7 +47,7 @@ export class LandscapeSidepanel extends Component {
 				dispatch={dispatch}
 				dataset={dataset}
 				stateName={'landscape'}
-				attrName={'col'}
+				axis={'col'}
 				viewState={viewState}
 			/>
 		);

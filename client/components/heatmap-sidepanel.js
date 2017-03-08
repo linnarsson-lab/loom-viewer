@@ -5,12 +5,20 @@ import { AttrLegend } from './legend';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 import { fetchGene } from '../actions/actions';
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export class HeatmapSidepanel extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
+		const { keys } = dataset.col;
+
+		const { colAttr } = dataset.viewState.heatmap;
+		if (colAttr &&
+			keys.indexOf(colAttr) === -1 &&
+			!dataset.fetchedGenes[colAttr]) {
+			dispatch(fetchGene(dataset, [colAttr]));
+		}
 
 		const handleChangeFactory = (field) => {
 			return (value) => {
@@ -34,29 +42,32 @@ export class HeatmapSidepanel extends Component {
 			rowAttrHC, rowModeHC,
 			modeNames,
 		});
-
 	}
 
 	shouldComponentUpdate(nextProps) {
-		const hms = this.props.dataset.viewState.heatmap, nextHMS = nextProps.dataset.viewState.heatmap;
+		const ds = this.props.dataset,
+			nextds = nextProps.dataset,
+			hms = ds.viewState.heatmap,
+			nextHMS = nextds.viewState.heatmap;
 		return hms.colAttr !== nextHMS.colAttr ||
 			hms.colMode !== nextHMS.colMode ||
 			hms.rowMode !== nextHMS.rowMode ||
 			hms.rowMode !== nextHMS.rowMode ||
-			this.props.dataset.col.attrs[hms.colAttr] !== nextProps.dataset.col.attrs[nextHMS.colAttr] ||
-			this.props.dataset.row.attrs[hms.rowAttr] !== nextProps.dataset.row.attrs[nextHMS.rowAttr];
+			ds.col.attrs[hms.colAttr] !== nextds.col.attrs[nextHMS.colAttr] ||
+			ds.row.attrs[hms.rowAttr] !== nextds.row.attrs[nextHMS.rowAttr];
 	}
 
 	componentWillUpdate(nextProps) {
 		const { dispatch, dataset } = nextProps;
-		const value = dataset.viewState.heatmap.colAttr;
-		if (value && dataset.col.keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
-			dispatch(fetchGene(dataset, value));
+		const { colAttr } = dataset.viewState.heatmap;
+		if (colAttr && dataset.col.keys.indexOf(colAttr) === -1 && !dataset.fetchedGenes[colAttr]) {
+			dispatch(fetchGene(dataset, [colAttr]));
 		}
 	}
 
 	render() {
-		const { col, row } = this.props.dataset;
+		const { dispatch } = this.props;
+		const { col, row, path } = this.props.dataset;
 		const hms = this.props.dataset.viewState.heatmap;
 		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
 
@@ -87,7 +98,18 @@ export class HeatmapSidepanel extends Component {
 							<AttrLegend
 								mode={hms.colMode}
 								attr={colAttr}
-						/>
+								filterFunc={(val) => {
+									return () => {
+										dispatch({
+											type: FILTER_METADATA,
+											path,
+											axis: 'col',
+											attrName: hms.colAttr,
+											val,
+										});
+									};
+								}}
+							/>
 						) : null
 						}
 					</ListGroupItem>
@@ -110,6 +132,17 @@ export class HeatmapSidepanel extends Component {
 								<AttrLegend
 									mode={hms.rowMode}
 									attr={rowAttr}
+									filterFunc={(val) => {
+										return () => {
+											dispatch({
+												type: FILTER_METADATA,
+												path,
+												axis: 'row',
+												attrName: hms.rowAttr,
+												val,
+											});
+										};
+									}}
 								/>
 							) : null
 						}

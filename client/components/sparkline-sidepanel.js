@@ -1,6 +1,7 @@
 import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { FetchGeneComponent } from './fetch-gene';
+import { fetchGene } from '../actions/actions';
 import { AttrLegend } from './legend';
 //import { PrintSettings } from './print-settings';
 import {
@@ -13,46 +14,55 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 class LegendSettings extends Component {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
+		const { keys } = dataset.col;
 
-		const handleChangeFactory = (field) => {
-			return (val) => {
-				dispatch({
-					type: SET_VIEW_PROPS,
-					stateName: 'sparkline',
-					path: dataset.path,
-					viewState: { sparkline: { [field]: val } },
-				});
-			};
+		const colAttrsHC = (val) => {
+			if (keys.indexOf(val) === -1 && !dataset.fetchedGenes[val]) {
+				dispatch(fetchGene(dataset, [val]));
+			}
+			dispatch({
+				type: SET_VIEW_PROPS,
+				stateName: 'sparkline',
+				path: dataset.path,
+				viewState: { sparkline: { colAttr: val } },
+			});
 		};
 
-		const colAttrsHC = handleChangeFactory('colAttr');
-		const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
-		const colModeHC = handleChangeFactory('colMode');
+		const colModeHC = (val) => {
+			dispatch({
+				type: SET_VIEW_PROPS,
+				stateName: 'sparkline',
+				path: dataset.path,
+				viewState: { sparkline: { colMode: val } },
+			});
+		};
 
-		this.setState({ colAttrsHC, colModeOptions, colModeHC });
+		const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
+
+		this.setState({ colAttrsHC, colModeHC, colModeOptions });
 	}
 
 	shouldComponentUpdate(nextProps) {
 		return nextProps.colAttr !== this.props.colAttr ||
-			nextProps.colMode !== this.props.colMode;
+			nextProps.colMode !== this.props.colMode ||
+			nextProps.dataset.col.attrs[this.props.colAttr] || this.props.dataset.col.attrs[this.props.colAttr];
 	}
 
 	render() {
 		const { colAttrsHC, colModeOptions, colModeHC } = this.state;
 		const { dispatch, dataset, colAttr, colMode } = this.props;
-		const { col } = dataset;
+		const { col, path } = dataset;
 
 		let legend;
-		if (colAttr) {
+		if (colAttr && col.attrs[colAttr]) {
 			const legendData = col.attrs[colAttr];
 			const filterFunc = (val) => {
 				return () => {
 					dispatch({
 						type: FILTER_METADATA,
-						path: dataset.path,
-						stateName: 'sparkline',
-						attr: 'colAttrs',
-						key: colAttr,
+						path,
+						axis: 'col',
+						attrName: colAttr,
 						val,
 					});
 				};

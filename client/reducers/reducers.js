@@ -16,8 +16,8 @@ import {
 	SEARCH_DATASETS,
 	SORT_DATASETS,
 	FILTER_METADATA,
-	SORT_GENE_METADATA,
-	SORT_CELL_METADATA,
+	SORT_ROW_METADATA,
+	SORT_COL_METADATA,
 	REQUEST_GENE,
 	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
@@ -93,6 +93,33 @@ function updateDatasetSortOrder(state, key) {
 	});
 }
 
+function updateFiltered(state, action) {
+	const { path, axis, attrName, val } = action;
+	const { uniques } = state.list[path][axis].attrs[attrName];
+	let newUniques = [];
+	for (let i = 0; i < uniques.length; i++) {
+		let unique = uniques[i];
+		if (val === unique.val) {
+			newUniques.push(merge(unique, { filtered: !unique.filtered }));
+		} else {
+			newUniques.push(unique);
+		}
+	}
+	return merge(state, {
+		list: {
+			[path]: {
+				[axis]: {
+					attrs: {
+						[attrName]: {
+							uniques: newUniques,
+						},
+					},
+				},
+			},
+		},
+	});
+}
+
 function datasets(state = {}, action) {
 	let newState;
 	switch (action.type) {
@@ -113,11 +140,12 @@ function datasets(state = {}, action) {
 		case SORT_DATASETS:
 			return updateDatasetSortOrder(state, action.key);
 
-		case SORT_GENE_METADATA:
-		case SORT_CELL_METADATA:
-		case FILTER_METADATA:
-		case FILTER_GENE:
+		case SORT_ROW_METADATA:
+		case SORT_COL_METADATA:
 			return state;
+
+		case FILTER_METADATA:
+			return updateFiltered(state, action);
 
 		default:
 			return state;

@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
-import { SORT_CELL_METADATA } from '../actions/actionTypes';
+import { SORT_COL_METADATA } from '../actions/actionTypes';
 
 function CellMDComponent(props) {
 	const { dataset, dispatch } = props;
@@ -12,12 +12,12 @@ function CellMDComponent(props) {
 		<MetadataComponent
 			attributes={attrs}
 			attrKeys={keys}
-			attrName={'col'}
+			axis={'col'}
 			mdName={'Cell'}
 			stateName={'cellMD'}
 			dispatch={dispatch}
 			dataset={dataset}
-			actionType={SORT_CELL_METADATA}
+			actionType={SORT_COL_METADATA}
 		/>
 	);
 }

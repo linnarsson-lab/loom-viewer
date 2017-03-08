@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
-import { SORT_GENE_METADATA } from '../actions/actionTypes';
+import { SORT_ROW_METADATA } from '../actions/actionTypes';
 
 function GeneMDComponent(props) {
 	const { dataset, dispatch } = props;
@@ -12,12 +12,12 @@ function GeneMDComponent(props) {
 		<MetadataComponent
 			attributes={attrs}
 			attrKeys={keys}
-			attrName={'row'}
+			axis={'row'}
 			mdName={'Gene'}
 			stateName={'geneMD'}
 			dispatch={dispatch}
 			dataset={dataset}
-			actionType={SORT_GENE_METADATA}
+			actionType={SORT_ROW_METADATA}
 		/>
 	);
 }

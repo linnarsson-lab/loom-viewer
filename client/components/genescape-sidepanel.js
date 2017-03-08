@@ -9,7 +9,7 @@ export const GenescapeSidepanel = function (props) {
 			dispatch={dispatch}
 			dataset={dataset}
 			stateName={'genescape'}
-			attrName={'row'}
+			axis={'row'}
 			viewState={dataset.viewState.genescape}
 		/>
 	);
