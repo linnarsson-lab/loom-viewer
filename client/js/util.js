@@ -241,15 +241,43 @@ function convertWholeArray(data, name, uniques) {
 		colorIndicesArray(uniques, data)
 	) : colorIndicesDict(uniques, data);
 
-	return {
-		arrayType,
-		data,
-		indexedVal,
-		uniques,
-		colorIndices,
-		min,
-		max,
-	};
+	if (process.env.NODE_ENV === 'production') {
+		return {
+			arrayType,
+			data,
+			indexedVal,
+			uniques,
+			colorIndices,
+			min,
+			max,
+		};
+	} else {
+		// Custom function for redux devtools, to avoid having to serialize
+		// the large data arrays (which tends to kill the devtools)
+		const toJSON = () => {
+			return {
+				arrayType,
+				data: Array.from(data.slice(0, Math.min(5, data.length))),
+				data_length: `${data.length} items`,
+				indexedVal,
+				uniques: uniques.slice(0, Math.min(5, uniques.length)),
+				total_uniques: `${uniques.length} items`,
+				colorIndices,
+				min,
+				max,
+			};
+		};
+		return {
+			arrayType,
+			data,
+			indexedVal,
+			uniques,
+			colorIndices,
+			min,
+			max,
+			toJSON,
+		};
+	}
 }
 
 // Split into separate function so mostFreq and max are type stable
