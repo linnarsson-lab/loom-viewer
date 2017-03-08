@@ -8,17 +8,14 @@ import { fetchGene } from '../actions/actions';
 import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 
 export class HeatmapSidepanel extends Component {
+	constructor(props) {
+		super(props);
+		this.maybeFetch = this.maybeFetch.bind.this();
+	}
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		const { keys } = dataset.col;
-
-		const { colAttr } = dataset.viewState.heatmap;
-		if (colAttr &&
-			keys.indexOf(colAttr) === -1 &&
-			!dataset.fetchedGenes[colAttr]) {
-			dispatch(fetchGene(dataset, [colAttr]));
-		}
+		this.maybeFetch(dataset.viewState.heatmap.colAttr);
 
 		const handleChangeFactory = (field) => {
 			return (value) => {
@@ -60,8 +57,14 @@ export class HeatmapSidepanel extends Component {
 	componentWillUpdate(nextProps) {
 		const { dispatch, dataset } = nextProps;
 		const { colAttr } = dataset.viewState.heatmap;
-		if (colAttr && dataset.col.keys.indexOf(colAttr) === -1 && !dataset.fetchedGenes[colAttr]) {
-			dispatch(fetchGene(dataset, [colAttr]));
+		this.maybeFetch(colAttr, dataset, dispatch);
+	}
+
+	maybeFetch(gene, dataset, dispatch) {
+		if (gene &&
+			dataset.col.keys.indexOf(gene) === -1 &&
+			!dataset.fetchedGenes[gene]) {
+			dispatch(fetchGene(dataset, [gene]));
 		}
 	}
 
