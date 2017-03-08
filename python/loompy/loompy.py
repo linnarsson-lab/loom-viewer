@@ -606,6 +606,7 @@ class LoomConnection(object):
 			Nothing.
 
 		Note that this will modify the underlying HDF5 file, which will interfere with any concurrent readers.
+		Note that column attributes in the file that are NOT provided, will be deleted.
 		"""
 		if not np.isfinite(submatrix).all():
 			raise ValueError("INF and NaN not allowed in loom matrix")
@@ -615,15 +616,26 @@ class LoomConnection(object):
 
 		submatrix = submatrix.astype("float32")
 
-		for key in self.col_attrs.keys():
-			if not key in col_attrs:
-				raise KeyError("Every column attribute must be provided ('%s' is missing)" % key)
-
+		did_remove = False
+		todel = []  # type: List[str]
 		for key, vals in col_attrs.items():
-			if not key in self.col_attrs:
-				raise KeyError("Extra column attributes are not allowed ('%s' is not in file)" % key)
+			if key not in self.col_attrs:
+				did_remove = True
+				todel.append(key)
 			if len(vals) != submatrix.shape[1]:
 				raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
+		for key in todel:
+			del col_attrs[key]
+
+		todel = []
+		for key in self.col_attrs.keys():
+			if key not in col_attrs:
+				did_remove = True
+				todel.append(key)
+		for key in todel:
+			self.delete_attr(key, axis=1)
+		if did_remove:
+			logging.warn("Some column attributes were removed: " + key)
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
