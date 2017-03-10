@@ -1,5 +1,5 @@
 import * as colorLUT from '../js/colors';
-import { rndNorm } from '../js/util';
+import { rndNorm, arraySubset } from '../js/util';
 
 // "global" array of sprite canvases
 const { sprites, contexts } = (() => {
@@ -13,7 +13,7 @@ const { sprites, contexts } = (() => {
 	return { sprites, contexts };
 })();
 
-export function scatterplot(x, y, color, colorMode, logscale, jitter) {
+export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -46,8 +46,8 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter) {
 		// Arrays of (indexed) strings are converted to
 		// numerical arrays representing the twenty most
 		// common strings as categories, plus "other"
-		let { xData, yData } = convertCoordinates(x, y, width, height, radius, jitter, logscale);
-		let { cIdx } = convertColordata(color, colorMode, palette);
+		let { xData, yData } = convertCoordinates(x, y, indices, width, height, radius, jitter, logscale);
+		let { cIdx } = convertColordata(color, indices, colorMode, palette);
 
 		// ==============================
 		// == Sort for tiling purposes ==
@@ -86,7 +86,7 @@ export function scatterplot(x, y, color, colorMode, logscale, jitter) {
 	};
 }
 
-function convertCoordinates(x, y, width, height, radius, jitter, logscale) {
+function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
 	const {PI, random, sin, cos, log2} = Math;
 	// Scale of data
 	let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
@@ -96,8 +96,8 @@ function convertCoordinates(x, y, width, height, radius, jitter, logscale) {
 
 	// If we have an unindexed string array, convert it
 	// to numbers as a form of categorisation
-	let xData = maybeStringArray(x);
-	let yData = maybeStringArray(y);
+	let xData = maybeStringArray(x, indices);
+	let yData = maybeStringArray(y, indices);
 
 	// Jitter if requested
 	if (jitter.x && jitter.y) {
@@ -147,17 +147,17 @@ function convertCoordinates(x, y, width, height, radius, jitter, logscale) {
 	return { xData, yData };
 }
 
-function maybeStringArray(attr) {
+function maybeStringArray(attr, indices) {
 	// realistically, this only happens if all strings are unique
 	if (attr.arrayType === 'string' && !attr.indexedVal) {
-		let i = attr.data.length;
+		let i = indices.length;
 		let retVal = new Float32Array(i);
 		while (i--) {
-			retVal[i] = i+1;
+			retVal[i] = indices[i]+1;
 		}
 		return retVal;
 	}
-	return Float32Array.from(attr.data);
+	return arraySubset(attr.data, indices, 'float32');
 }
 
 function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius) {
@@ -177,8 +177,8 @@ function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, rad
 	}
 }
 
-function convertColordata(color, colorMode, palette) {
-	let colData = color.data.slice(0);
+function convertColordata(color, indices, colorMode, palette) {
+	let colData = arraySubset(color.data, indices, color.arrayType);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
 	let cIdx = new Uint8Array(colData.length);

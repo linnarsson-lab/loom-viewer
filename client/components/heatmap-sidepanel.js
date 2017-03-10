@@ -10,12 +10,12 @@ import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
 export class HeatmapSidepanel extends Component {
 	constructor(props) {
 		super(props);
-		this.maybeFetch = this.maybeFetch.bind.this();
+		this.maybeFetch = this.maybeFetch.bind(this);
 	}
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		this.maybeFetch(dataset.viewState.heatmap.colAttr);
+		this.maybeFetch(dataset.viewState.heatmap.colAttr, dataset, dispatch);
 
 		const handleChangeFactory = (field) => {
 			return (value) => {

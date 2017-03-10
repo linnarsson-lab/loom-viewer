@@ -62,13 +62,16 @@ class HeatmapMapComponent extends Component {
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
-						paint={
-							sparkline(col.attrs[hms.colAttr], hms.colMode, [dataBounds[0], dataBounds[2]], null, null, true)
-						}
+						paint={sparkline(
+							col.attrs[hms.colAttr],
+							col.sortedFilterIndices,
+							hms.colMode,
+							[dataBounds[0], dataBounds[2]],
+							null, null, true)}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
 						clear
-						/>
+					/>
 					<div className='view'>
 						<div style={heatmapSize}>
 							<Heatmap
@@ -80,14 +83,13 @@ class HeatmapMapComponent extends Component {
 							height={heatmapHeight}
 							paint={sparkline(
 								row.attrs[hms.rowAttr],
+								row.sortedFilterIndices,
 								hms.rowMode,
 								[dataBounds[1], dataBounds[3]],
-								null,
-								'vertical',
-								true)}
+								null, 'vertical', true)}
 							redraw
 							clear
-							/>
+						/>
 					</div>
 				</div >
 			);
@@ -121,10 +123,10 @@ class HeatmapComponent extends Component {
 
 		const newAttr = this.props.dataset.col.attrs[hms.colAttr];
 		const oldAttr = nextProps.dataset.col.attrs[hms.colAttr];
-		// only update if heatmapstate updated, or if 
+		// only update if heatmapstate updated, or if
 		// a gene that was selected has been fetched
-		return !_.isEqual(hms, this.state.heatmapState) || 
-		newAttr !== oldAttr;
+		return !_.isEqual(hms, this.state.heatmapState) ||
+			newAttr !== oldAttr;
 	}
 
 	render() {
@@ -135,12 +137,12 @@ class HeatmapComponent extends Component {
 					<HeatmapSidepanel
 						dataset={dataset}
 						dispatch={dispatch}
-						/>
+					/>
 				</div>
 				<RemountOnResize
-					/* Leaflet's canvas interferes with CSS layouting,
-					so we unmount and remount it on resize events */
-					>
+				/* Leaflet's canvas interferes with CSS layouting,
+				so we unmount and remount it on resize events */
+				>
 					<HeatmapMapComponent
 						dataset={dataset}
 						dispatch={dispatch} />

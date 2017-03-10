@@ -28,7 +28,7 @@ export class MetadataPlot extends Component {
 
 	render() {
 		const { modes, mode } = this.state;
-		const { attr, filterFunc } = this.props;
+		const { attr, indices, filterFunc } = this.props;
 		return (
 			<div className='view-vertical'>
 				<div
@@ -36,7 +36,7 @@ export class MetadataPlot extends Component {
 					style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 					<Canvas
 						height={30}
-						paint={sparkline(attr, modes[mode])}
+						paint={sparkline(attr, indices, modes[mode])}
 						redraw clear />
 				</div>
 				<AttrLegend
@@ -50,6 +50,7 @@ export class MetadataPlot extends Component {
 
 MetadataPlot.propTypes = {
 	attr: PropTypes.object.isRequired,
+	indices: PropTypes.array.isRequired,
 	mode: PropTypes.string,
 	modes: PropTypes.arrayOf(PropTypes.string),
 	filterFunc: PropTypes.func.isRequired,
@@ -79,7 +80,8 @@ class MetadataTable extends Component {
 
 	createTableData(props) {
 		const { attributes, attrKeys,
-			searchField, searchVal, sortOrderList,
+			searchField, searchVal,
+			sortOrderList, sortedFilterIndices,
 			onClickAttrFactory, onClickFilterFactory } = props;
 
 		const sortOrderStyle = {
@@ -134,16 +136,16 @@ class MetadataTable extends Component {
 					<span>{uniqueVal}</span>
 				);
 			} else if (uniques[0].count === 1) { // every value is unique
-				let list = data[0];
+				let list = data[sortedFilterIndices[0]];
 				const l = Math.min(uniques.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
 					for (let i = 1; i < l; i++) {
-						list += `, ${indexedVal[data[i]]}`;
+						list += `, ${indexedVal[data[sortedFilterIndices[i]]]}`;
 					}
 				} else {
 					for (let i = 1; i < l; i++) {
-						list += `, ${data[i]}`;
+						list += `, ${data[sortedFilterIndices[i]]}`;
 					}
 				}
 				if (l < uniques.length) {
@@ -160,6 +162,7 @@ class MetadataTable extends Component {
 							<MetadataPlot
 								attr={attr}
 								modes={['Categorical']}
+								indices={sortedFilterIndices}
 								filterFunc={filterFunc} />
 						);
 						break;
@@ -169,6 +172,7 @@ class MetadataTable extends Component {
 								attr={attr}
 								mode={ /* guess default category based on nr of unique values*/
 									uniques.length <= 20 ? 'Categorical' : 'Bars'}
+								indices={sortedFilterIndices}
 								filterFunc={filterFunc} />
 						);
 				}
@@ -197,6 +201,7 @@ MetadataTable.propTypes = {
 	searchField: PropTypes.node.isRequired,
 	searchVal: PropTypes.string.isRequired,
 	sortOrderList: PropTypes.array.isRequired,
+	sortedFilterIndices: PropTypes.array.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	onClickAttrFactory: PropTypes.func.isRequired,
 	onClickFilterFactory: PropTypes.func.isRequired,
@@ -213,24 +218,25 @@ export class MetadataComponent extends Component {
 		const { dispatch, dataset, stateName, actionType, axis } = props;
 		const path = dataset.path;
 
-		const onClickAttrFactory = (key) => {
+		const onClickAttrFactory = (attrName) => {
 			return () => {
 				dispatch({
 					type: actionType,
 					path,
-					key,
+					axis,
+					attrName,
 					stateName,
 				});
 			};
 		};
 
-		const onClickFilterFactory = (key, val) => {
+		const onClickFilterFactory = (attrName, val) => {
 			return () => {
 				dispatch({
 					type: FILTER_METADATA,
 					path,
 					axis,
-					attrName: key,
+					attrName,
 					val,
 				});
 			};
@@ -285,7 +291,7 @@ export class MetadataComponent extends Component {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { order } = dataset[axis];
+		const { order, sortedFilterIndices } = dataset[axis];
 		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
 			const val = order[i];
@@ -308,6 +314,7 @@ export class MetadataComponent extends Component {
 					searchField={searchField}
 					searchVal={searchVal}
 					sortOrderList={sortOrderList}
+					sortedFilterIndices={sortedFilterIndices}
 					dispatch={dispatch}
 					onClickAttrFactory={onClickAttrFactory}
 					onClickFilterFactory={onClickFilterFactory} />

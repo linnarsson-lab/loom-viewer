@@ -1,8 +1,8 @@
-import { findMostCommon, arrayConstr } from '../js/util';
+import { findMostCommon, arrayConstr, arraySubset } from '../js/util';
 import * as colors from '../js/colors';
 import { textSize, textStyle, drawText } from './canvas';
 
-export function sparkline(attr, mode, dataRange, label, orientation, unfiltered) {
+export function sparkline(attr, indices, mode, dataRange, label, orientation, unfiltered) {
 	if (!attr){
 		return () => {};
 	}
@@ -49,18 +49,16 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// indicate that only a fraction of a datapoint is displayed.
 	// So for example:
 	//   dataRange = [ 1.4, 5.3 ]
-	// .. results in displaying datapoints 1 to6, but datapoint 1
+	// .. results in displaying datapoints 1 to 6, but datapoint 1
 	// will only be 0.6 times the width of the other datapoints,
 	// and point 6 will only be 0.3 times the width.
 
 	// If dataRange is undefined, use the whole (filtered) dataset.
+	const source = unfiltered ? data : arraySubset(data, indices, arrayType);
+
 	let range = {
 		left: (dataRange ? dataRange[0] : 0),
-		right: (
-			dataRange ? dataRange[1] : (
-				unfiltered ? data.length : data.length
-			)
-		),
+		right: (dataRange ? dataRange[1] : source.length),
 	};
 
 
@@ -74,7 +72,6 @@ export function sparkline(attr, mode, dataRange, label, orientation, unfiltered)
 	// If we're not displaying text, then indexed string arrays
 	// should remain Uint8Arrays, as they are more efficient
 	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
-	let source = unfiltered ? data : data;
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
 	// with undefined entries on either or both ends.

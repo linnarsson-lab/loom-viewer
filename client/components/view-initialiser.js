@@ -58,7 +58,7 @@ export const ViewInitialiser = function (props) {
 	} = props;
 	const { project, filename, viewsettings } = params;
 	const path = `${project}/${filename}`;
-	if (datasets === undefined) {
+	if (!datasets) {
 		dispatch(fetchProjects());
 		return (
 			<div className='view centered' ><h1>Fetching projects list</h1></div>

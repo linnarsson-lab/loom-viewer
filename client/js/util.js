@@ -479,23 +479,21 @@ export function findIndices(array, comparator) {
 }
 
 /**
- * - `array`: array to be sorted
- * - `indices`: array of indices from where the value should *come from*,
- * that is: `array[i] = array[indices[i]]` (of course, this naive
- * assignment would destroy the value at `array[i]`, hence this function)
+ * Effectively: `sorted array[i] = array[indices[i]]`
  *
- * **Important:** `indices` must contain each index of `array`, and each
- * index must be present only once! In other words: indices may only
- * contain integers in the range `[0, array.length-1]`.
+ * `indices` must contain each index of `array`, and each
+ * index must be present only once! In other words:
+ * indices must contain all integers in the range
+ * `[0, array.length-1]`.
  *
  * This function does *not* check for valid input!
- *
- * Mutates `indices`. For correct input, it will be sorted afterwards,
- * as `[ 0, 1, ... array.length-1 ]`.
  *
  * Example:
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
  * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
+ * @param {x[]} array - data to be sorted in-place
+ * @param {x[]} array - indices from where the value
+ * should *come from*
  */
 export function sortFromIndices(array, indices) {
 	// there might be multiple cycles, so we must
@@ -527,6 +525,15 @@ export function sortFromIndices(array, indices) {
 		}
 	}
 	return array;
+}
+
+export function arraySubset(data, indices, arrayType) {
+	let selection = new (arrayConstr(arrayType))(indices.length),
+		i = indices.length;
+	while (i--) {
+		selection[i] = data[indices[i]];
+	}
+	return selection;
 }
 
 export function arrayConstr(arrayType) {

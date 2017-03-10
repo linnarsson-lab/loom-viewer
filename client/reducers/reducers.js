@@ -94,10 +94,10 @@ function updateDatasetSortOrder(state, key) {
 function updateFiltered(state, action) {
 	// toggle filtered state in relevant uniques entry
 	const { path, axis, attrName, val } = action;
-	const data = state.list[path][axis];
-	let attr = data.attrs[attrName];
+	const axisData = state.list[path][axis];
+	let attr = axisData.attrs[attrName];
 	const oldUniques = attr.uniques;
-	let uniques = [], filtered;
+	let uniques = [], filtered = true;
 	for (let i = 0; i < oldUniques.length; i++) {
 		let uniqueEntry = oldUniques[i];
 		if (val === uniqueEntry.val) {
@@ -109,33 +109,35 @@ function updateFiltered(state, action) {
 	}
 
 	// update filterCount
-	let filterCount = data.filterCount.slice(0), sortedFilterIndices = [];
+	let filterCount = axisData.filterCount.slice(0),
+		changedIndices = false;
 	if (filtered) {
 		for (let i = 0; i < filterCount.length; i++) {
 			if (attr.data[i] === val) {
-				filterCount[i]++;
-			}
-			if (filterCount[i] === 0){
-				sortedFilterIndices.push(i);
+				// we only have a different filtered indices
+				// if we filter more than before, which
+				// implies at least one value filterCount
+				// went from zero to one (note prefix increment).
+				changedIndices = ++filterCount[i] === 1 || changedIndices;
 			}
 		}
 	} else {
 		for (let i = 0; i < filterCount.length; i++) {
 			if (attr.data[i] === val) {
-				filterCount[i]--;
-			}
-			if (filterCount[i] === 0){
-				sortedFilterIndices.push(i);
+				// we only have a different filtered indices
+				// if we filter less than before, which
+				// implies at least one value filterCount
+				// went from one to zero (note postfix decrement).
+				changedIndices = filterCount[i]-- === 1 || changedIndices;
 			}
 		}
 	}
 
-	return merge(state, {
+	let newState = {
 		list: {
 			[path]: {
 				[axis]: {
 					filterCount,
-					sortedFilterIndices,
 					attrs: {
 						[attrName]: {
 							uniques,
@@ -144,11 +146,133 @@ function updateFiltered(state, action) {
 				},
 			},
 		},
-	});
+	};
+	// if we didn't change the selection of
+	// filtered values there is no need to
+	// replace and sort the previous sortedFilterIndices
+	if (changedIndices) {
+		let newIndices = [];
+		for (let i = 0; i < filterCount.length; i++) {
+			if (filterCount[i] === 0) {
+				newIndices.push(i);
+			}
+		}
+		newState.list[path][axis].sortedFilterIndices = sortFilterIndices(axisData, axisData.order, newIndices);
+	}
+
+	return merge(state, newState);
 }
 
-function updateAttrSort(state, action){
+function updateAttrSort(state, action) {
+	const { path, axis, attrName } = action;
+	const axisData = state.list[path][axis];
+	let attr = axisData.attrs[attrName];
+	let order = axisData.order.slice();
 
+	if (attr === undefined) {
+		return state;
+	} else {
+		let orderEntry;
+		// check if selected order is the first one
+		// if so, switch ascending/descending
+		if (order[0].key === attrName) {
+			orderEntry = { key: attrName, ascending: !order[0].ascending };
+		} else if (order.length > 1) {
+			// check if the selected attribute is in the
+			// last n attributes, and if so bump it to the front
+			// If no matching attribute is found, bump everything
+			let i = order.length;
+			while (i--) {
+				if (order[i].key === attrName) {
+					orderEntry = axisData.order[i];
+					break;
+				}
+			}
+			i = i === -1 ? order.length : i;
+			while (i--) {
+				order[i + 1] = order[i];
+			}
+		}
+
+		order[0] = orderEntry ?
+			orderEntry : { key: attrName, ascending: true };
+
+		const sortedFilterIndices = sortFilterIndices(axisData, order);
+		const newState = {
+			list: {
+				[path]: {
+					[axis]: {
+						order,
+						sortedFilterIndices,
+					},
+				},
+			},
+		};
+		return merge(state, newState);
+	}
+}
+
+
+function sortFilterIndices(axisData, order, sortedFilterIndices) {
+	let attrs = [], asc = [];
+	sortedFilterIndices = sortedFilterIndices ? sortedFilterIndices : axisData.sortedFilterIndices.slice();
+
+	// attr may be a gene being fetched, so undefined
+	for (let i = 0; i < order.length; i++) {
+		const { key, ascending } = order[i];
+		const attr = axisData.attrs[key];
+		if (attr) {
+			asc.push(ascending ? -1 : 1);
+			attrs.push(attr);
+		}
+	}
+
+	if (attrs.length) {
+		// The comparator is somewhat tricky:
+		// We want to sort the sortedFilterIndices,
+		// which are used to look up and compare
+		// entries in the various attributes
+		const comparator = (a, b) => {
+			let rVal = 0;
+			for (let i = 0; i < attrs.length; i++) {
+				const { data } = attrs[i];
+				const aVal = data[a], bVal = data[b];
+				if (aVal === bVal) {
+					continue;
+				}
+				rVal = aVal < bVal ? asc[i] : -asc[i];
+				break;
+			}
+			return rVal;
+		};
+		sortedFilterIndices.sort(comparator);
+	}
+	return sortedFilterIndices;
+}
+
+function maybeSortIndices(state, newState, action) {
+	const { path } = action;
+	const { col, row } = state.list[path];
+	const newCol = newState.list[path].col;
+	const newRow = newState.list[path].row;
+
+	for (let i = 0, order = newCol.order; i < order.length; i++) {
+		const { key } = order[i];
+		if (col.attrs[key] !== newCol.attrs[key]) {
+			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, order);
+			break;
+		}
+	}
+
+	for (let i = 0, order = newRow.order; i < order.length; i++) {
+		const { key } = order[i];
+		if (row.attrs[key] !== newRow.attrs[key]) {
+			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, order);
+			break;
+		}
+	}
+
+	return newState;
 }
 
 function datasets(state = {}, action) {
@@ -158,9 +282,13 @@ function datasets(state = {}, action) {
 		case RECEIVE_DATASET:
 		case SEARCH_DATASETS:
 		case REQUEST_GENE_FETCH:
-		case RECEIVE_GENE:
 		case REQUEST_GENE_FAILED:
 			return update(state, action);
+
+		case RECEIVE_GENE:
+			newState = update(state, action);
+			return maybeSortIndices(state, newState, action);
+
 
 		//===VIEW ACTIONS===
 		case SET_VIEW_PROPS:
@@ -172,7 +300,7 @@ function datasets(state = {}, action) {
 
 		case SORT_ROW_METADATA:
 		case SORT_COL_METADATA:
-			return state;
+			return updateAttrSort(state, action);
 
 		case FILTER_METADATA:
 			return updateFiltered(state, action);

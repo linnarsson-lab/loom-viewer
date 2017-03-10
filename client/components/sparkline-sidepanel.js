@@ -45,7 +45,7 @@ class LegendSettings extends Component {
 	shouldComponentUpdate(nextProps) {
 		return nextProps.colAttr !== this.props.colAttr ||
 			nextProps.colMode !== this.props.colMode ||
-			nextProps.dataset.col.attrs[this.props.colAttr] || this.props.dataset.col.attrs[this.props.colAttr];
+			nextProps.dataset.col.attrs[this.props.colAttr] !== this.props.dataset.col.attrs[this.props.colAttr];
 	}
 
 	render() {
@@ -142,7 +142,7 @@ class AttributeSelection extends Component {
 AttributeSelection.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	genes: PropTypes.array.isRequired,
+	genes: PropTypes.string.isRequired,
 };
 
 class ColorSettings extends Component {

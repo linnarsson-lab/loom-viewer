@@ -22,7 +22,7 @@ const LandscapeComponent = function (props) {
 
 	const { col } = dataset;
 	const color = col.attrs[colorAttr];
-	
+
 	if (asMatrix && attrs.length > 2) {
 		const cellStyle = {
 			border: '1px solid lightgrey',
@@ -44,7 +44,7 @@ const LandscapeComponent = function (props) {
 				if (i <= j) {
 					const x = col.attrs[attrs[i]];
 					const y = col.attrs[attrs[j]];
-					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
+					paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
 				}
 				row.push(
 					<Canvas
@@ -83,7 +83,7 @@ const LandscapeComponent = function (props) {
 	} else {
 		let x = col.attrs[attrs[0]];
 		let y = col.attrs[attrs[1]];
-		const paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
+		const paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
 		return (
 			<div className='view'>
 				<LandscapeSidepanel

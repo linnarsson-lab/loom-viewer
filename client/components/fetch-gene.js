@@ -114,7 +114,7 @@ export class FetchGeneComponent extends Component {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	selectedGenes: PropTypes.arrayOf(PropTypes.string),
+	selectedGenes: PropTypes.string,
 	onChange: PropTypes.func,
 	style: PropTypes.object,
 };

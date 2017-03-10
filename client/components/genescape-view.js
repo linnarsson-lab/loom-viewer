@@ -45,7 +45,7 @@ const GenescapeComponent = function (props) {
 				if (i <= j) {
 					const x = row.attrs[selectedAttrs[i]];
 					const y = row.attrs[selectedAttrs[j]];
-					paint = scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros);
+					paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
 				}
 				selectedRow.push(
 					<Canvas
@@ -72,7 +72,7 @@ const GenescapeComponent = function (props) {
 		let y = row.attrs[selectedAttrs[1]];
 		plot = (
 			<Canvas
-				paint={scatterplot(x, y, color, colorMode, logscale, jitter, filterZeros)}
+				paint={scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, filterZeros)}
 				style={{ margin: '20px' }}
 				redraw
 				clear
