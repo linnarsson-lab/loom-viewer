@@ -166,50 +166,45 @@ function updateFiltered(state, action) {
 function updateAttrSort(state, action) {
 	const { path, axis, attrName } = action;
 	const axisData = state.list[path][axis];
-	let attr = axisData.attrs[attrName];
 	let order = axisData.order.slice();
 
-	if (attr === undefined) {
-		return state;
-	} else {
-		let orderEntry;
-		// check if selected order is the first one
-		// if so, switch ascending/descending
-		if (order[0].key === attrName) {
-			orderEntry = { key: attrName, ascending: !order[0].ascending };
-		} else if (order.length > 1) {
-			// check if the selected attribute is in the
-			// last n attributes, and if so bump it to the front
-			// If no matching attribute is found, bump everything
-			let i = order.length;
-			while (i--) {
-				if (order[i].key === attrName) {
-					orderEntry = axisData.order[i];
-					break;
-				}
-			}
-			i = i === -1 ? order.length : i;
-			while (i--) {
-				order[i + 1] = order[i];
+	let orderEntry;
+	// check if selected order is the first one
+	// if so, switch ascending/descending
+	if (order[0].key === attrName) {
+		orderEntry = { key: attrName, ascending: !order[0].ascending };
+	} else if (order.length > 1) {
+		// check if the selected attribute is in the
+		// last n attributes, and if so bump it to the front
+		// If no matching attribute is found, bump everything
+		let i = order.length;
+		while (i--) {
+			if (order[i].key === attrName) {
+				orderEntry = axisData.order[i];
+				break;
 			}
 		}
+		i = i === -1 ? order.length : i;
+		while (i--) {
+			order[i + 1] = order[i];
+		}
+	}
 
-		order[0] = orderEntry ?
-			orderEntry : { key: attrName, ascending: true };
+	order[0] = orderEntry ?
+		orderEntry : { key: attrName, ascending: true };
 
-		const sortedFilterIndices = sortFilterIndices(axisData, order);
-		const newState = {
-			list: {
-				[path]: {
-					[axis]: {
-						order,
-						sortedFilterIndices,
-					},
+	const sortedFilterIndices = sortFilterIndices(axisData, order);
+	const newState = {
+		list: {
+			[path]: {
+				[axis]: {
+					order,
+					sortedFilterIndices,
 				},
 			},
-		};
-		return merge(state, newState);
-	}
+		},
+	};
+	return merge(state, newState);
 }
 
 
