@@ -50,7 +50,7 @@ export class SortAttributeComponent extends Component {
 				filterOptions={dropdownOptions.allNoUniques}
 				onChange={this.onChange} />
 		)];
-		for (let i = 0; i < Math.min(order.length, 4); i++) {
+		for (let i = 0; i < Math.min(order.length, 5); i++) {
 			const val = order[i];
 			sortOrderList.push(
 				<span key={i + 1}>
@@ -58,7 +58,7 @@ export class SortAttributeComponent extends Component {
 					{val.key}
 					&nbsp;
 					<Glyphicon
-						glyph={val.ascending ?
+						glyph={val.asc ?
 							'sort-by-attributes' : 'sort-by-attributes-alt'} />
 				</span>
 			);

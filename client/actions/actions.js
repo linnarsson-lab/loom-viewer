@@ -56,7 +56,7 @@ function requestProjectsFailed() {
 function receiveProjects(json) {
 
 	// initialise sorting order
-	let order = { key: 'lastModified', ascending: true };
+	let order = { key: 'lastModified', asc: true };
 	// convert json array to hashmap
 	let list = {};
 	for (let i = 0; i < json.length; i++) {
@@ -195,8 +195,8 @@ function prepData(attrs) {
 	keys.unshift(origOrderKey);
 	// Initial sort order
 	let order = [];
-	for (let i = 0; i < Math.min(4, keys.length); i++) {
-		order.push({ key: keys[i], ascending: true });
+	for (let i = 0; i < Math.min(5, keys.length); i++) {
+		order.push({ key: keys[i], asc: true });
 	}
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)

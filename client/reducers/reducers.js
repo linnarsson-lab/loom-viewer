@@ -182,7 +182,7 @@ function updateAttrSort(state, action) {
 	// check if selected order is the first one
 	// if so, switch ascending/descending
 	if (order[0].key === attrName) {
-		orderEntry = { key: attrName, ascending: !order[0].ascending };
+		orderEntry = { key: attrName, asc: !order[0].asc };
 	} else if (order.length > 1) {
 		// check if the selected attribute is in the
 		// last n attributes, and if so bump it to the front
@@ -201,7 +201,7 @@ function updateAttrSort(state, action) {
 	}
 
 	order[0] = orderEntry ?
-		orderEntry : { key: attrName, ascending: true };
+		orderEntry : { key: attrName, asc: true };
 
 	const sortedFilterIndices = sortFilterIndices(axisData, order);
 	const newState = {
@@ -219,15 +219,15 @@ function updateAttrSort(state, action) {
 
 
 function sortFilterIndices(axisData, order, sortedFilterIndices) {
-	let attrs = [], asc = [];
+	let attrs = [], ascending = [];
 	sortedFilterIndices = sortedFilterIndices ? sortedFilterIndices : axisData.sortedFilterIndices.slice();
 
 	// attr may be a gene being fetched, so undefined
 	for (let i = 0; i < order.length; i++) {
-		const { key, ascending } = order[i];
+		const { key, asc } = order[i];
 		const attr = axisData.attrs[key];
 		if (attr) {
-			asc.push(ascending ? -1 : 1);
+			ascending.push(asc ? -1 : 1);
 			attrs.push(attr);
 		}
 	}
@@ -245,7 +245,7 @@ function sortFilterIndices(axisData, order, sortedFilterIndices) {
 				if (aVal === bVal) {
 					continue;
 				}
-				rVal = aVal < bVal ? asc[i] : -asc[i];
+				rVal = aVal < bVal ? ascending[i] : -ascending[i];
 				break;
 			}
 			return rVal;
