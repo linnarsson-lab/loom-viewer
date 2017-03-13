@@ -5,9 +5,64 @@ import { ViewInitialiser } from './view-initialiser';
 
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
+import { AttrLegend } from './legend';
+
+import {
+	FILTER_METADATA,
+} from '../actions/actionTypes';
+
+
+function Legend(props) {
+	const { col, colAttr, colMode, dispatch, path } = props;
+	const legendData = col.attrs[colAttr];
+	if (legendData) {
+		const filterFunc = (val) => {
+			return () => {
+				dispatch({
+					type: FILTER_METADATA,
+					path,
+					axis: 'col',
+					attrName: colAttr,
+					val,
+				});
+			};
+		};
+		return (
+			<div style={{
+				flex: '0 0 auto',
+				minHeight: '20px',
+				overflowY: 'scroll',
+				overflowX: 'hidden',
+			}}>
+				<AttrLegend
+					mode={colMode}
+					filterFunc={filterFunc}
+					attr={legendData}
+				/>
+				<Canvas
+					height={20}
+					paint={sparkline(legendData, col.sortedFilterIndices, colMode)}
+					redraw
+					clear
+				/>
+			</div>
+		);
+	} else {
+		return null;
+	}
+
+}
+
+Legend.propTypes = {
+	col: PropTypes.object.isRequired,
+	colAttr: PropTypes.string,
+	colMode: PropTypes.string.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	path: PropTypes.string.isRequired,
+};
 
 const SparklineViewComponent = (props) => {
-	const { dispatch, dataset} = props;
+	const { dispatch, dataset } = props;
 	const { col } = dataset;
 	const sl = dataset.viewState.sparkline;
 	// The old column attribute values that we displayed in the "legend"
@@ -45,25 +100,15 @@ const SparklineViewComponent = (props) => {
 		);
 	}
 
-	const legend = (
-		<div style={{
-			flex: '0 0 auto',
-			minHeight: '20px',
-			overflowY: 'scroll',
-			overflowX: 'hidden',
-		}}>
-			<Canvas
-				height={20}
-				paint={sparkline(legendData, col.sortedFilterIndices, sl.colMode)}
-				redraw
-				clear
-			/>
-		</div>
-	);
-
 	const sparklineview = (
 		<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
-			{legend}
+			<Legend
+				col={col}
+				colAttr={sl.colAttr}
+				colMode={sl.colMode}
+				dispatch={dispatch}
+				path={dataset.path}
+			/>
 			<div style={{
 				display: 'flex',
 				flex: 1,
@@ -78,7 +123,6 @@ const SparklineViewComponent = (props) => {
 					{sparklines}
 				</div>
 			</div>
-			{legend}
 		</div>
 	);
 

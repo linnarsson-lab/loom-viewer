@@ -1,15 +1,20 @@
 import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
+import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
 import { fetchGene } from '../actions/actions';
-import { AttrLegend } from './legend';
+//import { AttrLegend } from './legend';
 //import { PrintSettings } from './print-settings';
 import {
 	Panel, Button,
 	ListGroup, ListGroupItem,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import {
+	SET_VIEW_PROPS,
+	SORT_ROW_METADATA,
+//	FILTER_METADATA,
+} from '../actions/actionTypes';
 
 class LegendSettings extends Component {
 	componentWillMount() {
@@ -50,32 +55,8 @@ class LegendSettings extends Component {
 
 	render() {
 		const { colAttrsHC, colModeOptions, colModeHC } = this.state;
-		const { dispatch, dataset, colAttr, colMode } = this.props;
-		const { col, path } = dataset;
-
-		let legend;
-		if (colAttr && col.attrs[colAttr]) {
-			const legendData = col.attrs[colAttr];
-			const filterFunc = (val) => {
-				return () => {
-					dispatch({
-						type: FILTER_METADATA,
-						path,
-						axis: 'col',
-						attrName: colAttr,
-						val,
-					});
-				};
-			};
-			legend = (
-				<AttrLegend
-					mode={colMode}
-					filterFunc={filterFunc}
-					attr={legendData}
-				/>
-			);
-		}
-
+		const { dataset, colAttr, colMode } = this.props;
+		const { col } = dataset;
 
 		return (
 			<ListGroupItem>
@@ -91,7 +72,6 @@ class LegendSettings extends Component {
 					options={colModeOptions}
 					onChange={colModeHC}
 				/>
-				{legend}
 			</ListGroupItem>
 		);
 	}
@@ -211,14 +191,6 @@ export const SparklineSidepanel = function (props) {
 			header='Settings'
 			bsStyle='default'>
 			<ListGroup fill>
-				<ListGroupItem>
-					<p>In process of fixing UI. For now, use Cell Metadata page to sort.</p>
-				</ListGroupItem>
-				<LegendSettings
-					dataset={dataset}
-					dispatch={dispatch}
-					colAttr={sparkline.colAttr}
-					colMode={sparkline.colMode} />
 				<AttributeSelection
 					dataset={dataset}
 					dispatch={dispatch}
@@ -228,6 +200,21 @@ export const SparklineSidepanel = function (props) {
 					dispatch={dispatch}
 					geneMode={sparkline.geneMode}
 					showLabels={sparkline.showLabels} />
+				<LegendSettings
+					dataset={dataset}
+					dispatch={dispatch}
+					colAttr={sparkline.colAttr}
+					colMode={sparkline.colMode} />
+				<ListGroupItem>
+					<SortAttributeComponent
+						attributes={dataset.col.attrs}
+						attrKeys={dataset.col.allKeysNoUniques}
+						axis={'col'}
+						stateName={'sparkline'}
+						dataset={dataset}
+						dispatch={dispatch}
+						actionType={SORT_ROW_METADATA} />
+				</ListGroupItem>
 			</ListGroup >
 		</Panel >
 	);
