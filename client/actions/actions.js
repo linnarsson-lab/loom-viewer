@@ -161,8 +161,8 @@ function receiveDataSet(data, path) {
 	cols.dropdownOptions.allNoUniques = prepFilter(cols.allKeysNoUniques);
 
 	let viewState = {
-		row: { order: prepRows.order },
-		col: { order: prepCols.order },
+		row: { order: prepRows.order, filter: [] },
+		col: { order: prepCols.order, filter: [] },
 		heatmap: {
 			zoomRange: data.zoomRange,
 			fullZoomHeight: data.fullZoomHeight,

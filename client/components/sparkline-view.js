@@ -8,7 +8,7 @@ import { sparkline } from './sparkline';
 import { AttrLegend } from './legend';
 
 import {
-	FILTER_METADATA,
+	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
 
@@ -19,11 +19,11 @@ function Legend(props) {
 		const filterFunc = (val) => {
 			return () => {
 				dispatch({
-					type: FILTER_METADATA,
+					type: SET_VIEW_PROPS,
 					path,
 					axis: 'col',
-					attrName: colAttr,
-					val,
+					filterAttrName: colAttr,
+					filterVal: val,
 				});
 			};
 		};

@@ -7,7 +7,7 @@ import {
 	Button, ButtonToolbar, ButtonGroup,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 class CoordinateSettings extends Component {
 	componentWillMount() {
@@ -303,14 +303,14 @@ class ColorSettings extends Component {
 				</ButtonGroup>
 				<AttrLegend
 					mode={colorMode}
-					filterFunc={(val) => {
+					filterFunc={(filterVal) => {
 						return () => {
 							dispatch({
-								type: FILTER_METADATA,
+								type: SET_VIEW_PROPS,
 								path: dataset.path,
 								axis,
-								attrName: colorAttr,
-								val,
+								filterAttrName: colorAttr,
+								filterVal,
 							});
 						};
 					}}

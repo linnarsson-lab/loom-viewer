@@ -5,7 +5,7 @@ import { AttrLegend } from './legend';
 import { SortableTable } from './sortabletable';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 import { TypedArrayProp } from '../js/proptypes-typedarray';
 
 import Fuse from 'fuse.js';
@@ -216,29 +216,29 @@ export class MetadataComponent extends Component {
 	// everything and store it in the state
 	constructor(props) {
 		super(props);
-		const { dispatch, dataset, stateName, actionType, axis } = props;
+		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
 
-		const onClickAttrFactory = (attrName) => {
+		const onClickAttrFactory = (sortAttrName) => {
 			return () => {
 				dispatch({
-					type: actionType,
+					type: SET_VIEW_PROPS,
 					path,
 					axis,
-					attrName,
+					sortAttrName,
 					stateName,
 				});
 			};
 		};
 
-		const onClickFilterFactory = (attrName, val) => {
+		const onClickFilterFactory = (filterAttrName, filterVal) => {
 			return () => {
 				dispatch({
-					type: FILTER_METADATA,
+					type: SET_VIEW_PROPS,
 					path,
 					axis,
-					attrName,
-					val,
+					filterAttrName,
+					filterVal,
 				});
 			};
 		};
@@ -302,7 +302,7 @@ export class MetadataComponent extends Component {
 					&nbsp;&nbsp;&nbsp;
 					{val.key}
 					<Glyphicon
-						glyph={ val.ascending ?
+						glyph={ val.asc ?
 						'sort-by-attributes' : 'sort-by-attributes-alt' } />
 				</span>
 			);
@@ -334,5 +334,4 @@ MetadataComponent.propTypes = {
 	mdName: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	actionType: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };

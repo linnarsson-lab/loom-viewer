@@ -5,7 +5,7 @@ import { AttrLegend } from './legend';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 import { fetchGene } from '../actions/actions';
-import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export class HeatmapSidepanel extends Component {
 	constructor(props) {
@@ -101,14 +101,14 @@ export class HeatmapSidepanel extends Component {
 							<AttrLegend
 								mode={hms.colMode}
 								attr={colAttr}
-								filterFunc={(val) => {
+								filterFunc={(filterVal) => {
 									return () => {
 										dispatch({
-											type: FILTER_METADATA,
+											type: SET_VIEW_PROPS,
 											path,
 											axis: 'col',
-											attrName: hms.colAttr,
-											val,
+											filterAttrName: hms.colAttr,
+											filterVal,
 										});
 									};
 								}}
@@ -135,14 +135,14 @@ export class HeatmapSidepanel extends Component {
 								<AttrLegend
 									mode={hms.rowMode}
 									attr={rowAttr}
-									filterFunc={(val) => {
+									filterFunc={(filterVal) => {
 										return () => {
 											dispatch({
-												type: FILTER_METADATA,
+												type: SET_VIEW_PROPS,
 												path,
 												axis: 'row',
-												attrName: hms.rowAttr,
-												val,
+												filterAttrName: hms.rowAttr,
+												filterVal,
 											});
 										};
 									}}

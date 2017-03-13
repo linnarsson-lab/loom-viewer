@@ -10,11 +10,7 @@ import {
 	ListGroup, ListGroupItem,
 } from 'react-bootstrap';
 
-import {
-	SET_VIEW_PROPS,
-	SORT_ROW_METADATA,
-//	FILTER_METADATA,
-} from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 class LegendSettings extends Component {
 	componentWillMount() {
@@ -212,8 +208,7 @@ export const SparklineSidepanel = function (props) {
 						axis={'col'}
 						stateName={'sparkline'}
 						dataset={dataset}
-						dispatch={dispatch}
-						actionType={SORT_ROW_METADATA} />
+						dispatch={dispatch} />
 				</ListGroupItem>
 			</ListGroup >
 		</Panel >

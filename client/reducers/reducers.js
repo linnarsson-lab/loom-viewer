@@ -3,7 +3,7 @@ import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
 import JSURL from 'jsurl';
-import { merge } from '../js/util';
+import { merge, disjointArrays } from '../js/util';
 
 
 import {
@@ -15,9 +15,6 @@ import {
 	RECEIVE_DATASET,
 	SEARCH_DATASETS,
 	SORT_DATASETS,
-	FILTER_METADATA,
-	SORT_ROW_METADATA,
-	SORT_COL_METADATA,
 	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
@@ -42,18 +39,6 @@ function update(state, action) {
 	// let newState = action.prune ? prune(state, action.prune) : state;
 	// return action.state ? merge(newState, action.state) : newState;
 	return merge(state, action.state);
-}
-
-function updateViewState(state, action) {
-	let { path, viewState } = action;
-	viewState = merge(state.list[path].viewState, viewState);
-	return merge(state,
-		{
-			list: {
-				[path]: { viewState },
-			},
-		}
-	);
 }
 
 function setViewStateURL(state, action) {
@@ -88,108 +73,109 @@ function setViewStateURL(state, action) {
 	return state;
 }
 
-function updateDatasetSortOrder(state, key) {
-	return merge(state, {
-		order: (state.order.key === key) ?
-			{ key: state.order.key, asc: !state.order.asc } : { key, asc: true },
-	});
-}
+// Merges new viewState, and updates sorting and filter data
+// if necessary.
+function updateViewState(state, action) {
+	const { path } = action;
+	let dataset = state.list[path];
+	let prevViewState = dataset.viewState;
+	const prevRowFilter = prevViewState.row.filter,
+		prevColFilter = prevViewState.col.filter;
 
-function updateFiltered(state, action) {
-	// toggle filtered state in relevant uniques entry
-	const { path, axis, attrName, val } = action;
-	const dataset = state.list[path];
-	const axisData = dataset[axis];
-	let attr = axisData.attrs[attrName];
-	const oldUniques = attr.uniques;
-	let uniques = [], filtered = true;
-	for (let i = 0; i < oldUniques.length; i++) {
-		let uniqueEntry = oldUniques[i];
-		if (val === uniqueEntry.val) {
-			filtered = !uniqueEntry.filtered;
-			uniques.push(merge(uniqueEntry, { filtered }));
+	let viewState = merge(prevViewState, action.viewState);
+
+	if (action.sortAttrName) {
+		const { axis } = action;
+		let order = updateAttrSort(viewState[axis].order, action.sortAttrName);
+		viewState = merge(viewState, {
+			[axis]: { order },
+		});
+	}
+
+	if (action.filterAttrName) {
+		const { filterAttrName, filterVal, axis } = action;
+		let filter = viewState[axis].filter.slice();
+		let i = filter.length;
+		while (i--) {
+			let filterEntry = filter[i];
+			if (filterEntry.attr === filterAttrName &&
+				filterEntry.val === filterVal) {
+				break;
+			}
+		}
+		if (i === -1){
+			// a new filter entry
+			filter.push({attr: filterAttrName, val: filterVal});
 		} else {
-			uniques.push(uniqueEntry);
+			filter[i] = filter[filter.length-1];
+			filter.pop();
 		}
+		// remember that merge returns a new object,
+		// so here we can safely replace entries in viewState
+		// viewState without breaking the redux guarantee of
+		// immutability.
+		viewState[axis].filter = filter;
 	}
 
-	// update filterCount
-	let filterCount = axisData.filterCount.slice(0),
-		changedIndices = false;
-	if (filtered) {
-		for (let i = 0; i < filterCount.length; i++) {
-			if (attr.data[i] === val) {
-				// we only have a different filtered indices
-				// if we filter more than before, which
-				// implies at least one value filterCount
-				// went from zero to one (note prefix increment).
-				changedIndices = ++filterCount[i] === 1 || changedIndices;
-			}
-		}
-	} else {
-		for (let i = 0; i < filterCount.length; i++) {
-			if (attr.data[i] === val) {
-				// we only have a different filtered indices
-				// if we filter less than before, which
-				// implies at least one value filterCount
-				// went from one to zero (note postfix decrement).
-				changedIndices = filterCount[i]-- === 1 || changedIndices;
-			}
-		}
+	dataset = merge(dataset, { viewState });
+
+	// see if filter settings were overwritten by new viewState
+	let rowFilterChanged = viewState.row.filter !== prevRowFilter,
+		colFilterChanged = viewState.col.filter !== prevColFilter;
+	if (rowFilterChanged) {
+		dataset = merge(dataset,
+			updateFiltered(dataset, 'row', prevRowFilter)
+		);
+	}
+	if (colFilterChanged) {
+		dataset = merge(dataset,
+			updateFiltered(dataset, 'col', prevColFilter)
+		);
 	}
 
-	let newState = {
-		list: {
-			[path]: {
-				[axis]: {
-					filterCount,
-					attrs: {
-						[attrName]: {
-							uniques,
-						},
-					},
-				},
+	// Two scenarios when we need to sort:
+	// - if we were passed viewState with a new order,
+	// - if we have different indices after calling updateFiltered.
+	// First is comparing order array in viewState,
+	// last one by comparing sortedFilterIndices.
+	// Because we re-use these arrays if they are unchanged,
+	// a pointer comparison suffices.
+	if (prevViewState.col.order !== viewState.col.order ||
+		dataset.col.sortedFilterIndices !==
+		state.list[path].col.sortedFilterIndices) {
+		sortFilterIndices(dataset.col, viewState.col.order, dataset.col.sortedFilterIndices);
+	}
+	if (prevViewState.row.order !== viewState.row.order ||
+		dataset.row.sortedFilterIndices !==
+		state.list[path].row.sortedFilterIndices) {
+		sortFilterIndices(dataset.row, viewState.row.order, dataset.row.sortedFilterIndices);
+	}
+
+	return merge(state,
+		{
+			list: {
+				[path]: dataset,
 			},
-		},
-	};
-
-	// If we didn't change the selection of filtered values,
-	// then there is no need to replace and sort the previous
-	// sortedFilterIndices.
-	// By keeping the old array we can do a simple pointer
-	// comparison to the array to check if it changed,
-	// instead of having to do a deep inspection.
-	if (changedIndices) {
-		let newIndices = [];
-		for (let i = 0; i < filterCount.length; i++) {
-			if (filterCount[i] === 0) {
-				newIndices.push(i);
-			}
 		}
-		newState.list[path][axis].sortedFilterIndices = sortFilterIndices(axisData, dataset.viewState[axis].order, newIndices);
-	}
-
-	return merge(state, newState);
+	);
 }
 
-function updateAttrSort(state, action) {
-	const { path, axis, attrName } = action;
-	const dataset = state.list[path];
-	const axisData = dataset[axis];
-	let order = dataset.viewState[axis].order.slice();
+
+function updateAttrSort(order, sortAttrName) {
+	order = order.slice();
 
 	let orderEntry;
 	// check if selected order is the first one
 	// if so, switch ascending/descending
-	if (order[0].key === attrName) {
-		orderEntry = { key: attrName, asc: !order[0].asc };
+	if (order[0].key === sortAttrName) {
+		orderEntry = { key: sortAttrName, asc: !order[0].asc };
 	} else if (order.length > 1) {
 		// check if the selected attribute is in the
 		// last n attributes, and if so bump it to the front
 		// If no matching attribute is found, bump everything
 		let i = order.length;
 		while (i--) {
-			if (order[i].key === attrName) {
+			if (order[i].key === sortAttrName) {
 				orderEntry = order[i];
 				break;
 			}
@@ -199,24 +185,120 @@ function updateAttrSort(state, action) {
 			order[i + 1] = order[i];
 		}
 	}
-
 	order[0] = orderEntry ?
-		orderEntry : { key: attrName, asc: true };
+		orderEntry : { key: sortAttrName, asc: true };
+	return order;
+}
 
-	const sortedFilterIndices = sortFilterIndices(axisData, order);
-	const newState = {
-		list: {
-			[path]: {
-				viewState: { [axis]: { order } },
-				[axis]: {
-					sortedFilterIndices,
-				},
+function updateFiltered(dataset, axis, prevFilter) {
+
+	// after disjointArrays, prevFilter will only contain
+	// formerly filtered values (if any), and filter only
+	// to-be-filtered values.
+	let filter = dataset.viewState[axis].filter.slice();
+	prevFilter = prevFilter.slice();
+	disjointArrays(filter, prevFilter);
+
+	// Update filterCount.
+	// we pass filterCount and keep changing the same array
+	const prevFilterCount = dataset[axis].filterCount;
+	let filterCount = prevFilterCount.slice();
+	let newAttrs = {};
+	let i = prevFilter.length;
+	while (i--) {
+		let filterEntry = prevFilter[i];
+		newAttrs = merge(
+			newAttrs,
+
+			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, false, filterCount).attrs
+		);
+	}
+	i = filter.length;
+	while (i--) {
+		let filterEntry = filter[i];
+		newAttrs = merge(
+			newAttrs,
+			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, true, filterCount).attrs
+		);
+	}
+
+	// TODO: update sortedFilterIndices if necessary
+	// TODO: merge new attrs
+	i = filterCount.length;
+	let { sortedFilterIndices } = dataset[axis];
+	while (i--) {
+		// we only need to replace sortedFilterIndices
+		// if there are any mismatches in zeros between
+		// filterCount and newFilterCount
+		let pfc = prevFilterCount[i], fc = filterCount[i];
+		if ((pfc | fc) && // is at least one value nonzero?
+			(pfc === 0 || fc === 0) // is at least one value zero?
+		) {
+			// make sure i isn't zero (we might happen to
+			// only have a change on index zero)
+			i++;
+			break;
+		}
+	}
+	// i is only bigger than zero if the above loop was aborted
+	// early, implying a significant change in newFilterCount
+	if (i > 0) {
+		sortedFilterIndices = [];
+		for (i = 0; i < filterCount.length; i++) {
+			if (filterCount[i] === 0) {
+				sortedFilterIndices.push(i);
+			}
+		}
+	}
+
+	return {
+		[axis]: {
+			filterCount,
+			sortedFilterIndices,
+			attrs: newAttrs,
+		},
+	};
+}
+
+function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, filterCount) {
+	const axisData = dataset[axis];
+	let attr = axisData.attrs[filterAttrName];
+	const oldUniques = attr.uniques;
+	let uniques = [];
+	for (let i = 0; i < oldUniques.length; i++) {
+		let uniqueEntry = oldUniques[i];
+		if (filterVal === uniqueEntry.val) {
+			uniques.push(merge(uniqueEntry, { filtered: !uniqueEntry.filtered }));
+		} else {
+			uniques.push(uniqueEntry);
+		}
+	}
+
+	// update filterCount
+	filterCount = filterCount ? filterCount : axisData.filterCount.slice(0);
+	if (filtered) {
+		for (let i = 0; i < filterCount.length; i++) {
+			if (attr.data[i] === filterVal) {
+				filterCount[i]++;
+			}
+		}
+	} else {
+		for (let i = 0; i < filterCount.length; i++) {
+			if (attr.data[i] === filterVal) {
+				filterCount[i]--;
+			}
+		}
+	}
+
+	return {
+		filterCount,
+		attrs: {
+			[filterAttrName]: {
+				uniques,
 			},
 		},
 	};
-	return setViewStateURL(merge(state, newState), action);
 }
-
 
 function sortFilterIndices(axisData, order, sortedFilterIndices) {
 	let attrs = [], ascending = [];
@@ -257,12 +339,23 @@ function sortFilterIndices(axisData, order, sortedFilterIndices) {
 
 function maybeSortIndices(state, newState, action) {
 	const { path } = action;
-	const { col, row } = state.list[path];
+	const { row, col } = state.list[path];
 	const newDataset = newState.list[path];
-	const newCol = newDataset.col;
 	const newRow = newDataset.row;
-	const colOrder = newDataset.viewState.col.order;
+	const newCol = newDataset.col;
 	const rowOrder = newDataset.viewState.row.order;
+	const colOrder = newDataset.viewState.col.order;
+
+	for (let i = 0; i < rowOrder.length; i++) {
+		const { key } = rowOrder[i];
+		// If these differ, it's because it was a row
+		// that was fetched. In that case we need to update
+		// the sortFilterIndices
+		if (row.attrs[key] !== newRow.attrs[key]) {
+			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, rowOrder);
+			break;
+		}
+	}
 
 	for (let i = 0; i < colOrder.length; i++) {
 		const { key } = colOrder[i];
@@ -272,15 +365,14 @@ function maybeSortIndices(state, newState, action) {
 		}
 	}
 
-	for (let i = 0; i < rowOrder.length; i++) {
-		const { key } = rowOrder[i];
-		if (row.attrs[key] !== newRow.attrs[key]) {
-			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, rowOrder);
-			break;
-		}
-	}
-
 	return newState;
+}
+
+function updateDatasetSortOrder(state, key) {
+	return merge(state, {
+		order: (state.order.key === key) ?
+			{ key: state.order.key, asc: !state.order.asc } : { key, asc: true },
+	});
 }
 
 function datasets(state = {}, action) {
@@ -305,13 +397,6 @@ function datasets(state = {}, action) {
 
 		case SORT_DATASETS:
 			return updateDatasetSortOrder(state, action.key);
-
-		case SORT_ROW_METADATA:
-		case SORT_COL_METADATA:
-			return updateAttrSort(state, action);
-
-		case FILTER_METADATA:
-			return updateFiltered(state, action);
 
 		default:
 			return state;

@@ -1,12 +1,14 @@
 import React, { Component, PropTypes } from 'react';
 import { Glyphicon } from 'react-bootstrap';
-import { fetchGene } from '../actions/actions';
 import { DropdownMenu } from './dropdown';
+import { fetchGene } from '../actions/actions';
+
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export class SortAttributeComponent extends Component {
 	constructor(props) {
 		super(props);
-		const { dispatch, dataset, stateName, actionType, axis } = props;
+		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
 		const { keys } = dataset[axis];
 
@@ -14,11 +16,12 @@ export class SortAttributeComponent extends Component {
 			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
 				dispatch(fetchGene(dataset, [value]));
 			}
+
 			dispatch({
-				type: actionType,
+				type: SET_VIEW_PROPS,
 				path,
 				axis,
-				attrName: value,
+				sortAttrName: value,
 				stateName,
 			});
 		};
@@ -45,6 +48,7 @@ export class SortAttributeComponent extends Component {
 			</span>
 		), (
 			<DropdownMenu
+				key={'dropdown'}
 				value={order[0].key}
 				options={allKeysNoUniques}
 				filterOptions={dropdownOptions.allNoUniques}
@@ -79,5 +83,4 @@ SortAttributeComponent.propTypes = {
 	stateName: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	actionType: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
