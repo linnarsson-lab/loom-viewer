@@ -248,8 +248,8 @@ export class MetadataComponent extends Component {
 		};
 	}
 
-	componentWillMount(){
-		const { dispatch, dataset, stateName} = this.props;
+	componentWillMount() {
+		const { dispatch, dataset, stateName } = this.props;
 		const path = dataset.path;
 
 		const searchMetadata = (event) => {
@@ -287,16 +287,16 @@ export class MetadataComponent extends Component {
 				onChange={searchMetadata}
 				value={searchVal}
 				time={500}
-				/>
+			/>
 		);
 
 		// Show first four attributes to use as sort keys
 		const { order, sortedFilterIndices } = dataset[axis];
-		let sortOrderList = [<span key={-1} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
+		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
 			const val = order[i];
 			sortOrderList.push(
-				<span key={i}>
+				<span key={i+1}>
 					&nbsp;&nbsp;&nbsp;
 					{val.key}
 					<Glyphicon
@@ -305,6 +305,7 @@ export class MetadataComponent extends Component {
 				</span>
 			);
 		}
+
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
 				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
