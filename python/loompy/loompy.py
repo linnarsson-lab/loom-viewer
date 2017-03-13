@@ -377,7 +377,9 @@ def upload(path, server, project, filename, username, password):
 	return response.status_code
 
 
-class LoomAttributeManager():
+class LoomAttributeManager(object):
+	__slots__ = ('f',)
+
 	def __init__(self, f):
 		self.f = f
 
