@@ -70,7 +70,7 @@ export class FetchGeneComponent extends Component {
 
 	filterValidGenes(selection){
 		const { col } = this.props.dataset;
-		const genes = selection.split(/[,.;'"`\s]+/g);
+		const genes = selection.split(/[,;'"`\s]+/g);
 
 		let validGenes = [];
 		for (let i = 0; i < genes.length; i++){
@@ -89,7 +89,7 @@ export class FetchGeneComponent extends Component {
 				<FormControl
 					componentClass={'textarea'}
 					rows={8}
-					placeholder={'Paste genes here or use the dropdown below to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, dots or quotations. "Apply Selection" fixes and filters this)'}
+					placeholder={'Paste genes here or use the dropdown below to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
 					onChange={this.handleTextAreaChange}
 					value={this.state.selectedGenes} />
 				<Select
