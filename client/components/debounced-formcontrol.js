@@ -8,12 +8,15 @@ export class DebouncedFormcontrol extends Component {
 	constructor(props) {
 		super(props);
 		this.handleChange = this.handleChange.bind(this);
-		this.state = {
-			type: props.type,
-			value: props.value,
-			onChange: props.onChange,
-			onChangeDebounced: debounce(props.onChange, props.time || 0),
-		};
+	}
+
+	componentWillMount(){
+		this.setState({
+			type: this.props.type,
+			value: this.props.value,
+			onChange: this.props.onChange,
+			onChangeDebounced: debounce(this.props.onChange, this.props.time || 0),
+		});
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -36,7 +39,7 @@ export class DebouncedFormcontrol extends Component {
 
 	handleChange(e) {
 		e.persist();
-		this.setState({ value: event.target.value });
+		this.setState({ value: e.target.value });
 		this.state.onChangeDebounced(e);
 	}
 
