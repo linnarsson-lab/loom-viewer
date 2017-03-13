@@ -77,6 +77,10 @@ function setViewStateURL(state, action) {
 			break;
 		case 'cellMD':
 			view = 'cellmetadata';
+			break;
+		default:
+			// A bit hackish, but basically we default to current view
+			view = browserHistory.getCurrentLocation().pathname.split('/')[2];
 	}
 	const { viewState } = state.list[path];
 	const url = `/dataset/${view}/${path}/${JSURL.stringify(viewState)}`;
@@ -94,7 +98,8 @@ function updateDatasetSortOrder(state, key) {
 function updateFiltered(state, action) {
 	// toggle filtered state in relevant uniques entry
 	const { path, axis, attrName, val } = action;
-	const axisData = state.list[path][axis];
+	const dataset = state.list[path];
+	const axisData = dataset[axis];
 	let attr = axisData.attrs[attrName];
 	const oldUniques = attr.uniques;
 	let uniques = [], filtered = true;
@@ -147,9 +152,13 @@ function updateFiltered(state, action) {
 			},
 		},
 	};
-	// if we didn't change the selection of
-	// filtered values there is no need to
-	// replace and sort the previous sortedFilterIndices
+
+	// If we didn't change the selection of filtered values,
+	// then there is no need to replace and sort the previous
+	// sortedFilterIndices.
+	// By keeping the old array we can do a simple pointer
+	// comparison to the array to check if it changed,
+	// instead of having to do a deep inspection.
 	if (changedIndices) {
 		let newIndices = [];
 		for (let i = 0; i < filterCount.length; i++) {
@@ -157,7 +166,7 @@ function updateFiltered(state, action) {
 				newIndices.push(i);
 			}
 		}
-		newState.list[path][axis].sortedFilterIndices = sortFilterIndices(axisData, axisData.order, newIndices);
+		newState.list[path][axis].sortedFilterIndices = sortFilterIndices(axisData, dataset.viewState[axis].order, newIndices);
 	}
 
 	return merge(state, newState);
@@ -165,8 +174,9 @@ function updateFiltered(state, action) {
 
 function updateAttrSort(state, action) {
 	const { path, axis, attrName } = action;
-	const axisData = state.list[path][axis];
-	let order = axisData.order.slice();
+	const dataset = state.list[path];
+	const axisData = dataset[axis];
+	let order = dataset.viewState[axis].order.slice();
 
 	let orderEntry;
 	// check if selected order is the first one
@@ -180,7 +190,7 @@ function updateAttrSort(state, action) {
 		let i = order.length;
 		while (i--) {
 			if (order[i].key === attrName) {
-				orderEntry = axisData.order[i];
+				orderEntry = order[i];
 				break;
 			}
 		}
@@ -197,14 +207,14 @@ function updateAttrSort(state, action) {
 	const newState = {
 		list: {
 			[path]: {
+				viewState: { [axis]: { order } },
 				[axis]: {
-					order,
 					sortedFilterIndices,
 				},
 			},
 		},
 	};
-	return merge(state, newState);
+	return setViewStateURL(merge(state, newState), action);
 }
 
 
@@ -248,21 +258,24 @@ function sortFilterIndices(axisData, order, sortedFilterIndices) {
 function maybeSortIndices(state, newState, action) {
 	const { path } = action;
 	const { col, row } = state.list[path];
-	const newCol = newState.list[path].col;
-	const newRow = newState.list[path].row;
+	const newDataset = newState.list[path];
+	const newCol = newDataset.col;
+	const newRow = newDataset.row;
+	const colOrder = newDataset.viewState.col.order;
+	const rowOrder = newDataset.viewState.row.order;
 
-	for (let i = 0, order = newCol.order; i < order.length; i++) {
-		const { key } = order[i];
+	for (let i = 0; i < colOrder.length; i++) {
+		const { key } = colOrder[i];
 		if (col.attrs[key] !== newCol.attrs[key]) {
-			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, order);
+			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, colOrder);
 			break;
 		}
 	}
 
-	for (let i = 0, order = newRow.order; i < order.length; i++) {
-		const { key } = order[i];
+	for (let i = 0; i < rowOrder.length; i++) {
+		const { key } = rowOrder[i];
 		if (row.attrs[key] !== newRow.attrs[key]) {
-			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, order);
+			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, rowOrder);
 			break;
 		}
 	}

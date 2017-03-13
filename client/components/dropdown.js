@@ -12,7 +12,7 @@ export class DropdownMenu extends Component {
 	}
 
 	componentWillMount() {
-		let { options, filterOptions, value, multi  } = this.props;
+		let { options, filterOptions, value, multi } = this.props;
 		let newOptions = new Array(options.length);
 		for (let i = 0; i < newOptions.length; i++) {
 			newOptions[i] = {

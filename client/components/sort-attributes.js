@@ -8,7 +8,7 @@ export class SortAttributeComponent extends Component {
 		super(props);
 		const { dispatch, dataset, stateName, actionType, axis } = props;
 		const path = dataset.path;
-		const { keys } = dataset[axis]
+		const { keys } = dataset[axis];
 
 		this.onChange = (value) => {
 			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
@@ -25,16 +25,15 @@ export class SortAttributeComponent extends Component {
 	}
 
 	shouldComponentUpdate(nextProps) {
-		return nextProps.dataset[nextProps.axis].order !==
-			this.props.dataset[this.props.axis].order;
+		return nextProps.dataset.viewState[nextProps.axis].order !==
+			this.props.dataset.viewState[this.props.axis].order;
 	}
 
 	render() {
 		const { dataset, axis } = this.props;
-		const { col } = dataset;
-
+		const { allKeysNoUniques, dropdownOptions } = dataset[axis];
 		// Show first four attributes to use as sort keys
-		const { order } = dataset[axis];
+		const { order } = dataset.viewState[axis];
 		let sortOrderList = [(
 			<span key={'front'}>
 				<span style={{ fontWeight: 'bold' }}>
@@ -47,8 +46,8 @@ export class SortAttributeComponent extends Component {
 		), (
 			<DropdownMenu
 				value={order[0].key}
-				options={col.allKeysNoUniques}
-				filterOptions={col.dropdownOptions.allNoUniques}
+				options={allKeysNoUniques}
+				filterOptions={dropdownOptions.allNoUniques}
 				onChange={this.onChange} />
 		)];
 		for (let i = 0; i < Math.min(order.length, 4); i++) {
@@ -57,6 +56,7 @@ export class SortAttributeComponent extends Component {
 				<span key={i + 1}>
 					&nbsp;&nbsp;&nbsp;
 					{val.key}
+					&nbsp;
 					<Glyphicon
 						glyph={val.ascending ?
 							'sort-by-attributes' : 'sort-by-attributes-alt'} />

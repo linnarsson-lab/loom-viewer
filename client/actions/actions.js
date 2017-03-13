@@ -127,41 +127,42 @@ function requestDataSetFailed(path) {
 
 
 function receiveDataSet(data, path) {
-	let row = prepData(data.rowAttrs);
+	let prepRows = prepData(data.rowAttrs), prepCols = prepData(data.colAttrs);
+	let rows = prepRows.data, cols = prepCols.data;
 
-	let col = prepData(data.colAttrs);
+	rows.cellKeys = cols.attrs.CellID ? cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ? cols.attrs.Cell_ID.data.slice() : [];
+	rows.allKeys = rows.keys.concat(rows.cellKeys);
+	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
 
-	row.cellKeys = col.attrs.CellID ? col.attrs.CellID.data.slice() : col.attrs.Cell_ID ? col.attrs.Cell_ID.data.slice() : [];
-	row.allKeys = row.keys.concat(row.cellKeys);
-	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
-
-	col.geneKeys = row.attrs.Gene ? row.attrs.Gene.data.slice() : [];
-	col.geneKeysLowerCase = col.geneKeys.map((gene) => { return gene.toLowerCase(); });
-	col.allKeys = col.keys.concat(row.geneKeys);
-	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
+	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
+	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
+	cols.allKeys = cols.keys.concat(rows.geneKeys);
+	cols.allKeysNoUniques = cols.keysNoUniques.concat(cols.geneKeys);
 
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
 	// Also, I've commented out the filters that aren't being used
 	// right now to save some time
-	row.dropdownOptions = {};
-	//row.dropdownOptions.attrs = prepFilter(row.keys);
-	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
+	rows.dropdownOptions = {};
+	//rows.dropdownOptions.attrs = prepFilter(rows.keys);
+	rows.dropdownOptions.attrsNoUniques = prepFilter(rows.keysNoUniques);
 	// // fastFilterOptions doesn't scale for tens of thousands of cells :/
-	//	//row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
-	// //row.dropdownOptions.all = prepFilter(row.allKeys);
-	// //row.dropdownOptions.allNoUniques = prepFilter(row.allKeysNoUiques);
-	//row.dropdownOptions.all = row.dropdownOptions.attrs;
-	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; //prepFilter(row.allKeysNoUniques);
+	//	//rows.dropdownOptions.keyAttr = prepFilter(rows.cellKeys);
+	// //rows.dropdownOptions.all = prepFilter(rows.allKeys);
+	// //rows.dropdownOptions.allNoUniques = prepFilter(rows.allKeysNoUiques);
+	//rows.dropdownOptions.all = rows.dropdownOptions.attrs;
+	rows.dropdownOptions.allNoUniques = rows.dropdownOptions.attrsNoUniques; //prepFilter(rows.allKeysNoUniques);
 
-	col.dropdownOptions = {};
-	//col.dropdownOptions.attrs = prepFilter(col.keys);
-	//col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
-	col.dropdownOptions.keyAttr = prepFilter(col.geneKeys);
-	//col.dropdownOptions.all = prepFilter(col.allKeys);
-	col.dropdownOptions.allNoUniques = prepFilter(col.allKeysNoUniques);
+	cols.dropdownOptions = {};
+	//cols.dropdownOptions.attrs = prepFilter(cols.keys);
+	//cols.dropdownOptions.attrsNoUniques = prepFilter(cols.keysNoUniques);
+	cols.dropdownOptions.keyAttr = prepFilter(cols.geneKeys);
+	//cols.dropdownOptions.all = prepFilter(cols.allKeys);
+	cols.dropdownOptions.allNoUniques = prepFilter(cols.allKeysNoUniques);
 
 	let viewState = {
+		row: { order: prepRows.order },
+		col: { order: prepCols.order },
 		heatmap: {
 			zoomRange: data.zoomRange,
 			fullZoomHeight: data.fullZoomHeight,
@@ -174,50 +175,61 @@ function receiveDataSet(data, path) {
 		type: RECEIVE_DATASET,
 		state: {
 			list: {
-				[path]: { viewState, col, row },
+				[path]: { viewState, col: cols, row: rows },
 			},
 		},
 	};
 }
 
 function prepData(attrs) {
-	let data = {};
-	data.keys = Object.keys(attrs).sort();
+	let keys = Object.keys(attrs).sort();
 
 	// store original attribute order
-	let originalOrder = new Uint32Array(attrs[data.keys[0]].length), i = originalOrder.length;
+	let originalOrder = new Uint32Array(attrs[keys[0]].length), i = originalOrder.length;
 	while (i--) {
 		originalOrder[i] = i;
 	}
 	let origOrderKey = '(original order)';
 	attrs[origOrderKey] = originalOrder;
 	// Store all the keys
-	data.keys.unshift(origOrderKey);
+	keys.unshift(origOrderKey);
 	// Initial sort order
-	data.order = [];
-	for (let i = 0; i < Math.min(4, data.keys.length); i++){
-		data.order.push({ key: data.keys[i], ascending: true });
+	let order = [];
+	for (let i = 0; i < Math.min(4, keys.length); i++) {
+		order.push({ key: keys[i], ascending: true });
 	}
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular
 	// meta-data so we have to add it first
 	let newAttrs = convertArrays(attrs);
-	data.attrs = newAttrs;
 
 	// Add the set of keys for non-unique values (unique values are
 	// ignored in scatterplot and sparkline views)
-	data.keysNoUniques = data.keys.filter(
-		(key) => {
-			return data.attrs[key] && !data.attrs[key].uniqueVal;
+	let keysNoUniques = [];
+	i = keys.length;
+	while (i--) {
+		let key = keys[i];
+		if (!newAttrs[key].uniqueVal) {
+			keysNoUniques.push(key);
 		}
-	);
+	}
 
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
-	data.filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
-	data.sortedFilterIndices = originalOrder.slice();
-	return data;
+	const filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
+	const sortedFilterIndices = originalOrder.slice();
+
+	return {
+		data: {
+			keys,
+			keysNoUniques,
+			attrs: newAttrs,
+			filterCount,
+			sortedFilterIndices,
+		},
+		order,
+	};
 }
 
 

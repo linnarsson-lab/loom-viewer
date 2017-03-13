@@ -6,6 +6,7 @@ import { SortableTable } from './sortabletable';
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 import { SET_VIEW_PROPS, FILTER_METADATA } from '../actions/actionTypes';
+import { TypedArrayProp } from '../js/proptypes-typedarray';
 
 import Fuse from 'fuse.js';
 
@@ -50,7 +51,7 @@ export class MetadataPlot extends Component {
 
 MetadataPlot.propTypes = {
 	attr: PropTypes.object.isRequired,
-	indices: PropTypes.array.isRequired,
+	indices: TypedArrayProp.any,
 	mode: PropTypes.string,
 	modes: PropTypes.arrayOf(PropTypes.string),
 	filterFunc: PropTypes.func.isRequired,
@@ -201,7 +202,7 @@ MetadataTable.propTypes = {
 	searchField: PropTypes.node.isRequired,
 	searchVal: PropTypes.string.isRequired,
 	sortOrderList: PropTypes.array.isRequired,
-	sortedFilterIndices: PropTypes.array.isRequired,
+	sortedFilterIndices: TypedArrayProp.any,
 	dispatch: PropTypes.func.isRequired,
 	onClickAttrFactory: PropTypes.func.isRequired,
 	onClickFilterFactory: PropTypes.func.isRequired,
@@ -291,7 +292,8 @@ export class MetadataComponent extends Component {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { order, sortedFilterIndices } = dataset[axis];
+		const { sortedFilterIndices } = dataset[axis];
+		const { order } = dataset.viewState[axis];
 		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++){
 			const val = order[i];
