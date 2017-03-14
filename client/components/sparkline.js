@@ -412,10 +412,11 @@ function heatmapPaint(context, range, min, max, label, colorLUT) {
 
 function textPaint(context, range) {
 	const lineSize = (range.width / range.data.length) | 0;
-	// only draw if we have six pixels per
+	// only draw if we have six pixels height per word, meaning
+	// ten pixels per line
 	const minLineSize = 8;
 	if (lineSize >= minLineSize) {
-		textSize(context, Math.min(lineSize - 2, 12));
+		textSize(context, Math.min(lineSize - 2, 16));
 		textStyle(context);
 		context.save();
 		// The default is drawing horizontally,
@@ -426,9 +427,14 @@ function textPaint(context, range) {
 		// and draw at (0, 0) and translate().
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
-		context.translate(2, lineSize / 2 + range.xOffset);
+		context.translate(-2, ((lineSize*0.625)|0) + range.xOffset);
+		const rotation = Math.PI / 6;
 		range.data.forEach((label) => {
-			if (label) { drawText(context, label, 0, 0); }
+			if (label) {
+				context.rotate(rotation);
+				drawText(context, '– '+label, 0, 0);
+				context.rotate(-rotation);
+			}
 			context.translate(0, lineSize);
 		});
 		// undo all rotations/translations
