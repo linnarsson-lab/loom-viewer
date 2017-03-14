@@ -1,10 +1,11 @@
 import React, { PropTypes } from 'react';
 import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
+import DocumentTitle from 'react-document-title';
 
 export const NavbarView = function (props) {
 	const { project, filename } = props.params;
-	let viewLinks = null;
+	let viewLinks;
 	if (filename) {
 		viewLinks = ['heatmap', 'sparklines', 'cells', 'cellmetadata', 'genes', 'genemetadata'].map(
 			(view) => {
@@ -18,32 +19,33 @@ export const NavbarView = function (props) {
 				);
 			}
 		);
-
 	}
+	const title = project && filename ?
+		`Loom - /${project}/${filename}` : 'Loom';
+
 	const navbarInstance = (
 		<Navbar>
-			<LinkContainer to='/'>
-				<Navbar.Header>
+			<Navbar.Header>
+				<LinkContainer to='/'>
 					<Navbar.Brand>
-						Loom
+						{title}
 					</Navbar.Brand>
-					<Navbar.Toggle />
-				</Navbar.Header>
-			</LinkContainer>
-			<Navbar.Collapse>
-				<Nav>
-					{viewLinks}
-				</Nav>
-			</Navbar.Collapse>
+				</LinkContainer>
+			</Navbar.Header>
+			<Nav>
+				{viewLinks}
+			</Nav>
 		</Navbar>
 	);
 	return (
-		<div className='view-vertical'>
-			{navbarInstance}
-			<div className='view'>
-				{props.children}
+		<DocumentTitle title={title}>
+			<div className='view-vertical'>
+				{navbarInstance}
+				<div className='view'>
+					{props.children}
+				</div>
 			</div>
-		</div>
+		</DocumentTitle>
 	);
 };
 
