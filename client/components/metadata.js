@@ -191,6 +191,9 @@ class MetadataTable extends Component {
 				data={tableData}
 				columns={columns}
 				dispatch={dispatch}
+				striped
+				condensed
+				hover
 			/>
 		);
 	}

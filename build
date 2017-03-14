@@ -32,7 +32,7 @@ else
 fi
 
 echo "Building static assets."
-uglifycss ./client/css/* > ./python/loompy/static/css/bundle.min.css
+uglifycss ./client/css/*.css > ./python/loompy/static/css/bundle.min.css
 # I can't figure out how to both generate correct paths in the HTML template
 # of webpack, and have the resulting index.html be put in the right folders.
 # Yes, it's an ugly hack, but it works - Job

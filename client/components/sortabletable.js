@@ -1,5 +1,5 @@
 import React, { PropTypes } from 'react';
-import { Glyphicon } from 'react-bootstrap';
+import { Table, Glyphicon } from 'react-bootstrap';
 import { isEqual } from 'lodash';
 
 // we can map a single or multiple
@@ -11,7 +11,7 @@ const mapToCell = (row, key, keys) => {
 };
 
 export const SortableTable = function (props) {
-	const { data, columns, order } = props;
+	const { data, columns, order, striped, bordered, condensed, hover } = props;
 
 	let headerRows = [];
 	let maxHeaders = 0;
@@ -54,7 +54,7 @@ export const SortableTable = function (props) {
 	for (let i = 0; i < data.length; i++) {
 		let rowCells = [];
 		for (let j = 0; j < columns.length; j++) {
-			const {dataStyle, key, keys, mergeRows } = columns[j];
+			const { dataStyle, key, keys, mergeRows } = columns[j];
 			const cell = mapToCell(data[i], key, keys);
 			let rowSpan = 1;
 			if (mergeRows) {
@@ -77,14 +77,19 @@ export const SortableTable = function (props) {
 	}
 
 	return (
-		<table style={{ width: '100%' }}>
+		<Table
+			striped={striped}
+			bordered={bordered}
+			condensed={condensed}
+			hover={hover}
+			style={{ width: '100%' }}>
 			<thead>
 				{headerRows}
 			</thead>
 			<tbody>
 				{dataRows}
 			</tbody>
-		</table>
+		</Table>
 	);
 };
 
@@ -98,4 +103,8 @@ SortableTable.propTypes = {
 		key: PropTypes.string,
 		asc: PropTypes.bool,
 	}),
+	striped: PropTypes.bool,
+	bordered: PropTypes.bool,
+	condensed: PropTypes.bool,
+	hover: PropTypes.bool,
 };

@@ -1,4 +1,4 @@
-import React, { PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { RemountOnResize } from './remount-on-resize';
 
 
@@ -33,7 +33,7 @@ export function drawText(context, text, x, y) {
 	context.fillText(text, x, y);
 }
 
-class CanvasComponent extends React.Component {
+class CanvasComponent extends Component {
 	constructor(props) {
 		super(props);
 		this.draw = this.draw.bind(this);
