@@ -184,7 +184,9 @@ const DatasetList = function (props) {
 				columns={columns}
 				dispatch={dispatch}
 				order={order}
-				bordered condensed
+				bordered
+				condensed
+				responsive
 			/>
 		);
 	} else {

@@ -11,7 +11,7 @@ const mapToCell = (row, key, keys) => {
 };
 
 export const SortableTable = function (props) {
-	const { data, columns, order, striped, bordered, condensed, hover } = props;
+	const { data, columns, order, striped, bordered, condensed, hover, responsive } = props;
 
 	let headerRows = [];
 	let maxHeaders = 0;
@@ -82,6 +82,7 @@ export const SortableTable = function (props) {
 			bordered={bordered}
 			condensed={condensed}
 			hover={hover}
+			responsive={responsive}
 			style={{ width: '100%' }}>
 			<thead>
 				{headerRows}
@@ -107,4 +108,5 @@ SortableTable.propTypes = {
 	bordered: PropTypes.bool,
 	condensed: PropTypes.bool,
 	hover: PropTypes.bool,
+	responsive: PropTypes.bool,
 };
