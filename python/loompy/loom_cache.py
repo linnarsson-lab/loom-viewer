@@ -96,12 +96,13 @@ class LoomCache(object):
 						list_entry = self.list_entries.get(key)
 						# if list_entry is cached and the file has not changed, use
 						# cached list_entry, else recreate list_entry from loom file
-						if list_entry is None or self.format_time(project, filename) != list_entry["lastModified"]:
+						if list_entry is None or self.format_last_mod(project, filename) != list_entry["lastModified"]:
 							print("Outdated list-entry for " + key +", updating cache")
 							list_entry = self.make_list_entry(project, filename, ds)
 							self.list_entries[key] = list_entry
 						result.append(list_entry)
 		return result
+
 	def make_list_entry(self, project, filename, ds):
 		"""
 		Generate object containing list entry metadata
@@ -116,7 +117,7 @@ class LoomCache(object):
 		total_genes = ds.shape[0]
 		# default to last_modified for older files that do
 		# not have a creation_date field
-		last_mod = self.format_time(project, filename)
+		last_mod = self.format_last_mod(project, filename)
 		creation_date = ds.attrs.get("creation_date", last_mod)
 		return {
 			"project": project,
@@ -132,7 +133,7 @@ class LoomCache(object):
 			"totalGenes": total_genes,
 		}
 
-	def format_time(self, project, filename):
+	def format_last_mod(self, project, filename):
 		"""
 		Returns the last time the file was modified as a string,
 		formatted year/month/day hour:minute:second
@@ -162,7 +163,7 @@ class LoomCache(object):
 
 		key = project + "/" + filename
 		cache = self.list_entries.get(key)
-		if key in self.looms and cache != None and cache["lastModified"] == self.format_time(project, filename):
+		if key in self.looms and cache != None and cache["lastModified"] == self.format_last_mod(project, filename):
 			print("Serving dataset " + key +" from cache")
 			return self.looms[key]
 
@@ -179,7 +180,7 @@ class LoomCache(object):
 		# Similarly, update data in list_entry if required
 		key = project + "/" + filename
 		list_entry = self.list_entries.get(key)
-		if list_entry is None or self.format_time(project, filename) != list_entry["lastModified"]:
+		if list_entry is None or self.format_last_mod(project, filename) != list_entry["lastModified"]:
 			print("Outdated cache for " + key +", updating")
 			# since we only use this function when the file has changed,
 			# we can simply call connect_dataset_locally to update the cache
