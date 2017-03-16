@@ -3,8 +3,8 @@ import * as colors from '../js/colors';
 import { textSize, textStyle, drawText } from './canvas';
 
 export function sparkline(attr, indices, mode, dataRange, label, orientation, unfiltered) {
-	if (!attr){
-		return () => {};
+	if (!attr) {
+		return () => { };
 	}
 
 	// Determine plotter
@@ -243,38 +243,43 @@ function categoriesPainter(context, range, colorIndices) {
 		// more pixels than data
 		const barWidth = width / data.length;
 		let i = 0;
+		context.fillStyle = colors.category20[0];
 		while (i < data.length) {
-			const val = data[i];
-
+			let val = data[i];
 			let j = i, nextVal;
 			// advance while value doesn't change
 			do {
 				j++;
 				nextVal = data[j];
 			} while (val === nextVal && i + j < data.length);
-
-			if (val !== undefined){
-				const cIdx = colorIndices.mostFreq[val];
-				context.fillStyle = colors.category20[cIdx];
-				// force to pixel grid
-				const x = xOffset + i * barWidth;
-				const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
-				context.fillRect(x | 0, 0, roundedWidth, context.height);
-			}
+			val = val || 0;
+			const cIdx = colorIndices.mostFreq[val] || 0;
+			context.fillStyle = colors.category20[cIdx];
+			// force to pixel grid
+			const x = xOffset + i * barWidth;
+			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
+			context.fillRect(x | 0, 0, roundedWidth, context.height);
 			i = j;
 		}
 	} else {
 		// more data than pixels
-		for (let i = 0; i < width; i++) {
+		let i = 0;
+		context.fillStyle = colors.category20[0];
+		while (i < width) {
 			const i0 = (i * data.length / width) | 0;
 			const i1 = ((i + 1) * data.length / width) | 0;
-			const slice = data.slice(i0, i1);
-			const mostCommonValue = findMostCommon(slice);
-			if (mostCommonValue){
-				const cIdx = colorIndices.mostFreq[mostCommonValue];
-				context.fillStyle = colors.category20[cIdx];
-				context.fillRect(xOffset + i, 0, 1, context.height);
-			}
+			const mostCommonValue = findMostCommon(data, i0, i1) || 0;
+			let j = i, nextCommonValue;
+			do {
+				j++;
+				const j0 = (j * data.length / width) | 0;
+				const j1 = ((j + 1) * data.length / width) | 0;
+				nextCommonValue = findMostCommon(data, j0, j1) || 0;
+			} while (mostCommonValue === nextCommonValue && j < width);
+			const cIdx = colorIndices.mostFreq[mostCommonValue] || 0;
+			context.fillStyle = colors.category20[cIdx];
+			context.fillRect(xOffset + i, 0, (j-i), context.height);
+			i = j;
 		}
 	}
 }
@@ -282,8 +287,8 @@ function categoriesPainter(context, range, colorIndices) {
 
 function barPainter(attr, label) {
 	let { min, max, hasZeros } = attr;
-	min = min||0;
-	max = max||0;
+	min = min || 0;
+	max = max || 0;
 	min = hasZeros && min > 0 ? 0 : min;
 	return (context, range) => {
 		barPaint(context, range, min, max, label);
@@ -311,7 +316,7 @@ function barPaint(context, range, min, max, label) {
 		do {
 			j++;
 			nextHeight = (outliers[j] * barScale) | 0;
-		}  while (barHeight === nextHeight && i + j < outliers.length);
+		} while (barHeight === nextHeight && i + j < outliers.length);
 
 		const w = (j - i) * barWidth;
 
@@ -321,7 +326,7 @@ function barPaint(context, range, min, max, label) {
 			// canvas defaults to positive y going *down*, so to
 			// draw from bottom to top we start at context height and
 			// subtract the bar height.
-			let y = context.height - barHeight|0;
+			let y = context.height - barHeight | 0;
 
 			// force to pixel grid
 			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
@@ -333,14 +338,14 @@ function barPaint(context, range, min, max, label) {
 	context.fillStyle = '#888888';
 	i = 0;
 	x = range.xOffset;
-	while (i < means.length){
+	while (i < means.length) {
 		const meanHeight = (means[i] * barScale) | 0;
 
 		let j = i, nextHeight;
 		do {
 			j++;
 			nextHeight = (means[j] * barScale) | 0;
-		}  while (meanHeight === nextHeight && i + j < means.length);
+		} while (meanHeight === nextHeight && i + j < means.length);
 
 		const w = (j - i) * barWidth;
 
@@ -385,14 +390,14 @@ function heatmapPaint(context, range, min, max, label, colorLUT) {
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let colorIdx = (((outliers[i]||0 + means[i]||0)*0.5 - min) * colorIdxScale) | 0;
+		let colorIdx = (((outliers[i] || 0 + means[i] || 0) * 0.5 - min) * colorIdxScale) | 0;
 		context.fillStyle = colorLUT[colorIdx];
 
 		let j = i, nextIdx;
 		// advance while colour value doesn't change
 		do {
 			j++;
-			nextIdx = (((outliers[j]||0 + means[j]||0)*0.5 - min) * colorIdxScale) | 0;
+			nextIdx = (((outliers[j] || 0 + means[j] || 0) * 0.5 - min) * colorIdxScale) | 0;
 		} while (colorIdx === nextIdx && i + j < outliers.length);
 
 		const w = (j - i) * barWidth;
@@ -427,12 +432,12 @@ function textPaint(context, range) {
 		// and draw at (0, 0) and translate().
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
-		context.translate(-2, ((lineSize*0.625)|0) + range.xOffset);
+		context.translate(-2, ((lineSize * 0.625) | 0) + range.xOffset);
 		const rotation = Math.PI / 6;
 		range.data.forEach((label) => {
 			if (label) {
 				context.rotate(rotation);
-				drawText(context, '– '+label, 0, 0);
+				drawText(context, '– ' + label, 0, 0);
 				context.rotate(-rotation);
 			}
 			context.translate(0, lineSize);

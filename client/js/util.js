@@ -22,10 +22,12 @@ export function inBounds(r1, r2) {
  * Returns array of all unique values as `{ val, count }`
  * objects. Sorted by `count`.
  */
-export function countElements(array) {
+export function countElements(array, start, end) {
+	start = start || 0;
+	end = end || array.length;
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
-	let i = 0, j = 0, sorted = array.slice(0).sort(),
+	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
 		val = sorted[i], uniques = [];
 	while (val !== undefined) {
 		// keep going until a different value is found
@@ -37,8 +39,10 @@ export function countElements(array) {
 	return uniques;
 }
 
-export function findMostCommon(array) {
-	let i = 0, j = 0, sorted = array.slice(0).sort(),
+export function findMostCommon(array, start, end) {
+	start = start || 0;
+	end = end || array.length;
+	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
 		val = sorted[i], values = [], count = [];
 	// linearly run through the array, count unique values
 	while (val !== undefined) {
@@ -63,13 +67,16 @@ export function findMostCommon(array) {
 }
 
 // assumes no NaN values!
-export function calcMinMax(data) {
+export function calcMinMax(data, start, end) {
+	start = start || 0;
+	end = end || data.length;
+
 	let min, max;
-	let i = data.length - 1;
+	let i = end - 1;
 	let v = data[i];
 	if (typeof v === 'number') {
 		min = max = v;
-		while (i--) {
+		while (start < i--) {
 			const v = data[i];
 			min = min < v ? min : v;
 			max = max > v ? max : v;
