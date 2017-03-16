@@ -42,6 +42,11 @@ import logging
 import requests
 import time
 
+import pickle
+import pickletools
+import gzip
+
+
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
 		return s[2:-1]
@@ -1500,11 +1505,118 @@ class LoomConnection(object):
 			return tile
 
 
-	def dz_get_zoom_tile_star(args):
+	################
+	# EXPAND FILE #
+	################
+
+	"""
+		Methods for extracting data as pickled files for fast access.
+		Note that Deep Zoom handles this on its own.
+	"""
+
+	def pickle_optimized(self, filename, data):
+			with gzip.open(filename,'wb') as f:
+				pickled_data = pickletools.optimize(pickle.dumps(data))
+				f.compress(pickled_data)
+
+	def expand_file_general_metadata(self, project, truncate=False):
 		"""
-		A wrapper around dz_get_zoom_tile to make it easier to pass to multiprocess.Pool.map
+		Generate object containing list entry metadata
 		"""
-		return self.dz_get_zoom_tile(*args)
+		general_metadata_filename = '%s.file_general_metadata.pklz' % (self.filename)
+		if os.path.isfile(general_metadata_filename) and not truncate:
+			return
+		else:
+			f = gzip.open(general_metadata_filename,'wb')
+			title = self.attrs.get("title", self.filename)
+			descr = self.attrs.get("description", "")
+			url = self.attrs.get("url", "")
+			doi = self.attrs.get("doi", "")
+			# get arbitrary col/row attribute, they're all lists
+			# of equal size. The length equals total cells/genes
+			total_cells = self.shape[1]
+			total_genes = self.shape[0]
+			# default to last_modified for older files that do
+			# not have a creation_date field
+			last_mod = self.format_time(project, filename)
+			creation_date = self.attrs.get("creation_date", last_mod)
+			file_general_metadata = {
+				"project": project,
+				"filename": self.filename,
+				"dataset": filename,
+				"title": title,
+				"description": descr,
+				"url":url,
+				"doi": doi,
+				"creationDate": creation_date,
+				"lastModified": last_mod,
+				"totalCells": total_cells,
+				"totalGenes": total_genes,
+			}
+			self.pickle_optimized(general_metadata_filename, file_general_metadata)
+
+	# Includes attributes
+	def expand_file_info(self, project, truncate=False):
+
+		file_info_name = '%s.file_info.pklz' % (self.filename)
+		if os.path.isfile(file_info_name) and not truncate:
+			return
+		else:
+			dims = self.dz_dimensions()
+			fileinfo = {
+				"project": project,
+				"dataset": self.filename,
+				"filename": self.filename,
+				"shape": self.shape,
+				"zoomRange": self.dz_zoom_range(),
+				"fullZoomHeight": dims[1],
+				"fullZoomWidth": dims[0],
+				"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in self.row_attrs.items()]),
+				"colAttrs": dict([(name, vals.tolist()) for (name,vals) in self.col_attrs.items()]),
+			}
+			self.pickle_optimized(file_info_name, fileinfo)
+
+	def expand_rows(self, truncate=False):
+
+		row_dir = '%s.rows' % ( self.filename )
+
+		if os.path.isfile(row_dir) and not truncate:
+			return
+
+		try:
+			os.makedirs(row_dir, exist_ok=True)
+		except OSError as exception:
+			# if the error was that the directory already
+			# exists, ignore it, since that is expected.
+			if exception.errno != errno.EEXIST:
+				raise
+
+		total_rows = self.shape[0]
+		for i in range(len(total_rows)):
+			row_file_name = '%s/%06d.pklz' % (row_dir, i)
+			row = {'idx': i, 'data': ds[i,:].tolist()}
+			self.pickle_optimized(row_file_name, row)
+
+	def expand_columns(self):
+
+		col_dir = '%s.rows' % ( self.filename )
+
+		if os.path.isfile(col_dir) and not truncate:
+			return
+
+		try:
+			os.makedirs(col_dir, exist_ok=True)
+		except OSError as exception:
+			# if the error was that the directory already
+			# exists, ignore it, since that is expected.
+			if exception.errno != errno.EEXIST:
+				raise
+
+		total_cols = self.shape[1]
+		for i in range(len(total_cols)):
+			col_file_name = '%s/%06d.pklz' % (col_dir, i)
+			col = {'idx': i, 'data': ds[:,i].tolist()}
+			self.pickle_optimized(col_file_name, col)
 
 class _CEF(object):
 	def __init__(self):
