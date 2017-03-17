@@ -1514,10 +1514,14 @@ class LoomConnection(object):
 		Note that Deep Zoom handles this on its own.
 	"""
 
-	def pickle_optimized(self, filename, data):
-			with gzip.open(filename,'wb') as f:
+	def save_compressed_pickle(self, filename, data):
+			with gzip.open(filename,"wb") as f:
 				pickled_data = pickletools.optimize(pickle.dumps(data))
 				f.compress(pickled_data)
+
+	def load_compressed_pickle(self, filename):
+			with gzip.open(filename,"rb") as f:
+				return pickle.loads(f.read())
 
 	def expand_file_general_metadata(self, project, truncate=False):
 		"""
@@ -1553,7 +1557,7 @@ class LoomConnection(object):
 				"totalCells": total_cells,
 				"totalGenes": total_genes,
 			}
-			self.pickle_optimized(general_metadata_filename, file_general_metadata)
+			self.save_compressed_pickle(general_metadata_filename, file_general_metadata)
 
 	# Includes attributes
 	def expand_file_info(self, project, truncate=False):
@@ -1574,7 +1578,7 @@ class LoomConnection(object):
 				"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in self.row_attrs.items()]),
 				"colAttrs": dict([(name, vals.tolist()) for (name,vals) in self.col_attrs.items()]),
 			}
-			self.pickle_optimized(file_info_name, fileinfo)
+			self.save_compressed_pickle(file_info_name, fileinfo)
 
 	def expand_rows(self, truncate=False):
 
@@ -1595,7 +1599,7 @@ class LoomConnection(object):
 		for i in range(len(total_rows)):
 			row_file_name = '%s/%06d.pklz' % (row_dir, i)
 			row = {'idx': i, 'data': ds[i,:].tolist()}
-			self.pickle_optimized(row_file_name, row)
+			self.save_compressed_pickle(row_file_name, row)
 
 	def expand_columns(self):
 
@@ -1616,7 +1620,7 @@ class LoomConnection(object):
 		for i in range(len(total_cols)):
 			col_file_name = '%s/%06d.pklz' % (col_dir, i)
 			col = {'idx': i, 'data': ds[:,i].tolist()}
-			self.pickle_optimized(col_file_name, col)
+			self.save_compressed_pickle(col_file_name, col)
 
 class _CEF(object):
 	def __init__(self):
