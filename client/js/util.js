@@ -20,48 +20,54 @@ export function inBounds(r1, r2) {
 
 /**
  * Returns array of all unique values as `{ val, count }`
- * objects. Sorted by `count`.
+ * objects. Sorted by `val`.
  */
 export function countElements(array, start, end) {
-	start = start || 0;
-	end = end || array.length;
+	start = start > 0 ? start : 0;
+	end = end < array.length ? end : array.length;
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
-	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
-		val = sorted[i], uniques = [];
-	while (val !== undefined) {
+	let sorted = array.slice(start, end);
+	sorted.sort();
+	let i = end;
+	while (end-- > start && array[end] === undefined) { }
+
+	i = end;
+	let val = sorted[i], j = i, uniques = [];
+	while (val) {
 		// keep going until a different value is found
-		while (sorted[++j] === val) { }
-		uniques.push({ val, count: j - i });
+		while (sorted[--j] === val && j >= start) { }
+		uniques.push({ val, count: i - j });
 		i = j;
 		val = sorted[j];
+	}
+	// If array contains zeros, they will be in the front
+	// and the  while loop will abort early since it is
+	// a falsey value. j will be the last index with a
+	// zero value, so zeros === j+1
+	// Given that many gene arrays contain mostly zeros,
+	// this can save a bit of time.
+	if (val === 0){
+		uniques.push({ val, count: j+1 });
 	}
 	return uniques;
 }
 
 export function findMostCommon(array, start, end) {
-	start = start || 0;
-	end = end || array.length;
+	start = start > 0 ? start : 0;
+	end = end < array.length? end : array.length;
 	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
-		val = sorted[i], values = [], count = [];
+		val = sorted[i], mv = val, mc = 1;
 	// linearly run through the array, count unique values
-	while (val !== undefined) {
+	while (val !== null && val !== undefined) {
 		// keep going until a different value is found
 		while (sorted[++j] === val) { }
-		values.push(val);
-		count.push(j - i);
+		if (j - i > mc){
+			mv = val;
+			mc = j-i;
+		}
 		i = j;
 		val = sorted[j];
-	}
-
-	i = count.length;
-	let mc = count[i - 1], mv = values[i - 1];
-	while (i--) {
-		j = count[i];
-		if (j > mc) {
-			mc = j;
-			mv = values[i];
-		}
 	}
 	return mv;
 }

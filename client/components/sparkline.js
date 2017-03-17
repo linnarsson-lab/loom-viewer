@@ -55,7 +55,6 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 
 	// If dataRange is undefined, use the whole (filtered) dataset.
 	const source = unfiltered ? data : arraySubset(data, indices, arrayType);
-
 	let range = {
 		left: (dataRange ? dataRange[0] : 0),
 		right: (dataRange ? dataRange[1] : source.length),
@@ -69,21 +68,25 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 
 	range.total = Math.ceil(range.right) - Math.floor(range.left);
 	if (range.total <= 0) { return () => { }; }
-	// If we're not displaying text, then indexed string arrays
-	// should remain Uint8Arrays, as they are more efficient
-	let array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
-	// with undefined entries on either or both ends.
-	// (for typed arrays, JS converts undefined to 0)
-	range.data = new array(range.total);
+	// with empty entries on either or both ends.
+	const iOffset = Math.floor(range.left);
 	if (mode === 'Text' && indexedVal) {
-		for (let i = 0, i0 = Math.floor(range.left); i < range.total; i++) {
-			range.data[i] = indexedVal[source[i0 + i]];
+		range.data = [];
+		for (let i = 0; i < range.total; i++) {
+			range.data.push(indexedVal[source[iOffset + i]]);
 		}
 	} else {
-		for (let i = 0, i0 = Math.floor(range.left); i < range.total; i++) {
-			range.data[i] = source[i0 + i];
+		// If we're not displaying text, then indexed string arrays
+		// should remain Uint8Arrays, as they are more efficient.
+		// Also note that we are basically guaranteed a typed array
+		// at this point in the code, so we cannot use push.
+		const array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
+		let i = range.total;
+		range.data = new array(i);
+		while (i--) {
+			range.data[i] = source[iOffset + i];
 		}
 	}
 
@@ -278,12 +281,11 @@ function categoriesPainter(context, range, colorIndices) {
 			} while (mostCommonValue === nextCommonValue && j < width);
 			const cIdx = colorIndices.mostFreq[mostCommonValue] || 0;
 			context.fillStyle = colors.category20[cIdx];
-			context.fillRect(xOffset + i, 0, (j-i), context.height);
+			context.fillRect(xOffset + i, 0, (j - i), context.height);
 			i = j;
 		}
 	}
 }
-
 
 function barPainter(attr, label) {
 	let { min, max, hasZeros } = attr;

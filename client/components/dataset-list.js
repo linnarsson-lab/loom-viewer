@@ -211,7 +211,7 @@ class SearchDataSetViewComponent extends Component {
 		super(props);
 
 		this.filterProjects = this.filterProjects.bind(this);
-		this.state = { list: undefined, filtered: undefined };
+		this.state = { list: null, filtered:  null };
 	}
 
 	componentWillMount() {
@@ -245,7 +245,7 @@ class SearchDataSetViewComponent extends Component {
 
 
 	filterProjects(list, order, search) {
-		let filtered = undefined;
+		let filtered;
 
 		const retVal = order.asc ? 1 : -1;
 		const compareKey = order.key;
