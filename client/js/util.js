@@ -22,15 +22,15 @@ export function inBounds(r1, r2) {
  * @param {[]} array - sorted array
  * @param {*} element - element in array
  */
-export function binaryIndexOf(array, element){
+export function binaryIndexOf(array, element) {
 	let minIdx = 0, maxIdx = array.length - 1, idx, cElement;
-	while (minIdx <= maxIdx){
+	while (minIdx <= maxIdx) {
 		idx = ((minIdx + maxIdx) * 0.5) | 0;
 		cElement = array[idx];
-		if (cElement < element){
-			minIdx = idx+1;
-		} else if (cElement > element){
-			maxIdx = idx-1;
+		if (cElement < element) {
+			minIdx = idx + 1;
+		} else if (cElement > element) {
+			maxIdx = idx - 1;
 		} else {
 			return idx;
 		}
@@ -52,24 +52,22 @@ export function countElements(array, start, end) {
 	let i = end;
 	while (end-- > start && array[end] === undefined) { }
 
-	i = end;
-	let val = sorted[i], j = i, uniques = [];
-	while (val) {
+	// By using a sentinel value we can skip counting the
+	// smallest element of the array.
+	// Given that many gene arrays contain mostly zeros,
+	// this can save a bit of time.
+
+	i = end-1;
+	let val = sorted[i], sentinel = sorted[start], j = i, uniques = [];
+	while (val !== sentinel) {
 		// keep going until a different value is found
-		while (sorted[--j] === val && j >= start) { }
+		while (--j >= start && sorted[j] === val) { }
 		uniques.push({ val, count: i - j });
 		i = j;
 		val = sorted[j];
 	}
-	// If array contains zeros, they will be in the front
-	// and the  while loop will abort early since it is
-	// a falsey value. j will be the last index with a
-	// zero value, so zeros === j+1
-	// Given that many gene arrays contain mostly zeros,
-	// this can save a bit of time.
-	if (val === 0) {
-		uniques.push({ val, count: j + 1 });
-	}
+	uniques.push({ val, count: j + 1 });
+
 	return uniques;
 }
 
