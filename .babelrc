@@ -12,6 +12,12 @@
 	],
 	"plugins": [
 		"transform-react-constant-elements",
-		"lodash"
+		"lodash",
+		[
+			"transform-strict-mode",
+			{
+				"strict": true
+			}
+		]
 	]
 }
