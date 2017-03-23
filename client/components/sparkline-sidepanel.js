@@ -3,8 +3,8 @@ import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
 import { fetchGene } from '../actions/actions';
-//import { AttrLegend } from './legend';
-//import { PrintSettings } from './print-settings';
+import { binaryIndexOf } from '../js/util';
+
 import {
 	Panel, Button,
 	ListGroup, ListGroupItem,
@@ -15,10 +15,10 @@ import { SET_VIEW_PROPS } from '../actions/actionTypes';
 class LegendSettings extends Component {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		const { keys } = dataset.col;
+		const { sortedKeys } = dataset.col;
 
 		const colAttrsHC = (val) => {
-			if (keys.indexOf(val) === -1 && !dataset.fetchedGenes[val]) {
+			if (binaryIndexOf(sortedKeys, val) === -1 && !dataset.fetchedGenes[val]) {
 				dispatch(fetchGene(dataset, [val]));
 			}
 			dispatch({

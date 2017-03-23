@@ -1,5 +1,6 @@
+
 /**
- * Crude normal curve approximation by taking the average of 8 random values.
+ * Crude normal curve approximation by taking the average of 4 random values.
  * Returns random value between [-0.5, 0.5)
  */
 const { random } = Math;
@@ -16,6 +17,25 @@ export function inBounds(r1, r2) {
 		r1[1] < r2[3] && // r1.ymin < r2.ymax
 		r2[1] < r1[3]    // r2.ymin < r1.ymax
 	);
+}
+/**
+ * @param {[]} array - sorted array
+ * @param {*} element - element in array
+ */
+export function binaryIndexOf(array, element){
+	let minIdx = 0, maxIdx = array.length - 1, idx, cElement;
+	while (minIdx <= maxIdx){
+		idx = ((minIdx + maxIdx) * 0.5) | 0;
+		cElement = array[idx];
+		if (cElement < element){
+			minIdx = idx+1;
+		} else if (cElement > element){
+			maxIdx = idx-1;
+		} else {
+			return idx;
+		}
+	}
+	return -1;
 }
 
 /**
@@ -47,24 +67,24 @@ export function countElements(array, start, end) {
 	// zero value, so zeros === j+1
 	// Given that many gene arrays contain mostly zeros,
 	// this can save a bit of time.
-	if (val === 0){
-		uniques.push({ val, count: j+1 });
+	if (val === 0) {
+		uniques.push({ val, count: j + 1 });
 	}
 	return uniques;
 }
 
 export function findMostCommon(array, start, end) {
 	start = start > 0 ? start : 0;
-	end = end < array.length? end : array.length;
+	end = end < array.length ? end : array.length;
 	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
 		val = sorted[i], mv = val, mc = 1;
 	// linearly run through the array, count unique values
 	while (val !== null && val !== undefined) {
 		// keep going until a different value is found
 		while (sorted[++j] === val) { }
-		if (j - i > mc){
+		if (j - i > mc) {
 			mv = val;
-			mc = j-i;
+			mc = j - i;
 		}
 		i = j;
 		val = sorted[j];
@@ -163,96 +183,24 @@ function convertWholeArray(data, name, uniques) {
 	// convert number values to typed arrays matching the schema,
 	// and string arrays with few unique values to indexedString
 	let indexedVal;
-	switch (arrayType) {
-		case 'number':
-			if (isInt) {
-				// convert to most compact integer representation
-				// for better performance.
-				if (min >= 0) {
-					if (max < 256) {
-						arrayType = 'uint8';
-					} else if (max < 65535) {
-						arrayType = 'uint16';
-					} else {
-						arrayType = 'uint32';
-					}
-				} else if (min > -128 && max < 128) {
-					arrayType = 'int8';
-				} else if (min > -32769 && max < 32768) {
-					arrayType = 'int16';
-				} else {
-					arrayType = 'int32';
-				}
-			} else {
-				arrayType = 'float32';
-			}
-			data = arrayConstr(arrayType).from(data);
-			break;
-		case 'string':
-		default:
-			// in case of string arrays, we assume they represent
-			// categories when plotted as x/y attributes. For this
-			// we need to set min/max to the number of unique categories
-			min = 0;
-			max = uniques.length - 1;
-
-			// convert to indexed form if fewer than 256 unique strings
-			// Using indexed strings can be much faster, since Uint8Arrays
-			// are smaller, remove pointer indirection, and allow
-			// for quicker comparisons than strings.
-			if (uniques.length < 256) {
-				// sort by least frequent, see below
-				uniques.sort((a, b) => {
-					return (
-						a.count < b.count ? -1 :
-							a.count > b.count ? 1 :
-								a.val < b.val ? -1 : 1
-					);
-				});
-				// Store original values, with zero value as null
-				indexedVal = [null];
-				let i = uniques.length;
-				while (i--) {
-					indexedVal.push(uniques[i].val);
-				}
-
-				// Create array of index values
-				let indexedData = new Uint8Array(data.length);
-				let j = data.length;
-				while (j--) {
-					const dataVal = data[j];
-					i = indexedVal.length;
-					// because we sorted earlier, we tend to
-					// leave this loop as early as possible.
-					while (i-- && dataVal !== indexedVal[i]) { }
-					// indexedVal.length - i, so that the most
-					// common values have the smallest indices
-					indexedData[j] = indexedVal.length - i;
-				}
-				data = indexedData;
-				uniques = countElements(data);
-				min = 1;
-				max = uniques.length;
-				break;
-			}
-			break;
+	if (arrayType === 'number') {
+		const nArray = makeNumberArray(data, isInt, min, max);
+		data = nArray.data;
+		arrayType = nArray.arrayType;
+	} else {
+		const strArray = makeStringArray(data, min, max, uniques); // string data
+		data = strArray.data;
+		indexedVal = strArray.indexedVal;
+		min = strArray.min;
+		max = strArray.max;
+		uniques = strArray.uniques;
 	}
-
-	// We set filtered flags after conversion,
-	// in case array.uniques had to be updated for indexedData
-	let i = uniques.length;
-	while (i--) {
-		uniques[i].filtered = false;
-	}
-
 
 	// create lookup table to convert attribute values
 	// to color indices (so a look-up table for finding
 	// indices for another lookup table).
 	// Use an array if possible for faster lookup
-	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? (
-		colorIndicesArray(uniques, data)
-	) : colorIndicesDict(uniques, data);
+	let colorIndices = arrayType === 'string' && !indexedVal ? cIdxStringConverter(uniques, data) : cIdxConverter(uniques, data);
 
 	if (process.env.NODE_ENV === 'production') {
 		return {
@@ -293,8 +241,7 @@ function convertWholeArray(data, name, uniques) {
 	}
 }
 
-// Split into separate function so mostFreq and max are type stable
-function colorIndicesArray(uniques, data) {
+function cIdxConverter(uniques, data) {
 	let mostFreq = [], max = [];
 
 	uniques.sort((a, b) => {
@@ -323,7 +270,7 @@ function colorIndicesArray(uniques, data) {
 	return { mostFreq, max };
 }
 
-function colorIndicesDict(uniques, data) {
+function cIdxStringConverter(uniques, data) {
 	let mostFreq = {}, max = {};
 
 	uniques.sort((a, b) => {
@@ -335,6 +282,7 @@ function colorIndicesDict(uniques, data) {
 		max[uniques[i].val] = i + 1;
 	}
 
+	// if every value is unique, we keep the sort-by-max order
 	if (uniques.length < data.length) {
 		uniques.sort((a, b) => {
 			return (
@@ -349,7 +297,6 @@ function colorIndicesDict(uniques, data) {
 		mostFreq[uniques[i].val] = i + 1;
 	}
 	return { mostFreq, max };
-
 }
 
 // if we know all values are the same,
@@ -422,6 +369,82 @@ function convertUnique(data, name, uniques, uniqueVal) {
 	};
 }
 
+function makeNumberArray(data, isInt, min, max) {
+	let arrayType = 'float32';
+	if (isInt) {
+		// convert to most compact integer representation
+		// for better performance.
+		if (min >= 0) {
+			if (max < 256) {
+				arrayType = 'uint8';
+			} else if (max < 65535) {
+				arrayType = 'uint16';
+			} else {
+				arrayType = 'uint32';
+			}
+		} else if (min > -128 && max < 128) {
+			arrayType = 'int8';
+		} else if (min > -32769 && max < 32768) {
+			arrayType = 'int16';
+		} else {
+			arrayType = 'int32';
+		}
+	}
+	return {
+		data: arrayConstr(arrayType).from(data),
+		arrayType,
+	};
+}
+
+function makeStringArray(data, min, max, uniques) {
+	// in case of string arrays, we assume they represent
+	// categories when plotted as x/y attributes. For this
+	// we need to set min/max to the number of unique categories
+	min = 0;
+	max = uniques.length - 1;
+	let indexedVal;
+	// convert to indexed form if fewer than 256 unique strings
+	// Using indexed strings can be much faster, since Uint8Arrays
+	// are smaller, remove pointer indirection, and allow
+	// for quicker comparisons than strings.
+	if (uniques.length < 256) {
+		// sort by least frequent, see below
+		uniques.sort((a, b) => {
+			return (
+				a.count < b.count ? -1 :
+					a.count > b.count ? 1 :
+						a.val < b.val ? -1 : 1
+			);
+		});
+		// Store original values, with zero value as null
+		indexedVal = [null];
+		let i = uniques.length;
+		while (i--) {
+			indexedVal.push(uniques[i].val);
+		}
+
+		// Create array of index values
+		let indexedData = new Uint8Array(data.length);
+		let j = data.length;
+		while (j--) {
+			const dataVal = data[j];
+			i = indexedVal.length;
+			// because we sorted earlier, we tend to
+			// leave this loop as early as possible.
+			while (i-- && dataVal !== indexedVal[i]) { }
+			// indexedVal.length - i, so that the most
+			// common values have the smallest indices
+			indexedData[j] = indexedVal.length - i;
+		}
+		data = indexedData;
+		uniques = countElements(data);
+		min = 1;
+		max = uniques.length;
+	}
+	return {
+		data, indexedVal, uniques, min, max,
+	};
+}
 /**
  * - `array`: array to be sorted
  * - `comparator`: comparison closure that takes *indices* i and j,
@@ -504,8 +527,8 @@ export function findIndices(array, comparator) {
  * Example:
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
  * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
- * @param {x[]} array - data to be sorted in-place
- * @param {x[]} array - indices from where the value
+ * @param {[]} array - data to be sorted in-place
+ * @param {number[]} indices - indices from where the value
  * should *come from*
  */
 export function sortFromIndices(array, indices) {

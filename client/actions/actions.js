@@ -130,14 +130,31 @@ function receiveDataSet(data, path) {
 	let prepRows = prepData(data.rowAttrs), prepCols = prepData(data.colAttrs);
 	let rows = prepRows.data, cols = prepCols.data;
 
+	// some old loom files have 'Cell_ID'
 	rows.cellKeys = cols.attrs.CellID ? cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ? cols.attrs.Cell_ID.data.slice() : [];
 	rows.allKeys = rows.keys.concat(rows.cellKeys);
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
+
+	// there are plenty of use cases for sorted keys, so let's
+	// do so once and store them for later use.
+	rows.sortedKeys = rows.keys.slice().sort();
+	rows.sortedKeysNoUniques = rows.keysNoUniques.slice().sort();
+	rows.sortedAllKeys = rows.allKeys.slice().sort();
+	rows.sortedAllKeysNoUniques = rows.allKeysNoUniques.slice().sort();
+	rows.sortedCellKeys = rows.cellKeys.slice().sort();
 
 	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
 	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
 	cols.allKeys = cols.keys.concat(rows.geneKeys);
 	cols.allKeysNoUniques = cols.keysNoUniques.concat(cols.geneKeys);
+
+
+	cols.sortedKeys = cols.keys.slice().sort();
+	cols.sortedKeysNoUniques = cols.keysNoUniques.slice().sort();
+	cols.sortedAllKeys = cols.allKeys.slice().sort();
+	cols.sortedAllKeysNoUniques = cols.allKeysNoUniques.slice().sort();
+	cols.sortedGeneKeys = cols.geneKeys.slice().sort();
+	cols.sortedGeneKeysLowerCase = cols.geneKeysLowerCase.slice().sort();
 
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
@@ -191,13 +208,14 @@ function prepData(attrs) {
 	}
 	let origOrderKey = '(original order)';
 	attrs[origOrderKey] = originalOrder;
-	// Store all the keys
 	keys.unshift(origOrderKey);
+
 	// Initial sort order
 	let order = [];
 	for (let i = 0; i < Math.min(5, keys.length); i++) {
 		order.push({ key: keys[i], asc: true });
 	}
+
 	// convert attribute arrays to objects with summary
 	// metadata (most frequent, filtered/visible)
 	// '(original order)' isn't part of the regular

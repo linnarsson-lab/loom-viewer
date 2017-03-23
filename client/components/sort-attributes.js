@@ -1,7 +1,9 @@
 import React, { Component, PropTypes } from 'react';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
+
 import { fetchGene } from '../actions/actions';
+import { binaryIndexOf } from '../js/util';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -10,10 +12,10 @@ export class SortAttributeComponent extends Component {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
-		const { keys } = dataset[axis];
+		const { sortedKeys } = dataset[axis];
 
 		this.onChange = (value) => {
-			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
+			if (binaryIndexOf(sortedKeys, value) === -1 && !dataset.fetchedGenes[value]) {
 				dispatch(fetchGene(dataset, [value]));
 			}
 
