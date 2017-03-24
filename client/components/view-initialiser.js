@@ -3,22 +3,24 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 import { fetchProjects } from '../actions/actions';
 import { merge } from '../js/util';
-import JSURL from 'jsurl';
+import { decodeViewstate } from '../js/viewstateEncoder';
+
+import { decompressFromEncodedURIComponent } from 'lz-string';
+
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 class ViewStateInitialiser extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataset,
+		let { dispatch, dataset,
 			viewsettings, initialState,
 			path, stateName } = this.props;
 
-		// URL-encoded state >> existing state >> initial state
-		const viewState = merge(
-			{ [stateName]: initialState },
-			(viewsettings ?
-				JSURL.parse(viewsettings) : dataset.viewState)
-		);
+		let viewState = merge( { [stateName]: initialState }, dataset.viewState );
+		if (viewsettings){
+			viewsettings = decodeViewstate(JSON.parse(decompressFromEncodedURIComponent(viewsettings)), dataset);
+			viewState = merge(viewState, viewsettings);
+		}
 
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
@@ -36,7 +38,7 @@ class ViewStateInitialiser extends Component {
 			<View
 				dispatch={dispatch}
 				dataset={dataset}
-				/>
+			/>
 		) : <div className='view centered'><h1>Initialising View Settings - {stateName}</h1></div>;
 	}
 }
@@ -71,7 +73,7 @@ export const ViewInitialiser = function (props) {
 					dispatch={dispatch}
 					datasets={datasets}
 					path={path}
-					/>
+				/>
 				:
 				<ViewStateInitialiser
 					View={View}

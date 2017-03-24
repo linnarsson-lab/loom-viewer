@@ -22,9 +22,9 @@
   "dependencies": {
     "bootstrap": "^3.3.7",
     "fuse.js": "^2.6.2",
-    "jsurl": "^0.1.5",
     "leaflet": "^1.0.3",
     "lodash": "^4.17.4",
+    "lz-string": "^1.4.4",
     "react": "^15.4.2",
     "react-addons-shallow-compare": "^15.4.2",
     "react-bootstrap": "^0.30.7",

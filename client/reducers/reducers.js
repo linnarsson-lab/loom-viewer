@@ -2,8 +2,9 @@
 import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
-import JSURL from 'jsurl';
+import { compressToEncodedURIComponent } from 'lz-string';
 import { merge, disjointArrays } from '../js/util';
+import { encodeViewstate } from '../js/viewstateEncoder';
 
 
 import {
@@ -67,8 +68,8 @@ function setViewStateURL(state, action) {
 			// A bit hackish, but basically we default to current view
 			view = browserHistory.getCurrentLocation().pathname.split('/')[2];
 	}
-	const { viewState } = state.list[path];
-	const url = `/dataset/${view}/${path}/${JSURL.stringify(viewState)}`;
+	const encodedViewstate = JSON.stringify(encodeViewstate(state.list[path]));
+	const url = `/dataset/${view}/${path}/${compressToEncodedURIComponent(encodedViewstate)}`;
 	browserHistory.replace(url);
 	return state;
 }
@@ -103,11 +104,11 @@ function updateViewState(state, action) {
 				break;
 			}
 		}
-		if (i === -1){
+		if (i === -1) {
 			// a new filter entry
-			filter.push({attr: filterAttrName, val: filterVal});
+			filter.push({ attr: filterAttrName, val: filterVal });
 		} else {
-			filter[i] = filter[filter.length-1];
+			filter[i] = filter[filter.length - 1];
 			filter.pop();
 		}
 		// remember that merge returns a new object,
@@ -180,7 +181,7 @@ function updateAttrSort(order, sortAttrName) {
 				break;
 			}
 		}
-		i = i === -1 ? order.length : i;
+		i = i === -1 ? order.length-1 : i;
 		while (i--) {
 			order[i + 1] = order[i];
 		}
@@ -213,6 +214,7 @@ function updateFiltered(dataset, axis, prevFilter) {
 			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, false, filterCount).attrs
 		);
 	}
+
 	i = filter.length;
 	while (i--) {
 		let filterEntry = filter[i];
@@ -222,10 +224,8 @@ function updateFiltered(dataset, axis, prevFilter) {
 		);
 	}
 
-	// TODO: update sortedFilterIndices if necessary
-	// TODO: merge new attrs
 	i = filterCount.length;
-	let { sortedFilterIndices } = dataset[axis];
+	let { sortedFilterIndices } = dataset[axis], mismatches = 0, sfiLength = 0;
 	while (i--) {
 		// we only need to replace sortedFilterIndices
 		// if there are any mismatches in zeros between
@@ -234,19 +234,20 @@ function updateFiltered(dataset, axis, prevFilter) {
 		if ((pfc | fc) && // is at least one value nonzero?
 			(pfc === 0 || fc === 0) // is at least one value zero?
 		) {
-			// make sure i isn't zero (we might happen to
-			// only have a change on index zero)
-			i++;
-			break;
+			mismatches++;
+		}
+		// count all zeros in the new filterCount
+		if (fc === 0){
+			sfiLength++;
 		}
 	}
-	// i is only bigger than zero if the above loop was aborted
-	// early, implying a significant change in newFilterCount
-	if (i > 0) {
-		sortedFilterIndices = [];
-		for (i = 0; i < filterCount.length; i++) {
+	// mismatches being nonzero implies a significant change in newFilterCount
+	if (mismatches) {
+		sortedFilterIndices = new Uint16Array(sfiLength);
+		let i = filterCount.length;
+		while(i--) {
 			if (filterCount[i] === 0) {
-				sortedFilterIndices.push(i);
+				sortedFilterIndices[--sfiLength] = i;
 			}
 		}
 	}
@@ -304,7 +305,7 @@ function sortFilterIndices(axisData, order, sortedFilterIndices) {
 	let attrs = [], ascending = [];
 	sortedFilterIndices = sortedFilterIndices ? sortedFilterIndices : axisData.sortedFilterIndices.slice();
 
-	// attr may be a gene being fetched, so undefined
+	// attr may be a gene being fetched, so its data might be undefined
 	for (let i = 0; i < order.length; i++) {
 		const { key, asc } = order[i];
 		const attr = axisData.attrs[key];

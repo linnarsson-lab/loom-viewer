@@ -136,7 +136,7 @@ function receiveDataSet(data, path) {
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
 
 	// there are plenty of use cases for sorted keys, so let's
-	// do so once and store them for later use.
+	// sort them once and store them for later use.
 	rows.sortedKeys = rows.keys.slice().sort();
 	rows.sortedKeysNoUniques = rows.keysNoUniques.slice().sort();
 	rows.sortedAllKeys = rows.allKeys.slice().sort();
@@ -145,7 +145,7 @@ function receiveDataSet(data, path) {
 
 	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
 	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
-	cols.allKeys = cols.keys.concat(rows.geneKeys);
+	cols.allKeys = cols.keys.concat(cols.geneKeys);
 	cols.allKeysNoUniques = cols.keysNoUniques.concat(cols.geneKeys);
 
 

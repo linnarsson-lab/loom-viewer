@@ -18,6 +18,7 @@ export function inBounds(r1, r2) {
 		r2[1] < r1[3]    // r2.ymin < r1.ymax
 	);
 }
+
 /**
  * @param {[]} array - sorted array
  * @param {*} element - element in array
