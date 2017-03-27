@@ -20,7 +20,8 @@ setup(
         'flask',
         'flask-compress',
         'gevent',
-        'PyMySQL'
+        'PyMySQL',
+        'ujson'
     ],
     
     # loom command
