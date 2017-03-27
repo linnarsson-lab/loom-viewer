@@ -117,7 +117,7 @@ class LoomCache(object):
 		total_genes = ds.shape[0]
 		# default to last_modified for older files that do
 		# not have a creation_date field
-		last_mod = self.format_last_mod(project, filename)
+		last_mod = ds.format_last_mod()
 		creation_date = ds.attrs.get("creation_date", last_mod)
 		return {
 			"project": project,

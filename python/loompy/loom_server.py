@@ -91,6 +91,10 @@ app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'applic
 app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
+def load_compressed_pickle(filename):
+		with gzip.open(filename,"rb") as f:
+			return pickle.loads(f.read())
+
 #
 # Static assets
 #

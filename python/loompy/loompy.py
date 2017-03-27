@@ -1517,21 +1517,19 @@ class LoomConnection(object):
 	def save_compressed_pickle(self, filename, data):
 			with gzip.open(filename,"wb") as f:
 				pickled_data = pickletools.optimize(pickle.dumps(data))
-				f.compress(pickled_data)
+				f.write(pickled_data)
 
-	def load_compressed_pickle(self, filename):
-			with gzip.open(filename,"rb") as f:
-				return pickle.loads(f.read())
-
-	def expand_file_general_metadata(self, project, truncate=False):
+	def expand_file_general_metadata(self, truncate=False):
 		"""
 		Generate object containing list entry metadata
 		"""
 		general_metadata_filename = '%s.file_general_metadata.pklz' % (self.filename)
 		if os.path.isfile(general_metadata_filename) and not truncate:
+			logging.info('General metadata already expanded')
 			return
 		else:
 			f = gzip.open(general_metadata_filename,'wb')
+			filename = self.filename
 			title = self.attrs.get("title", self.filename)
 			descr = self.attrs.get("description", "")
 			url = self.attrs.get("url", "")
@@ -1542,11 +1540,10 @@ class LoomConnection(object):
 			total_genes = self.shape[0]
 			# default to last_modified for older files that do
 			# not have a creation_date field
-			last_mod = self.format_time(project, filename)
+			last_mod = self.format_last_mod()
 			creation_date = self.attrs.get("creation_date", last_mod)
 			file_general_metadata = {
-				"project": project,
-				"filename": self.filename,
+				"filename": filename,
 				"dataset": filename,
 				"title": title,
 				"description": descr,
@@ -1559,16 +1556,24 @@ class LoomConnection(object):
 			}
 			self.save_compressed_pickle(general_metadata_filename, file_general_metadata)
 
+	def format_last_mod(self):
+		"""
+		Returns a formatted string of the last time the loom file
+		was modified, formatted year/month/day hour:minute:second
+		"""
+		mtime = time.gmtime(os.path.getmtime(self.filename))
+		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
+
 	# Includes attributes
-	def expand_file_info(self, project, truncate=False):
+	def expand_file_info(self, truncate=False):
 
 		file_info_name = '%s.file_info.pklz' % (self.filename)
 		if os.path.isfile(file_info_name) and not truncate:
+			logging.info('File info and attributes already expanded')
 			return
 		else:
 			dims = self.dz_dimensions()
 			fileinfo = {
-				"project": project,
 				"dataset": self.filename,
 				"filename": self.filename,
 				"shape": self.shape,
@@ -1585,6 +1590,7 @@ class LoomConnection(object):
 		row_dir = '%s.rows' % ( self.filename )
 
 		if os.path.isfile(row_dir) and not truncate:
+			logging.info('Rows already expanded')
 			return
 
 		try:
@@ -1596,16 +1602,17 @@ class LoomConnection(object):
 				raise
 
 		total_rows = self.shape[0]
-		for i in range(len(total_rows)):
+		for i in range(total_rows):
 			row_file_name = '%s/%06d.pklz' % (row_dir, i)
-			row = {'idx': i, 'data': ds[i,:].tolist()}
+			row = {'idx': i, 'data': self[i,:].tolist()}
 			self.save_compressed_pickle(row_file_name, row)
 
-	def expand_columns(self):
+	def expand_columns(self, truncate=False):
 
-		col_dir = '%s.rows' % ( self.filename )
+		col_dir = '%s.cols' % ( self.filename )
 
 		if os.path.isfile(col_dir) and not truncate:
+			logging.info('Columns already expanded')
 			return
 
 		try:
@@ -1617,9 +1624,9 @@ class LoomConnection(object):
 				raise
 
 		total_cols = self.shape[1]
-		for i in range(len(total_cols)):
+		for i in range(total_cols):
 			col_file_name = '%s/%06d.pklz' % (col_dir, i)
-			col = {'idx': i, 'data': ds[:,i].tolist()}
+			col = {'idx': i, 'data': self[:,i].tolist()}
 			self.save_compressed_pickle(col_file_name, col)
 
 class _CEF(object):
@@ -1699,6 +1706,8 @@ class _CEF(object):
 					self.matrix[ix] = [float(el) for el in linelist[self.row_attr+1:self.row_attr+1+self.cols]]
 				except ValueError:
 					print(repr(el), ' is invalid at row ', ix)
+
+
 
 
 

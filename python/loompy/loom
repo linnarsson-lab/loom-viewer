@@ -41,13 +41,27 @@ def tile_command(dataset_path, filename):
 	logging.info("Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
 	ds.prepare_heatmap()
 
+def expand_command(dataset_path, filename):
+	ds = connect_loom(dataset_path, filename)
+	if ds == None:
+		logging.error("File not found")
+		sys.exit(1)
+	logging.info("Precomputing general metada tiles (stored as %s.file_general_metadata.pklz)" % filename)
+	ds.expand_file_general_metadata(True)
+	logging.info("Precomputing file info and attributes (stored as %s.file_info.pklz)" % filename)
+	ds.expand_file_info(True)
+	logging.info("Precomputing rows (stored in %s.rows/ subfolder)" % filename)
+	ds.expand_rows(True)
+	logging.info("Precomputing columns (stored in %s.cols/ subfolder)" % filename)
+	ds.expand_columns(True)
+
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
 	if ds == None:
 		logging.error("File not found")
 		sys.exit(1)
 	logging.info("Computing statistics")
-	ds.compute_stats( ) 
+	ds.compute_stats( )
 
 def project_command(dataset_path, filename, perplexity):
 	ds = connect_loom(dataset_path, filename)
@@ -235,7 +249,7 @@ def benchmark_command(infile):
 	testfunc = 'for i in range(0,100): ds[i,:]'
 	t = timeit.Timer(testfunc, setup)
 	logging.info(t.timeit(10))
-	
+
 class Empty(object):
 	pass
 
@@ -286,7 +300,7 @@ if __name__ == '__main__':
 		clone_parser.add_argument('--project', help="Project name")
 		clone_parser.add_argument('-u','--username', help="Username")
 		clone_parser.add_argument('-p','--password', help="Password")
-		
+
 		# loom tsne
 		tsne_parser = subparsers.add_parser('tsne', help="Compute t-SNE projection to 2D")
 		tsne_parser.add_argument("file", help="Loom input file")
@@ -295,6 +309,10 @@ if __name__ == '__main__':
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
 		tile_parser.add_argument("file", help="Loom input file")
+
+		# loom expand
+		expand_parser = subparsers.add_parser('expand', help="Expand loom file to pickle files for faster server")
+		expand_parser.add_argument("file", help="Loom input file")
 
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
@@ -369,6 +387,8 @@ if __name__ == '__main__':
 		tsne_command(args.dataset_path, args.file, args.perplexity)
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
+	elif args.command == "expand":
+		expand_command(args.dataset_path, args.file)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from-loom":
