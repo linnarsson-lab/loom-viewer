@@ -37,7 +37,7 @@ from sklearn.decomposition import IncrementalPCA
 from scipy.spatial.distance import pdist, squareform
 from sklearn.manifold import TSNE
 from sklearn.svm import SVR
-from shutil import copyfile
+from shutil import copyfile, rmtree
 import logging
 import requests
 import time
@@ -46,6 +46,15 @@ import pickle
 import pickletools
 import gzip
 
+import joblib
+
+def save_compressed_pickle(filename, data):
+		with gzip.open(filename=filename, mode="wb", compresslevel=2) as f:
+			pickled_data = pickletools.optimize(pickle.dumps(data))
+			f.write(pickled_data)
+
+def save_compressed_joblib(filename, data):
+	joblib.dump(data, filename, compress=('zlib', 2))
 
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
@@ -1514,47 +1523,47 @@ class LoomConnection(object):
 		Note that Deep Zoom handles this on its own.
 	"""
 
-	def save_compressed_pickle(self, filename, data):
-			with gzip.open(filename,"wb") as f:
-				pickled_data = pickletools.optimize(pickle.dumps(data))
-				f.write(pickled_data)
-
-	def expand_file_general_metadata(self, truncate=False):
+	def expand_md(self, truncate=False):
 		"""
 		Generate object containing list entry metadata
 		"""
-		general_metadata_filename = '%s.file_general_metadata.pklz' % (self.filename)
-		if os.path.isfile(general_metadata_filename) and not truncate:
-			logging.info('General metadata already expanded')
-			return
-		else:
-			f = gzip.open(general_metadata_filename,'wb')
-			filename = self.filename
-			title = self.attrs.get("title", self.filename)
-			descr = self.attrs.get("description", "")
-			url = self.attrs.get("url", "")
-			doi = self.attrs.get("doi", "")
-			# get arbitrary col/row attribute, they're all lists
-			# of equal size. The length equals total cells/genes
-			total_cells = self.shape[1]
-			total_genes = self.shape[0]
-			# default to last_modified for older files that do
-			# not have a creation_date field
-			last_mod = self.format_last_mod()
-			creation_date = self.attrs.get("creation_date", last_mod)
-			file_general_metadata = {
-				"filename": filename,
-				"dataset": filename,
-				"title": title,
-				"description": descr,
-				"url":url,
-				"doi": doi,
-				"creationDate": creation_date,
-				"lastModified": last_mod,
-				"totalCells": total_cells,
-				"totalGenes": total_genes,
-			}
-			self.save_compressed_pickle(general_metadata_filename, file_general_metadata)
+		md_filename = '%s.file_md.pklz' % (self.filename)
+
+		if os.path.isfile(md_filename):
+			if not truncate:
+				logging.info('General metadata already expanded (truncate not set)')
+				return
+			else:
+				logging.info('Removing previously expanded general metadata (truncate set)')
+				os.remove(md_filename)
+
+		logging.info("Precomputing general metada tiles (stored as %s)" % md_filename)
+		filename = self.filename
+		title = self.attrs.get("title", self.filename)
+		descr = self.attrs.get("description", "")
+		url = self.attrs.get("url", "")
+		doi = self.attrs.get("doi", "")
+		# get arbitrary col/row attribute, they're all lists
+		# of equal size. The length equals total cells/genes
+		total_cells = self.shape[1]
+		total_genes = self.shape[0]
+		# default to last_modified for older files that do
+		# not have a creation_date field
+		last_mod = self.format_last_mod()
+		creation_date = self.attrs.get("creation_date", last_mod)
+		md_data = {
+			"filename": filename,
+			"dataset": filename,
+			"title": title,
+			"description": descr,
+			"url":url,
+			"doi": doi,
+			"creationDate": creation_date,
+			"lastModified": last_mod,
+			"totalCells": total_cells,
+			"totalGenes": total_genes,
+		}
+		save_compressed_pickle(md_filename, md_data)
 
 	def format_last_mod(self):
 		"""
@@ -1565,33 +1574,43 @@ class LoomConnection(object):
 		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
 
 	# Includes attributes
-	def expand_file_info(self, truncate=False):
+	def expand_attrs(self, truncate=False):
 
-		file_info_name = '%s.file_info.pklz' % (self.filename)
-		if os.path.isfile(file_info_name) and not truncate:
-			logging.info('File info and attributes already expanded')
-			return
-		else:
-			dims = self.dz_dimensions()
-			fileinfo = {
-				"dataset": self.filename,
-				"filename": self.filename,
-				"shape": self.shape,
-				"zoomRange": self.dz_zoom_range(),
-				"fullZoomHeight": dims[1],
-				"fullZoomWidth": dims[0],
-				"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in self.row_attrs.items()]),
-				"colAttrs": dict([(name, vals.tolist()) for (name,vals) in self.col_attrs.items()]),
-			}
-			self.save_compressed_pickle(file_info_name, fileinfo)
+		attrs_name = '%s.attrs.pklz' % (self.filename)
+
+		if os.path.isfile(attrs_name):
+			if not truncate:
+				logging.info('File info and attributes already expanded (truncate not set)')
+				return
+			else:
+				logging.info('Removing previously expanded file info and attributes (truncate set)')
+				os.remove(attrs_name)
+
+		logging.info("Precomputing file info and attributes (stored as %s)" % attrs_name)
+		dims = self.dz_dimensions()
+		fileinfo = {
+			"dataset": self.filename,
+			"filename": self.filename,
+			"shape": self.shape,
+			"zoomRange": self.dz_zoom_range(),
+			"fullZoomHeight": dims[1],
+			"fullZoomWidth": dims[0],
+			"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in self.row_attrs.items()]),
+			"colAttrs": dict([(name, vals.tolist()) for (name,vals) in self.col_attrs.items()]),
+		}
+		save_compressed_pickle(attrs_name, fileinfo)
 
 	def expand_rows(self, truncate=False):
 
 		row_dir = '%s.rows' % ( self.filename )
 
-		if os.path.isfile(row_dir) and not truncate:
-			logging.info('Rows already expanded')
-			return
+		if os.path.isdir(row_dir):
+			if not truncate:
+				logging.info('Rows already expanded (truncate not set)')
+				return
+			else:
+				logging.info('Removing previously expanded rows (truncate set)')
+				rmtree(row_dir)
 
 		try:
 			os.makedirs(row_dir, exist_ok=True)
@@ -1601,20 +1620,23 @@ class LoomConnection(object):
 			if exception.errno != errno.EEXIST:
 				raise
 
+		logging.info("Precomputing rows (stored in %s subfolder)" % row_dir)
+
 		# 64 is the chunk size, so probably the most cache
 		# friendly option to batch over
+		total_rows = self.shape[0]
 		i = 0
 		while i+64 < total_rows:
-			row64 = self[i:i+64,:].tolist()
+			row64 = self[i:i+64,:]
 			for j in range(64):
-				row = row64[j]
-				row_file_name = '%s/%06d.pklz' % (row_dir, i+j)
-				self.save_compressed_pickle(row_file_name, row)
+				row = np.ndarray.flatten(row64[j])
+				row_file_name = '%s/%06d.z' % (row_dir, i+j)
+				save_compressed_joblib(row_file_name, row)
 			i += 64
 		while i < total_rows:
-			row = self[i,:].tolist()
-			row_file_name = '%s/%06d.pklz' % (row_dir, i)
-			self.save_compressed_pickle(row_file_name, row)
+			row = np.ndarray.flatten(self[i,:])
+			row_file_name = '%s/%06d.z' % (row_dir, i)
+			save_compressed_joblib(row_file_name, row)
 			i += 1
 
 
@@ -1622,9 +1644,13 @@ class LoomConnection(object):
 
 		col_dir = '%s.cols' % ( self.filename )
 
-		if os.path.isfile(col_dir) and not truncate:
-			logging.info('Columns already expanded')
-			return
+		if os.path.isdir(col_dir):
+			if not truncate:
+				logging.info('Columns already expanded (truncate not set)')
+				return
+			else:
+				logging.info('Removing previously expanded columns (truncate set)')
+				rmtree(col_dir)
 
 		try:
 			os.makedirs(col_dir, exist_ok=True)
@@ -1634,19 +1660,25 @@ class LoomConnection(object):
 			if exception.errno != errno.EEXIST:
 				raise
 
+		logging.info("Precomputing columns (stored in %s subfolder)" % col_dir)
+
 		total_cols = self.shape[1]
 		i = 0
 		while i+64 < total_cols:
-			col64 = self[:, i:i+64].tolist()
+			#col64 = self[:, i:i+64].tolist()
+			col64 = self[:, i:i+64]
 			for j in range(64):
-				col = col64[j]
-				col_file_name = '%s/%06d.pklz' % (col_dir, i+j)
-				self.save_compressed_pickle(col_file_name, col)
+				# turn it into a row, so that it
+				# will get converted to a list properly
+				# later on the server
+				col = np.ndarray.flatten(col64[j])
+				col_file_name = '%s/%06d.z' % (col_dir, i+j)
+				save_compressed_joblib(col_file_name, col)
 			i += 64
 		while i < total_cols:
-			col = self[:, i].tolist()
-			col_file_name = '%s/%06d.pklz' % (col_dir, i)
-			self.save_compressed_pickle(col_file_name, col)
+			col = np.ndarray.flatten(self[:, i])
+			col_file_name = '%s/%06d.z' % (col_dir, i)
+			save_compressed_joblib(col_file_name, col)
 			i += 1
 
 class _CEF(object):

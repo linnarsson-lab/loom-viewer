@@ -12,9 +12,10 @@ setup(
         'matplotlib',
         'scikit-learn',
         'h5py',
-        'pandas', 
+        'pandas',
         'scipy',
-        'numpy', 
+        'numpy',
+        'joblib',
         'progressbar2',
         'requests',
         'flask',
@@ -22,10 +23,10 @@ setup(
         'gevent',
         'PyMySQL'
     ],
-    
+
     # loom command
     scripts=['loompy/loom'],
-    
+
     # static files from MANIFEST.in
     include_package_data = True,
 

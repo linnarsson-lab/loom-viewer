@@ -26,6 +26,15 @@ from wsgiref.handlers import format_date_time
 import pickle
 import pickletools
 import gzip
+import joblib
+
+def load_compressed_pickle(filename):
+		with gzip.open(filename,"rb") as f:
+			return pickle.loads(f.read())
+
+def load_compressed_joblib(filename):
+	return joblib.load(filename)
+
 
 from gevent.wsgi import WSGIServer
 from gevent import monkey
@@ -95,10 +104,6 @@ app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'applic
 app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
-def load_compressed_pickle(filename):
-		with gzip.open(filename,"rb") as f:
-			return pickle.loads(f.read())
-
 #
 # Static assets
 #
@@ -156,21 +161,29 @@ def send_dataset_list():
 @cache(expires=None)
 def send_fileinfo(project, filename):
 	(u, p) = get_auth(request)
-	ds = app.cache.connect_dataset_locally(project, filename, u, p)
-	if ds == None:
-		return "", 404
-	dims = ds.dz_dimensions()
-	fileinfo = {
-		"project": project,
-		"dataset": filename,
-		"filename": filename,
-		"shape": ds.shape,
-		"zoomRange": ds.dz_zoom_range(),
-		"fullZoomHeight": dims[1],
-		"fullZoomWidth": dims[0],
-		"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
-		"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
-	}
+	path = app.cache.get_absolute_path(project, filename, u, p)
+	ds_filename = '%s.attrs.pklz' % (path)
+	fileinfo = None
+	if os.path.isfile(ds_filename):
+		logging.debug('Using pickled file info')
+		fileinfo = load_compressed_pickle(ds_filename)
+		fileinfo["project"] = project
+	else:
+		ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		if ds == None:
+			return "", 404
+		dims = ds.dz_dimensions()
+		fileinfo = {
+			"project": project,
+			"dataset": filename,
+			"filename": filename,
+			"shape": ds.shape,
+			"zoomRange": ds.dz_zoom_range(),
+			"fullZoomHeight": dims[1],
+			"fullZoomWidth": dims[0],
+			"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
+			"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
+		}
 	return flask.Response(ujson.dumps(fileinfo), mimetype="application/json")
 
 # Upload a dataset
@@ -219,15 +232,14 @@ def send_row(project, filename, rows):
 	# path to desired rows
 	(u,p) = get_auth(request)
 	path = app.cache.get_absolute_path(project, filename, u, p)
-	rows.sort()
 	row_dir = '%s.rows' % ( path )
 	if os.path.isdir(row_dir):
-		logging.info('Using pickled rows')
+		logging.debug('Using pickled rows')
 		retRows = []
 		for row in rows:
-			row_file_name = '%s/%06d.pklz' % (row_dir, row)
-			row_data = load_compressed_pickle(row_file_name)
-			retRows.append({'idx': row, 'data': row_data})
+			row_file_name = '%s/%06d.z' % (row_dir, row)
+			row_data = load_compressed_joblib(row_file_name)
+			retRows.append({'idx': row, 'data': row_data.tolist()})
 		return flask.Response(ujson.dumps(retRows), mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
@@ -253,12 +265,12 @@ def send_col(project, filename, cols):
 	cols.sort()
 	col_dir = '%s.cols' % ( path )
 	if os.path.isdir(col_dir):
-		logging.info('Using pickled columns')
+		logging.debug('Using pickled columns')
 		retCols = []
 		for col in cols:
-			col_file_name = '%s/%06d.pklz' % (col_dir, col)
-			col_data = load_compressed_pickle(col_file_name)
-			retCols.append({'idx': col, 'data': col_data})
+			col_file_name = '%s/%06d.z' % (col_dir, col)
+			col_data = load_compressed_joblib(col_file_name)
+			retCols.append({'idx': col, 'data': col_data.tolist()})
 		return flask.Response(ujson.dumps(retCols), mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
