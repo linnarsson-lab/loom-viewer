@@ -1601,11 +1601,22 @@ class LoomConnection(object):
 			if exception.errno != errno.EEXIST:
 				raise
 
-		total_rows = self.shape[0]
-		for i in range(total_rows):
+		# 64 is the chunk size, so probably the most cache
+		# friendly option to batch over
+		i = 0
+		while i+64 < total_rows:
+			row64 = self[i:i+64,:].tolist()
+			for j in range(64):
+				row = row64[j]
+				row_file_name = '%s/%06d.pklz' % (row_dir, i+j)
+				self.save_compressed_pickle(row_file_name, row)
+			i += 64
+		while i < total_rows:
+			row = self[i,:].tolist()
 			row_file_name = '%s/%06d.pklz' % (row_dir, i)
-			row = {'idx': i, 'data': self[i,:].tolist()}
 			self.save_compressed_pickle(row_file_name, row)
+			i += 1
+
 
 	def expand_columns(self, truncate=False):
 
@@ -1624,10 +1635,19 @@ class LoomConnection(object):
 				raise
 
 		total_cols = self.shape[1]
-		for i in range(total_cols):
+		i = 0
+		while i+64 < total_cols:
+			col64 = self[:, i:i+64].tolist()
+			for j in range(64):
+				col = col64[j]
+				col_file_name = '%s/%06d.pklz' % (col_dir, i+j)
+				self.save_compressed_pickle(col_file_name, col)
+			i += 64
+		while i < total_cols:
+			col = self[:, i].tolist()
 			col_file_name = '%s/%06d.pklz' % (col_dir, i)
-			col = {'idx': i, 'data': self[:,i].tolist()}
 			self.save_compressed_pickle(col_file_name, col)
+			i += 1
 
 class _CEF(object):
 	def __init__(self):
