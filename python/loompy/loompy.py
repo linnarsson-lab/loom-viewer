@@ -658,12 +658,13 @@ class LoomConnection(object):
 		self.shape = (self.shape[0], n_cols)
 		self.file.flush()
 
-	def add_loom(self, other_file, key=None):
+	def add_loom(self, other_file, fill_values=None):
 		"""
 		Add the content of another loom file
 
 		Args:
 			other_file (str):	filename of the loom file to append
+			fill_values (dict): default values to use for missing attributes (or None to drop missing attrs, or 'auto' to fill with sensible defaults)
 
 		Returns:
 			Nothing, but adds the loom file. Note that the other loom file must have exactly the same
@@ -675,30 +676,42 @@ class LoomConnection(object):
 		# Sanity checks
 		if other.shape[0] != self.shape[0]:
 			raise ValueError("The two loom files have different numbers of rows")
-		if key is not None:
-			pk1 = other.row_attrs[key]
-			pk2 = self.row_attrs[key]
-			for ix,val in enumerate(pk1):
-				if pk2[ix] != val:
-					raise ValueError("Primary keys are not identical")
 
 		todel = []
 		for ca in other.col_attrs.keys():
-			if not ca in self.col_attrs:
-				logging.warn("Removing column attribute %s which was missing in one file", ca)
-				todel.append(ca)
+			if ca not in self.col_attrs:
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=other.col_attrs[ca].dtype)[0]
+					else:
+						fill_with = fill_values[ca]
+					self.set_attr(ca, np.array([fill_with] * self.shape[1]))
+				else:
+					logging.warn("Removing column attribute %s which was missing in one file", ca)
+					todel.append(ca)
 		for ca in todel:
 			other.delete_attr(ca, axis=1)
 
 		todel = []
+		col_attrs = {}
 		for ca in self.col_attrs.keys():
-			if not ca in other.col_attrs:
-				logging.warn("Removing column attribute %s which was missing in one file", ca)
-				todel.append(ca)
+			if ca not in other.col_attrs:
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=other.col_attrs[ca].dtype)[0]
+					else:
+						fill_with = fill_values[ca]
+					other.set_attr(ca, np.array([fill_with] * self.shape[1]))
+					col_attrs[ca] = other.col_attrs[ca]
+				else:
+					logging.warn("Removing column attribute %s which was missing in one file", ca)
+					todel.append(ca)
+			else:
+				col_attrs[ca] = other.col_attrs[ca]
 		for ca in todel:
 			self.delete_attr(ca, axis=1)
 
-		self.add_columns(other[:, :], other.col_attrs)
+		self.add_columns(other[:, :], col_attrs)
 
 	def delete_attr(self, name, axis=0, raise_on_missing=True):
 		"""
@@ -713,7 +726,7 @@ class LoomConnection(object):
 			Nothing.
 		"""
 		if axis == 0:
-			if not name in self.row_attrs:
+			if name not in self.row_attrs:
 				if raise_on_missing:
 					raise KeyError("Row attribute " + name + " does not exist")
 				else:
@@ -724,7 +737,7 @@ class LoomConnection(object):
 				delattr(self, name)
 
 		elif axis == 1:
-			if not name in self.col_attrs:
+			if name not in self.col_attrs:
 				if raise_on_missing:
 					raise KeyError("Column attribute " + name + " does not exist")
 				else:
