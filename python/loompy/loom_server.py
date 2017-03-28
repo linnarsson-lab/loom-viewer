@@ -23,6 +23,10 @@ import time
 from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
+import pickle
+import pickletools
+import gzip
+
 from gevent.wsgi import WSGIServer
 from gevent import monkey
 monkey.patch_all()
@@ -212,36 +216,61 @@ def get_clone(project, filename):
 @app.route('/loom/<string:project>/<string:filename>/row/<intdict:rows>')
 @cache(expires=None)
 def send_row(project, filename, rows):
+	# path to desired rows
 	(u,p) = get_auth(request)
-	ds = app.cache.connect_dataset_locally(project, filename, u, p)
-	if ds == None:
-		return "", 404
-	else:
-		# return a list of {idx, data} objects.
-		# This is to guarantee we match up row-numbers client-side
-		#retRows = [{ 'idx': row, 'data': ds[row, :].tolist()} for row in rows]
-		# Serialised like this is slightly faster
-		rows.sort()
-		dsRowsList = ds[rows,:].tolist()
-		retRows =  [{'idx': rows[i], 'data': dsRowsList[i]} for i in range(len(rows))]
+	path = app.cache.get_absolute_path(project, filename, u, p)
+	rows.sort()
+	row_dir = '%s.rows' % ( path )
+	if os.path.isdir(row_dir):
+		logging.info('Using pickled rows')
+		retRows = []
+		for row in rows:
+			row_file_name = '%s/%06d.pklz' % (row_dir, row)
+			row_data = load_compressed_pickle(row_file_name)
+			retRows.append({'idx': row, 'data': row_data})
 		return flask.Response(ujson.dumps(retRows), mimetype="application/json")
+	else:
+		ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		if ds == None:
+			return "", 404
+		else:
+			# return a list of {idx, data} objects.
+			# This is to guarantee we match up row-numbers client-side
+			#retRows = [{ 'idx': row, 'data': ds[row, :].tolist()} for row in rows]
+			# Serialised like this is slightly faster
+			rows.sort()
+			dsRowsList = ds[rows,:].tolist()
+			retRows =  [{'idx': rows[i], 'data': dsRowsList[i]} for i in range(len(rows))]
+			return flask.Response(ujson.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
 @app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
 @cache(expires=None)
 def send_col(project, filename, cols):
+	# path to desired cols
 	(u,p) = get_auth(request)
-	ds = app.cache.connect_dataset_locally(project, filename, u, p)
-	if ds == None:
-		return "", 404
-	else:
-		# return a list of {idx, data} objects.
-		# This is to guarantee we match up column-numbers client-side
-		# (we can't use the index in the array)
-		cols.sort()
-		dsColsList = ds[:,cols].tolist()
-		retCols = [{ 'idx': cols[i], 'data': dsColsList[i]} for i in range(len(cols))]
+	path = app.cache.get_absolute_path(project, filename, u, p)
+	cols.sort()
+	col_dir = '%s.cols' % ( path )
+	if os.path.isdir(col_dir):
+		logging.info('Using pickled columns')
+		retCols = []
+		for col in cols:
+			col_file_name = '%s/%06d.pklz' % (col_dir, col)
+			col_data = load_compressed_pickle(col_file_name)
+			retCols.append({'idx': col, 'data': col_data})
 		return flask.Response(ujson.dumps(retCols), mimetype="application/json")
+	else:
+		ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		if ds == None:
+			return "", 404
+		else:
+			# return a list of {idx, data} objects.
+			# This is to guarantee we match up column-numbers client-side
+			# (we can't use the index in the array)
+			dsColsList = ds[:,cols].tolist()
+			retCols = [{ 'idx': cols[i], 'data': dsColsList[i]} for i in range(len(cols))]
+			return flask.Response(ujson.dumps(retCols), mimetype="application/json")
 
 
 #
@@ -260,16 +289,17 @@ def send_tile(project, filename, z,x,y):
 	tilepath = '%s%s' % (tiledir, tile)
 
 	if not os.path.isfile(tilepath):
+		return "", 404 # if there are no tiles, don't generate them during server-time
 		# if the tile doesn't exist, we're either out of range,
 		# or it still has to be generated
-		ds = app.cache.connect_dataset_locally(project, filename, u, p)
-		if ds == None:
-			return "", 404
-		ds.dz_get_zoom_tile(x, y, z)
+		#ds = app.cache.connect_dataset_locally(project, filename, u, p)
+		#if ds == None:
+		#	return "", 404
+		#ds.dz_get_zoom_tile(x, y, z)
 		# if the file still does not exist at this point,
 		# we are out of range
-		if not os.path.isfile(tilepath):
-			return "", 404
+		#if not os.path.isfile(tilepath):
+		#	return "", 404
 
 	return flask.send_file(open(tilepath, 'rb'), mimetype='image/png')
 
