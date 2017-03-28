@@ -25,10 +25,10 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
-	logging.debug("Looking for " + filename)
+	logging.info("Looking for " + filename)
 	if os.path.exists(filename):
 		return loompy.connect(filename)
-	logging.debug("Looking for " + os.path.join(dataset_path, filename))
+	logging.info("Looking for " + os.path.join(dataset_path, filename))
 	if os.path.exists(os.path.join(dataset_path, filename)):
 		return loompy.connect(os.path.join(dataset_path, filename))
 	return None
@@ -41,19 +41,15 @@ def tile_command(dataset_path, filename):
 	logging.info("Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
 	ds.prepare_heatmap()
 
-def expand_command(dataset_path, filename):
+def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
 	ds = connect_loom(dataset_path, filename)
 	if ds == None:
 		logging.error("File not found")
 		sys.exit(1)
-	logging.info("Precomputing general metada tiles (stored as %s.file_general_metadata.pklz)" % filename)
-	ds.expand_file_general_metadata(True)
-	logging.info("Precomputing file info and attributes (stored as %s.file_info.pklz)" % filename)
-	ds.expand_file_info(True)
-	logging.info("Precomputing rows (stored in %s.rows/ subfolder)" % filename)
-	ds.expand_rows(True)
-	logging.info("Precomputing columns (stored in %s.cols/ subfolder)" % filename)
-	ds.expand_columns(True)
+	ds.expand_md(truncate or metadata)
+	ds.expand_attrs(truncate or attributes)
+	ds.expand_rows(truncate or rows)
+	ds.expand_columns(truncate or cols)
 
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
@@ -313,6 +309,11 @@ if __name__ == '__main__':
 		# loom expand
 		expand_parser = subparsers.add_parser('expand', help="Expand loom file to pickle files for faster server")
 		expand_parser.add_argument("file", help="Loom input file")
+		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
+		expand_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-r", "--rows", help="Remove previously expanded row files if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
 
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
@@ -388,7 +389,7 @@ if __name__ == '__main__':
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "expand":
-		expand_command(args.dataset_path, args.file)
+		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from-loom":
