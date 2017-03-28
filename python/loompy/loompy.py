@@ -595,7 +595,7 @@ class LoomConnection(object):
 		self.col_attrs = {}
 		self.shape = (0, 0)
 
-	def add_columns(self, submatrix, col_attrs):
+	def add_columns(self, submatrix, col_attrs, fill_values=None):
 		"""
 		Add columns of data and attribute values to the dataset.
 
@@ -622,22 +622,39 @@ class LoomConnection(object):
 		todel = []  # type: List[str]
 		for key, vals in col_attrs.items():
 			if key not in self.col_attrs:
-				did_remove = True
-				todel.append(key)
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=col_attrs[ca].dtype)[0]
+					else:
+						fill_with = fill_values[ca]
+					self.set_attr(ca, np.array([fill_with] * self.shape[1]))
+				else:
+					did_remove = True
+					todel.append(key)
 			if len(vals) != submatrix.shape[1]:
 				raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
 		for key in todel:
 			del col_attrs[key]
+		if did_remove:
+			logging.warn("Some column attributes were removed: " + ",".join(todel))
 
 		todel = []
+		did_remove = False
 		for key in self.col_attrs.keys():
 			if key not in col_attrs:
-				did_remove = True
-				todel.append(key)
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=self.col_attrs[ca].dtype)[0]
+					else:
+						fill_with = fill_values[ca]
+					col_attrs[ca] = np.array([fill_with] * self.shape[1])
+				else:
+					did_remove = True
+					todel.append(key)
 		for key in todel:
 			self.delete_attr(key, axis=1)
 		if did_remove:
-			logging.warn("Some column attributes were removed: " + key)
+			logging.warn("Some column attributes were removed: " + ",".join(todel))
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
@@ -698,7 +715,7 @@ class LoomConnection(object):
 			if ca not in other.col_attrs:
 				if fill_values is not None:
 					if fill_values == "auto":
-						fill_with = np.zeros(1, dtype=other.col_attrs[ca].dtype)[0]
+						fill_with = np.zeros(1, dtype=self.col_attrs[ca].dtype)[0]
 					else:
 						fill_with = fill_values[ca]
 					other.set_attr(ca, np.array([fill_with] * self.shape[1]))
