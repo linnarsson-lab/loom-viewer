@@ -51,6 +51,22 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 	ds.expand_rows(truncate or rows)
 	ds.expand_columns(truncate or cols)
 
+def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
+
+	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	for project in projects:
+		project_path = os.path.join(dataset_path, project)
+		for filename in os.listdir(project_path):
+			if filename.endswith(".loom"):
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					logging.error("File not found")
+					sys.exit(1)
+				ds.expand_md(truncate or metadata)
+				ds.expand_attrs(truncate or attributes)
+				ds.expand_rows(truncate or rows)
+				ds.expand_columns(truncate or cols)
+
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
 	if ds == None:
@@ -307,7 +323,7 @@ if __name__ == '__main__':
 		tile_parser.add_argument("file", help="Loom input file")
 
 		# loom expand
-		expand_parser = subparsers.add_parser('expand', help="Expand loom file to pickle files for faster server")
+		expand_parser = subparsers.add_parser('expand', help="Expand loom file to compressed pickle/json files for better server performance")
 		expand_parser.add_argument("file", help="Loom input file")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
 		expand_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
@@ -315,6 +331,13 @@ if __name__ == '__main__':
 		expand_parser.add_argument("-r", "--rows", help="Remove previously expanded row files if present (False by default)", type=bool, default=False)
 		expand_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
 
+		# loom expand all datasets
+		expand_all_parser = subparsers.add_parser('exp_all', help="Expand all loom files in the data folder for better server performance")
+		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-r", "--rows", help="Remove previously expanded row files if present (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
 		stats_parser.add_argument("file", help="Loom input file")
@@ -390,6 +413,8 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "expand":
 		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
+	elif args.command == "exp_all":
+		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from-loom":
