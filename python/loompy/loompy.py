@@ -624,10 +624,10 @@ class LoomConnection(object):
 			if key not in self.col_attrs:
 				if fill_values is not None:
 					if fill_values == "auto":
-						fill_with = np.zeros(1, dtype=col_attrs[ca].dtype)[0]
+						fill_with = np.zeros(1, dtype=col_attrs[key].dtype)[0]
 					else:
 						fill_with = fill_values[ca]
-					self.set_attr(ca, np.array([fill_with] * self.shape[1]))
+					self.set_attr(key, np.array([fill_with] * self.shape[1]), axis=1)
 				else:
 					did_remove = True
 					todel.append(key)
@@ -644,10 +644,10 @@ class LoomConnection(object):
 			if key not in col_attrs:
 				if fill_values is not None:
 					if fill_values == "auto":
-						fill_with = np.zeros(1, dtype=self.col_attrs[ca].dtype)[0]
+						fill_with = np.zeros(1, dtype=self.col_attrs[key].dtype)[0]
 					else:
 						fill_with = fill_values[ca]
-					col_attrs[ca] = np.array([fill_with] * self.shape[1])
+					col_attrs[key] = np.array([fill_with] * submatrix.shape[1])
 				else:
 					did_remove = True
 					todel.append(key)
