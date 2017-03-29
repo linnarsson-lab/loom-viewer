@@ -626,7 +626,7 @@ class LoomConnection(object):
 					if fill_values == "auto":
 						fill_with = np.zeros(1, dtype=col_attrs[key].dtype)[0]
 					else:
-						fill_with = fill_values[ca]
+						fill_with = fill_values[key]
 					self.set_attr(key, np.array([fill_with] * self.shape[1]), axis=1)
 				else:
 					did_remove = True
@@ -646,7 +646,7 @@ class LoomConnection(object):
 					if fill_values == "auto":
 						fill_with = np.zeros(1, dtype=self.col_attrs[key].dtype)[0]
 					else:
-						fill_with = fill_values[ca]
+						fill_with = fill_values[key]
 					col_attrs[key] = np.array([fill_with] * submatrix.shape[1])
 				else:
 					did_remove = True
