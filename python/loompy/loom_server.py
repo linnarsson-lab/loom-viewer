@@ -26,14 +26,15 @@ from wsgiref.handlers import format_date_time
 import pickle
 import pickletools
 import gzip
-import joblib
 
 def load_compressed_pickle(filename):
-		with gzip.open(filename,"rb") as f:
+		with gzip.open(filename,"r") as f:
 			return pickle.loads(f.read())
 
-def load_compressed_joblib(filename):
-	return joblib.load(filename)
+def load_compressed_json(filename):
+	with gzip.open(filename,"rt") as f:
+		jsonVal = f.read()
+		return jsonVal
 
 
 from gevent.wsgi import WSGIServer
@@ -234,13 +235,14 @@ def send_row(project, filename, rows):
 	path = app.cache.get_absolute_path(project, filename, u, p)
 	row_dir = '%s.rows' % ( path )
 	if os.path.isdir(row_dir):
-		logging.debug('Using pickled rows')
+		logging.debug('Using json.gzip rows')
 		retRows = []
 		for row in rows:
-			row_file_name = '%s/%06d.z' % (row_dir, row)
-			row_data = load_compressed_joblib(row_file_name)
-			retRows.append({'idx': row, 'data': row_data.tolist()})
-		return flask.Response(ujson.dumps(retRows), mimetype="application/json")
+			row_file_name = '%s/%06d.json.gzip' % (row_dir, row)
+			retRows.append(load_compressed_json(row_file_name))
+		retRowsString = ','.join(retRows)
+		retJSON = ''.join(['[', retRowsString, ']'])
+		return flask.Response(retJSON, mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
@@ -265,13 +267,15 @@ def send_col(project, filename, cols):
 	cols.sort()
 	col_dir = '%s.cols' % ( path )
 	if os.path.isdir(col_dir):
-		logging.debug('Using pickled columns')
+		logging.debug('Using json.gzip columns')
 		retCols = []
 		for col in cols:
-			col_file_name = '%s/%06d.z' % (col_dir, col)
-			col_data = load_compressed_joblib(col_file_name)
-			retCols.append({'idx': col, 'data': col_data.tolist()})
-		return flask.Response(ujson.dumps(retCols), mimetype="application/json")
+			col_file_name = '%s/%06d.json.gzip' % (col_dir, col)
+			col_data = load_compressed_json(col_file_name)
+			retCols.append(load_compressed_json(col_file_name))
+		retColString = ','.join(retCols)
+		retJSON = ''.join(['[', retColString, ']'])
+		return flask.Response(retJSON, mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:

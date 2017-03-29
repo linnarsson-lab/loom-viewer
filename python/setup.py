@@ -15,7 +15,6 @@ setup(
         'pandas',
         'scipy',
         'numpy',
-        'joblib',
         'progressbar2',
         'requests',
         'flask',

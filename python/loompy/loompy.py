@@ -46,15 +46,17 @@ import pickle
 import pickletools
 import gzip
 
-import joblib
+import ujson
 
 def save_compressed_pickle(filename, data):
-		with gzip.open(filename=filename, mode="wb", compresslevel=2) as f:
+		with gzip.open(filename=filename, mode="wb", compresslevel=6) as f:
 			pickled_data = pickletools.optimize(pickle.dumps(data))
 			f.write(pickled_data)
 
-def save_compressed_joblib(filename, data):
-	joblib.dump(data, filename, compress=('zlib', 2))
+def save_compressed_json(filename, data):
+		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
+			ujson.dump(data, f)
+
 
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
@@ -1622,21 +1624,34 @@ class LoomConnection(object):
 
 		logging.info("Precomputing rows (stored in %s subfolder)" % row_dir)
 
-		# 64 is the chunk size, so probably the most cache
+		# 64 is the default chunk size, so probably the most cache
 		# friendly option to batch over
 		total_rows = self.shape[0]
 		i = 0
 		while i+64 < total_rows:
 			row64 = self[i:i+64,:]
 			for j in range(64):
-				row = np.ndarray.flatten(row64[j])
-				row_file_name = '%s/%06d.z' % (row_dir, i+j)
-				save_compressed_joblib(row_file_name, row)
+				row = row64[j]
+				# test if all values are integer
+				row_mod = np.mod(row, 1)
+				row_is_int = row_mod == 0
+				is_int = np.all(row_is_int)
+				if is_int:
+					row = row.astype(int)
+				row = {'idx': i+j, 'data': row.tolist()}
+				row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
+				save_compressed_json(row_file_name, row)
 			i += 64
 		while i < total_rows:
-			row = np.ndarray.flatten(self[i,:])
-			row_file_name = '%s/%06d.z' % (row_dir, i)
-			save_compressed_joblib(row_file_name, row)
+			row = self[i,:]
+			row_mod = np.mod(row, 1)
+			row_is_int = row_mod == 0
+			is_int = np.all(row_is_int)
+			if is_int:
+				row = row.astype(int)
+			row = {'idx': i+j, 'data': row.tolist()}
+			row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
+			save_compressed_json(row_file_name, row)
 			i += 1
 
 
@@ -1671,14 +1686,26 @@ class LoomConnection(object):
 				# turn it into a row, so that it
 				# will get converted to a list properly
 				# later on the server
-				col = np.ndarray.flatten(col64[j])
-				col_file_name = '%s/%06d.z' % (col_dir, i+j)
-				save_compressed_joblib(col_file_name, col)
+				col = col64[j].transpose()
+				col_mod = np.mod(col, 1)
+				col_is_int = col_mod == 0
+				is_int = np.all(col_is_int)
+				if (is_int):
+					col = col.astype(int)
+				col = {'idx': i, 'data': col.tolist()}
+				col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
+				save_compressed_json(col_file_name, col)
 			i += 64
 		while i < total_cols:
-			col = np.ndarray.flatten(self[:, i])
-			col_file_name = '%s/%06d.z' % (col_dir, i)
-			save_compressed_joblib(col_file_name, col)
+			col = self[:, i].transpose()
+			col_mod = np.mod(col, 1)
+			col_is_int = col_mod == 0
+			is_int = np.all(col_is_int)
+			if (is_int):
+				col = col.astype(int)
+			col = {'idx': i, 'data': col.tolist()}
+			col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
+			save_compressed_json(col_file_name, col)
 			i += 1
 
 class _CEF(object):
