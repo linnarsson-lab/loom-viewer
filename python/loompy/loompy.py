@@ -603,7 +603,7 @@ class LoomConnection(object):
 		self.col_attrs = {}
 		self.shape = (0, 0)
 
-	def add_columns(self, submatrix, col_attrs):
+	def add_columns(self, submatrix, col_attrs, fill_values=None):
 		"""
 		Add columns of data and attribute values to the dataset.
 
@@ -630,22 +630,39 @@ class LoomConnection(object):
 		todel = []  # type: List[str]
 		for key, vals in col_attrs.items():
 			if key not in self.col_attrs:
-				did_remove = True
-				todel.append(key)
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=col_attrs[key].dtype)[0]
+					else:
+						fill_with = fill_values[key]
+					self.set_attr(key, np.array([fill_with] * self.shape[1]), axis=1)
+				else:
+					did_remove = True
+					todel.append(key)
 			if len(vals) != submatrix.shape[1]:
 				raise ValueError("Each column attribute must have exactly %s values" % submatrix.shape[1])
 		for key in todel:
 			del col_attrs[key]
+		if did_remove:
+			logging.warn("Some column attributes were removed: " + ",".join(todel))
 
 		todel = []
+		did_remove = False
 		for key in self.col_attrs.keys():
 			if key not in col_attrs:
-				did_remove = True
-				todel.append(key)
+				if fill_values is not None:
+					if fill_values == "auto":
+						fill_with = np.zeros(1, dtype=self.col_attrs[key].dtype)[0]
+					else:
+						fill_with = fill_values[key]
+					col_attrs[key] = np.array([fill_with] * submatrix.shape[1])
+				else:
+					did_remove = True
+					todel.append(key)
 		for key in todel:
 			self.delete_attr(key, axis=1)
 		if did_remove:
-			logging.warn("Some column attributes were removed: " + key)
+			logging.warn("Some column attributes were removed: " + ",".join(todel))
 
 		n_cols = submatrix.shape[1] + self.shape[1]
 		for key, vals in col_attrs.items():
@@ -666,12 +683,13 @@ class LoomConnection(object):
 		self.shape = (self.shape[0], n_cols)
 		self.file.flush()
 
-	def add_loom(self, other_file, key=None):
+	def add_loom(self, other_file, key=None, fill_values=None):
 		"""
 		Add the content of another loom file
 
 		Args:
 			other_file (str):	filename of the loom file to append
+			fill_values (dict): default values to use for missing attributes (or None to drop missing attrs, or 'auto' to fill with sensible defaults)
 
 		Returns:
 			Nothing, but adds the loom file. Note that the other loom file must have exactly the same
@@ -679,34 +697,13 @@ class LoomConnection(object):
 		"""
 		# Connect to the loom files
 		other = connect(other_file)
-
-		# Sanity checks
-		if other.shape[0] != self.shape[0]:
-			raise ValueError("The two loom files have different numbers of rows")
 		if key is not None:
 			pk1 = other.row_attrs[key]
 			pk2 = self.row_attrs[key]
-			for ix,val in enumerate(pk1):
+			for ix, val in enumerate(pk1):
 				if pk2[ix] != val:
 					raise ValueError("Primary keys are not identical")
-
-		todel = []
-		for ca in other.col_attrs.keys():
-			if not ca in self.col_attrs:
-				logging.warn("Removing column attribute %s which was missing in one file", ca)
-				todel.append(ca)
-		for ca in todel:
-			other.delete_attr(ca, axis=1)
-
-		todel = []
-		for ca in self.col_attrs.keys():
-			if not ca in other.col_attrs:
-				logging.warn("Removing column attribute %s which was missing in one file", ca)
-				todel.append(ca)
-		for ca in todel:
-			self.delete_attr(ca, axis=1)
-
-		self.add_columns(other[:, :], other.col_attrs)
+		self.add_columns(other[:, :], other.col_attrs, fill_values)
 
 	def delete_attr(self, name, axis=0, raise_on_missing=True):
 		"""
@@ -721,7 +718,7 @@ class LoomConnection(object):
 			Nothing.
 		"""
 		if axis == 0:
-			if not name in self.row_attrs:
+			if name not in self.row_attrs:
 				if raise_on_missing:
 					raise KeyError("Row attribute " + name + " does not exist")
 				else:
@@ -732,7 +729,7 @@ class LoomConnection(object):
 				delattr(self, name)
 
 		elif axis == 1:
-			if not name in self.col_attrs:
+			if name not in self.col_attrs:
 				if raise_on_missing:
 					raise KeyError("Column attribute " + name + " does not exist")
 				else:
