@@ -242,7 +242,7 @@ function encodeRow(rs, row, version) {
 				let order = [], entry;
 				for (let i = 0; i < rs.order.length; i++) {
 					entry = rs.order[i];
-					order.push(binaryIndexOf(row.sortedAllKeysNoUniques, entry.key));
+					order.push(binaryIndexOf(row.sortedAllKeys, entry.key));
 					order.push(entry.asc ? 1 : 0);
 				}
 				// filter: array of { attr (allKeys), val (matches val in uniques of attr)}
@@ -250,8 +250,7 @@ function encodeRow(rs, row, version) {
 				for (let i = 0; i < rs.filter.length; i++) {
 					entry = rs.filter[i];
 					// map entry.attr to sortedAllKeys index
-					filter.push(binaryIndexOf(row.sortedAllKeysNoUniques, entry.attr));
-
+					filter.push(binaryIndexOf(row.sortedAllKeys, entry.attr));
 					// map entry.val to row.attrs[entry.attr].uniques index
 					const { uniques } = row.attrs[entry.attr];
 					let valIdx = uniques.length;
@@ -274,13 +273,13 @@ function decodeRow(encodedRS, row, version) {
 				let order = [];
 				for (let i = 0; i < orderArray.length; i += 2) {
 					order.push({
-						key: row.sortedAllKeysNoUniques[orderArray[i]],
+						key: row.sortedAllKeys[orderArray[i]],
 						asc: orderArray[i + 1] !== 0,
 					});
 				}
 				let filter = [];
 				for (let i = 0; i < filterArray.length; i += 2) {
-					const attr = row.sortedAllKeysNoUniques[filterArray[i]];
+					const attr = row.sortedAllKeys[filterArray[i]];
 					const { uniques } = row.attrs[attr];
 					filter.push({
 						attr,
@@ -301,7 +300,7 @@ function encodeCol(cs, col, version) {
 				let order = [], entry;
 				for (let i = 0; i < cs.order.length; i++) {
 					entry = cs.order[i];
-					order.push(binaryIndexOf(col.sortedAllKeysNoUniques, entry.key));
+					order.push(binaryIndexOf(col.sortedAllKeys, entry.key));
 					order.push(entry.asc ? 1 : 0);
 				}
 				// filter: array of { attr (allKeys), val (matches val in uniques of attr)}
@@ -309,7 +308,7 @@ function encodeCol(cs, col, version) {
 				for (let i = 0; i < cs.filter.length; i++) {
 					entry = cs.filter[i];
 					// map entry.attr to sortedAllKeys index
-					filter.push(binaryIndexOf(col.sortedAllKeysNoUniques, entry.attr));
+					filter.push(binaryIndexOf(col.sortedAllKeys, entry.attr));
 
 					// map entry.val to col.attrs[entry.attr].uniques index
 					const { uniques } = col.attrs[entry.attr];
@@ -332,13 +331,13 @@ function decodeCol(encodedCS, col, version) {
 				let order = [];
 				for (let i = 0; i < orderArray.length; i += 2) {
 					order.push({
-						key: col.sortedAllKeysNoUniques[orderArray[i]],
+						key: col.sortedAllKeys[orderArray[i]],
 						asc: orderArray[i + 1] !== 0,
 					});
 				}
 				let filter = [];
 				for (let i = 0; i < filterArray.length; i += 2) {
-					const attr = col.sortedAllKeysNoUniques[filterArray[i]];
+					const attr = col.sortedAllKeys[filterArray[i]];
 					const { uniques } = col.attrs[attr];
 					filter.push({
 						attr,

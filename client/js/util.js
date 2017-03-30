@@ -217,10 +217,10 @@ function convertWholeArray(data, name, uniques) {
 		const toJSON = () => {
 			return {
 				arrayType,
-				data: Array.from(data.slice(0, Math.min(5, data.length))),
+				data: Array.from(data.slice(0, Math.min(3, data.length))),
 				data_length: `${data.length} items`,
 				indexedVal,
-				uniques: uniques.slice(0, Math.min(5, uniques.length)),
+				uniques: uniques.slice(0, Math.min(3, uniques.length)),
 				total_uniques: `${uniques.length} items`,
 				colorIndices,
 				min,
