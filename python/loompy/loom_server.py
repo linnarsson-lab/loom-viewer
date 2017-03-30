@@ -23,19 +23,13 @@ import time
 from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
-import pickle
-import pickletools
 import gzip
-
-def load_compressed_pickle(filename):
-		with gzip.open(filename,"r") as f:
-			return pickle.loads(f.read())
+import ujson
 
 def load_compressed_json(filename):
 	with gzip.open(filename,"rt") as f:
 		jsonVal = f.read()
 		return jsonVal
-
 
 from gevent.wsgi import WSGIServer
 from gevent import monkey
@@ -163,12 +157,13 @@ def send_dataset_list():
 def send_fileinfo(project, filename):
 	(u, p) = get_auth(request)
 	path = app.cache.get_absolute_path(project, filename, u, p)
-	ds_filename = '%s.attrs.pklz' % (path)
+	ds_filename = '%s.attrs.json.gzip' % (path)
 	fileinfo = None
 	if os.path.isfile(ds_filename):
-		logging.debug('Using pickled file info')
-		fileinfo = load_compressed_pickle(ds_filename)
+		logging.debug('Using file info from json.gzip ')
+		fileinfo = ujson.loads(load_compressed_json(ds_filename))
 		fileinfo["project"] = project
+		fileinfo["filename"] = filename
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
@@ -236,12 +231,14 @@ def send_row(project, filename, rows):
 	row_dir = '%s.rows' % ( path )
 	if os.path.isdir(row_dir):
 		logging.debug('Using json.gzip rows')
-		retRows = []
+		retRows = ['[']
+		comma = ','
 		for row in rows:
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, row)
 			retRows.append(load_compressed_json(row_file_name))
-		retRowsString = ','.join(retRows)
-		retJSON = ''.join(['[', retRowsString, ']'])
+			retRows.append(comma)
+		retRows[len(retRows)-1] = ']'
+		retJSON = ''.join(retRows)
 		return flask.Response(retJSON, mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
@@ -268,13 +265,15 @@ def send_col(project, filename, cols):
 	col_dir = '%s.cols' % ( path )
 	if os.path.isdir(col_dir):
 		logging.debug('Using json.gzip columns')
-		retCols = []
+		retCols = ['[']
+		comma = ','
 		for col in cols:
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, col)
 			col_data = load_compressed_json(col_file_name)
 			retCols.append(load_compressed_json(col_file_name))
-		retColString = ','.join(retCols)
-		retJSON = ''.join(['[', retColString, ']'])
+			retCols.append(comma)
+		retCols[len(retCols)-1] = ']'
+		retJSON = ''.join(retCols)
 		return flask.Response(retJSON, mimetype="application/json")
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)

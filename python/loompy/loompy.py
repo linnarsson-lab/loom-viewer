@@ -42,16 +42,8 @@ import logging
 import requests
 import time
 
-import pickle
-import pickletools
 import gzip
-
 import ujson
-
-def save_compressed_pickle(filename, data):
-		with gzip.open(filename=filename, mode="wb", compresslevel=6) as f:
-			pickled_data = pickletools.optimize(pickle.dumps(data))
-			f.write(pickled_data)
 
 def save_compressed_json(filename, data):
 		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
@@ -1529,7 +1521,7 @@ class LoomConnection(object):
 		"""
 		Generate object containing list entry metadata
 		"""
-		md_filename = '%s.file_md.pklz' % (self.filename)
+		md_filename = '%s.file_md.json.gzip' % (self.filename)
 
 		if os.path.isfile(md_filename):
 			if not truncate:
@@ -1540,8 +1532,7 @@ class LoomConnection(object):
 				os.remove(md_filename)
 
 		logging.info("Precomputing general metada tiles (stored as %s)" % md_filename)
-		filename = self.filename
-		title = self.attrs.get("title", self.filename)
+		title = self.attrs.get("title", "")
 		descr = self.attrs.get("description", "")
 		url = self.attrs.get("url", "")
 		doi = self.attrs.get("doi", "")
@@ -1554,8 +1545,7 @@ class LoomConnection(object):
 		last_mod = self.format_last_mod()
 		creation_date = self.attrs.get("creation_date", last_mod)
 		md_data = {
-			"filename": filename,
-			"dataset": filename,
+			"dataset": self.filename,
 			"title": title,
 			"description": descr,
 			"url":url,
@@ -1565,7 +1555,7 @@ class LoomConnection(object):
 			"totalCells": total_cells,
 			"totalGenes": total_genes,
 		}
-		save_compressed_pickle(md_filename, md_data)
+		save_compressed_json(md_filename, md_data)
 
 	def format_last_mod(self):
 		"""
@@ -1578,7 +1568,7 @@ class LoomConnection(object):
 	# Includes attributes
 	def expand_attrs(self, truncate=False):
 
-		attrs_name = '%s.attrs.pklz' % (self.filename)
+		attrs_name = '%s.attrs.json.gzip' % (self.filename)
 
 		if os.path.isfile(attrs_name):
 			if not truncate:
@@ -1590,17 +1580,36 @@ class LoomConnection(object):
 
 		logging.info("Precomputing file info and attributes (stored as %s)" % attrs_name)
 		dims = self.dz_dimensions()
+		rowAttrs = {}
+		for (name,vals) in self.row_attrs.items():
+			try:
+				vals_int = vals.astype(int)
+				if np.all((vals - vals_int) == 0):
+					vals = vals_int
+			except:
+				"not a numeric type"
+			rowAttrs[name] = vals.tolist()
+
+		colAttrs = {}
+		for (name,vals) in self.col_attrs.items():
+			try:
+				vals_int = vals.astype(int)
+				if np.all((vals - vals_int) == 0):
+					vals = vals_int
+			except:
+				"not a numeric type"
+			colAttrs[name] = vals.tolist()
+
 		fileinfo = {
 			"dataset": self.filename,
-			"filename": self.filename,
 			"shape": self.shape,
 			"zoomRange": self.dz_zoom_range(),
 			"fullZoomHeight": dims[1],
 			"fullZoomWidth": dims[0],
-			"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in self.row_attrs.items()]),
-			"colAttrs": dict([(name, vals.tolist()) for (name,vals) in self.col_attrs.items()]),
+			"rowAttrs": rowAttrs,
+			"colAttrs": colAttrs,
 		}
-		save_compressed_pickle(attrs_name, fileinfo)
+		save_compressed_json(attrs_name, fileinfo)
 
 	def expand_rows(self, truncate=False):
 
@@ -1633,11 +1642,9 @@ class LoomConnection(object):
 			for j in range(64):
 				row = row64[j]
 				# test if all values are integer
-				row_mod = np.mod(row, 1)
-				row_is_int = row_mod == 0
-				is_int = np.all(row_is_int)
-				if is_int:
-					row = row.astype(int)
+				row_int = row.astype(int)
+				if np.all((row - row_int) == 0):
+					row = row_int
 				row = {'idx': i+j, 'data': row.tolist()}
 				row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 				save_compressed_json(row_file_name, row)
@@ -1686,12 +1693,11 @@ class LoomConnection(object):
 				# turn it into a row, so that it
 				# will get converted to a list properly
 				# later on the server
-				col = col64[j].transpose()
-				col_mod = np.mod(col, 1)
-				col_is_int = col_mod == 0
-				is_int = np.all(col_is_int)
+				col = col64[:, j].transpose()
+				col_int = col.astype(int)
+				is_int = np.all((col - col_int) == 0)
 				if (is_int):
-					col = col.astype(int)
+					col = col_int
 				col = {'idx': i, 'data': col.tolist()}
 				col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 				save_compressed_json(col_file_name, col)

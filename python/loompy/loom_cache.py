@@ -22,19 +22,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import gzip
 import os.path
 import time
 import logging
 import loompy
+import ujson
 
-import pickle
-import pickletools
-import gzip
-import joblib
-
-def load_compressed_pickle(filename):
-		with gzip.open(filename,"rb") as f:
-			return pickle.loads(f.read())
+def load_compressed_json(filename):
+	with gzip.open(filename,"rt") as f:
+		jsonVal = f.read()
+		return jsonVal
 
 class LoomCache(object):
 	"""
@@ -108,11 +106,12 @@ class LoomCache(object):
 						if list_entry is None or self.format_last_mod(project, filename) != list_entry["lastModified"]:
 
 							path = self.get_absolute_path(project, filename, username, password)
-							md_filename = '%s.file_md.pklz' % (path)
+							md_filename = '%s.file_md.json.gzip' % (path)
 							if os.path.isfile(md_filename):
 								logging.debug('Using pickled metadata - %s' % (md_filename))
-								list_entry = load_compressed_pickle(md_filename)
+								list_entry = ujson.loads(load_compressed_json(md_filename))
 								list_entry["project"] = project
+								list_entry["filename"] = filename
 							else:
 								logging.debug('%s does not exist, using hdf5 fallback' % (md_filename))
 								ds = self.connect_dataset_locally(project, filename, username, password)
