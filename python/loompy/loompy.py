@@ -675,7 +675,7 @@ class LoomConnection(object):
 		self.shape = (self.shape[0], n_cols)
 		self.file.flush()
 
-	def add_loom(self, other_file, fill_values=None):
+	def add_loom(self, other_file, key=None, fill_values=None):
 		"""
 		Add the content of another loom file
 
@@ -689,6 +689,12 @@ class LoomConnection(object):
 		"""
 		# Connect to the loom files
 		other = connect(other_file)
+		if key is not None:
+			pk1 = other.row_attrs[key]
+			pk2 = self.row_attrs[key]
+			for ix, val in enumerate(pk1):
+				if pk2[ix] != val:
+					raise ValueError("Primary keys are not identical")
 		self.add_columns(other[:, :], other.col_attrs, fill_values)
 
 	def delete_attr(self, name, axis=0, raise_on_missing=True):
