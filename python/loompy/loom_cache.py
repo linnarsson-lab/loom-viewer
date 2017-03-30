@@ -108,10 +108,8 @@ class LoomCache(object):
 							path = self.get_absolute_path(project, filename, username, password)
 							md_filename = '%s.file_md.json.gzip' % (path)
 							if os.path.isfile(md_filename):
-								logging.debug('Using pickled metadata - %s' % (md_filename))
+								logging.debug('Loading metadata from %s' % (md_filename))
 								list_entry = ujson.loads(load_compressed_json(md_filename))
-								list_entry["project"] = project
-								list_entry["filename"] = filename
 							else:
 								logging.debug('%s does not exist, using hdf5 fallback' % (md_filename))
 								ds = self.connect_dataset_locally(project, filename, username, password)

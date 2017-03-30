@@ -42,14 +42,6 @@ import logging
 import requests
 import time
 
-import gzip
-import ujson
-
-def save_compressed_json(filename, data):
-		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
-			ujson.dump(data, f)
-
-
 def strip(s):
 	if s[0:2] == "b'" and s[-1] == "'":
 		return s[2:-1]
@@ -477,6 +469,14 @@ class LoomConnection(object):
 					self._load_attr(key, axis=1)
 
 		self.attrs = LoomAttributeManager(self.file)
+
+	def format_last_mod(self):
+		"""
+		Returns a formatted string of the last time the loom file
+		was modified, formatted year/month/day hour:minute:second
+		"""
+		mtime = time.gmtime(os.path.getmtime(self.filename))
+		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
 
 	def _save_attr(self, name, values, axis):
 		"""
@@ -1506,213 +1506,6 @@ class LoomConnection(object):
 			tile = self.dz_merge_tile(tl, tr, bl, br)
 			self.dz_save_tile(x, y, z, tile, truncate=False)
 			return tile
-
-
-	################
-	# EXPAND FILE #
-	################
-
-	"""
-		Methods for extracting data as pickled files for fast access.
-		Note that Deep Zoom handles this on its own.
-	"""
-
-	def expand_md(self, truncate=False):
-		"""
-		Generate object containing list entry metadata
-		"""
-		md_filename = '%s.file_md.json.gzip' % (self.filename)
-
-		if os.path.isfile(md_filename):
-			if not truncate:
-				logging.info('General metadata already expanded (truncate not set)')
-				return
-			else:
-				logging.info('Removing previously expanded general metadata (truncate set)')
-				os.remove(md_filename)
-
-		logging.info("Precomputing general metada tiles (stored as %s)" % md_filename)
-		title = self.attrs.get("title", "")
-		descr = self.attrs.get("description", "")
-		url = self.attrs.get("url", "")
-		doi = self.attrs.get("doi", "")
-		# get arbitrary col/row attribute, they're all lists
-		# of equal size. The length equals total cells/genes
-		total_cells = self.shape[1]
-		total_genes = self.shape[0]
-		# default to last_modified for older files that do
-		# not have a creation_date field
-		last_mod = self.format_last_mod()
-		creation_date = self.attrs.get("creation_date", last_mod)
-		md_data = {
-			"dataset": self.filename,
-			"title": title,
-			"description": descr,
-			"url":url,
-			"doi": doi,
-			"creationDate": creation_date,
-			"lastModified": last_mod,
-			"totalCells": total_cells,
-			"totalGenes": total_genes,
-		}
-		save_compressed_json(md_filename, md_data)
-
-	def format_last_mod(self):
-		"""
-		Returns a formatted string of the last time the loom file
-		was modified, formatted year/month/day hour:minute:second
-		"""
-		mtime = time.gmtime(os.path.getmtime(self.filename))
-		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
-
-	# Includes attributes
-	def expand_attrs(self, truncate=False):
-
-		attrs_name = '%s.attrs.json.gzip' % (self.filename)
-
-		if os.path.isfile(attrs_name):
-			if not truncate:
-				logging.info('File info and attributes already expanded (truncate not set)')
-				return
-			else:
-				logging.info('Removing previously expanded file info and attributes (truncate set)')
-				os.remove(attrs_name)
-
-		logging.info("Precomputing file info and attributes (stored as %s)" % attrs_name)
-		dims = self.dz_dimensions()
-		rowAttrs = {}
-		for (name,vals) in self.row_attrs.items():
-			try:
-				vals_int = vals.astype(int)
-				if np.all((vals - vals_int) == 0):
-					vals = vals_int
-			except:
-				"not a numeric type"
-			rowAttrs[name] = vals.tolist()
-
-		colAttrs = {}
-		for (name,vals) in self.col_attrs.items():
-			try:
-				vals_int = vals.astype(int)
-				if np.all((vals - vals_int) == 0):
-					vals = vals_int
-			except:
-				"not a numeric type"
-			colAttrs[name] = vals.tolist()
-
-		fileinfo = {
-			"dataset": self.filename,
-			"shape": self.shape,
-			"zoomRange": self.dz_zoom_range(),
-			"fullZoomHeight": dims[1],
-			"fullZoomWidth": dims[0],
-			"rowAttrs": rowAttrs,
-			"colAttrs": colAttrs,
-		}
-		save_compressed_json(attrs_name, fileinfo)
-
-	def expand_rows(self, truncate=False):
-
-		row_dir = '%s.rows' % ( self.filename )
-
-		if os.path.isdir(row_dir):
-			if not truncate:
-				logging.info('Rows already expanded (truncate not set)')
-				return
-			else:
-				logging.info('Removing previously expanded rows (truncate set)')
-				rmtree(row_dir)
-
-		try:
-			os.makedirs(row_dir, exist_ok=True)
-		except OSError as exception:
-			# if the error was that the directory already
-			# exists, ignore it, since that is expected.
-			if exception.errno != errno.EEXIST:
-				raise
-
-		logging.info("Precomputing rows (stored in %s subfolder)" % row_dir)
-
-		# 64 is the default chunk size, so probably the most cache
-		# friendly option to batch over
-		total_rows = self.shape[0]
-		i = 0
-		while i+64 < total_rows:
-			row64 = self[i:i+64,:]
-			for j in range(64):
-				row = row64[j]
-				# test if all values are integer
-				row_int = row.astype(int)
-				if np.all((row - row_int) == 0):
-					row = row_int
-				row = {'idx': i+j, 'data': row.tolist()}
-				row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
-				save_compressed_json(row_file_name, row)
-			i += 64
-		while i < total_rows:
-			row = self[i,:]
-			row_mod = np.mod(row, 1)
-			row_is_int = row_mod == 0
-			is_int = np.all(row_is_int)
-			if is_int:
-				row = row.astype(int)
-			row = {'idx': i+j, 'data': row.tolist()}
-			row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
-			save_compressed_json(row_file_name, row)
-			i += 1
-
-
-	def expand_columns(self, truncate=False):
-
-		col_dir = '%s.cols' % ( self.filename )
-
-		if os.path.isdir(col_dir):
-			if not truncate:
-				logging.info('Columns already expanded (truncate not set)')
-				return
-			else:
-				logging.info('Removing previously expanded columns (truncate set)')
-				rmtree(col_dir)
-
-		try:
-			os.makedirs(col_dir, exist_ok=True)
-		except OSError as exception:
-			# if the error was that the directory already
-			# exists, ignore it, since that is expected.
-			if exception.errno != errno.EEXIST:
-				raise
-
-		logging.info("Precomputing columns (stored in %s subfolder)" % col_dir)
-
-		total_cols = self.shape[1]
-		i = 0
-		while i+64 < total_cols:
-			#col64 = self[:, i:i+64].tolist()
-			col64 = self[:, i:i+64]
-			for j in range(64):
-				# turn it into a row, so that it
-				# will get converted to a list properly
-				# later on the server
-				col = col64[:, j].transpose()
-				col_int = col.astype(int)
-				is_int = np.all((col - col_int) == 0)
-				if (is_int):
-					col = col_int
-				col = {'idx': i, 'data': col.tolist()}
-				col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
-				save_compressed_json(col_file_name, col)
-			i += 64
-		while i < total_cols:
-			col = self[:, i].transpose()
-			col_mod = np.mod(col, 1)
-			col_is_int = col_mod == 0
-			is_int = np.all(col_is_int)
-			if (is_int):
-				col = col.astype(int)
-			col = {'idx': i, 'data': col.tolist()}
-			col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
-			save_compressed_json(col_file_name, col)
-			i += 1
 
 class _CEF(object):
 	def __init__(self):

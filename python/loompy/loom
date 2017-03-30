@@ -14,9 +14,223 @@ import loompy
 from io import StringIO
 import pandas as pd
 import numpy as np
+import gzip
+import ujson
 
 import timeit
 import random
+
+
+################
+# EXPAND FILE #
+################
+
+"""
+	Methods for extracting data as zipped json files for fast access.
+	Note that Deep Zoom handles expansion on its own.
+"""
+
+def save_compressed_json(filename, data):
+		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
+			ujson.dump(data, f)
+
+
+def expand_md(ds, project, filename, truncate=False):
+	"""
+	Generate object containing list entry metadata
+	"""
+	md_filename = '%s.file_md.json.gzip' % (ds.filename)
+
+	if os.path.isfile(md_filename):
+		if not truncate:
+			logging.info('  Metadata already expanded (truncate not set)')
+			return
+		else:
+			logging.info('  Removing previously expanded metadata (truncate set)')
+			os.remove(md_filename)
+
+	logging.info("  Expanding metada (stored as %s.file_md.json.gzip)" % filename)
+	title = ds.attrs.get("title", filename)
+	descr = ds.attrs.get("description", "")
+	url = ds.attrs.get("url", "")
+	doi = ds.attrs.get("doi", "")
+	# get arbitrary col/row attribute, they're all lists
+	# of equal size. The length equals total cells/genes
+	total_cells = ds.shape[1]
+	total_genes = ds.shape[0]
+	# default to last_modified for older files that do
+	# not have a creation_date field
+	last_mod = ds.format_last_mod()
+	creation_date = ds.attrs.get("creation_date", last_mod)
+	md_data = {
+		"project": project,
+		"filename": filename,
+		"dataset": filename,
+		"title": filename,
+		"description": descr,
+		"url":url,
+		"doi": doi,
+		"creationDate": creation_date,
+		"lastModified": last_mod,
+		"totalCells": total_cells,
+		"totalGenes": total_genes,
+	}
+	save_compressed_json(md_filename, md_data)
+
+# Includes attributes
+def expand_attrs(ds, project, filename, truncate=False):
+
+	attrs_name = '%s.attrs.json.gzip' % (ds.filename)
+
+	if os.path.isfile(attrs_name):
+		if not truncate:
+			logging.info('  Attributes already expanded (truncate not set)')
+			return
+		else:
+			logging.info('  Removing previously expanded ttributes (truncate set)')
+			os.remove(attrs_name)
+
+	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
+	dims = ds.dz_dimensions()
+	rowAttrs = {}
+	for (name,vals) in ds.row_attrs.items():
+		try:
+			vals_int = vals.astype(int)
+			if np.all((vals - vals_int) == 0):
+				vals = vals_int
+		except:
+			"not a numeric type"
+		rowAttrs[name] = vals.tolist()
+
+	colAttrs = {}
+	for (name,vals) in ds.col_attrs.items():
+		try:
+			vals_int = vals.astype(int)
+			if np.all((vals - vals_int) == 0):
+				vals = vals_int
+		except:
+			"not a numeric type"
+		colAttrs[name] = vals.tolist()
+
+	fileinfo = {
+		"project": project,
+		"filename": filename,
+		"dataset": ds.filename,
+		"shape": ds.shape,
+		"zoomRange": ds.dz_zoom_range(),
+		"fullZoomHeight": dims[1],
+		"fullZoomWidth": dims[0],
+		"rowAttrs": rowAttrs,
+		"colAttrs": colAttrs,
+	}
+	save_compressed_json(attrs_name, fileinfo)
+
+def expand_rows(ds, truncate=False):
+
+	row_dir = '%s.rows' % ( ds.filename )
+
+	if os.path.isdir(row_dir):
+		if not truncate:
+			logging.info('  Rows already expanded (truncate not set)')
+			return
+		else:
+			logging.info('  Removing previously expanded rows (truncate set)')
+			rmtree(row_dir)
+
+	try:
+		os.makedirs(row_dir, exist_ok=True)
+	except OSError as exception:
+		# if the error was that the directory already
+		# exists, ignore it, since that is expected.
+		if exception.errno != errno.EEXIST:
+			raise
+
+	logging.info("  Expanding rows (stored in %s subfolder)" % row_dir)
+
+	# 64 is the default chunk size, so probably the most cache
+	# friendly option to batch over
+	total_rows = ds.shape[0]
+	i = 0
+	while i+64 < total_rows:
+		row64 = ds[i:i+64,:]
+		for j in range(64):
+			row = row64[j]
+			# test if all values are integer
+			row_int = row.astype(int)
+			if np.all((row - row_int) == 0):
+				row = row_int
+			row = {'idx': i+j, 'data': row.tolist()}
+			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
+			save_compressed_json(row_file_name, row)
+		i += 64
+	while i < total_rows:
+		row = ds[i,:]
+		row_mod = np.mod(row, 1)
+		row_is_int = row_mod == 0
+		is_int = np.all(row_is_int)
+		if is_int:
+			row = row.astype(int)
+		row = {'idx': i+j, 'data': row.tolist()}
+		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
+		save_compressed_json(row_file_name, row)
+		i += 1
+
+
+def expand_columns(ds, truncate=False):
+
+	col_dir = '%s.cols' % ( ds.filename )
+
+	if os.path.isdir(col_dir):
+		if not truncate:
+			logging.info('  Columns already expanded (truncate not set)')
+			return
+		else:
+			logging.info('  Removing previously expanded columns (truncate set)')
+			rmtree(col_dir)
+
+	try:
+		os.makedirs(col_dir, exist_ok=True)
+	except OSError as exception:
+		# if the error was that the directory already
+		# exists, ignore it, since that is expected.
+		if exception.errno != errno.EEXIST:
+			raise
+
+	logging.info("  Expanding columns (stored in %s subfolder)" % col_dir)
+
+	total_cols = ds.shape[1]
+	i = 0
+	while i+64 < total_cols:
+		#col64 = ds[:, i:i+64].tolist()
+		col64 = ds[:, i:i+64]
+		for j in range(64):
+			# turn it into a row, so that it
+			# will get converted to a list properly
+			# later on the server
+			col = col64[:, j].transpose()
+			col_int = col.astype(int)
+			is_int = np.all((col - col_int) == 0)
+			if (is_int):
+				col = col_int
+			col = {'idx': i, 'data': col.tolist()}
+			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
+			save_compressed_json(col_file_name, col)
+		i += 64
+	while i < total_cols:
+		col = ds[:, i].transpose()
+		col_mod = np.mod(col, 1)
+		col_is_int = col_mod == 0
+		is_int = np.all(col_is_int)
+		if (is_int):
+			col = col.astype(int)
+		col = {'idx': i, 'data': col.tolist()}
+		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
+		save_compressed_json(col_file_name, col)
+		i += 1
+
+###################
+# ARGUMENT PARSER #
+###################
 
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):
@@ -42,14 +256,17 @@ def tile_command(dataset_path, filename):
 	ds.prepare_heatmap()
 
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
-	ds = connect_loom(dataset_path, filename)
-	if ds == None:
-		logging.error("File not found")
-		sys.exit(1)
-	ds.expand_md(truncate or metadata)
-	ds.expand_attrs(truncate or attributes)
-	ds.expand_rows(truncate or rows)
-	ds.expand_columns(truncate or cols)
+	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	for project in projects:
+		project_path = os.path.join(dataset_path, project)
+		ds = connect_loom(project_path, filename)
+		if ds == None:
+			continue
+		expand_md(ds, project, filename, truncate or metadata)
+		expand_attrs(ds, project, filename, truncate or attributes)
+		expand_rows(ds, truncate or rows)
+		expand_columns(ds, truncate or cols)
+		return
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
@@ -62,10 +279,10 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 				if ds == None:
 					logging.error("File not found")
 					sys.exit(1)
-				ds.expand_md(truncate or metadata)
-				ds.expand_attrs(truncate or attributes)
-				ds.expand_rows(truncate or rows)
-				ds.expand_columns(truncate or cols)
+				expand_md(ds, project, filename, truncate or metadata)
+				expand_attrs(ds, project, filename, truncate or attributes)
+				expand_rows(ds, truncate or rows)
+				expand_columns(ds, truncate or cols)
 
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
@@ -323,7 +540,7 @@ if __name__ == '__main__':
 		tile_parser.add_argument("file", help="Loom input file")
 
 		# loom expand
-		expand_parser = subparsers.add_parser('expand', help="Expand loom file to compressed pickle/json files for better server performance")
+		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands the first file with a matching name.")
 		expand_parser.add_argument("file", help="Loom input file")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
 		expand_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)

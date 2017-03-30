@@ -161,15 +161,13 @@ def send_fileinfo(project, filename):
 	fileinfo = None
 	if os.path.isfile(ds_filename):
 		logging.debug('Using file info from json.gzip ')
-		fileinfo = ujson.loads(load_compressed_json(ds_filename))
-		fileinfo["project"] = project
-		fileinfo["filename"] = filename
+		fileinfo = load_compressed_json(ds_filename)
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
 			return "", 404
 		dims = ds.dz_dimensions()
-		fileinfo = {
+		fileinfo = ujson.dumps({
 			"project": project,
 			"dataset": filename,
 			"filename": filename,
@@ -179,8 +177,8 @@ def send_fileinfo(project, filename):
 			"fullZoomWidth": dims[0],
 			"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
 			"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
-		}
-	return flask.Response(ujson.dumps(fileinfo), mimetype="application/json")
+		})
+	return flask.Response(fileinfo, mimetype="application/json")
 
 # Upload a dataset
 # curl "http://127.0.0.1:8003/loom/Published/cortex2.loom" --upload-file ~/loom-datasets/Published/cortex.loom
