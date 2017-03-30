@@ -9,7 +9,7 @@ import { scatterplot } from './scatterplot';
 const LandscapeComponent = function (props) {
 	const { dispatch, dataset } = props;
 	const { coordinateAttrs, colorAttr, colorMode,
-		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.landscape;
+		logscale, jitter, asMatrix } = dataset.viewState.landscape;
 
 	// filter out undefined attributes;
 	let attrs = [];
@@ -44,7 +44,7 @@ const LandscapeComponent = function (props) {
 				if (i <= j) {
 					const x = col.attrs[attrs[i]];
 					const y = col.attrs[attrs[j]];
-					paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
+					paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter);
 				}
 				row.push(
 					<Canvas
@@ -83,7 +83,7 @@ const LandscapeComponent = function (props) {
 	} else {
 		let x = col.attrs[attrs[0]];
 		let y = col.attrs[attrs[1]];
-		const paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
+		const paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter);
 		return (
 			<div className='view'>
 				<LandscapeSidepanel
@@ -109,13 +109,10 @@ LandscapeComponent.propTypes = {
 
 const initialState = { // Initialise landscapeState for this dataset
 	coordinateAttrs: ['_tSNE1', '_tSNE2'],
-	coordinateGenes: ['', ''],
 	logscale: {},
 	jitter: {},
-	filterZeros: {},
 	asMatrix: false,
 	colorAttr: '(original order)',
-	colorGene: '',
 	colorMode: 'Heatmap',
 };
 

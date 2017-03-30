@@ -1,7 +1,7 @@
 import * as colorLUT from '../js/colors';
 import { rndNorm, arraySubset } from '../js/util';
 
-// "global" array of sprite canvases
+// "global" array of sprite canvases. Contexts will be filled in later
 const { sprites, contexts } = (() => {
 	const sprites = new Array(257), contexts = new Array(257); // ibg
 	for (let i = 0; i < sprites.length; i++) {
@@ -177,19 +177,19 @@ function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, rad
 	}
 }
 
-function convertColordata(color, indices, colorMode, palette) {
-	let colData = arraySubset(color.data, indices, color.arrayType);
+function convertColordata(colorAttr, indices, colorMode, palette) {
+	let colData = arraySubset(colorAttr.data, indices, colorAttr.arrayType);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
 	let cIdx = new Uint8Array(colData.length);
 
 	if (colorMode === 'Categorical') {
-		let { colorIndices } = color;
+		let { colorIndices } = colorAttr;
 		for (let i = 0; i < cIdx.length; i++) {
 			cIdx[i] = colorIndices.mostFreq[colData[i]] | 0;
 		}
 	} else {
-		let { min, max, hasZeros } = color;
+		let { min, max, hasZeros } = colorAttr;
 		if (hasZeros) {
 			min = min < 0 ? min : 0;
 		}
@@ -201,6 +201,7 @@ function convertColordata(color, indices, colorMode, palette) {
 	}
 	return { cIdx };
 }
+
 function prepareSprites(colorMode, width, height, radius) {
 
 	let palette = [];

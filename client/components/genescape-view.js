@@ -9,7 +9,7 @@ import { scatterplot } from './scatterplot';
 const GenescapeComponent = function (props) {
 	const { dispatch, dataset } = props;
 	const { coordinateAttrs, colorAttr, colorMode,
-		logscale, jitter, filterZeros, asMatrix } = dataset.viewState.genescape;
+		logscale, jitter, asMatrix } = dataset.viewState.genescape;
 
 	// filter out undefined attributes;
 	let selectedAttrs = [];
@@ -45,7 +45,7 @@ const GenescapeComponent = function (props) {
 				if (i <= j) {
 					const x = row.attrs[selectedAttrs[i]];
 					const y = row.attrs[selectedAttrs[j]];
-					paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, filterZeros);
+					paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter);
 				}
 				selectedRow.push(
 					<Canvas
@@ -72,7 +72,7 @@ const GenescapeComponent = function (props) {
 		let y = row.attrs[selectedAttrs[1]];
 		plot = (
 			<Canvas
-				paint={scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, filterZeros)}
+				paint={scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter)}
 				style={{ margin: '20px' }}
 				redraw
 				clear
@@ -105,7 +105,6 @@ const initialState = {
 	coordinateAttrs: ['_tSNE1', '_tSNE2'],
 	logscale: {},
 	jitter: {},
-	filterZeros: {},
 	asMatrix: false,
 	colorAttr: '(original order)',
 	colorMode: 'Heatmap',

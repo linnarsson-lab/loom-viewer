@@ -92,7 +92,7 @@ const SparklineViewComponent = (props) => {
 				}}>
 				<Canvas
 					height={30}
-					paint={sparkline(geneData, col.sortedFilterIndices, sl.geneMode, undefined, sl.showLabels ? selection[i] : null)}
+					paint={sparkline(geneData, col.sortedFilterIndices, sl.geneMode, false, sl.showLabels ? selection[i] : null)}
 					redraw
 					clear
 				/>
