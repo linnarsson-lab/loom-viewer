@@ -45,7 +45,7 @@ export class SortAttributeComponent extends Component {
 					Order by: &nbsp;&nbsp;&nbsp;
 				</span>
 				<span style={{ fontStyle: 'italic' }}>
-					(select twice to togle ascending)
+					(select twice to toggle ascending)
 				</span>
 			</span>
 		), (
