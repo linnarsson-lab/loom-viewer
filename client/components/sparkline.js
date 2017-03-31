@@ -437,7 +437,7 @@ function textPaint(context, range) {
 		context.translate(-2, ((lineSize * 0.625) | 0) + range.xOffset);
 		const rotation = Math.PI / 6;
 		range.data.forEach((label) => {
-			if (label) {
+			if (label || label === 0) {
 				context.rotate(rotation);
 				drawText(context, '– ' + label, 0, 0);
 				context.rotate(-rotation);
