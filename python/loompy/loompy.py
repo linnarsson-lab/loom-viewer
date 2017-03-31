@@ -47,7 +47,7 @@ def strip(s):
 		return s[2:-1]
 	return s
 
-def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=None):
+def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types=None, col_attr_types=None, chunks=(64,64), chunk_cache=512, matrix_dtype="float32", compression_opts=6):
 	"""
 	Create a new .loom file from the given data.
 
@@ -68,7 +68,7 @@ def create(filename, matrix, row_attrs, col_attrs, file_attrs={}, row_attr_types
 		                        sequential row/column access will be a lot slower.
 		                        Defaults to 512.
 		matrix_dtype (str):     Dtype of the matrix. Default float32 (uint16, float16 could be used)
-		compression_opts (int): Strenght of the gzip compression. Default None.
+		compression_opts (int): Strenght of the gzip compression. Default 6.
 	Returns:
 		LoomConnection to created loom file.
 	"""
