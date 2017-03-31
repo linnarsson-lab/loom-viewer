@@ -188,11 +188,9 @@ function convertColordata(colorAttr, indices, colorMode, palette) {
 		for (let i = 0; i < cIdx.length; i++) {
 			cIdx[i] = colorIndices.mostFreq[colData[i]] | 0;
 		}
-	} else {
+	} else { // Heatmap or Heatmap2
 		let { min, max, hasZeros } = colorAttr;
-		if (hasZeros) {
-			min = min < 0 ? min : 0;
-		}
+		min = hasZeros && min > 0 ? 0 : min;
 		const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
 		for (let i = 0; i < cIdx.length; i++) {
 			cIdx[i] = ((colData[i] - min) * colorIdxScale) | 0;
