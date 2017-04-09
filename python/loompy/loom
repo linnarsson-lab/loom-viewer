@@ -5,6 +5,8 @@ import os
 import argparse
 import logging
 import requests
+from shutil import rmtree
+
 try:
 	from urllib.parse import urlparse
 except ImportError:
@@ -95,21 +97,26 @@ def expand_attrs(ds, project, filename, truncate=False):
 	rowAttrs = {}
 	for (name,vals) in ds.row_attrs.items():
 		try:
+			vals[np.isnan(vals)] = 0
+			vals[np.isinf(vals)] = 0
 			vals_int = vals.astype(int)
 			if np.all((vals - vals_int) == 0):
 				vals = vals_int
-		except:
-			"not a numeric type"
+		except Exception as e:
+			"Not a numeric type (expected for strings, not reported)"
 		rowAttrs[name] = vals.tolist()
 
 	colAttrs = {}
 	for (name,vals) in ds.col_attrs.items():
 		try:
+			vals[np.isnan(vals)] = 0
+			vals[np.isinf(vals)] = 0
 			vals_int = vals.astype(int)
 			if np.all((vals - vals_int) == 0):
 				vals = vals_int
-		except:
-			"not a numeric type"
+		except Exception as e:
+			#logging.debug(e)
+			"Not a numeric type (expected for strings, not reported)"
 		colAttrs[name] = vals.tolist()
 
 	fileinfo = {
@@ -121,7 +128,7 @@ def expand_attrs(ds, project, filename, truncate=False):
 		"fullZoomHeight": dims[1],
 		"fullZoomWidth": dims[0],
 		"rowAttrs": rowAttrs,
-		"colAttrs": colAttrs,
+		"colAttrs": colAttrs
 	}
 	save_compressed_json(attrs_name, fileinfo)
 
@@ -155,21 +162,32 @@ def expand_rows(ds, truncate=False):
 		row64 = ds[i:i+64,:]
 		for j in range(64):
 			row = row64[j]
-			# test if all values are integer
-			row_int = row.astype(int)
-			if np.all((row - row_int) == 0):
-				row = row_int
+			try:
+				# NaNs and Infinities are not supported by JSON
+				row[np.isnan(row)] = 0
+				row[np.isinf(row)] = 0
+				# test if all values are integer
+				row_int = row.astype(int)
+				if np.all((row - row_int) == 0):
+					row = row_int
+			except Exception as e:
+				logging.debug(e)
 			row = {'idx': i+j, 'data': row.tolist()}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 			save_compressed_json(row_file_name, row)
 		i += 64
 	while i < total_rows:
 		row = ds[i,:]
-		row_mod = np.mod(row, 1)
-		row_is_int = row_mod == 0
-		is_int = np.all(row_is_int)
-		if is_int:
-			row = row.astype(int)
+		try:
+			# NaNs and Infinities are not supported by JSON
+			row[np.isnan(row)] = 0
+			row[np.isinf(row)] = 0
+			# test if all values are integer
+			row_int = row.astype(int)
+			if np.all((row - row_int) == 0):
+				row = row_int
+		except Exception as e:
+			logging.debug(e)
 		row = {'idx': i+j, 'data': row.tolist()}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
@@ -201,28 +219,37 @@ def expand_columns(ds, truncate=False):
 	total_cols = ds.shape[1]
 	i = 0
 	while i+64 < total_cols:
-		#col64 = ds[:, i:i+64].tolist()
 		col64 = ds[:, i:i+64]
 		for j in range(64):
-			# turn it into a row, so that it
+			# Transpose it into a row, so that it
 			# will get converted to a list properly
-			# later on the server
 			col = col64[:, j].transpose()
-			col_int = col.astype(int)
-			is_int = np.all((col - col_int) == 0)
-			if (is_int):
-				col = col_int
+			try:
+				# NaNs and Infinities are not supported by JSON
+				col[np.isnan(col)] = 0
+				col[np.isinf(col)] = 0
+				# test if all values are integer
+				col_int = col.astype(int)
+				if np.all((col - col_int) == 0):
+					col = col_int
+			except Exception as e:
+				logging.debug(e)
 			col = {'idx': i, 'data': col.tolist()}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 			save_compressed_json(col_file_name, col)
 		i += 64
 	while i < total_cols:
 		col = ds[:, i].transpose()
-		col_mod = np.mod(col, 1)
-		col_is_int = col_mod == 0
-		is_int = np.all(col_is_int)
-		if (is_int):
-			col = col.astype(int)
+		try:
+			# NaNs and Infinities are not supported by JSON
+			col[np.isnan(col)] = 0
+			col[np.isinf(col)] = 0
+			# test if all values are integer
+			col_int = col.astype(int)
+			if np.all((col - col_int) == 0):
+				col = col_int
+		except Exception as e:
+			logging.debug(e)
 		col = {'idx': i, 'data': col.tolist()}
 		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 		save_compressed_json(col_file_name, col)
