@@ -87,7 +87,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 }
 
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
-	const {PI, random, sin, cos, log2} = Math;
+	const { PI, random, sin, cos, log2 } = Math;
 	// Scale of data
 	let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
 	let xmax = x.max;
@@ -153,7 +153,7 @@ function maybeStringArray(attr, indices) {
 		let i = indices.length;
 		let retVal = new Float32Array(i);
 		while (i--) {
-			retVal[i] = indices[i]+1;
+			retVal[i] = indices[i] + 1;
 		}
 		return retVal;
 	}
@@ -271,18 +271,23 @@ function sortByAxes(xData, yData, cIdx, width, height) {
 	// I'm betting on truncating being faster inside internal conversion
 	let x = Uint16Array.from(xData);
 	let y = Uint16Array.from(yData);
-	let indices = new Uint32Array(cIdx.length), compVal = new Uint32Array(cIdx.length), i;
+	let i = cIdx.length,
+		indices = new Uint32Array(i),
+		compVal = new Uint32Array(i);
 
-	for (i = 0; i < cIdx.length; i++) {
+	while (i--) {
 		indices[i] = i;
+		// no need to sort zero values by x and y, should make this
+		// faster in situations where most color values are zero
+		// (remember that typedArrays are initialised as zero)
+		if (cIdx[i]) {
+			compVal[i] = y[i] * width + x[i];
+		}
 	}
-	const ifcIdx = width*height;
-	for (i = 0; i < cIdx.length; i++) {
-		compVal[i] = (cIdx[i] ? ifcIdx : 0) + y[i] * width + x[i];
-	}
+
 	indices.sort((a, b) => {
-		const cval = compVal[a] - compVal[b];
-		return cval ? cval : a - b;
+		return compVal[a] - compVal[b];
+		//return cval ? cval : a - b;
 	});
 
 	// we can re-use x and y this way, reduce GC pressure a bit
