@@ -280,7 +280,6 @@ function sortByAxes(xData, yData, cIdx, width, height) {
 	// I'm betting on truncating being faster inside internal conversion
 	let x = Uint16Array.from(xData);
 	let y = Uint16Array.from(yData);
-<<<<<<< HEAD
 	const l = cIdx.length, zeroVal = width * height;
 	let i = l,
 		indices = new Uint32Array(l),
@@ -294,26 +293,10 @@ function sortByAxes(xData, yData, cIdx, width, height) {
 		// so making them all identical should make this faster
 		// in situations where most color values are zero.
 		if (cIdx[i]){
-=======
-	let i = cIdx.length,
-		indices = new Uint32Array(i),
-		compVal = new Uint32Array(i);
-
-	while (i--) {
-		indices[i] = i;
-		// no need to sort zero values by x and y, should make this
-		// faster in situations where most color values are zero
-		// (remember that typedArrays are initialised as zero)
-		if (cIdx[i]) {
->>>>>>> 832d7c5df4f9a53a46a00b7024a9c50435eb923a
 			compVal[i] = y[i] * width + x[i];
 		}
 	}
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 832d7c5df4f9a53a46a00b7024a9c50435eb923a
 	indices.sort((a, b) => {
 		return compVal[a] - compVal[b];
 		//return cval ? cval : a - b;
