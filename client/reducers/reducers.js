@@ -181,7 +181,7 @@ function updateAttrSort(order, sortAttrName) {
 				break;
 			}
 		}
-		i = i === -1 ? order.length-1 : i;
+		i = i === -1 ? order.length - 1 : i;
 		while (i--) {
 			order[i + 1] = order[i];
 		}
@@ -237,7 +237,7 @@ function updateFiltered(dataset, axis, prevFilter) {
 			mismatches++;
 		}
 		// count all zeros in the new filterCount
-		if (fc === 0){
+		if (fc === 0) {
 			sfiLength++;
 		}
 	}
@@ -245,7 +245,7 @@ function updateFiltered(dataset, axis, prevFilter) {
 	if (mismatches) {
 		sortedFilterIndices = new Uint16Array(sfiLength);
 		let i = filterCount.length;
-		while(i--) {
+		while (i--) {
 			if (filterCount[i] === 0) {
 				sortedFilterIndices[--sfiLength] = i;
 			}
@@ -265,26 +265,27 @@ function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, fil
 	const axisData = dataset[axis];
 	let attr = axisData.attrs[filterAttrName];
 	const oldUniques = attr.uniques;
-	let uniques = [];
-	for (let i = 0; i < oldUniques.length; i++) {
+	let i = oldUniques.length, uniques = new Array(i);
+	while (i--) {
 		let uniqueEntry = oldUniques[i];
 		if (filterVal === uniqueEntry.val) {
-			uniques.push(merge(uniqueEntry, { filtered: !uniqueEntry.filtered }));
+			uniques[i] = merge(uniqueEntry, { filtered: !uniqueEntry.filtered });
 		} else {
-			uniques.push(uniqueEntry);
+			uniques[i] = uniqueEntry;
 		}
 	}
 
 	// update filterCount
 	filterCount = filterCount ? filterCount : axisData.filterCount.slice(0);
+	i = filterCount.length;
 	if (filtered) {
-		for (let i = 0; i < filterCount.length; i++) {
+		while (i--) {
 			if (attr.data[i] === filterVal) {
 				filterCount[i]++;
 			}
 		}
 	} else {
-		for (let i = 0; i < filterCount.length; i++) {
+		while (i--) {
 			if (attr.data[i] === filterVal) {
 				filterCount[i]--;
 			}
@@ -347,7 +348,8 @@ function maybeSortIndices(state, newState, action) {
 	const rowOrder = newDataset.viewState.row.order;
 	const colOrder = newDataset.viewState.col.order;
 
-	for (let i = 0; i < rowOrder.length; i++) {
+	let i = rowOrder.length;
+	while (i--) {
 		const { key } = rowOrder[i];
 		// If these differ, it's because it was a row
 		// that was fetched. In that case we need to update
@@ -358,7 +360,8 @@ function maybeSortIndices(state, newState, action) {
 		}
 	}
 
-	for (let i = 0; i < colOrder.length; i++) {
+	i = colOrder.length;
+	while (i--) {
 		const { key } = colOrder[i];
 		if (col.attrs[key] !== newCol.attrs[key]) {
 			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, colOrder);

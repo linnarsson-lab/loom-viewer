@@ -21,8 +21,8 @@ export class FetchGeneComponent extends Component {
 		let { selectedGenes, dispatch, dataset, onChange } = this.props;
 		const { geneKeys } = dataset.col;
 
-		let selectOptions = new Array(geneKeys.length);
-		for (let i = 0; i < selectOptions.length; i++) {
+		let i = geneKeys.length, selectOptions = new Array(i);
+		while (i--) {
 			selectOptions[i] = {
 				value: geneKeys[i],
 				label: geneKeys[i],
@@ -35,7 +35,7 @@ export class FetchGeneComponent extends Component {
 			dispatch(fetchGene(dataset, validGenes));
 			let diff = difference(selectedGenes, validGenes);
 			let diff2 = difference(validGenes, selectedGenes);
-			if (diff.length+diff2.length){
+			if (diff.length + diff2.length) {
 				// difference length is only non-zero when
 				// some values in validGenes have changed
 				onChange(validGenes);
@@ -66,18 +66,18 @@ export class FetchGeneComponent extends Component {
 		onChange ? onChange(validGenes) : null;
 
 		const selectedGenes = validGenes.join(',\ ');
-		this.setState({selectedGenes});
+		this.setState({ selectedGenes });
 	}
 
-	filterValidGenes(selection){
+	filterValidGenes(selection) {
 		const { col } = this.props.dataset;
 		const genes = selection.split(/[,;'"`\s]+/g);
 
 		let validGenes = [];
 		const { sortedGeneKeys, sortedGeneKeysLowerCase } = col;
-		for (let i = 0; i < genes.length; i++){
+		for (let i = 0; i < genes.length; i++) {
 			const geneIdx = binaryIndexOf(sortedGeneKeysLowerCase, genes[i].toLowerCase());
-			if (geneIdx !== -1){
+			if (geneIdx !== -1) {
 				validGenes.push(sortedGeneKeys[geneIdx]);
 			}
 		}

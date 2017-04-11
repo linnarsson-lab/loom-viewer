@@ -13,15 +13,15 @@ export class DropdownMenu extends Component {
 
 	componentWillMount() {
 		let { options, filterOptions, value, multi } = this.props;
-		let newOptions = new Array(options.length);
-		for (let i = 0; i < newOptions.length; i++) {
+		let i = options.length, newOptions = new Array(i);
+		while (i--) {
 			newOptions[i] = {
 				value: options[i],
 				label: options[i],
 			};
 		}
 
-		if (!filterOptions && options.length > 100){
+		if (!filterOptions && options.length > 100) {
 			filterOptions = createFilterOptions({ options: newOptions });
 		}
 
@@ -42,8 +42,9 @@ export class DropdownMenu extends Component {
 		if (multi) {
 			if (value) {
 				const genes = value;
-				newState.values = new Array(genes.length);
-				for (let i = 0; i < genes.length; i++) {
+				let i = genes.length;
+				newState.values = new Array(i);
+				while (i--) {
 					newState.values[i] = { value: genes[i], label: genes[i] };
 				}
 			}
@@ -62,9 +63,9 @@ export class DropdownMenu extends Component {
 		if (event !== undefined && event !== null) {
 			const { onChange } = this.props;
 			if (this.props.multi) {
-				let value = [];
-				for (let i = 0; i < event.length; i++) {
-					value.push(event[i].value);
+				let i = event.length, value = new Array(i);
+				while (i--) {
+					value[i] = event[i].value;
 				}
 				onChange(value);
 			} else {
@@ -85,7 +86,7 @@ export class DropdownMenu extends Component {
 				clearable={this.props.clearable === true}
 				style={this.props.style}
 				maxHeight={100}
-				/>
+			/>
 		);
 	}
 }

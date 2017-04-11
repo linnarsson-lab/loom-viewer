@@ -72,10 +72,11 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 	// "undefined" for empty indices, effectively padding the data
 	// with empty entries on either or both ends.
 	const iOffset = Math.floor(range.left);
+	let i = range.total;
 	if (mode === 'Text' && indexedVal) {
-		range.data = [];
-		for (let i = 0; i < range.total; i++) {
-			range.data.push(indexedVal[source[iOffset + i]]);
+		range.data = new Array(i);
+		while (i--) {
+			range.data[i] = indexedVal[source[iOffset + i]];
 		}
 	} else {
 		// If we're not displaying text, then indexed string arrays
@@ -83,7 +84,6 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 		// Also note that we are basically guaranteed a typed array
 		// at this point in the code, so we cannot use push.
 		const array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
-		let i = range.total;
 		range.data = new array(i);
 		while (i--) {
 			range.data[i] = source[iOffset + i];

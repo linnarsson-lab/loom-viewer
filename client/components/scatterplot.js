@@ -3,8 +3,9 @@ import { rndNorm, arraySubset } from '../js/util';
 
 // "global" array of sprite canvases. Contexts will be filled in later
 const { sprites, contexts } = (() => {
-	const sprites = new Array(257), contexts = new Array(257); // ibg
-	for (let i = 0; i < sprites.length; i++) {
+	let i = 257;
+	const sprites = new Array(i), contexts = new Array(i);
+	while (i--) {
 		sprites[i] = document.createElement('canvas');
 		sprites[i].id = `dot_sprite_${i}`;
 		sprites[i].width = 16;
@@ -67,27 +68,25 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 		// ==================
 
 		// Because we sorted such that all cIdx zero values are in
-		// front of the array, we can "hoist" the cIdx lookups.
+		// front of the array, we can simplify the cIdx lookups.
 		// This also avoids repeated identical sprite lookups.
-		let zeroSprite = sprites[cIdx[0]];
-		let zeroPivot = 0;
-		while (cIdx[zeroPivot] === 0 && zeroPivot < xData.length) {
-			zeroPivot++;
-		}
-		for (let i = 0; i < zeroPivot; i++) {
+		let zeroSprite = sprites[0];
+		let i = -1;
+		while (cIdx[++i] === 0) {
 			context.drawImage(zeroSprite, xData[i], yData[i]);
 		}
-
-		for (let i = zeroPivot; i < xData.length; i++) {
+		// this decrement is necessary because we otherwise
+		// overshoot due to the above while loop
+		i--;
+		while (++i < xData.length) {
 			context.drawImage(sprites[cIdx[i]], xData[i], yData[i]);
 		}
-
 		context.restore();
 	};
 }
 
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
-	const {PI, random, sin, cos, log2} = Math;
+	const { PI, random, sin, cos, log2 } = Math;
 	// Scale of data
 	let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
 	let xmax = x.max;
@@ -100,10 +99,12 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 	let yData = maybeStringArray(y, indices);
 
 	// Jitter if requested
+	const l = xData.length;
+	let i = l;
 	if (jitter.x && jitter.y) {
 		// if jittering both axes, do so in a
 		// circle around the data
-		for (let i = 0; i < xData.length; i++) {
+		while (i--) {
 			const r = rndNorm();
 			const t = PI * 2 * random();
 			xData[i] += r * sin(t);
@@ -114,12 +115,12 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 		xmin -= 0.25; xmax += 0.25;
 		ymin -= 0.25; ymax += 0.25;
 	} else if (jitter.x) {
-		for (let i = 0; i < xData.length; i++) {
+		while (i--) {
 			xData[i] += rndNorm();
 		}
 		xmin -= 0.25; xmax += 0.25;
 	} else if (jitter.y) {
-		for (let i = 0; i < yData.length; i++) {
+		while (i--) {
 			yData[i] += rndNorm();
 		}
 		ymin -= 0.25; ymax += 0.25;
@@ -127,14 +128,16 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 
 	// Log transform if requested
 	if (logscale.x) {
-		for (let i = 0; i < xData.length; i++) {
+		i = l;
+		while (i--) {
 			xData[i] = log2(1 + xData[i]);
 		}
 		xmin = log2(1 + xmin);
 		xmax = log2(1 + xmax);
 	}
 	if (logscale.y) {
-		for (let i = 0; i < yData.length; i++) {
+		i = l;
+		while (i--) {
 			yData[i] = log2(1 + yData[i]);
 		}
 		ymin = log2(1 + ymin);
@@ -153,7 +156,7 @@ function maybeStringArray(attr, indices) {
 		let i = indices.length;
 		let retVal = new Float32Array(i);
 		while (i--) {
-			retVal[i] = indices[i]+1;
+			retVal[i] = indices[i] + 1;
 		}
 		return retVal;
 	}
@@ -163,16 +166,19 @@ function maybeStringArray(attr, indices) {
 function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius) {
 	const xmargin = (xmax - xmin) * 0.0625;
 	const yMargin = (ymax - ymin) * 0.0625;
+	const l = xData.length;
 	// we add xmargin/ymargin in the divisor here (and compensate further on with 0.5)
 	// to *also* add a margin *before* the normalisation. We also subtract the radius
 	// to avoid any points from going over the edge of the canvas
 	let xScale = ((width - 4 * radius)) / (xmax - xmin + xmargin);
-	for (let i = 0; i < xData.length; i++) {
+	let i = l;
+	while (i--) {
 		xData[i] = (xData[i] - xmin + 0.5 * xmargin) * xScale + 2 * radius;
 	}
 	let yNorm = 1 / (ymax - ymin + yMargin);
 	let yProject = (height - 4 * radius);
-	for (let i = 0; i < yData.length; i++) {
+	i = l;
+	while (i--) {
 		yData[i] = (1 - (yData[i] - ymin + 0.5 * yMargin) * yNorm) * yProject + 2 * radius;
 	}
 }
@@ -182,17 +188,17 @@ function convertColordata(colorAttr, indices, colorMode, palette) {
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
 	let cIdx = new Uint8Array(colData.length);
-
+	let i = cIdx.length;
 	if (colorMode === 'Categorical') {
 		let { colorIndices } = colorAttr;
-		for (let i = 0; i < cIdx.length; i++) {
+		while (i--) {
 			cIdx[i] = colorIndices.mostFreq[colData[i]] | 0;
 		}
 	} else { // Heatmap or Heatmap2
 		let { min, max, hasZeros } = colorAttr;
 		min = hasZeros && min > 0 ? 0 : min;
 		const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
-		for (let i = 0; i < cIdx.length; i++) {
+		while (i--) {
 			cIdx[i] = ((colData[i] - min) * colorIdxScale) | 0;
 		}
 
@@ -218,7 +224,8 @@ function prepareSprites(colorMode, width, height, radius) {
 	const spriteW = sprites[0].width, spriteH = sprites[0].height;
 	const lineW = Math.min(0.5, Math.max(0.125, radius / 10));
 	// reset all sprites to empty circles
-	for (let i = 0; i < sprites.length; i++) {
+	let i = sprites.length;
+	while (i--) {
 		let ctx = sprites[i].getContext('2d');
 		ctx.save();
 		ctx.clearRect(0, 0, spriteW, spriteH);
@@ -235,7 +242,9 @@ function prepareSprites(colorMode, width, height, radius) {
 		contexts[i] = ctx;
 	}
 	// fill the sprites that have a palette
-	for (let i = 1; i < palette.length; i++) {
+	// note the prefix decrement to skip index zero
+	i = palette.length;
+	while (--i) {
 		let ctx = contexts[i];
 		ctx.save();
 		ctx.globalAlpha = 0.5;
@@ -271,31 +280,101 @@ function sortByAxes(xData, yData, cIdx, width, height) {
 	// I'm betting on truncating being faster inside internal conversion
 	let x = Uint16Array.from(xData);
 	let y = Uint16Array.from(yData);
-	let indices = new Uint32Array(cIdx.length), compVal = new Uint32Array(cIdx.length), i;
+	const l = cIdx.length, zeroVal = width * height;
+	let i = l,
+		indices = new Uint32Array(l),
+		compVal = new Uint32Array(l);
 
-	for (i = 0; i < cIdx.length; i++) {
+	while (i--) {
 		indices[i] = i;
+		// - by making y the bigger value, we effectively
+		// sort by y first and by x second.
+		// - zeroVal: no need to sort zero values by x and y,
+		// so making them all identical should make this faster
+		// in situations where most color values are zero.
+		if (cIdx[i]){
+			compVal[i] = y[i] * width + x[i];
+		}
 	}
-	const ifcIdx = width*height;
-	for (i = 0; i < cIdx.length; i++) {
-		compVal[i] = (cIdx[i] ? ifcIdx : 0) + y[i] * width + x[i];
-	}
+
+
 	indices.sort((a, b) => {
-		const cval = compVal[a] - compVal[b];
-		return cval ? cval : a - b;
+		return compVal[a] - compVal[b];
+		//return cval ? cval : a - b;
 	});
 
 	// we can re-use x and y this way, reduce GC pressure a bit
 	let _cIdx = Uint16Array.from(cIdx);
-	for (i = 0; i < cIdx.length; i++) {
+
+	// loop unrolling. Yes, like in C. Yes, it's disgusting
+	i = l;
+	while(i-16 > 0){
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+		cIdx[--i] = _cIdx[indices[i]];
+	}
+	while (i--) {
 		cIdx[i] = _cIdx[indices[i]];
 	}
 	xData = _cIdx;
-	for (i = 0; i < x.length; i++) {
+
+	i = l;
+	while(i-16 > 0){
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+		xData[--i] = x[indices[i]];
+	}
+	while (i--) {
 		xData[i] = x[indices[i]];
 	}
 	yData = x;
-	for (i = 0; i < y.length; i++) {
+
+	i = l;
+	while (i-16 > 0){
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+		yData[--i] = y[indices[i]];
+	}
+	while (i--) {
 		yData[i] = y[indices[i]];
 	}
 

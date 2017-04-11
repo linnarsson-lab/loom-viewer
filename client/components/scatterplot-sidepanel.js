@@ -1,11 +1,12 @@
 import React, { Component, PropTypes } from 'react';
-import { DropdownMenu } from './dropdown';
-
-import { AttrLegend } from './legend';
 import {
 	Panel, ListGroup, ListGroupItem,
 	Button, ButtonToolbar, ButtonGroup,
 } from 'react-bootstrap';
+import Slider from 'rc-slider';
+
+import { AttrLegend } from './legend';
+import { DropdownMenu } from './dropdown';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -78,7 +79,7 @@ class CoordinateSettings extends Component {
 				if (value) {
 					newVals[idx] = value;
 				} else {
-					for (let i = idx; i < newVals.length; i++) {
+					for (let i = idx; i < newVals.length - 1; i++) {
 						newVals[i] = newVals[i + 1];
 					}
 					newVals.pop();
@@ -145,10 +146,10 @@ class CoordinateSettings extends Component {
 			}
 		}
 
-		let coordinateDropdowns = [];
-		for (let i = 0; i <= newAttrs.length; i++) {
+		let i = newAttrs.length + 1, coordinateDropdowns = new Array(i);
+		while (i--) {
 			const coordHC = coordAttrHCFactory(newAttrs, i);
-			coordinateDropdowns.push(
+			coordinateDropdowns[i] = (
 				<DropdownMenu
 					key={i}
 					value={newAttrs[i] ? newAttrs[i] : '<select attribute>'}
@@ -367,6 +368,13 @@ export const ScatterplotSidepanel = (props) => {
 					logscale={logscale}
 					jitter={jitter}
 				/>
+				<ListGroupItem>
+					<div style={{ height: '100px' }}>
+						<Slider
+							marks={{ 0: '0.1x', 100: '10x' }}
+							defaultValue={50} />
+					</div>
+				</ListGroupItem>
 				<ColorSettings
 					dispatch={dispatch}
 					dataset={dataset}

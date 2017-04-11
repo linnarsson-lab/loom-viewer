@@ -58,7 +58,7 @@ export function countElements(array, start, end) {
 	// Given that many gene arrays contain mostly zeros,
 	// this can save a bit of time.
 
-	i = end-1;
+	i = end - 1;
 	let val = sorted[i], sentinel = sorted[start], j = i, uniques = [];
 	while (val !== sentinel) {
 		// keep going until a different value is found
@@ -248,7 +248,10 @@ function cIdxConverter(uniques, data) {
 			a.val > b.val ? -1 : 1
 		);
 	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
+
+	const l = uniques.length < 20 ? uniques.length : 20;
+	let i = l;
+	while (i--) {
 		max[uniques[i].val] = i + 1;
 	}
 
@@ -262,8 +265,8 @@ function cIdxConverter(uniques, data) {
 			);
 		});
 	}
-
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
+	i = l;
+	while (i--) {
 		mostFreq[uniques[i].val] = i + 1;
 	}
 	return { mostFreq, max };
@@ -277,7 +280,10 @@ function cIdxStringConverter(uniques, data) {
 			a.val > b.val ? -1 : 1
 		);
 	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
+
+	const l = uniques.length < 20 ? uniques.length : 20;
+	let i = l;
+	while (i--) {
 		max[uniques[i].val] = i + 1;
 	}
 
@@ -292,7 +298,8 @@ function cIdxStringConverter(uniques, data) {
 		});
 	}
 
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
+	i = l;
+	while (i--) {
 		mostFreq[uniques[i].val] = i + 1;
 	}
 	return { mostFreq, max };
@@ -469,9 +476,10 @@ export function stableSortInPlace(array, comparator) {
 
 export function stableSortedCopy(array, comparator) {
 	let indices = findIndices(array, comparator);
-	let sortedArray = [];
-	for (let i = 0; i < array.length; i++) {
-		sortedArray.push(array[indices[i]]);
+	let i = array.length;
+	let sortedArray = new Array(i);
+	while (i--) {
+		sortedArray[i] = array[indices[i]];
 	}
 	return sortedArray;
 }
@@ -504,6 +512,26 @@ export function findIndices(array, comparator) {
 	// 4 billion elements; if you know the upper bounds of your
 	// input you could replace it with a smaller typed array
 	let indices = new Uint32Array(array.length), i = indices.length;
+	// unrolled 16 - decrement
+	let i = indices.length;
+	while (i - 16 > 0) {
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+	}
 	while (i--) {
 		indices[i] = i;
 	}

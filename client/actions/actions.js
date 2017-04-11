@@ -59,7 +59,8 @@ function receiveProjects(json) {
 	let order = { key: 'lastModified', asc: true };
 	// convert json array to hashmap
 	let list = {};
-	for (let i = 0; i < json.length; i++) {
+	let i = json.length;
+	while (i--) {
 		let ds = json[i];
 		ds.path = ds.project + '/' + ds.filename;
 		ds.viewState = {};
@@ -254,7 +255,8 @@ function prepData(attrs) {
 function convertArrays(attrs) {
 	let keys = Object.keys(attrs);
 	let newAttrs = {};
-	for (let i = 0; i < keys.length; i++) {
+	let i = keys.length;
+	while (i--) {
 		const k = keys[i];
 		newAttrs[k] = convertArray(attrs[k], k);
 	}
@@ -262,8 +264,8 @@ function convertArrays(attrs) {
 }
 
 function prepFilter(options) {
-	let newOptions = new Array(options.length);
-	for (let i = 0; i < newOptions.length; i++) {
+	let i = options.length, newOptions = new Array(i);
+	while (i--) {
 		newOptions[i] = {
 			value: options[i],
 			label: options[i],
@@ -316,7 +318,8 @@ export function fetchDataSet(datasets, path) {
 
 function requestGenesFetch(genes, path) {
 	let fetchedGenes = {};
-	for (let i = 0; i < genes.length; i++) {
+	let i = genes.length;
+	while (i--) {
 		fetchedGenes[genes[i]] = true;
 	}
 	return {
@@ -333,7 +336,8 @@ function requestGenesFetch(genes, path) {
 
 function requestGenesFailed(genes, path) {
 	let fetchedGenes = {};
-	for (let i = 0; i < genes.length; i++) {
+	let i = genes.length;
+	while (i--) {
 		fetchedGenes[genes[i]] = false;
 	}
 	return {
@@ -403,7 +407,8 @@ export function fetchGene(dataset, genes) {
 					.then((data) => {
 						// Genes are appended to the attrs object
 						let attrs = {};
-						for (let i = 0; i < data.length; i++) {
+						let i = data.length;
+						while (i--) {
 							let row = data[i];
 							attrs[geneKeys[row.idx]] = convertArray(row.data);
 						}

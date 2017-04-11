@@ -5,7 +5,6 @@ import * as colors from '../js/colors';
 export function AttrLegend(props) {
 	const { filterFunc, attr, mode } = props;
 	const { uniques, indexedVal } = attr;
-	let visibleData = [];
 	const nullfunc = () => { };
 
 	const isFloat = attr.arrayType === 'float32' ||
@@ -33,8 +32,10 @@ export function AttrLegend(props) {
 		};
 	}
 
-	let l = Math.min(uniques.length, 20);
-	for (let i = 0; i < l; i++) {
+	let l = Math.min(uniques.length, 20),
+		i = l,
+		visibleData = new Array(l + l < uniques.length ? 1 : 0);
+	while (i--) {
 		let { val, count, filtered } = uniques[i];
 		const color = filtered ? 'lightgrey' : selectColor(i, val);
 
@@ -51,7 +52,7 @@ export function AttrLegend(props) {
 
 		const filter = filterFunc ? filterFunc(val) : nullfunc;
 
-		visibleData.push(
+		visibleData[i] = (
 			<td
 				key={`${i}_${val}`}
 				onClick={filter}
@@ -63,9 +64,9 @@ export function AttrLegend(props) {
 
 	// sum count for remaining values
 	if (l < uniques.length) {
-		let rest = 0;
-		while (l < uniques.length) { rest += uniques[l++].count; }
-		visibleData.push(
+		let rest = 0; i = l;
+		while (i < uniques.length) { rest += uniques[i++].count; }
+		visibleData[l] = (
 			<td key={20} style={{ display: 'inline-block' }}>
 				<span style={{ fontStyle: 'normal' }}>□ </span>(other): {rest}
 			</td>
