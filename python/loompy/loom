@@ -100,11 +100,27 @@ def expand_attrs(ds, project, filename, truncate=False):
 			vals[np.isnan(vals)] = 0
 			vals[np.isinf(vals)] = 0
 			vals_int = vals.astype(int)
-			if np.all((vals - vals_int) == 0):
-				vals = vals_int
+			safe_conversion = (vals - vals_int) == 0
+			all_safe = np.all(safe_conversion)
+			any_safe = np.any(safe_conversion)
+			# if we can convert the whole array to integers,
+			# do that
+			if all_safe:
+				vals = vals_int.tolist()
+			else:
+				vals  = vals.tolist()
+				# if there are _some_ integers, convert them
+				# (arrays will likely have many zero values,
+				# so this could still save a bit of space)
+				if any_safe:
+					for i in range(len(vals)):
+						if safe_conversion[i]:
+							vals[i] = int(vals[i])
+			rowAttrs[name] = vals
 		except Exception as e:
-			"Not a numeric type (expected for strings, not reported)"
-		rowAttrs[name] = vals.tolist()
+			"""Not a numeric type (expected for strings, not reported)"""
+			rowAttrs[name] = vals
+
 
 	colAttrs = {}
 	for (name,vals) in ds.col_attrs.items():
@@ -112,12 +128,22 @@ def expand_attrs(ds, project, filename, truncate=False):
 			vals[np.isnan(vals)] = 0
 			vals[np.isinf(vals)] = 0
 			vals_int = vals.astype(int)
-			if np.all((vals - vals_int) == 0):
-				vals = vals_int
+
+			safe_conversion = (vals - vals_int) == 0
+			all_safe = np.all(safe_conversion)
+			any_safe = np.any(safe_conversion)
+			if all_safe:
+				vals = vals_int.tolist()
+			else:
+				vals  = vals.tolist()
+				if any_safe:
+					for i in range(len(vals)):
+						if safe_conversion[i]:
+							vals[i] = int(vals[i])
+			colAttrs[name] = vals
 		except Exception as e:
-			#logging.debug(e)
-			"Not a numeric type (expected for strings, not reported)"
-		colAttrs[name] = vals.tolist()
+			"""Not a numeric type (expected for strings, not reported)"""
+			colAttrs[name] = vals
 
 	fileinfo = {
 		"project": project,
@@ -168,11 +194,18 @@ def expand_rows(ds, truncate=False):
 				row[np.isinf(row)] = 0
 				# test if all values are integer
 				row_int = row.astype(int)
-				if np.all((row - row_int) == 0):
-					row = row_int
+				safe_conversion = (row - row_int) == 0
+				if np.all(safe_conversion):
+					row = row_int.tolist()
+				else:
+					row = row.tolist()
+					if np.any(safe_conversion):
+						for i in range(len(row)):
+							if safe_conversion[i]:
+								row[i] = int(row[i])
 			except Exception as e:
 				logging.debug(e)
-			row = {'idx': i+j, 'data': row.tolist()}
+			row = {'idx': i+j, 'data': row}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 			save_compressed_json(row_file_name, row)
 		i += 64
@@ -182,13 +215,20 @@ def expand_rows(ds, truncate=False):
 			# NaNs and Infinities are not supported by JSON
 			row[np.isnan(row)] = 0
 			row[np.isinf(row)] = 0
-			# test if all values are integer
+			# test if all (or some) values are integer
 			row_int = row.astype(int)
-			if np.all((row - row_int) == 0):
-				row = row_int
+			safe_conversion = (row - row_int) == 0
+			if np.all(safe_conversion):
+				row = row_int.tolist()
+			else:
+				row = row.tolist()
+				if np.any(safe_conversion):
+					for i in range(len(row)):
+						if safe_conversion[i]:
+							row[i] = int(row[i])
 		except Exception as e:
 			logging.debug(e)
-		row = {'idx': i+j, 'data': row.tolist()}
+		row = {'idx': i+j, 'data': row}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
 		i += 1
@@ -230,11 +270,18 @@ def expand_columns(ds, truncate=False):
 				col[np.isinf(col)] = 0
 				# test if all values are integer
 				col_int = col.astype(int)
-				if np.all((col - col_int) == 0):
-					col = col_int
+				safe_conversion = (col - col_int) == 0
+				if np.all(safe_conversion):
+					col = col_int.tolist()
+				else:
+					col = col.tolist()
+					if np.any(safe_conversion):
+						for i in range(len(col)):
+							if safe_conversion[i]:
+								col[i] = int(col[i])
 			except Exception as e:
 				logging.debug(e)
-			col = {'idx': i, 'data': col.tolist()}
+			col = {'idx': i, 'data': col}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 			save_compressed_json(col_file_name, col)
 		i += 64
@@ -246,11 +293,18 @@ def expand_columns(ds, truncate=False):
 			col[np.isinf(col)] = 0
 			# test if all values are integer
 			col_int = col.astype(int)
-			if np.all((col - col_int) == 0):
-				col = col_int
+			safe_conversion = (col - col_int) == 0
+			if np.all(safe_conversion):
+				col = col_int.tolist()
+			else:
+				col = col.tolist()
+				if np.any(safe_conversion):
+					for i in range(len(col)):
+						if safe_conversion[i]:
+							col[i] = int(col[i])
 		except Exception as e:
 			logging.debug(e)
-		col = {'idx': i, 'data': col.tolist()}
+		col = {'idx': i, 'data': col}
 		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 		save_compressed_json(col_file_name, col)
 		i += 1
@@ -266,12 +320,15 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
-	logging.info("Looking for " + filename)
+	logging.info("Looking for %s" % filename)
 	if os.path.exists(filename):
+		logging.info("Found %s locally" % filename)
 		return loompy.connect(filename)
-	logging.info("Looking for " + os.path.join(dataset_path, filename))
-	if os.path.exists(os.path.join(dataset_path, filename)):
-		return loompy.connect(os.path.join(dataset_path, filename))
+	full_path = os.path.join(dataset_path, filename)
+	logging.info("Looking for %s" % full_path )
+	if os.path.exists(full_path):
+		logging.info("Found %s at full path" % filename)
+		return loompy.connect(full_path)
 	return None
 
 def tile_command(dataset_path, filename):
@@ -286,14 +343,12 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
-		ds = connect_loom(project_path, filename)
-		if ds == None:
-			continue
-		expand_md(ds, project, filename, truncate or metadata)
-		expand_attrs(ds, project, filename, truncate or attributes)
-		expand_rows(ds, truncate or rows)
-		expand_columns(ds, truncate or cols)
-		return
+		if os.path.exists(os.path.join(project_path, filename)):
+			ds = connect_loom(project_path, filename)
+			expand_md(ds, project, filename, truncate or metadata)
+			expand_attrs(ds, project, filename, truncate or attributes)
+			expand_rows(ds, truncate or rows)
+			expand_columns(ds, truncate or cols)
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
