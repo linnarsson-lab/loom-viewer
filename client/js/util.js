@@ -513,7 +513,6 @@ export function findIndices(array, comparator) {
 	// input you could replace it with a smaller typed array
 	let indices = new Uint32Array(array.length), i = indices.length;
 	// unrolled 16 - decrement
-	let i = indices.length;
 	while (i - 16 > 0) {
 		indices[--i] = i;
 		indices[--i] = i;
