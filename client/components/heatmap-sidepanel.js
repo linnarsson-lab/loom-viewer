@@ -4,8 +4,6 @@ import { DropdownMenu } from './dropdown';
 import { AttrLegend } from './legend';
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
-import { binaryIndexOf } from '../js/util';
-
 import { fetchGene } from '../actions/actions';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -64,7 +62,7 @@ export class HeatmapSidepanel extends Component {
 
 	maybeFetch(gene, dataset, dispatch) {
 		if (gene &&
-		binaryIndexOf(dataset.col.sortedKeys, gene) === -1 && // note how we check if the key *isn't* an attribute key, implying it's a gene
+		dataset.col.keys.indexOf(gene) === -1 && // note how we check if the key *isn't* an attribute key, implying it's a gene
 			!dataset.fetchedGenes[gene]) {
 			dispatch(fetchGene(dataset, [gene]));
 		}

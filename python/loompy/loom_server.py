@@ -168,29 +168,8 @@ def send_fileinfo(project, filename):
 			return "", 404
 		dims = ds.dz_dimensions()
 
-		rowAttrs = {}
-		for (name, vals) in ds.row_attrs.items():
-			try:
-				vals[np.isnan(vals)] = 0
-				vals[np.isinf(vals)] = 0
-				vals_int = vals.astype(int)
-				if np.all((vals - vals_int) == 0):
-					vals = vals_int
-			except:
-				"not a numeric type"
-			rowAttrs[name] = vals.tolist()
-
-		colAttrs = {}
-		for (name, vals) in ds.col_attrs.items():
-			try:
-				vals[np.isnan(vals)] = 0
-				vals[np.isinf(vals)] = 0
-				vals_int = vals.astype(int)
-				if np.all((vals - vals_int) == 0):
-					vals = vals_int
-			except:
-				"not a numeric type"
-			colAttrs[name] = vals.tolist()
+		rowAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
+		colAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 
 		fileinfo = ujson.dumps({
 			"project": project,
@@ -274,19 +253,7 @@ def send_row(project, filename, rows):
 			# Serialised like this is slightly faster
 			rows.sort()
 			dsRowsList = ds[rows,:]
-			retRows = []
-			for i in range(len(rows)):
-				row = dsRowsList[i]
-				try:
-					# remove NaN and Inf, convert to integer if possible
-					row[np.isnan(row)] = 0
-					row[np.isinf(row)] = 0
-					row_int = row.astype(int)
-					if np.all((row - row_int) == 0):
-						row = row_int
-				except Exception as e:
-					logging.debug(e)
-			retRows.append({'idx': rows[i], 'data': row.tolist() })
+			retRows = [loompy.JSON_array(row) for row in dsRowsList]
 			return flask.Response(ujson.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
@@ -320,19 +287,7 @@ def send_col(project, filename, cols):
 			# Transpose it into a row, so that it
 			# will get converted to a list properly
 			dsColsList = ds[:,cols].transpose()
-			retCols = []
-			for i in range(len(cols)):
-				col = dsColsList[i]
-				try:
-					# remove NaN and Inf, convert to integer if possible
-					col[np.isnan(col)] = 0
-					col[np.isinf(col)] = 0
-					col_int = col.astype(int)
-					if np.all((col - col_int) == 0):
-						col = col_int
-				except Exception as e:
-					logging.debug(e)
-			retCols.append({'idx': cols[i], 'data': col.tolist() })
+			retCols = [loompy.JSON_array(col) for col in dsColsList]
 			return flask.Response(ujson.dumps(retCols), mimetype="application/json")
 
 

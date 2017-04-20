@@ -1,15 +1,15 @@
 export const TypedArrayProp = {
 	any: (props, propName, componentName) => {
 		let obj = props[propName];
-		if (!(obj instanceof Float64Array ||
-			obj instanceof Int32Array ||
-			obj instanceof Float32Array ||
-			obj instanceof Int8Array ||
-			obj instanceof Uint8Array ||
-			obj instanceof Uint8ClampedArray ||
+		if (!(obj instanceof Uint8Array || // in order of how common these arrays
+			obj instanceof Float32Array || // are in my own code
+			obj instanceof Uint16Array ||
 			obj instanceof Uint32Array ||
+			obj instanceof Int8Array ||
 			obj instanceof Int16Array ||
-			obj instanceof Uint16Array)) {
+			obj instanceof Int32Array ||
+			obj instanceof Float64Array ||
+			obj instanceof Uint8ClampedArray)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
 				' `' + componentName + '`. Expected a TypedArray.'
@@ -21,7 +21,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Float64Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Float64Array.'
 			);
 		}
 	},
@@ -30,7 +30,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Float32Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Float32Array.'
 			);
 		}
 	},
@@ -39,7 +39,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Int32Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected an Int32Array.'
 			);
 		}
 	},
@@ -48,7 +48,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Int16Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected an In16Array.'
 			);
 		}
 	},
@@ -57,7 +57,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Int8Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected an Int8Array.'
 			);
 		}
 	},
@@ -66,7 +66,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Uint32Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Uint32Array.'
 			);
 		}
 	},
@@ -75,7 +75,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Uint16Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Uint16Array.'
 			);
 		}
 	},
@@ -84,7 +84,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Uint8Array)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Uint8rray.'
 			);
 		}
 	},
@@ -93,7 +93,7 @@ export const TypedArrayProp = {
 		if (!(props[propName] instanceof Uint8ClampedArray)) {
 			return new Error(
 				'Invalid prop `' + propName + '` supplied to' +
-				' `' + componentName + '`. Expected a TypedArray.'
+				' `' + componentName + '`. Expected a Uint8ClampedArray.'
 			);
 		}
 	},

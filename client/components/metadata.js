@@ -136,9 +136,9 @@ class MetadataTable extends Component {
 				tableRow.val = (
 					<span>{uniqueVal}</span>
 				);
-			} else if (uniques[0].count === 1) { // every value is unique
+			} else if (attr.allUnique) { // every value is unique
 				let list = data[sortedFilterIndices[0]];
-				const l = Math.min(uniques.length, 5);
+				const l = Math.min(data.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
 					for (let i = 1; i < l; i++) {
@@ -149,7 +149,7 @@ class MetadataTable extends Component {
 						list += `, ${data[sortedFilterIndices[i]]}`;
 					}
 				}
-				if (l < uniques.length) {
+				if (l < data.length) {
 					list += ', ...';
 				}
 				tableRow.val = (

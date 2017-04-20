@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { ScatterplotSidepanel } from './scatterplot-sidepanel';
 import { fetchGene } from '../actions/actions';
-import { binaryIndexOf } from '../js/util';
 
 export class LandscapeSidepanel extends Component {
 
@@ -15,7 +14,7 @@ export class LandscapeSidepanel extends Component {
 
 	fetchGenes(props) {
 		const { dispatch, dataset } = props;
-		const { sortedKeys } = dataset.col;
+		const { keys } = dataset.col;
 		const viewState = dataset.viewState.landscape;
 		const { coordinateAttrs, colorAttr } = viewState;
 
@@ -27,11 +26,11 @@ export class LandscapeSidepanel extends Component {
 			// at most, whereas `genes` or `CellID` will be in the
 			// thousands. So it's faster to check if a value *isn't*
 			// in `keys`, than to check if it *is* in `genes`.
-			if (value && binaryIndexOf(sortedKeys, value) === -1 && !dataset.fetchedGenes[value]) {
+			if (value && keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}
-		if (binaryIndexOf(sortedKeys, colorAttr) === -1 && !dataset.fetchedGenes[colorAttr]) {
+		if (keys.indexOf(colorAttr) === -1 && !dataset.fetchedGenes[colorAttr]) {
 			genes.push(colorAttr);
 		}
 		if (genes.length) {

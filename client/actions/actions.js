@@ -19,7 +19,7 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { convertArray } from '../js/util';
+import { convertJSONarray, arrayConstr } from '../js/util';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -133,29 +133,15 @@ function receiveDataSet(data, path) {
 
 	// some old loom files have 'Cell_ID'
 	rows.cellKeys = cols.attrs.CellID ? cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ? cols.attrs.Cell_ID.data.slice() : [];
+	rows.cellKeys.sort();
 	rows.allKeys = rows.keys.concat(rows.cellKeys);
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
 
-	// there are plenty of use cases for sorted keys, so let's
-	// sort them once and store them for later use.
-	rows.sortedKeys = rows.keys.slice().sort();
-	rows.sortedKeysNoUniques = rows.keysNoUniques.slice().sort();
-	rows.sortedAllKeys = rows.allKeys.slice().sort();
-	rows.sortedAllKeysNoUniques = rows.allKeysNoUniques.slice().sort();
-	rows.sortedCellKeys = rows.cellKeys.slice().sort();
-
 	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
+	cols.geneKeys.sort();
 	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
 	cols.allKeys = cols.keys.concat(cols.geneKeys);
 	cols.allKeysNoUniques = cols.keysNoUniques.concat(cols.geneKeys);
-
-
-	cols.sortedKeys = cols.keys.slice().sort();
-	cols.sortedKeysNoUniques = cols.keysNoUniques.slice().sort();
-	cols.sortedAllKeys = cols.allKeys.slice().sort();
-	cols.sortedAllKeysNoUniques = cols.allKeysNoUniques.slice().sort();
-	cols.sortedGeneKeys = cols.geneKeys.slice().sort();
-	cols.sortedGeneKeysLowerCase = cols.geneKeysLowerCase.slice().sort();
 
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
@@ -203,13 +189,10 @@ function prepData(attrs) {
 	let keys = Object.keys(attrs).sort();
 
 	// store original attribute order
-	let originalOrder = new Uint32Array(attrs[keys[0]].length), i = originalOrder.length;
-	while (i--) {
-		originalOrder[i] = i;
-	}
-	let origOrderKey = '(original order)';
-	attrs[origOrderKey] = originalOrder;
-	keys.unshift(origOrderKey);
+	const dataLength = attrs[keys[0]].data.length;
+	let originalOrder = originalOrderArray(dataLength);
+	attrs[originalOrder.name] = originalOrder;
+	keys.unshift(originalOrder.name);
 
 	// Initial sort order
 	let order = [];
@@ -223,21 +206,23 @@ function prepData(attrs) {
 	// meta-data so we have to add it first
 	let newAttrs = convertArrays(attrs);
 
-	// Add the set of keys for non-unique values (unique values are
-	// ignored in scatterplot and sparkline views)
+	// Add the set of keys for data that excludes data
+	// where all values are the same (are useless in scatterplot
+	// and sparkline views, so filtered out for convenience).
 	let keysNoUniques = [];
-	i = keys.length;
+	let i = keys.length;
 	while (i--) {
 		let key = keys[i];
 		if (!newAttrs[key].uniqueVal) {
 			keysNoUniques.push(key);
 		}
 	}
+	keysNoUniques.sort();
 
 	// Add zero-initialised filter counting arrays, assumes
 	// that we will never have more than 65,535 attributes
-	const filterCount = new Uint16Array(newAttrs[origOrderKey].data.length);
-	const sortedFilterIndices = originalOrder.slice();
+	const filterCount = new Uint16Array(dataLength);
+	const sortedFilterIndices = originalOrder.data.slice();
 
 	return {
 		data: {
@@ -251,14 +236,37 @@ function prepData(attrs) {
 	};
 }
 
+function originalOrderArray(length) {
+	let arrayType = length < 256 ? 'uint8' : length < 65535 ? 'uint16' : 'uint32';
+	let data = new (arrayConstr(arrayType))(length);
+	let i = length;
+	while (i--) {
+		data[i] = i + 1;
+	}
+
+	return {
+		name: '(original order)',
+		arrayType, data,
+		colorIndices: { mostFreq: {} },
+		uniques: [],
+		allUnique: true,
+		min: 1,
+		max: data.length,
+	};
+}
+
 
 function convertArrays(attrs) {
 	let keys = Object.keys(attrs);
 	let newAttrs = {};
 	let i = keys.length;
 	while (i--) {
-		const k = keys[i];
-		newAttrs[k] = convertArray(attrs[k], k);
+		// Set attrs[k] to null early, so it can be GC'ed if necessary
+		// (had an allocation failure of a new typed array for large attrs,
+		// so this is a realistic worry)
+		const k = keys[i], attr = attrs[k];
+		attrs[k] = null;
+		newAttrs[k] = convertJSONarray(attr, k);
 	}
 	return newAttrs;
 }
@@ -409,8 +417,13 @@ export function fetchGene(dataset, genes) {
 						let attrs = {};
 						let i = data.length;
 						while (i--) {
-							let row = data[i];
-							attrs[geneKeys[row.idx]] = convertArray(row.data);
+							// we set data[i] to null as early as possible, so JS can
+							// GC the rows after converting them to TypedArrays.
+							// I actually had an allocation failure so this is a real risk when fetching large amounts of data.
+							let geneName = geneKeys[data[i].idx],
+								geneData = data[i].data;
+							data[i] = null;
+							attrs[geneName] = convertJSONarray(geneData, geneName);
 						}
 
 						dispatch(receiveGenes(attrs, dataset.path));

@@ -89,62 +89,13 @@ def expand_attrs(ds, project, filename, truncate=False):
 			logging.info('  Attributes already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded ttributes (truncate set)')
+			logging.info('  Removing previously expanded attributes (truncate set)')
 			os.remove(attrs_name)
 
 	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
 	dims = ds.dz_dimensions()
-	rowAttrs = {}
-	for (name,vals) in ds.row_attrs.items():
-		try:
-			vals[np.isnan(vals)] = 0
-			vals[np.isinf(vals)] = 0
-			vals_int = vals.astype(int)
-			safe_conversion = (vals - vals_int) == 0
-			all_safe = np.all(safe_conversion)
-			any_safe = np.any(safe_conversion)
-			# if we can convert the whole array to integers,
-			# do that
-			if all_safe:
-				vals = vals_int.tolist()
-			else:
-				vals  = vals.tolist()
-				# if there are _some_ integers, convert them
-				# (arrays will likely have many zero values,
-				# so this could still save a bit of space)
-				if any_safe:
-					for i in range(len(vals)):
-						if safe_conversion[i]:
-							vals[i] = int(vals[i])
-			rowAttrs[name] = vals
-		except Exception as e:
-			"""Not a numeric type (expected for strings, not reported)"""
-			rowAttrs[name] = vals
-
-
-	colAttrs = {}
-	for (name,vals) in ds.col_attrs.items():
-		try:
-			vals[np.isnan(vals)] = 0
-			vals[np.isinf(vals)] = 0
-			vals_int = vals.astype(int)
-
-			safe_conversion = (vals - vals_int) == 0
-			all_safe = np.all(safe_conversion)
-			any_safe = np.any(safe_conversion)
-			if all_safe:
-				vals = vals_int.tolist()
-			else:
-				vals  = vals.tolist()
-				if any_safe:
-					for i in range(len(vals)):
-						if safe_conversion[i]:
-							vals[i] = int(vals[i])
-			colAttrs[name] = vals
-		except Exception as e:
-			"""Not a numeric type (expected for strings, not reported)"""
-			colAttrs[name] = vals
-
+	rowAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
+	colAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 	fileinfo = {
 		"project": project,
 		"filename": filename,
@@ -187,48 +138,12 @@ def expand_rows(ds, truncate=False):
 	while i+64 < total_rows:
 		row64 = ds[i:i+64,:]
 		for j in range(64):
-			row = row64[j]
-			try:
-				# NaNs and Infinities are not supported by JSON
-				row[np.isnan(row)] = 0
-				row[np.isinf(row)] = 0
-				# test if all values are integer
-				row_int = row.astype(int)
-				safe_conversion = (row - row_int) == 0
-				if np.all(safe_conversion):
-					row = row_int.tolist()
-				else:
-					row = row.tolist()
-					if np.any(safe_conversion):
-						for i in range(len(row)):
-							if safe_conversion[i]:
-								row[i] = int(row[i])
-			except Exception as e:
-				logging.debug(e)
-			row = {'idx': i+j, 'data': row}
+			row = {'idx': i+j, 'data': loompy.JSON_array(row64[j])}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 			save_compressed_json(row_file_name, row)
 		i += 64
 	while i < total_rows:
-		row = ds[i,:]
-		try:
-			# NaNs and Infinities are not supported by JSON
-			row[np.isnan(row)] = 0
-			row[np.isinf(row)] = 0
-			# test if all (or some) values are integer
-			row_int = row.astype(int)
-			safe_conversion = (row - row_int) == 0
-			if np.all(safe_conversion):
-				row = row_int.tolist()
-			else:
-				row = row.tolist()
-				if np.any(safe_conversion):
-					for i in range(len(row)):
-						if safe_conversion[i]:
-							row[i] = int(row[i])
-		except Exception as e:
-			logging.debug(e)
-		row = {'idx': i+j, 'data': row}
+		row = {'idx': i+j, 'data': loompy.JSON_array(ds[i,:])}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
 		i += 1
@@ -263,48 +178,14 @@ def expand_columns(ds, truncate=False):
 		for j in range(64):
 			# Transpose it into a row, so that it
 			# will get converted to a list properly
-			col = col64[:, j].transpose()
-			try:
-				# NaNs and Infinities are not supported by JSON
-				col[np.isnan(col)] = 0
-				col[np.isinf(col)] = 0
-				# test if all values are integer
-				col_int = col.astype(int)
-				safe_conversion = (col - col_int) == 0
-				if np.all(safe_conversion):
-					col = col_int.tolist()
-				else:
-					col = col.tolist()
-					if np.any(safe_conversion):
-						for i in range(len(col)):
-							if safe_conversion[i]:
-								col[i] = int(col[i])
-			except Exception as e:
-				logging.debug(e)
-			col = {'idx': i, 'data': col}
+			data = loompy.JSON_array(col64[:, j].transpose())
+			col = {'idx': i, 'data': data}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 			save_compressed_json(col_file_name, col)
 		i += 64
 	while i < total_cols:
-		col = ds[:, i].transpose()
-		try:
-			# NaNs and Infinities are not supported by JSON
-			col[np.isnan(col)] = 0
-			col[np.isinf(col)] = 0
-			# test if all values are integer
-			col_int = col.astype(int)
-			safe_conversion = (col - col_int) == 0
-			if np.all(safe_conversion):
-				col = col_int.tolist()
-			else:
-				col = col.tolist()
-				if np.any(safe_conversion):
-					for i in range(len(col)):
-						if safe_conversion[i]:
-							col[i] = int(col[i])
-		except Exception as e:
-			logging.debug(e)
-		col = {'idx': i, 'data': col}
+		data = loompy.JSON_array(ds[:, i].transpose())
+		col = {'idx': i, 'data': data}
 		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 		save_compressed_json(col_file_name, col)
 		i += 1
@@ -402,7 +283,7 @@ def list_command(dataset_path, server, username, password):
 			else:
 				url = "http://" + server + "/loom"
 
-			logging.debug(url)
+			logging.info(url)
 			response = requests.get(url , stream=True, auth=(username, password))
 
 			if not response.ok:
@@ -455,8 +336,8 @@ def clone_command(dataset_path, project, url, username, password):
 		os.mkdir(projdir)
 	fpath = os.path.join(projdir, fname)
 
-	logging.debug("Cloning from " + url)
-	logging.debug("Cloning to " + fpath)
+	logging.info("Cloning from " + url)
+	logging.info("Cloning to " + fpath)
 	try:
 		response = requests.get(url, stream=True, auth=(username, password))
 

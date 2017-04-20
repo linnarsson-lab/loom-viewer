@@ -4,7 +4,6 @@ import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
 
 import { uniq, difference } from 'lodash';
-import { binaryIndexOf } from '../js/util';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
@@ -74,11 +73,11 @@ export class FetchGeneComponent extends Component {
 		const genes = selection.split(/[,;'"`\s]+/g);
 
 		let validGenes = [];
-		const { sortedGeneKeys, sortedGeneKeysLowerCase } = col;
+		const { geneKeys, geneKeysLowerCase } = col;
 		for (let i = 0; i < genes.length; i++) {
-			const geneIdx = binaryIndexOf(sortedGeneKeysLowerCase, genes[i].toLowerCase());
+			const geneIdx = geneKeysLowerCase.indexOf(genes[i].toLowerCase());
 			if (geneIdx !== -1) {
-				validGenes.push(sortedGeneKeys[geneIdx]);
+				validGenes.push(geneKeys[geneIdx]);
 			}
 		}
 		return uniq(validGenes);

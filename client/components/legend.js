@@ -11,9 +11,6 @@ export function AttrLegend(props) {
 		attr.arrayType === 'number' ||
 		attr.arrayType === 'float64';
 
-
-
-
 	let selectColor = () => {
 		return 'black';		// Bars
 	};
@@ -22,8 +19,7 @@ export function AttrLegend(props) {
 			return colors.category20[i + 1];
 		};
 	} else if (mode === 'Heatmap' || mode === 'Heatmap2') {
-		let { min, max, hasZeros } = attr;
-		min = hasZeros && min > 0 ? 0 : min;
+		let { min, max } = attr;
 		const heatmapScale = ((colors.solar256.length - 1) / (max - min) || 1);
 		const palette = mode === 'Heatmap' ? colors.solar256 : colors.YlGnBu256;
 		selectColor = (i, val) => {
@@ -34,7 +30,7 @@ export function AttrLegend(props) {
 
 	let l = Math.min(uniques.length, 20),
 		i = l,
-		visibleData = new Array(l + l < uniques.length ? 1 : 0);
+		visibleData = new Array(l + (l < uniques.length ? 1 : 0));
 	while (i--) {
 		let { val, count, filtered } = uniques[i];
 		const color = filtered ? 'lightgrey' : selectColor(i, val);
@@ -64,8 +60,16 @@ export function AttrLegend(props) {
 
 	// sum count for remaining values
 	if (l < uniques.length) {
-		let rest = 0; i = l;
-		while (i < uniques.length) { rest += uniques[i++].count; }
+		// by definition, data.length is the total
+		// number of datapoints. So the remaining
+		// number of datapoints is the total
+		// total datapoints minus shown
+		// datapoints
+		let rest = attr.data.length, i = l;
+		while (i--) {
+			rest -= uniques[i].count;
+		}
+
 		visibleData[l] = (
 			<td key={20} style={{ display: 'inline-block' }}>
 				<span style={{ fontStyle: 'normal' }}>□ </span>(other): {rest}
