@@ -142,7 +142,7 @@ export function convertJSONarray(arr, name) {
 		uniques, colorIndices, min, max,
 	};
 
-	retArr.data = arrayConstr(arrayType).from(data);
+	retArr.data = indexedVal ? Uint8Array.from(data) : arrayConstr(arrayType).from(data);
 
 	if (uniques.length === 1) {
 		retArr.uniqueVal = data[0];
