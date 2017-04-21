@@ -13,6 +13,8 @@ except ImportError:
 	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
+from loompy import start_server, np_to_list, JSON_array
+
 from io import StringIO
 import pandas as pd
 import numpy as np
@@ -94,8 +96,8 @@ def expand_attrs(ds, project, filename, truncate=False):
 
 	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
 	dims = ds.dz_dimensions()
-	rowAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
-	colAttrs = { key: loompy.JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
+	rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
+	colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 	fileinfo = {
 		"project": project,
 		"filename": filename,
@@ -138,12 +140,12 @@ def expand_rows(ds, truncate=False):
 	while i+64 < total_rows:
 		row64 = ds[i:i+64,:]
 		for j in range(64):
-			row = {'idx': i+j, 'data': loompy.JSON_array(row64[j])}
+			row = {'idx': i+j, 'data': JSON_array(row64[j])}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 			save_compressed_json(row_file_name, row)
 		i += 64
 	while i < total_rows:
-		row = {'idx': i+j, 'data': loompy.JSON_array(ds[i,:])}
+		row = {'idx': i+j, 'data': JSON_array(ds[i,:])}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
 		i += 1
@@ -178,13 +180,13 @@ def expand_columns(ds, truncate=False):
 		for j in range(64):
 			# Transpose it into a row, so that it
 			# will get converted to a list properly
-			data = loompy.JSON_array(col64[:, j].transpose())
+			data = JSON_array(col64[:, j].transpose())
 			col = {'idx': i, 'data': data}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 			save_compressed_json(col_file_name, col)
 		i += 64
 	while i < total_cols:
-		data = loompy.JSON_array(ds[:, i].transpose())
+		data = JSON_array(ds[:, i].transpose())
 		col = {'idx': i, 'data': data}
 		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 		save_compressed_json(col_file_name, col)
