@@ -36,13 +36,9 @@ class CoordinateSettings extends Component {
 						});
 					};
 					return (
-						<ButtonGroup>
-							<Button
-								bsStyle={isSet ? 'success' : 'default'}
-								onClick={handleClick}>
-								{label}
-							</Button>
-						</ButtonGroup>
+						<ListGroupItem>
+							<a onClick={handleClick}>{label}</a>
+						</ListGroupItem>
 					);
 				};
 			} else {
@@ -50,10 +46,11 @@ class CoordinateSettings extends Component {
 			}
 		};
 
-		const setTSNE = setCoordinateFactory('tSNE', '_tSNE1', '_tSNE2');
-		const setPCA = setCoordinateFactory('PCA', '_PC1', '_PC2');
-		const setSFDP = setCoordinateFactory('SFDP', 'SFDP_X', 'SFDP_Y');
-		const setLog = setCoordinateFactory('Log', '_LogMean', '_LogCV');
+		const setTSNE = setCoordinateFactory('tSNE1 / tSNE2', '_tSNE1', '_tSNE2');
+		const PCA_label = ( <span><abbr title='Principle Component Analysys'>PCA</abbr> 1 / <abbr title='Principle Component Analysis'>PCA</abbr> 2 </span>);
+		const setPCA = setCoordinateFactory(PCA_label, '_PC1', '_PC2');
+		const setSFDP = setCoordinateFactory('SFDP X / SFDP Y', 'SFDP_X', 'SFDP_Y');
+		const setLog = setCoordinateFactory('LogMean / LogCV', '_LogMean', '_LogCV');
 
 		const coordinateQuickSettings = (
 			setTSNE !== nullFunc ||
@@ -63,12 +60,13 @@ class CoordinateSettings extends Component {
 		) ? (
 				(coordinateAttrs) => {
 					return (
-						<ButtonGroup justified>
+						<ListGroup>
+							<span>X/Y Attribute Quick Settings:</span>
 							{setTSNE(coordinateAttrs)}
 							{setPCA(coordinateAttrs)}
 							{setSFDP(coordinateAttrs)}
 							{setLog(coordinateAttrs)}
-						</ButtonGroup>
+						</ListGroup>
 					);
 				}
 			) : nullFunc;
@@ -162,6 +160,7 @@ class CoordinateSettings extends Component {
 		return (
 			<ListGroupItem>
 				{coordinateQuickSettings(coordinateAttrs)}
+				<span>Coordinate attributes:</span>
 				{coordinateDropdowns}
 				<ButtonGroup vertical block>
 					<Button
@@ -319,7 +318,7 @@ class ColorSettings extends Component {
 				/>
 			</ListGroupItem>
 		) : (
-				<ListGroupItem>
+			<ListGroupItem>
 					<label>Color</label>
 					<DropdownMenu
 						value={colorAttr}
