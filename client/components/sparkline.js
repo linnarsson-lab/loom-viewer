@@ -361,10 +361,9 @@ function categoriesPainter(context, range, colorIndices) {
 }
 
 function barPainter(attr, label) {
-	let { min, max, hasZeros } = attr;
+	let { min, max } = attr;
 	min = min || 0;
 	max = max || 0;
-	min = hasZeros && min > 0 ? 0 : min;
 	return (context, range) => {
 		barPaint(context, range, min, max, label);
 	};
@@ -450,10 +449,9 @@ function barPaint(context, range, min, max, label) {
 
 
 function heatmapPainter(attr, label, colorLUT) {
-	let { min, max, hasZeros } = attr;
+	let { min, max } = attr;
 	min = min || 0;
 	max = max || 0;
-	min = hasZeros && min > 0 ? 0 : min;
 	return (context, range) => {
 		heatmapPaint(context, range, min, max, label, colorLUT);
 	};

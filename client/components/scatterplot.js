@@ -88,10 +88,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
 	const { PI, random, sin, cos, log2 } = Math;
 	// Scale of data
-	let xmin = (x.hasZeros && x.min > 0) ? 0 : x.min;
-	let xmax = x.max;
-	let ymin = (y.hasZeros && y.min > 0) ? 0 : y.min;
-	let ymax = y.max;
+	let xmin = x.min,  xmax = x.max, ymin = y.min, ymax = y.max;
 
 	// If we have an unindexed string array, convert it
 	// to numbers as a form of categorisation
@@ -214,8 +211,7 @@ function convertColordata(colorAttr, indices, colorMode) {
 			cIdx[i] = colorIndices.mostFreq[colData[i]] || 0;
 		}
 	} else { // Heatmap or Heatmap2
-		let { min, max, hasZeros } = colorAttr;
-		min = hasZeros && min > 0 ? 0 : min;
+		const { min, max } = colorAttr;
 		const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
 		while (i--) {
 			cIdx[i] = ((colData[i] - min) * colorIdxScale) | 0;

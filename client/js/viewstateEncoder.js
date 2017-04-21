@@ -4,7 +4,10 @@
  * replaced by either position, or index nrs.
  *
  *  Boolean values can be replaced with 0 and 1.
- *  Undefined state would be indicated with 0 ("null").
+ *
+ *  null and undefined would be converted to 0.
+ *
+ *  Uninitialised state would be indicated with 0.
  *
  * Furthermore, since the state to be saved is usually either
  * attribute names or row/column keys (respectively genes or cell
@@ -120,15 +123,15 @@
  * Here '..' indicates an index to an attribute or row/col key.
  * If we give that a pessimistic estimate of five digits on average
  * (keeping in mind our upper limit of 28000 genes),
- * represented below by 99999, then the saved space is as follows:
+ * represented below by #####, then the saved space is as follows:
  *
  * {heatmap:{zoomRange:[8,13,21],fullZoomWidth:769280,fullZoomHeight:1279488,shape:[4998,3005]},col:{order:[{key:'Plp2',asc:true},{key:'Plp1',asc:true},{key:'Aplp2',asc:true},{key:'Aplp1',asc:true},{key:'Class',asc:true},],filter:[]},row:{order:[{key:'(originalorder)',asc:true},{key:'BackSPIN_level_0_group',asc:true},{key:'BackSPIN_level_1_group',asc:true},{key:'BackSPIN_level_2_group',asc:true},{key:'BackSPIN_level_3_group',asc:true}],filter:[]},cellMD:{searchVal:''},sparkline:{colMode:'Categorical',geneMode:'Bars',genes:['Tspan12','Gfap','Plp1','Plp2','Aplp1','Aplp2'],showLabels:true,colAttr:'Class'}}
  *
- * [0,[[8,13,21],769280,1279488,[4998,3005]],[[99999,1,99999, 1,99999, 1,99999, 1,99999, 1],[]],[[99999, 1,99999, 1,99999, 1,99999, 1,99999, 1],[]],0,[''],[0,0,[99999,99999,99999,99999,99999],1,99999],0,0,]
+ * [0,[[8,13,21],769280,1279488,[4998,3005]],[[#####,1,#####, 1,#####, 1,#####, 1,#####, 1],[]],[[#####, 1,#####, 1,#####, 1,#####, 1,#####, 1],[]],0,[''],[0,0,[#####,#####,#####,#####,#####],1,#####],0,0,]
  *
  */
 
-import { merge, binaryIndexOf } from '../js/util';
+import { merge, isArray } from '../js/util';
 const heatmapModes = ['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
 const sparklineColorModes = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
 const sparklineGeneModes = ['Bars', 'Heatmap', 'Heatmap2'];
@@ -195,8 +198,8 @@ function encodeHeatmap(hms, row, col, version) {
 				// shape: [integer, integer]
 
 				const { center, colAttr, colMode, rowAttr, rowMode, zoom } = hms;
-				let cAttr = colAttr ? binaryIndexOf(col.sortedAllKeysNoUniques, colAttr) : -1;
-				let rAttr = rowAttr ? binaryIndexOf(row.sortedAllKeysNoUniques, rowAttr) : -1;
+				let cAttr = colAttr ? col.allKeysNoUniques.indexOf(colAttr) : -1;
+				let rAttr = rowAttr ? row.allKeysNoUniques.indexOf(rowAttr) : -1;
 				let cMode = heatmapModes.length;
 				while (cMode-- && heatmapModes[cMode] !== colMode) { }
 				let rMode = heatmapModes.length;
@@ -215,9 +218,9 @@ function decodeHeatmap(encodedHMS, row, col, version) {
 			default:
 				// [center.lat, center.lng, cAttr, cMode, rAttr, rMode, zoom];
 				const center = encodedHMS[0] ? { lat: encodedHMS[0][0], lng: encodedHMS[0][1] } : undefined,
-					colAttr = col.sortedAllKeysNoUniques[encodedHMS[1]],
+					colAttr = col.allKeysNoUniques[encodedHMS[1]],
 					colMode = heatmapModes[encodedHMS[2]],
-					rowAttr = row.sortedAllKeysNoUniques[encodedHMS[3]],
+					rowAttr = row.allKeysNoUniques[encodedHMS[3]],
 					rowMode = heatmapModes[encodedHMS[4]],
 					zoom = encodedHMS[5];
 				let hms = {};
@@ -242,15 +245,15 @@ function encodeRow(rs, row, version) {
 				let order = [], entry;
 				for (let i = 0; i < rs.order.length; i++) {
 					entry = rs.order[i];
-					order.push(binaryIndexOf(row.sortedAllKeys, entry.key));
+					order.push(row.allKeys.indexOf(entry.key));
 					order.push(entry.asc ? 1 : 0);
 				}
 				// filter: array of { attr (allKeys), val (matches val in uniques of attr)}
 				let filter = [];
 				for (let i = 0; i < rs.filter.length; i++) {
 					entry = rs.filter[i];
-					// map entry.attr to sortedAllKeys index
-					filter.push(binaryIndexOf(row.sortedAllKeys, entry.attr));
+					// map entry.attr to allKeys index
+					filter.push(row.allKeys.indexOf(entry.attr));
 					// map entry.val to row.attrs[entry.attr].uniques index
 					const { uniques } = row.attrs[entry.attr];
 					let valIdx = uniques.length;
@@ -273,13 +276,13 @@ function decodeRow(encodedRS, row, version) {
 				let order = [];
 				for (let i = 0; i < orderArray.length; i += 2) {
 					order.push({
-						key: row.sortedAllKeys[orderArray[i]],
+						key: row.allKeys[orderArray[i]],
 						asc: orderArray[i + 1] !== 0,
 					});
 				}
 				let filter = [];
 				for (let i = 0; i < filterArray.length; i += 2) {
-					const attr = row.sortedAllKeys[filterArray[i]];
+					const attr = row.allKeys[filterArray[i]];
 					const { uniques } = row.attrs[attr];
 					filter.push({
 						attr,
@@ -300,15 +303,15 @@ function encodeCol(cs, col, version) {
 				let order = [], entry;
 				for (let i = 0; i < cs.order.length; i++) {
 					entry = cs.order[i];
-					order.push(binaryIndexOf(col.sortedAllKeys, entry.key));
+					order.push(col.allKeys.indexOf(entry.key));
 					order.push(entry.asc ? 1 : 0);
 				}
 				// filter: array of { attr (allKeys), val (matches val in uniques of attr)}
 				let filter = [];
 				for (let i = 0; i < cs.filter.length; i++) {
 					entry = cs.filter[i];
-					// map entry.attr to sortedAllKeys index
-					filter.push(binaryIndexOf(col.sortedAllKeys, entry.attr));
+					// map entry.attr to allKeys index
+					filter.push(col.allKeys.indexOf(entry.attr));
 
 					// map entry.val to col.attrs[entry.attr].uniques index
 					const { uniques } = col.attrs[entry.attr];
@@ -331,13 +334,13 @@ function decodeCol(encodedCS, col, version) {
 				let order = [];
 				for (let i = 0; i < orderArray.length; i += 2) {
 					order.push({
-						key: col.sortedAllKeys[orderArray[i]],
+						key: col.allKeys[orderArray[i]],
 						asc: orderArray[i + 1] !== 0,
 					});
 				}
 				let filter = [];
 				for (let i = 0; i < filterArray.length; i += 2) {
-					const attr = col.sortedAllKeys[filterArray[i]];
+					const attr = col.allKeys[filterArray[i]];
 					const { uniques } = col.attrs[attr];
 					filter.push({
 						attr,
@@ -361,7 +364,7 @@ function encodeSparkline(sls, col, version) {
 				// showLabels: boolean
 				const { colAttr, colMode, genes, geneMode, showLabels } = sls;
 
-				let cAttr = colAttr ? binaryIndexOf(col.sortedAllKeysNoUniques, colAttr) : -1;
+				let cAttr = colAttr ? col.allKeysNoUniques.indexOf(colAttr) : -1;
 
 				let cMode = sparklineColorModes.length;
 				while (cMode-- && sparklineColorModes[cMode] !== colMode) { }
@@ -369,8 +372,7 @@ function encodeSparkline(sls, col, version) {
 				let geneIndices = [];
 				for (let i = 0; i < genes.length; i++) {
 					geneIndices.push(
-						binaryIndexOf(
-							col.sortedGeneKeysLowerCase,
+						col.geneKeysLowerCase.indexOf(
 							genes[i].toLowerCase()
 						)
 					);
@@ -393,9 +395,9 @@ function decodeSparkline(encodedSLS, col, version) {
 				// [cAttr, cMode, geneIndices, gMode, showLabels ? 1 : 0]
 				let genes = [], geneIndices = encodedSLS[2];
 				for (let i = 0; i < geneIndices.length; i++) {
-					genes.push(col.sortedGeneKeys[geneIndices[i]]);
+					genes.push(col.geneKeys[geneIndices[i]]);
 				}
-				let colAttr = col.sortedAllKeysNoUniques[encodedSLS[0]],
+				let colAttr = col.allKeysNoUniques[encodedSLS[0]],
 					colMode = sparklineColorModes[encodedSLS[1]],
 					geneMode = sparklineGeneModes[encodedSLS[3]],
 					sls = { genes, showLabels: encodedSLS[4] !== 0 };
@@ -423,13 +425,13 @@ function encodeLandscape(lss, col, version) {
 
 				let coordAttrs = [];
 				for (let i = 0; i < coordinateAttrs.length; i++) {
-					coordAttrs.push(binaryIndexOf(col.sortedAllKeysNoUniques, coordinateAttrs[i]));
+					coordAttrs.push(col.allKeysNoUniques.indexOf(coordinateAttrs[i]));
 				}
 
 				let cMode = scatterplotModes.length;
 				while (cMode-- && scatterplotModes[cMode] !== colorMode) { }
 
-				const cAttr = colorAttr ? binaryIndexOf(col.sortedAllKeysNoUniques, colorAttr) : -1;
+				const cAttr = colorAttr ? col.allKeysNoUniques.indexOf(colorAttr) : -1;
 
 				return [coordAttrs, logscale.x ? 1 : 0, logscale.y ? 1 : 0, jitter.x ? 1 : 0, jitter.y ? 1 : 0, asMatrix ? 1 : 0, cAttr, cMode];
 			default:
@@ -446,9 +448,9 @@ function decodeLandscape(encodedLSS, col, version) {
 				const coordAttrs = encodedLSS[0];
 				let coordinateAttrs = [];
 				for (let i = 0; i < coordAttrs.length; i++) {
-					coordinateAttrs.push(col.sortedAllKeysNoUniques[coordAttrs[i]]);
+					coordinateAttrs.push(col.allKeysNoUniques[coordAttrs[i]]);
 				}
-				let colorAttr = col.sortedAllKeysNoUniques[encodedLSS[6]],
+				let colorAttr = col.allKeysNoUniques[encodedLSS[6]],
 					colorMode = scatterplotModes[encodedLSS[7]],
 					lss = {
 						coordinateAttrs,
@@ -478,13 +480,13 @@ function encodeGenescape(gs, row, version) {
 
 				let coordAttrs = [];
 				for (let i = 0; i < coordinateAttrs.length; i++) {
-					coordAttrs.push(binaryIndexOf(row.sortedAllKeysNoUniques, coordinateAttrs[i]));
+					coordAttrs.push(row.allKeysNoUniques.indexOf(coordinateAttrs[i]));
 				}
 
 				let cMode = scatterplotModes.length;
 				while (cMode-- && scatterplotModes[cMode] !== colorMode) { }
 
-				const cAttr = colorAttr ? binaryIndexOf(row.sortedAllKeysNoUniques, colorAttr) : -1;
+				const cAttr = colorAttr ? row.allKeysNoUniques.indexOf(colorAttr) : -1;
 
 				return [coordAttrs, logscale.x ? 1 : 0, logscale.y ? 1 : 0, jitter.x ? 1 : 0, jitter.y ? 1 : 0, asMatrix ? 1 : 0, cAttr, cMode];
 			default:
@@ -500,9 +502,9 @@ function decodeGenescape(encodedGS, row, version) {
 				const coordAttrs = encodedGS[0];
 				let coordinateAttrs = [];
 				for (let i = 0; i < coordAttrs.length; i++) {
-					coordinateAttrs.push(row.sortedAllKeysNoUniques[coordAttrs[i]]);
+					coordinateAttrs.push(row.allKeysNoUniques[coordAttrs[i]]);
 				}
-				let colorAttr = row.sortedAllKeysNoUniques[encodedGS[6]], colorMode = scatterplotModes[encodedGS[7]],
+				let colorAttr = row.allKeysNoUniques[encodedGS[6]], colorMode = scatterplotModes[encodedGS[7]],
 					gs = {
 						coordinateAttrs,
 						logscale: { x: encodedGS[1] !== 0, y: encodedGS[2] !== 0 },
@@ -559,4 +561,200 @@ function decodeGeneMD(gmd, version) {
 				return { searchVal: (gmd[0] ? gmd[0] : '') };
 		}
 	}
+}
+
+// Encoder/decoder generator functions
+
+function constEncoder() { return 0; }
+
+// a Boolean will be converted into either 0 (false) or 1 (true)
+const boolEncoder = encodeOneOf([false, true]);
+
+function createEncoder(schema) {
+	if (schema) {
+		switch (typeof schema) {
+			case 'object':
+				if (isArray(schema)) {
+					return encodeArray(schema);
+				} else {
+					return encodeObj(schema);
+				}
+			case 'function':
+				//assumed to be custom encoder
+				return schema;
+			case 'string':
+			case 'number':
+			case 'boolean':
+			default:
+				// assumed to be constant (what are they doing in *state*?)
+				return constEncoder;
+		}
+	}
+	return constEncoder;
+}
+
+// example: an array of variable size, but you know all values
+// will be between 0 and 255: `makeEncodeArrayof([encodeRange(0, 256)])`
+function encodeArray(patternArr) {
+	let l = patternArr.length, i = l, encoderArr = new Array(l);
+	while (i--) {
+		encoderArr[i] = createEncoder(patternArr[i]);
+	}
+	return (arr) => {
+		let i = arr.length - (arr.length % l),
+			retArr = new Array(l);
+		while (i--) {
+			retArr[i] = encoderArr[i % l](arr[i]);
+		}
+		return retArr;
+	};
+}
+
+function encodeObj(obj) {
+	let keys = Object.keys(obj);
+	keys.sort();
+
+	function encoder(_obj) {
+		let i = keys.length, retArr = new Array(i);
+		while (i--) {
+			let k = keys[i];
+			retArr[i] = this[k](_obj[k]);
+		}
+		return retArr;
+	}
+
+	let i = keys.length;
+	while (i--) {
+		let k = keys[i];
+		encoder[k] = createEncoder(obj[k]);
+	}
+	return encoder;
+
+}
+
+// a variable that will be one of a constrained number of values
+function encodeOneOf(valArr) {
+	// make sure nobody can mutate valArr
+	valArr = valArr.slice();
+	return (val) => {
+		return valArr.indexOf(val);
+	};
+}
+
+function encodeRange(i, j, step) {
+	step = step ? step : 1;
+	if (j < i && step > 0) {
+		let t = j;
+		j = i;
+		i = t;
+	}
+	let values = [];
+	while (i < j) {
+		values.push(i);
+		i += step;
+	}
+	return encodeOneOf(values);
+}
+
+// Such a common use-case I made a convenience function
+function encodeKeys(obj) {
+	let keys = Object.keys(obj);
+	keys.sort();
+	return encodeOneOf(keys);
+};
+
+function constDecoder(val) {
+	return () => { val; }
+}
+
+function varEncoder(val) { return val; }
+const varDecoder = varEncoder;
+
+const boolDecoder = decodeOneOf([false, true]);
+
+function createDecoder(schema) {
+	if (schema) {
+		switch (typeof schema) {
+			case 'object':
+				if (isArray(schema)) {
+					return decodeArray(schema);
+				} else {
+					return decodeObj(schema);
+				}
+			case 'function':
+				//assumed to be custom decoder
+				return schema;
+			case 'string':
+			case 'number':
+			case 'boolean':
+			default:
+				// assumed to be constant (what are they doing in *state*?)
+				return constDecoder;
+		}
+	}
+	return constDecoder;
+}
+
+function decodeArray(patternArr) {
+	let l = patternArr.length, i = l, decoderArr = new Array(l);
+	while (i--) {
+		decoderArr[i] = createDecoder(patternArr[i]);
+	}
+	return (arr) => {
+		let i = arr.length - (arr.lengt % l),
+			retArr = new Array(l);
+		while (i--) {
+			retArr[i] = decoderArr[i % l](arr[i]);
+		}
+		return retArr;
+	};
+}
+
+function decodeObj(obj) {
+	let keys = Object.keys(obj);
+	keys.sort();
+
+	function decoder(arr) {
+		let i = keys.length, retObj = {};
+		while (i--) {
+			let k = keys[i];
+			retObj[k] = this[k](arr[i]);
+		}
+		return retObj;
+	}
+
+	let i = keys.length;
+	while (i--) {
+		let k = keys[i];
+		decoder[k] = createDecoder(obj[k]);
+	}
+	return decoder;
+}
+
+function decodeOneOf(valArr){
+	valArr = valArr.slice();
+	return (idx) => {
+		return valArr[idx];
+	};
+}
+
+function decodeRange(i, j, step){
+	step = step ? step : 1;
+	if (j < i && step > 0) {
+		let t = j;
+		j = i;
+		i = t;
+	}
+	let values = [];
+	while (i < j) {
+		values.push(i);
+		i += step;
+	}
+	return decodeOneOf(values);
+}
+
+function decodeKeys(obj) {
+	let keys = Object.keys(obj);
+	keys.sort();
+	return decodeOneOf(keys);
 }
