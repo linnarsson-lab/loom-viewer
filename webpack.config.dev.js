@@ -12,7 +12,7 @@ module.exports = {
 		'/static/js/bundle': './client/loom',
 	},
 	output: {
-		path: './python/loompy',
+		path:  path.join(__dirname, './python/loompy'),
 		filename: '[name].[hash].js',
 		sourceMapFilename: '[name].[hash].map',
 	},
