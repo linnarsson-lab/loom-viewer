@@ -241,7 +241,7 @@ function originalOrderArray(length) {
 	let data = new (arrayConstr(arrayType))(length);
 	let i = length;
 	while (i--) {
-		data[i] = i + 1;
+		data[i] = i;
 	}
 
 	return {
@@ -250,8 +250,8 @@ function originalOrderArray(length) {
 		colorIndices: { mostFreq: {} },
 		uniques: [],
 		allUnique: true,
-		min: 1,
-		max: data.length,
+		min: 0,
+		max: data.length-1,
 	};
 }
 
