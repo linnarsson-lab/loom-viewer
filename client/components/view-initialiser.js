@@ -3,7 +3,6 @@ import { FetchDatasetComponent } from './fetch-dataset';
 
 import { fetchProjects } from '../actions/actions';
 import { merge } from '../js/util';
-import { decodeViewstate } from '../js/viewstateEncoder';
 
 import { decompressFromEncodedURIComponent } from 'lz-string';
 
@@ -18,7 +17,7 @@ class ViewStateInitialiser extends Component {
 
 		let viewState = merge( { [stateName]: initialState }, dataset.viewState );
 		if (viewsettings){
-			viewsettings = decodeViewstate(JSON.parse(decompressFromEncodedURIComponent(viewsettings)), dataset);
+			viewsettings = dataset.viewStateConverter.decode(JSON.parse(decompressFromEncodedURIComponent(viewsettings)), dataset);
 			viewState = merge(viewState, viewsettings);
 		}
 

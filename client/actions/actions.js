@@ -20,6 +20,7 @@ import {
 } from './actionTypes';
 
 import { convertJSONarray, arrayConstr } from '../js/util';
+import { createViewStateConverter } from '../js/viewstateEncoder';
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +165,9 @@ function receiveDataSet(data, path) {
 	//cols.dropdownOptions.all = prepFilter(cols.allKeys);
 	cols.dropdownOptions.allNoUniques = prepFilter(cols.allKeysNoUniques);
 
-	let viewState = {
+	let dataset = { col: cols, row: rows };
+
+	dataset.viewState = {
 		row: { order: prepRows.order, filter: [] },
 		col: { order: prepCols.order, filter: [] },
 		heatmap: {
@@ -175,11 +178,13 @@ function receiveDataSet(data, path) {
 		},
 	};
 
+	dataset.viewStateConverter = createViewStateConverter(dataset);
+
 	return {
 		type: RECEIVE_DATASET,
 		state: {
 			list: {
-				[path]: { viewState, col: cols, row: rows },
+				[path]: dataset,
 			},
 		},
 	};

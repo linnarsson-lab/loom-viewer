@@ -3,8 +3,7 @@ import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
 import { compressToEncodedURIComponent } from 'lz-string';
-import { merge, disjointArrays } from '../js/util';
-import { encodeViewstate } from '../js/viewstateEncoder';
+import { merge, mergeInplace, disjointArrays } from '../js/util';
 
 
 import {
@@ -23,15 +22,11 @@ import {
 } from '../actions/actionTypes';
 
 /**
- * Usage: action can optionally have "prune" and "state" trees
+ * `action` can optionally have "state" trees
  * to "declaratively" modify the old state tree.
- * - action.prune is a tree of values of the old state tree to
- *   "remove" (by not copying them to the new state). Only leaves
- *   will be pruned
- * - action.state is a tree of new values to merge into the old
+ *
+ * `action.state` must be a tree of new values to merge into the old
  *   state tree, resulting in the new state.
- * If both are provided, prune is applied first (which lets us
- * _replace_ objects wholesale, instead of merging them).
  * IMPORTANT: use simple, "plain" JS objects only; this borks when
  * passed JSX objects, for example.
  */
@@ -68,8 +63,10 @@ function setViewStateURL(state, action) {
 			// A bit hackish, but basically we default to current view
 			view = browserHistory.getCurrentLocation().pathname.split('/')[2];
 	}
-	const encodedViewstate = JSON.stringify(encodeViewstate(state.list[path]));
-	const url = `/dataset/${view}/${path}/${compressToEncodedURIComponent(encodedViewstate)}`;
+	const dataset = state.list[path];
+	const encodedVS = JSON.stringify(dataset.viewStateConverter.encode(dataset.viewState));
+	const compressedViewState = compressToEncodedURIComponent(encodedVS);
+	const url = `/dataset/${view}/${path}/${compressedViewState}`;
 	browserHistory.replace(url);
 	return state;
 }
@@ -200,28 +197,33 @@ function updateFiltered(dataset, axis, prevFilter) {
 	prevFilter = prevFilter.slice();
 	disjointArrays(filter, prevFilter);
 
-	// Update filterCount.
+	// Update filterCount. First we decrease removed filters
+	const axisData = dataset[axis], prevFilterCount = axisData.filterCount;
 	// we pass filterCount and keep changing the same array
-	const prevFilterCount = dataset[axis].filterCount;
-	let filterCount = prevFilterCount.slice();
-	let newAttrs = {};
-	let i = prevFilter.length;
+	let filterCount = prevFilterCount.slice(),
+		newAttrs = {}, i = prevFilter.length;
 	while (i--) {
-		let filterEntry = prevFilter[i];
-		newAttrs = merge(
-			newAttrs,
+		let filterEntry = prevFilter[i], filterAttrName = filterEntry.attr;
+		let attr = newAttrs[filterAttrName] ? newAttrs[filterAttrName] : axisData.attrs[filterAttrName];
+		if (attr){ // attr may be an unfetched gene
+			newAttrs = mergeInplace(
+				newAttrs,
 
-			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, false, filterCount).attrs
-		);
+				newFilterValues(attr, filterAttrName, filterEntry.val, false, filterCount).attrs
+			);
+		}
 	}
-
+	// Update filtercount. Increase added filters
 	i = filter.length;
 	while (i--) {
-		let filterEntry = filter[i];
-		newAttrs = merge(
-			newAttrs,
-			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, true, filterCount).attrs
-		);
+		let filterEntry = filter[i], filterAttrName = filterEntry.attr;
+		let attr = newAttrs[filterAttrName] ? newAttrs[filterAttrName] : axisData.attrs[filterAttrName];
+		if (attr){ // attr may be an unfetched gene
+			newAttrs = mergeInplace(
+				newAttrs,
+				newFilterValues(attr, filterAttrName, filterEntry.val, true, filterCount).attrs
+			);
+		}
 	}
 
 	i = filterCount.length;
@@ -261,10 +263,10 @@ function updateFiltered(dataset, axis, prevFilter) {
 	};
 }
 
-function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, filterCount) {
-	const axisData = dataset[axis];
-	let attr = axisData.attrs[filterAttrName];
-	const oldUniques = attr.uniques;
+function newFilterValues(attr, filterAttrName, filterVal, filtered, filterCount) {
+	// const axisData = dataset[axis];
+	// let attr = axisData.attrs[filterAttrName];
+	const oldUniques = attr.uniques, data = attr.data;
 	let i = oldUniques.length, uniques = new Array(i);
 	while (i--) {
 		let uniqueEntry = oldUniques[i];
@@ -276,17 +278,16 @@ function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, fil
 	}
 
 	// update filterCount
-	filterCount = filterCount ? filterCount : axisData.filterCount.slice(0);
 	i = filterCount.length;
 	if (filtered) {
 		while (i--) {
-			if (attr.data[i] === filterVal) {
+			if (data[i] === filterVal) {
 				filterCount[i]++;
 			}
 		}
 	} else {
 		while (i--) {
-			if (attr.data[i] === filterVal) {
+			if (data[i] === filterVal) {
 				filterCount[i]--;
 			}
 		}
@@ -297,6 +298,7 @@ function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, fil
 		attrs: {
 			[filterAttrName]: {
 				uniques,
+				data,
 			},
 		},
 	};
