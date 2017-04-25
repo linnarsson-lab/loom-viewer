@@ -2,19 +2,26 @@ import * as colorLUT from '../js/colors';
 import { rndNorm, arraySubset } from '../js/util';
 
 // "global" array of sprite canvases. Contexts will be filled in later
+// multiple radiuses; no need to draw a 32x32 image for a 8x8 dot
 const { sprites, contexts } = (() => {
-	let i = 257;
-	const sprites = new Array(i), contexts = new Array(i);
-	while (i--) {
-		sprites[i] = document.createElement('canvas');
-		sprites[i].id = `dot_sprite_${i}`;
-		sprites[i].width = 16;
-		sprites[i].height = 16;
+	let i = 257, j = 5;
+	const sprites = new Array(j), contexts = new Array(i);
+	while (j--) {
+		i = 257;
+		const _sprites = new Array(i);
+		while (i--) {
+			_sprites[i] = document.createElement('canvas');
+			_sprites[i].id = `dot_sprite_${j}_${i}`;
+			_sprites[i].width = 4 << j;
+			_sprites[i].height = 4 << j;
+		}
+		sprites[j] = _sprites;
 	}
 	return { sprites, contexts };
 })();
 
-export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
+export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor) {
+	scaleFactor = scaleFactor || 50;
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -29,12 +36,13 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 
 		// Suitable radius of the markers
 		// - smaller canvas size -> smaller points
-		const radius = Math.min(7, (Math.max(1, Math.min(width, height) / 100)) * context.pixelRatio);
+		const radius = Math.min(15, (Math.max(1, Math.min(width, height) / 100)) * context.pixelRatio * scaleFactor / 50);
+		const _sprites = sprites[Math.log2(radius+1) | 0];
 
 		// ===============================
 		// == Prepare Palette & Sprites ==
 		// ===============================
-		prepareSprites(colorMode, width, height, radius);
+		prepareSprites(colorMode, width, height, radius, _sprites);
 
 		// =================================
 		// == Prepare x, y and color data ==
@@ -57,7 +65,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 		// Sort so that we render zero values first, and then from back-to-front.
 		// This has to be done after jittering to maintain the tiling behaviour
 		// that is desired.
-		const sorted = sortByAxes(xy, cIdx, width, height);
+		const sorted = sortByAxes(xy, cIdx, _sprites);
 		let { cSprites, zeros } = sorted;
 		xy = sorted.xy;
 
@@ -65,7 +73,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 		// ==================
 		// == blit sprites ==
 		// ==================
-		let i = cSprites.length, zeroSprite = sprites[0], _xy = 0, _x = 0, _y = 0;
+		let i = cSprites.length, zeroSprite = _sprites[0], _xy = 0, _x = 0, _y = 0;
 		// draw zero values first
 		while (i-- && zeros--) {
 			_xy = xy[i];
@@ -88,7 +96,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter) {
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
 	const { PI, random, sin, cos, log2 } = Math;
 	// Scale of data
-	let xmin = x.min,  xmax = x.max, ymin = y.min, ymax = y.max;
+	let xmin = x.min, xmax = x.max, ymin = y.min, ymax = y.max;
 
 	// If we have an unindexed string array, convert it
 	// to numbers as a form of categorisation
@@ -221,10 +229,9 @@ function convertColordata(colorAttr, indices, colorMode) {
 	return { cIdx };
 }
 
-function prepareSprites(colorMode, width, height, radius) {
+function prepareSprites(colorMode, width, height, radius, sprites) {
 
 	let palette = getPalette(colorMode);
-
 	const spriteW = sprites[0].width, spriteH = sprites[0].height;
 	const lineW = Math.min(0.5, Math.max(0.125, radius / 10));
 	// reset all sprites to empty circles
@@ -245,7 +252,7 @@ function prepareSprites(colorMode, width, height, radius) {
 		ctx.restore();
 		contexts[i] = ctx;
 	}
-	// fill the sprites that have a palette
+	// fill the _sprites that have a palette
 	// note the prefix decrement to skip index zero
 	i = palette.length;
 	while (--i) {
@@ -258,7 +265,7 @@ function prepareSprites(colorMode, width, height, radius) {
 	}
 }
 
-function sortByAxes(xy, cIdx) {
+function sortByAxes(xy, cIdx, sprites) {
 	// Note that at this point xy contains the x,y coordinates
 	// packed as 0x YYYY XXXX, so sorting by that value
 	// automatically sorts by Y first, X second
@@ -287,7 +294,7 @@ function sortByAxes(xy, cIdx) {
 
 
 	// loop unrolling. Yes, like in C. Yes, it's disgusting
-	i = l; // no need to copy sprites for zero values
+	i = l; // no need to copy _sprites for zero values
 	let cSprites = new Array(l);
 	while (i - 16 > 0) {
 		cSprites[--i] = sprites[cIdx[indices[i]]];

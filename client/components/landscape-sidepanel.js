@@ -8,7 +8,7 @@ export class LandscapeSidepanel extends Component {
 		this.fetchGenes(this.props);
 	}
 
-	componentWillUpdate(nextProps){
+	componentWillUpdate(nextProps) {
 		this.fetchGenes(nextProps);
 	}
 
@@ -16,17 +16,25 @@ export class LandscapeSidepanel extends Component {
 		const { dispatch, dataset } = props;
 		const { keys } = dataset.col;
 		const viewState = dataset.viewState.landscape;
-		const { coordinateAttrs, colorAttr } = viewState;
+		const { xAttrs, yAttrs, colorAttr } = viewState;
 
 		// fetch any selected genes (that aren't being fetched yet).
 		let genes = [];
-		for (let i = 0; i < coordinateAttrs.length; i++) {
-			let value = coordinateAttrs[i];
+		for (let i = 0; i < xAttrs.length; i++) {
+			let value = xAttrs[i].attr;
 			// `keys` will be in the range of a few dozen attributes
 			// at most, whereas `genes` or `CellID` will be in the
-			// thousands. So it's faster to check if a value *isn't*
-			// in `keys`, than to check if it *is* in `genes`.
-			if (value && keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
+			// thousands. So it's likely faster to check if a value
+			// *isn't* in `keys`.
+			if (value && keys.indexOf(value) === -1 &&
+				!dataset.fetchedGenes[value]) {
+				genes.push(value);
+			}
+		}
+		for (let i = 0; i < yAttrs.length; i++) {
+			let value = yAttrs[i].attr;
+			if (value && keys.indexOf(value) === -1 &&
+				!dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}
