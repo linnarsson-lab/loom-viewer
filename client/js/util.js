@@ -144,7 +144,7 @@ export function convertJSONarray(arr, name) {
 
 	retArr.data = indexedVal ? Uint8Array.from(data) : arrayConstr(arrayType).from(data);
 
-	if (uniques.length === 1) {
+	if (uniques.length === 1 && uniques[0].count === data.length) {
 		retArr.uniqueVal = data[0];
 	} else if (uniques.length === 0 || uniques.length === data.length) {
 		retArr.allUnique = true;
