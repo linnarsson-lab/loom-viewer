@@ -10,7 +10,10 @@ import { DropdownMenu } from './dropdown';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
+import { debounce } from 'lodash';
+
 import { merge } from '../js/util';
+
 class CoordinateSettings extends Component {
 	componentWillMount() {
 		const {
@@ -522,17 +525,65 @@ ColorSettings.propTypes = {
 	colorMode: PropTypes.string.isRequired,
 };
 
+class ScaleFactorSettings extends Component {
+	componentWillMount() {
+		const { stateName, dataset, dispatch } = this.props;
+
+		const scaleFactorHC = (value) => {
+			dispatch({
+				type: SET_VIEW_PROPS,
+				stateName,
+				path: dataset.path,
+				viewState: { [stateName]: { scaleFactor: value } },
+			});
+		};
+
+		this.setState({
+			scaleFactorHC,
+			scaleFactorDebounced: debounce(scaleFactorHC, this.props.time || 0),
+		});
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const newDebounce = this.state.time !== nextProps.time;
+
+		const scaleFactorDebounced = newDebounce ?
+			debounce(this.state.scaleFactorHC, nextProps.time || 0)
+			:
+			this.state.scaleFactorDebounced;
+
+		this.setState({
+			scaleFactorDebounced,
+		});
+	}
+
+	render() {
+		return (
+			<div style={{ height: '50px' }}>
+				<Slider
+					marks={{ 1: '0x', 50: '1x', 100: '2x' }}
+					min={1}
+					max={100}
+					defaultValue={this.props.scaleFactor}
+					onChange={this.state.scaleFactorDebounced}
+					onAfterChange={this.state.scaleFactorDebounced} />
+			</div>
+		);
+	}
+}
+
+
+ScaleFactorSettings.propTypes = {
+	dispatch: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	stateName: PropTypes.string.isRequired,
+	scaleFactor: PropTypes.number,
+	time: PropTypes.number,
+};
 export const ScatterplotSidepanel = (props) => {
 	const { dispatch, dataset, stateName, axis } = props;
 	const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = props.viewState;
-	const scaleFactorHC = (value) => {
-		dispatch({
-			type: SET_VIEW_PROPS,
-			stateName,
-			path: dataset.path,
-			viewState: { [stateName]: { scaleFactor: value } },
-		});
-	};
+
 	return (
 		<Panel
 			className='sidepanel'
@@ -551,14 +602,12 @@ export const ScatterplotSidepanel = (props) => {
 				/>
 				<ListGroupItem>
 					<label><abbr title='Change the radius of the drawn points'>Radius Scale Factor</abbr></label>
-					<div style={{ height: '50px' }}>
-						<Slider
-							marks={{ 1: '0x', 50: '1x', 100: '2x' }}
-							min={1}
-							max={100}
-							defaultValue={scaleFactor}
-							onAfterChange={scaleFactorHC} />
-					</div>
+					<ScaleFactorSettings
+						dispatch={dispatch}
+						dataset={dataset}
+						stateName={stateName}
+						scaleFactor={scaleFactor}
+						time={200} />
 				</ListGroupItem>
 				<ColorSettings
 					dispatch={dispatch}

@@ -89,9 +89,6 @@ const LandscapeComponent = function (props) {
 		</div>
 	);
 
-
-
-
 };
 
 LandscapeComponent.propTypes = {
