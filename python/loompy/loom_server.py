@@ -27,7 +27,7 @@ from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
 import gzip
-import ujson
+import json
 
 
 # ===================
@@ -276,7 +276,7 @@ def get_auth(request):
 @cache(expires=None)
 def send_dataset_list():
 	(u, p) = get_auth(request)
-	result = ujson.dumps(app.cache.list_datasets(u, p))
+	result = json.dumps(app.cache.list_datasets(u, p))
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
@@ -299,7 +299,7 @@ def send_fileinfo(project, filename):
 		rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
 		colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 
-		fileinfo = ujson.dumps({
+		fileinfo = json.dumps({
 			"project": project,
 			"dataset": filename,
 			"filename": filename,
@@ -382,7 +382,7 @@ def send_row(project, filename, rows):
 			rows.sort()
 			dsRowsList = ds[rows,:]
 			retRows = [JSON_array(row) for row in dsRowsList]
-			return flask.Response(ujson.dumps(retRows), mimetype="application/json")
+			return flask.Response(json.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
 @app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
@@ -416,7 +416,7 @@ def send_col(project, filename, cols):
 			# will get converted to a list properly
 			dsColsList = ds[:,cols].transpose()
 			retCols = [JSON_array(col) for col in dsColsList]
-			return flask.Response(ujson.dumps(retCols), mimetype="application/json")
+			return flask.Response(json.dumps(retCols), mimetype="application/json")
 
 
 #

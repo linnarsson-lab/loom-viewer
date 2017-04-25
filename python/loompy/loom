@@ -19,7 +19,7 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 import gzip
-import ujson
+import json
 
 import timeit
 import random
@@ -36,7 +36,7 @@ import random
 
 def save_compressed_json(filename, data):
 		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
-			ujson.dump(data, f)
+			json.dump(data, f)
 
 
 def expand_md(ds, project, filename, truncate=False):
