@@ -561,7 +561,7 @@ class ScaleFactorSettings extends Component {
 		return (
 			<div style={{ height: '50px' }}>
 				<Slider
-					marks={{ 1: '0x', 50: '1x', 100: '2x' }}
+					marks={{ 1: '0x', 20: '0.5x', 40: '1x', 60: '1.5x', 80: '2x', 100: '2.5x' }}
 					min={1}
 					max={100}
 					defaultValue={this.props.scaleFactor}
