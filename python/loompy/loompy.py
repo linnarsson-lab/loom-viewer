@@ -292,8 +292,13 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		col_attrs["_PC1"] = pca[:, 0].astype('float64')
 		col_attrs["_PC2"] = pca[:, 1].astype('float64')
 
-	kmeans = np.loadtxt(os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv"), usecols=(1, ), delimiter=',', skiprows=1)
-	col_attrs["_KMeans_10"] = kmeans.astype('float64')
+	kmeans_file = os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv")
+	# In cellranger V3 the file moved one level deeper
+	if not os.path.exists(kmeans_file):
+		kmeans_file = os.path.join(folder, "analysis", "clusters", "kmeans_10_clusters", "clusters.csv")
+	if os.path.exists(kmeans_file):
+		kmeans = np.loadtxt(kmeans_file, usecols=(1, ), delimiter=',', skiprows=1)
+		col_attrs["_KMeans_10"] = kmeans.astype('float64')
 
 	create(loom_file, matrix, row_attrs, col_attrs)
 
