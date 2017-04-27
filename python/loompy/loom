@@ -227,11 +227,14 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
 		if os.path.exists(os.path.join(project_path, filename)):
-			ds = connect_loom(project_path, filename)
-			expand_md(ds, project, filename, truncate or metadata)
-			expand_attrs(ds, project, filename, truncate or attributes)
-			expand_rows(ds, truncate or rows)
-			expand_columns(ds, truncate or cols)
+			try:
+				ds = connect_loom(project_path, filename)
+				expand_md(ds, project, filename, truncate or metadata)
+				expand_attrs(ds, project, filename, truncate or attributes)
+				expand_rows(ds, truncate or rows)
+				expand_columns(ds, truncate or cols)
+			except Exception as e:
+				logging.error(e)
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
@@ -240,14 +243,17 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 		project_path = os.path.join(dataset_path, project)
 		for filename in os.listdir(project_path):
 			if filename.endswith(".loom"):
-				ds = connect_loom(project_path, filename)
-				if ds == None:
-					logging.error("File not found")
-					sys.exit(1)
-				expand_md(ds, project, filename, truncate or metadata)
-				expand_attrs(ds, project, filename, truncate or attributes)
-				expand_rows(ds, truncate or rows)
-				expand_columns(ds, truncate or cols)
+				try:
+					ds = connect_loom(project_path, filename)
+					if ds == None:
+						logging.error("File not found")
+						sys.exit(1)
+					expand_md(ds, project, filename, truncate or metadata)
+					expand_attrs(ds, project, filename, truncate or attributes)
+					expand_rows(ds, truncate or rows)
+					expand_columns(ds, truncate or cols)
+				except Exception as e:
+					logging.error(e)
 
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
