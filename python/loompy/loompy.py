@@ -285,20 +285,29 @@ def create_from_cellranger(folder, loom_file, cell_id_prefix='', sample_annotati
 		tsne = np.loadtxt(tsne_file, usecols=(1, 2), delimiter=',', skiprows=1)
 		col_attrs["_tSNE1"] = tsne[:, 0].astype('float64')
 		col_attrs["_tSNE2"] = tsne[:, 1].astype('float64')
+	else:
+		sys.sterr.write("WARNING: Can not find " + tsne_file + "!\n")
 
 	pca_file = os.path.join(folder, "analysis", "pca", "projection.csv")
+	# In cellranger V3 the file moved one level deeper
+	if not os.path.exists(pca_file):
+		pca_file = os.path.join(folder, "analysis", "pca", "10_components", "projection.csv")
 	if os.path.exists(pca_file):
 		pca = np.loadtxt(pca_file, usecols=(1, 2), delimiter=',', skiprows=1)
 		col_attrs["_PC1"] = pca[:, 0].astype('float64')
 		col_attrs["_PC2"] = pca[:, 1].astype('float64')
+	else:
+		sys.stderr.write("WARNING: Can not find " + pca_file + "!\n")
 
 	kmeans_file = os.path.join(folder, "analysis", "kmeans", "10_clusters", "clusters.csv")
 	# In cellranger V3 the file moved one level deeper
 	if not os.path.exists(kmeans_file):
-		kmeans_file = os.path.join(folder, "analysis", "clusters", "kmeans_10_clusters", "clusters.csv")
+		kmeans_file = os.path.join(folder, "analysis", "clustering", "kmeans_10_clusters", "clusters.csv")
 	if os.path.exists(kmeans_file):
 		kmeans = np.loadtxt(kmeans_file, usecols=(1, ), delimiter=',', skiprows=1)
 		col_attrs["_KMeans_10"] = kmeans.astype('float64')
+	else:
+		sys.stderr.write("WARNING: Can not find " + kmeans_file + "!\n")
 
 	create(loom_file, matrix, row_attrs, col_attrs)
 
