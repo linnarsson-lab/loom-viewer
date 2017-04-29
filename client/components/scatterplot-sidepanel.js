@@ -2,11 +2,13 @@ import React, { Component, PropTypes } from 'react';
 import {
 	Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup,
+	OverlayTrigger, Tooltip,
 } from 'react-bootstrap';
 import Slider from 'rc-slider';
 
 import { AttrLegend } from './legend';
 import { DropdownMenu } from './dropdown';
+import { CollapsibleSettings } from './collapsible';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -118,7 +120,13 @@ class CoordinateSettings extends Component {
 
 		const TSNE_label = (<span> tSNE1 / tSNE2 </span>);
 		const PCA_label = (
-			<span> <abbr title='Principle Component Analysys'>PCA</abbr> 1 / <abbr title='Principle Component Analysis'>PCA</abbr> 2 </span>
+			<OverlayTrigger
+				placement='top'
+				overlay={(
+					<Tooltip>Principle Component Analysis</Tooltip>)
+				}>
+				<span> PCA 1 / PCA 2 </span>
+			</OverlayTrigger>
 		);
 		const SFDP_label = (<span> SFDP X / SFDP Y </span>);
 		const Log_label = (<span> LogMean / LogCV </span>);
@@ -136,13 +144,16 @@ class CoordinateSettings extends Component {
 		) ? (
 				(xAttrs, yAttrs) => {
 					return (
-						<ListGroup>
-							<label><abbr title='Quickly set to default X and Y attributes'>X/Y Quick Settings</abbr></label>
-							{setTSNE(xAttrs, yAttrs)}
-							{setPCA(xAttrs, yAttrs)}
-							{setSFDP(xAttrs, yAttrs)}
-							{setLog(xAttrs, yAttrs)}
-						</ListGroup>
+						<CollapsibleSettings
+							label={'X/Y Quick Settings'}
+							tooltip={'Quickly set to default X and Y attributes'}>
+							<ListGroup>
+								{setTSNE(xAttrs, yAttrs)}
+								{setPCA(xAttrs, yAttrs)}
+								{setSFDP(xAttrs, yAttrs)}
+								{setLog(xAttrs, yAttrs)}
+							</ListGroup>
+						</CollapsibleSettings>
 					);
 				}
 			) : nullFunc;
@@ -224,7 +235,7 @@ class CoordinateSettings extends Component {
 
 
 		const {
-			quickSettings,
+								quickSettings,
 			attrSelectFactory,
 			attrJitterFactory,
 			attrLogscaleFactory,
@@ -372,12 +383,22 @@ class CoordinateSettings extends Component {
 					{quickSettings(newXattrs, newYattrs)}
 				</ListGroupItem>
 				<ListGroupItem>
-					<label><abbr title='Select attributes for the X axis, with optional logaritmic scaling and jittering'>X attributes</abbr></label>
-					{xAttrDropdowns}
+					<CollapsibleSettings
+						label={'X attributes'}
+						tooltip={'Select attributes for the X axis, with optional logaritmic scaling and jittering'}>
+						<div>
+							{xAttrDropdowns}
+						</div>
+					</CollapsibleSettings>
 				</ListGroupItem>
 				<ListGroupItem>
-					<label><abbr title='Select attributes for the Y axis, with optional logaritmic scaling and jittering'>Y attributes</abbr></label>
-					{yAttrDropdowns}
+					<CollapsibleSettings
+						label={'Y attributes'}
+						tooltip={'Select attributes for the Y axis, with optional logaritmic scaling and jittering'}>
+						<div>
+							{yAttrDropdowns}
+						</div>
+					</CollapsibleSettings>
 				</ListGroupItem>
 			</div>
 		);
@@ -449,70 +470,66 @@ class ColorSettings extends Component {
 
 
 		const { colorAttrHC } = this.state;
-		if (attrs[colorAttr]) {
-			return (
-				<ListGroupItem>
-					<label><abbr title='Select attribute for coloring the points'>Color</abbr></label>
-					<DropdownMenu
-						value={colorAttr}
-						options={allKeysNoUniques}
-						filterOptions={filterOptions}
-						onChange={colorAttrHC}
-					/>
-					<ButtonGroup justified>
-						<ButtonGroup>
-							<Button
-								bsStyle={colorMode === 'Heatmap' ? 'primary' : 'default'}
-								onClick={heatmapHC}>
-								Heatmap
+
+		const attrLegend = attrs[colorAttr] ? (
+			<AttrLegend
+				mode={colorMode}
+				filterFunc={(filterVal) => {
+					return () => {
+						dispatch({
+							type: SET_VIEW_PROPS,
+							path: dataset.path,
+							axis,
+							filterAttrName: colorAttr,
+							filterVal,
+						});
+					};
+				}}
+				attr={attrs[colorAttr]}
+			/>
+		) : null;
+
+		return (
+			<ListGroupItem>
+				<CollapsibleSettings
+					label={'Color'}
+					tooltip={'Select attribute for coloring the points'}>
+					<div>
+						<DropdownMenu
+							value={colorAttr}
+							options={allKeysNoUniques}
+							filterOptions={filterOptions}
+							onChange={colorAttrHC}
+						/>
+						<ButtonGroup justified>
+							<ButtonGroup>
+								<Button
+									bsStyle={colorMode === 'Heatmap' ? 'primary' : 'default'}
+									onClick={heatmapHC}>
+									Heatmap
 							</Button>
-						</ButtonGroup>
-						<ButtonGroup>
-							<Button
-								bsStyle={colorMode === 'Heatmap2' ? 'primary' : 'default'}
-								onClick={heatmap2HC}>
-								Heatmap2
+							</ButtonGroup>
+							<ButtonGroup>
+								<Button
+									bsStyle={colorMode === 'Heatmap2' ? 'primary' : 'default'}
+									onClick={heatmap2HC}>
+									Heatmap2
 							</Button>
-						</ButtonGroup>
-						<ButtonGroup>
-							<Button
-								bsStyle={colorMode === 'Categorical' ? 'primary' : 'default'}
-								onClick={categoricalHC}>
-								Categorical
+							</ButtonGroup>
+							<ButtonGroup>
+								<Button
+									bsStyle={colorMode === 'Categorical' ? 'primary' : 'default'}
+									onClick={categoricalHC}>
+									Categorical
 							</Button>
 
+							</ButtonGroup>
 						</ButtonGroup>
-					</ButtonGroup>
-					<AttrLegend
-						mode={colorMode}
-						filterFunc={(filterVal) => {
-							return () => {
-								dispatch({
-									type: SET_VIEW_PROPS,
-									path: dataset.path,
-									axis,
-									filterAttrName: colorAttr,
-									filterVal,
-								});
-							};
-						}}
-						attr={attrs[colorAttr]}
-					/>
-				</ListGroupItem>
-			);
-		} else {
-			return (
-				<ListGroupItem>
-					<label><abbr title='Select attribute for coloring the points'>Color</abbr></label>
-					<DropdownMenu
-						value={colorAttr}
-						options={allKeysNoUniques}
-						filterOptions={filterOptions}
-						onChange={colorAttrHC}
-					/>
-				</ListGroupItem>
-			);
-		}
+					</div>
+				</CollapsibleSettings>
+				{attrLegend}
+			</ListGroupItem>
+		);
 	}
 }
 
@@ -601,13 +618,18 @@ export const ScatterplotSidepanel = (props) => {
 					yAttrs={yAttrs}
 				/>
 				<ListGroupItem>
-					<label><abbr title='Change the radius of the drawn points'>Radius Scale Factor</abbr></label>
-					<ScaleFactorSettings
-						dispatch={dispatch}
-						dataset={dataset}
-						stateName={stateName}
-						scaleFactor={scaleFactor}
-						time={200} />
+					<CollapsibleSettings
+						label={'Radius Scale Factor'}
+						tooltip={'Change the radius of the drawn points'}>
+						<div>
+							<ScaleFactorSettings
+								dispatch={dispatch}
+								dataset={dataset}
+								stateName={stateName}
+								scaleFactor={scaleFactor}
+								time={200} />
+						</div>
+					</CollapsibleSettings>
 				</ListGroupItem>
 				<ColorSettings
 					dispatch={dispatch}

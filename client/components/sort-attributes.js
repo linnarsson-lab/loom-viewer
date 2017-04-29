@@ -39,15 +39,6 @@ export class SortAttributeComponent extends Component {
 		// Show first four attributes to use as sort keys
 		const { order } = dataset.viewState[axis];
 		let sortOrderList = [(
-			<span key={'front'}>
-				<span style={{ fontWeight: 'bold' }}>
-					Order by: &nbsp;&nbsp;&nbsp;
-				</span>
-				<span style={{ fontStyle: 'italic' }}>
-					(select twice to toggle ascending)
-				</span>
-			</span>
-		), (
 			<DropdownMenu
 				key={'dropdown'}
 				value={order[0].key}

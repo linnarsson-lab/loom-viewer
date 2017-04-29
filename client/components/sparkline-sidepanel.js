@@ -2,6 +2,8 @@ import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
+import { CollapsibleSettings } from './collapsible';
+
 import { fetchGene } from '../actions/actions';
 
 import {
@@ -55,18 +57,22 @@ class LegendSettings extends Component {
 
 		return (
 			<ListGroupItem>
-				<label>Select cell attribute legend</label>
-				<DropdownMenu
-					value={colAttr}
-					options={col.allKeysNoUniques}
-					filterOptions={col.dropdownOptions.allNoUniques}
-					onChange={colAttrsHC}
-				/>
-				<DropdownMenu
-					value={colMode}
-					options={colModeOptions}
-					onChange={colModeHC}
-				/>
+				<CollapsibleSettings
+					label={'Attribute legend'}>
+					<div>
+						<DropdownMenu
+							value={colAttr}
+							options={col.allKeysNoUniques}
+							filterOptions={col.dropdownOptions.allNoUniques}
+							onChange={colAttrsHC}
+						/>
+						<DropdownMenu
+							value={colMode}
+							options={colModeOptions}
+							onChange={colModeHC}
+						/>
+					</div>
+				</CollapsibleSettings>
 			</ListGroupItem>
 		);
 	}
@@ -102,13 +108,18 @@ class AttributeSelection extends Component {
 
 		return (
 			<ListGroupItem>
-				<label>Select genes to display</label>
-				<FetchGeneComponent
-					dataset={dataset}
-					dispatch={dispatch}
-					onChange={this.state.genesHC}
-					selectedGenes={genes}
-				/>
+				<CollapsibleSettings
+					label={'Genes'}
+					tooltip={'Select genes to display'}>
+					<div>
+						<FetchGeneComponent
+							dataset={dataset}
+							dispatch={dispatch}
+							onChange={this.state.genesHC}
+							selectedGenes={genes}
+						/>
+					</div>
+				</CollapsibleSettings>
 			</ListGroupItem>
 		);
 	}
@@ -153,16 +164,26 @@ class ColorSettings extends Component {
 		const { showLabels, geneMode } = this.props;
 		return (
 			<ListGroupItem>
-				<label>Show sparklines as</label>
-				<DropdownMenu
-					value={geneMode}
-					options={geneModeOptions}
-					onChange={geneModeHC}
-				/>
-				<Button bsStyle={showLabels ? 'success' : 'default'}
-					onClick={() => { showLabelsHC(!showLabels); }} >
-					Show labels
-					</Button>
+				<CollapsibleSettings
+					label={'Mode'}
+					tooltip={'Show sparklines as'}>
+					<div>
+						<div className={'view'}>
+							<div style={{ flex: 5 }}>
+								<DropdownMenu
+									value={geneMode}
+									options={geneModeOptions}
+									onChange={geneModeHC}
+								/>
+							</div>
+							<Button bsStyle={showLabels ? 'primary' : 'default'}
+								style={{ flex: 1 }}
+								onClick={() => { showLabelsHC(!showLabels); }} >
+								labels
+						</Button>
+						</div>
+					</div>
+				</CollapsibleSettings>
 			</ListGroupItem>
 		);
 	}
@@ -201,13 +222,19 @@ export const SparklineSidepanel = function (props) {
 					colAttr={sparkline.colAttr}
 					colMode={sparkline.colMode} />
 				<ListGroupItem>
-					<SortAttributeComponent
-						attributes={dataset.col.attrs}
-						attrKeys={dataset.col.allKeysNoUniques}
-						axis={'col'}
-						stateName={'sparkline'}
-						dataset={dataset}
-						dispatch={dispatch} />
+					<CollapsibleSettings
+						label={'Order'}
+						tooltip={'Keys to sort datapoints by (select same value twice to toggle ascending/descending)'}>
+						<div>
+							<SortAttributeComponent
+								attributes={dataset.col.attrs}
+								attrKeys={dataset.col.allKeysNoUniques}
+								axis={'col'}
+								stateName={'sparkline'}
+								dataset={dataset}
+								dispatch={dispatch} />
+						</div>
+					</CollapsibleSettings>
 				</ListGroupItem>
 			</ListGroup >
 		</Panel >

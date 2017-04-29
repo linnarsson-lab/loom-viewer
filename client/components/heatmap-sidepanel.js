@@ -2,6 +2,8 @@ import React, { Component, PropTypes } from 'react';
 import { DropdownMenu } from './dropdown';
 //import { PrintSettings } from './print-settings';
 import { AttrLegend } from './legend';
+import { CollapsibleSettings } from './collapsible';
+
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
 import { fetchGene } from '../actions/actions';
@@ -62,7 +64,7 @@ export class HeatmapSidepanel extends Component {
 
 	maybeFetch(gene, dataset, dispatch) {
 		if (gene &&
-		dataset.col.keys.indexOf(gene) === -1 && // note how we check if the key *isn't* an attribute key, implying it's a gene
+			dataset.col.keys.indexOf(gene) === -1 && // note how we check if the key *isn't* an attribute key, implying it's a gene
 			!dataset.fetchedGenes[gene]) {
 			dispatch(fetchGene(dataset, [gene]));
 		}
@@ -84,19 +86,23 @@ export class HeatmapSidepanel extends Component {
 				bsStyle='default'>
 				<ListGroup fill>
 					<ListGroupItem>
-						<label>Cell attribute or Gene to show</label>
-						<DropdownMenu
-							value={hms.colAttr}
-							options={col.allKeysNoUniques}
-							filterOptions={col.dropdownOptions.allNoUniques}
-							onChange={colAttrHC}
-						/>
-						<label>Show as</label>
-						<DropdownMenu
-							value={hms.colMode}
-							options={modeNames}
-							onChange={colModeHC}
-						/>
+						<CollapsibleSettings
+							label={'Cell attribute or Gene to show'}>
+							<div>
+								<DropdownMenu
+									value={hms.colAttr}
+									options={col.allKeysNoUniques}
+									filterOptions={col.dropdownOptions.allNoUniques}
+									onChange={colAttrHC}
+								/>
+								<label>Show as</label>
+								<DropdownMenu
+									value={hms.colMode}
+									options={modeNames}
+									onChange={colModeHC}
+								/>
+							</div>
+						</CollapsibleSettings>
 						{colAttr ? (
 							<AttrLegend
 								mode={hms.colMode}
@@ -117,19 +123,23 @@ export class HeatmapSidepanel extends Component {
 						}
 					</ListGroupItem>
 					<ListGroupItem>
-						<label>Gene attribute to show</label>
-						<DropdownMenu
-							value={hms.rowAttr}
-							options={row.allKeysNoUniques}
-							filterOptions={row.dropdownOptions.allNoUniques}
-							onChange={rowAttrHC}
-						/>
-						<label>Show as</label>
-						<DropdownMenu
-							value={hms.rowMode}
-							options={modeNames}
-							onChange={rowModeHC}
-						/>
+						<CollapsibleSettings
+							label={'Gene attribute to show'}>
+							<div>
+								<DropdownMenu
+									value={hms.rowAttr}
+									options={row.allKeysNoUniques}
+									filterOptions={row.dropdownOptions.allNoUniques}
+									onChange={rowAttrHC}
+								/>
+								<label>Show as</label>
+								<DropdownMenu
+									value={hms.rowMode}
+									options={modeNames}
+									onChange={rowModeHC}
+								/>
+							</div>
+						</CollapsibleSettings>
 						{
 							rowAttr ? (
 								<AttrLegend

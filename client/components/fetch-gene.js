@@ -86,26 +86,31 @@ export class FetchGeneComponent extends Component {
 	render() {
 		const col = this.props.dataset.col;
 		return (
-			<div>
-				<FormControl
-					componentClass={'textarea'}
-					rows={8}
-					placeholder={'Paste genes here or use the dropdown below to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
-					onChange={this.handleTextAreaChange}
-					value={this.state.selectedGenes} />
-				<Select
-					placeholder={'Type to search available genes'}
-					options={this.state.selectOptions}
-					filterOptions={col.dropdownOptions.keyAttr}
-					onChange={this.addSelection}
-					style={this.props.style}
-					maxHeight={100}
-				/>
+			<div><div className={'view'}>
+				<div style={{ flex: 8 }}>
+					<Select
+						placeholder={'Type to search'}
+						options={this.state.selectOptions}
+						filterOptions={col.dropdownOptions.keyAttr}
+						onChange={this.addSelection}
+						style={this.props.style}
+						maxHeight={100}
+					/>
+				</div>
 				<Button
 					bsStyle={'default'}
+					style={{ flex: 1 }}
 					onClick={this.applySelection} >
-					Apply Selection
+					Apply
 					</Button>
+			</div>
+				<FormControl
+					componentClass={'textarea'}
+					rows={6}
+					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
+					onChange={this.handleTextAreaChange}
+					value={this.state.selectedGenes} />
+
 			</div>
 		);
 	}
