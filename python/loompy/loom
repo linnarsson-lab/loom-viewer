@@ -526,7 +526,7 @@ if __name__ == '__main__':
 		expand_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
 
 		# loom expand all datasets
-		expand_all_parser = subparsers.add_parser('exp_all', help="Expand all loom files in the data folder for better server performance")
+		expand_all_parser = subparsers.add_parser('expand_all', help="Expand all loom files in the data folder for better server performance")
 		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
