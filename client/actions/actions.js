@@ -139,6 +139,15 @@ function receiveDataSet(data, path) {
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
 
 	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
+	cols.geneToRow = {};
+	cols.rowToGenes = new Array(cols.geneKeys.length);
+	// store row indices for gene fetching later
+	let i = cols.geneKeys.length;
+	while(i--){
+		let gene = cols.geneKeys[i];
+		cols.geneToRow[gene] = i;
+		cols.rowToGenes[i] = gene;
+	}
 	cols.geneKeys.sort();
 	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
 	cols.allKeys = cols.keys.concat(cols.geneKeys);
@@ -389,8 +398,8 @@ function receiveGenes(attrs, path) {
 
 export function fetchGene(dataset, genes) {
 	const { title, path, col, fetchedGenes } = dataset;
-	const { geneKeys } = col;
-	if (geneKeys === undefined) {
+	const { geneToRow, rowToGenes } = col;
+	if (geneToRow === undefined) {
 		return () => { };
 	} else {
 		// `genes` can be either a string or an array of strings
@@ -400,7 +409,7 @@ export function fetchGene(dataset, genes) {
 			let fetchGeneNames = [], fetchRows = [];
 			for (let i = 0; i < genes.length; i++) {
 				const gene = genes[i];
-				const row = geneKeys.indexOf(gene);
+				const row = geneToRow[gene];
 				// If gene is already cached, being fetched or
 				// not part of the dataset, skip fetching.
 				if (!fetchedGenes[gene] && row !== -1) {
@@ -425,7 +434,7 @@ export function fetchGene(dataset, genes) {
 							// we set data[i] to null as early as possible, so JS can
 							// GC the rows after converting them to TypedArrays.
 							// I actually had an allocation failure so this is a real risk when fetching large amounts of data.
-							let geneName = geneKeys[data[i].idx],
+							let geneName = rowToGenes[data[i].idx],
 								geneData = data[i].data;
 							data[i] = null;
 							attrs[geneName] = convertJSONarray(geneData, geneName);
