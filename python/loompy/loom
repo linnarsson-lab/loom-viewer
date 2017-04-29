@@ -6,6 +6,7 @@ import argparse
 import logging
 import requests
 from shutil import rmtree
+import warnings
 
 try:
 	from urllib.parse import urlparse
@@ -229,6 +230,8 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 		if os.path.exists(os.path.join(project_path, filename)):
 			try:
 				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
 				expand_md(ds, project, filename, truncate or metadata)
 				expand_attrs(ds, project, filename, truncate or attributes)
 				expand_rows(ds, truncate or rows)
@@ -239,21 +242,24 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
-		for filename in os.listdir(project_path):
-			if filename.endswith(".loom"):
-				try:
-					ds = connect_loom(project_path, filename)
-					if ds == None:
-						logging.error("File not found")
-						sys.exit(1)
-					expand_md(ds, project, filename, truncate or metadata)
-					expand_attrs(ds, project, filename, truncate or attributes)
-					expand_rows(ds, truncate or rows)
-					expand_columns(ds, truncate or cols)
-				except Exception as e:
-					logging.error(e)
+		logging.info('Entering project %s' % project_path)
+		project_files = os.listdir(project_path)
+		loom_files = [filename for filename in project_files if filename.endswith(".loom")]
+		logging.info('Found %i loom files' % len(loom_files))
+		for filename in loom_files:
+			try:
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
+				expand_md(ds, project, filename, truncate or metadata)
+				expand_attrs(ds, project, filename, truncate or attributes)
+				expand_rows(ds, truncate or rows)
+				expand_columns(ds, truncate or cols)
+			except Exception as e:
+				logging.error(e)
 
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
@@ -601,7 +607,7 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "expand":
 		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "exp_all":
+	elif args.command == "expand_all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
