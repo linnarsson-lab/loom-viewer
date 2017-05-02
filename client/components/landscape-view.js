@@ -8,97 +8,86 @@ import { scatterplot } from './scatterplot';
 
 const LandscapeComponent = function (props) {
 	const { dispatch, dataset } = props;
-	const { coordinateAttrs, colorAttr, colorMode,
-		logscale, jitter, asMatrix } = dataset.viewState.landscape;
+	const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = dataset.viewState.landscape;
 
 	// filter out undefined attributes;
-	let attrs = [];
-	for (let i = 0; i < coordinateAttrs.length; i++) {
-		let attr = coordinateAttrs[i];
+	let newXattrs = [];
+	for (let i = 0; i < xAttrs.length; i++) {
+		let attr = xAttrs[i];
 		if (attr) {
-			attrs.push(attr);
+			newXattrs.push(attr);
+		}
+	}
+	let newYattrs = [];
+	for (let i = 0; i < yAttrs.length; i++) {
+		let attr = yAttrs[i];
+		if (attr) {
+			newYattrs.push(attr);
 		}
 	}
 
 	const { col } = dataset;
 	const color = col.attrs[colorAttr];
 
-	if (asMatrix && attrs.length > 2) {
-		const cellStyle = {
-			border: '1px solid lightgrey',
-			flex: '1 1 auto',
-			margin: '1px',
-		};
-		const cellStyleNoBorder = {
-			flex: '1 1 auto',
-			margin: '1px',
-		};
-		const rowStyle = {
-			flex: '1 1 auto',
-		};
-		let matrix = [];
-		for (let j = 0; j < attrs.length; j++) {
-			let row = [];
-			for (let i = 0; i < attrs.length; i++) {
-				let paint;
-				if (i <= j) {
-					const x = col.attrs[attrs[i]];
-					const y = col.attrs[attrs[j]];
-					paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter);
-				}
-				row.push(
-					<Canvas
-						key={attrs[j] + '_' + attrs[i]}
-						style={i <= j ? cellStyle : cellStyleNoBorder}
-						paint={paint}
-						redraw
-						clear
-					/>
-				);
-
-			}
-			matrix.push(
-				<div
-					key={j + '_' + attrs[j]}
-					className={'view'}
-					style={rowStyle}>
-					{row}
-				</div>
-			);
-		}
-		return (
-			<div className='view'>
-				<LandscapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-				/>
-				{/*If our grid changes in lenght, we need to remount*/}
-				<RemountOnResize watchedVal={attrs.length}>
-					<div className={'view-vertical'}>{matrix}</div>
-				</RemountOnResize>
-			</div>
-		);
-
-
-	} else {
-		let x = col.attrs[attrs[0]];
-		let y = col.attrs[attrs[1]];
-		const paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter);
-		return (
-			<div className='view'>
-				<LandscapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-				/>
+	const cellStyle = {
+		border: '1px solid lightgrey',
+		flex: '1 1 auto',
+		margin: '1px',
+	};
+	const rowStyle = {
+		flex: '1 1 auto',
+	};
+	let matrix = [];
+	for (let j = 0; j < newYattrs.length; j++) {
+		let row = [];
+		for (let i = 0; i < newXattrs.length; i++) {
+			let paint;
+			const xAttr = newXattrs[i], yAttr = newYattrs[j];
+			const logscale = { x: xAttr.logscale, y: yAttr.logscale };
+			const jitter = { x: xAttr.jitter, y: yAttr.jitter };
+			const x = col.attrs[xAttr.attr];
+			const y = col.attrs[yAttr.attr];
+			paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
+			row.push(
 				<Canvas
+					key={`${j}_${newYattrs[j].attr}_${i}_${newXattrs[i].attr}`}
+					style={cellStyle}
 					paint={paint}
-					style={{ margin: '20px' }}
 					redraw
 					clear
 				/>
+			);
+
+		}
+		matrix.push(
+			<div
+				key={'row_' + j}
+				className={'view'}
+				style={rowStyle}>
+				{row}
 			</div>
 		);
 	}
+
+	let matrixChanged = [];
+	for (let i = 0; i < newXattrs.length; i++){
+		matrixChanged.push(newXattrs[i].attr);
+	}
+	for (let i = 0; i < newYattrs.length; i++){
+		matrixChanged.push(newYattrs[i].attr);
+	}
+	return (
+		<div className='view'>
+			<LandscapeSidepanel
+				dataset={dataset}
+				dispatch={dispatch}
+			/>
+			{/*If any x or y attributes in our grid change, we need to remount*/}
+			<RemountOnResize watchedVal={matrixChanged.join('')}>
+				<div className={'view-vertical'}>{matrix}</div>
+			</RemountOnResize>
+		</div>
+	);
 
 };
 
@@ -108,10 +97,9 @@ LandscapeComponent.propTypes = {
 };
 
 const initialState = { // Initialise landscapeState for this dataset
-	coordinateAttrs: ['_tSNE1', '_tSNE2'],
-	logscale: {},
-	jitter: {},
-	asMatrix: false,
+	xAttrs: [{ attr: '_tSNE1', jitter: false, logscale: false }],
+	yAttrs: [{ attr: '_tSNE2', jitter: false, logscale: false }],
+	scaleFactor: 40,
 	colorAttr: '(original order)',
 	colorMode: 'Heatmap',
 };

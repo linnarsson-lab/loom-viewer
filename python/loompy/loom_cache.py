@@ -27,7 +27,7 @@ import os.path
 import time
 import logging
 import loompy
-import ujson
+import json
 
 def load_compressed_json(filename):
 	with gzip.open(filename,"rt") as f:
@@ -109,7 +109,7 @@ class LoomCache(object):
 							md_filename = '%s.file_md.json.gzip' % (path)
 							if os.path.isfile(md_filename):
 								logging.debug('Loading metadata from %s' % (md_filename))
-								list_entry = ujson.loads(load_compressed_json(md_filename))
+								list_entry = json.loads(load_compressed_json(md_filename))
 							else:
 								logging.debug('%s does not exist, using hdf5 fallback' % (md_filename))
 								ds = self.connect_dataset_locally(project, filename, username, password)

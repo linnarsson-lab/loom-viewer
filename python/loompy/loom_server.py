@@ -9,7 +9,10 @@ import os
 import os.path
 import sys
 from io import BytesIO
-import ujson
+
+import numpy as np
+from operator import itemgetter
+
 from datetime import datetime, timedelta
 import argparse
 import errno
@@ -24,12 +27,137 @@ from loompy import LoomCache
 from wsgiref.handlers import format_date_time
 
 import gzip
-import ujson
+import json
+
+
+# ===================
+# JSON Utils
+# ===================
+
+def np_to_list(vals):
+	"""
+	Convert a numpy array to a python list,
+	ready for JSON conversion.
+	"""
+	try:
+		# NaNs and Infinities are not supported by JSON
+		vals[np.isnan(vals)] = 0
+		vals[np.isinf(vals)] = 0
+
+		# test if all values are integer
+		vals_int = vals.astype(int)
+		safe_conversion = (vals - vals_int) == 0
+
+		if np.all(safe_conversion):
+			return vals_int.tolist()
+		else:
+			# if there are _some_ integers, convert them
+			# (arrays will likely have many zero values,
+			# so this could still save a bit of space)
+			vals = vals.tolist()
+			if np.any(safe_conversion):
+				for i in range(len(vals)):
+					if safe_conversion[i]:
+						vals[i] = int(vals[i])
+			return vals
+	except Exception as e:
+		"""Not a numeric type (expected for strings, not reported)"""
+		return vals.tolist()
+
+def JSON_array(array):
+	"""
+	Takes a numpy array and produces an object wrapping
+	an array with precomputed metadata, ready to be served
+	or saved as a JSON file
+	"""
+
+	_un, _ind, _counts = np.unique(array, return_inverse=True, return_counts=True)
+
+	_un = np_to_list(_un)
+	_counts = np_to_list(_counts)
+
+	_data = np_to_list(array)
+
+	# default to string until proven otherwise
+	array_type = 'string'
+	indexed_val = None
+	_min = 1
+	_max = len(_un)
+	try:
+		_min = np.nanmin(array)
+		_max = np.nanmax(array)
+		# Convert to proper Python type (JSON conversion breaks otherwise)
+		_min = int(_min) if int(_min) == _min else float(_min)
+		_max = int(_max) if int(_max) == _max else float(_max)
+
+		array_int = array.astype(int)
+		if np.all((array - array_int) == 0):
+			#integer
+			if _min >= 0:
+				if _max < 256:
+					array_type = 'uint8'
+				elif _max < 65535:
+					array_type = 'uint16'
+				else:
+					array_type = 'uint32'
+			elif _min > -128 and _max < 128:
+				array_type = 'int8'
+			elif _min > -32769 and _max < 32768:
+				array_type = 'int16'
+			else:
+				array_type = 'int32'
+		else:
+			array_type = 'float32'
+	except Exception as e:
+		"""Not a numeric type (expected for strings, not reported)"""
+		if len(_un) < 256:
+			# strore strings in indexed_val
+			indexed_val = _un
+
+			# we will unshift `null` in front of the IndexedVal
+			# array on the client-side, so we anticipate that by
+			# increasing the indices now.
+			_ind += 1
+			_un, _counts = np.unique(_ind, return_counts=True)
+			_un = np_to_list(_un)
+			_counts = np_to_list(_counts)
+			_ind = np_to_list(_ind)
+			_data = _ind
+
+	uniques = [ { "val": _un[i], "count": _counts[i] } for i in range(len(_un))]
+
+	# slice off any values with count 1 - note that this implies
+	# that arrays with only unique values have an empty `uniques` array
+	uniques.sort(key=itemgetter('count'), reverse=True)
+	for i in range(len(uniques)):
+		if uniques[i]["count"] == 1:
+			uniques = uniques[0:i]
+			break
+
+	color_length = min(len(uniques), 20)
+	color_freq = { uniques[i]["val"]: i+1 for i in range(color_length) }
+	color_indices = { "mostFreq": color_freq }
+
+	retVal = {
+		"arrayType": array_type,
+		"data": _data,
+		"uniques": uniques,
+		"colorIndices": color_indices,
+		"min": _min,
+		"max": _max
+	}
+	if indexed_val is not None:
+		retVal["indexedVal"] = indexed_val
+	return retVal
 
 def load_compressed_json(filename):
 	with gzip.open(filename,"rt") as f:
 		jsonVal = f.read()
 		return jsonVal
+
+# =================
+# Server
+# =================
 
 from gevent.wsgi import WSGIServer
 from gevent import monkey
@@ -148,7 +276,7 @@ def get_auth(request):
 @cache(expires=None)
 def send_dataset_list():
 	(u, p) = get_auth(request)
-	result = ujson.dumps(app.cache.list_datasets(u, p))
+	result = json.dumps(app.cache.list_datasets(u, p))
 	return flask.Response(result, mimetype="application/json")
 
 # Info for a single dataset
@@ -167,7 +295,11 @@ def send_fileinfo(project, filename):
 		if ds == None:
 			return "", 404
 		dims = ds.dz_dimensions()
-		fileinfo = ujson.dumps({
+
+		rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
+		colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
+
+		fileinfo = json.dumps({
 			"project": project,
 			"dataset": filename,
 			"filename": filename,
@@ -175,8 +307,8 @@ def send_fileinfo(project, filename):
 			"zoomRange": ds.dz_zoom_range(),
 			"fullZoomHeight": dims[1],
 			"fullZoomWidth": dims[0],
-			"rowAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.row_attrs.items()]),
-			"colAttrs": dict([(name, vals.tolist()) for (name,vals) in ds.col_attrs.items()]),
+			"rowAttrs": rowAttrs,
+			"colAttrs": colAttrs,
 		})
 	return flask.Response(fileinfo, mimetype="application/json")
 
@@ -248,9 +380,9 @@ def send_row(project, filename, rows):
 			#retRows = [{ 'idx': row, 'data': ds[row, :].tolist()} for row in rows]
 			# Serialised like this is slightly faster
 			rows.sort()
-			dsRowsList = ds[rows,:].tolist()
-			retRows =  [{'idx': rows[i], 'data': dsRowsList[i]} for i in range(len(rows))]
-			return flask.Response(ujson.dumps(retRows), mimetype="application/json")
+			dsRowsList = ds[rows,:]
+			retRows = [JSON_array(row) for row in dsRowsList]
+			return flask.Response(json.dumps(retRows), mimetype="application/json")
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
 @app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
@@ -278,12 +410,13 @@ def send_col(project, filename, cols):
 		if ds == None:
 			return "", 404
 		else:
-			# return a list of {idx, data} objects.
-			# This is to guarantee we match up column-numbers client-side
-			# (we can't use the index in the array)
-			dsColsList = ds[:,cols].tolist()
-			retCols = [{ 'idx': cols[i], 'data': dsColsList[i]} for i in range(len(cols))]
-			return flask.Response(ujson.dumps(retCols), mimetype="application/json")
+			# See cols code for explanation
+			cols.sort()
+			# Transpose it into a row, so that it
+			# will get converted to a list properly
+			dsColsList = ds[:,cols].transpose()
+			retCols = [JSON_array(col) for col in dsColsList]
+			return flask.Response(json.dumps(retCols), mimetype="application/json")
 
 
 #

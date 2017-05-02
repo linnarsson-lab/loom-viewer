@@ -3,8 +3,7 @@ import { combineReducers } from 'redux';
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
 import { compressToEncodedURIComponent } from 'lz-string';
-import { merge, disjointArrays } from '../js/util';
-import { encodeViewstate } from '../js/viewstateEncoder';
+import { merge, mergeInplace, disjointArrays } from '../js/util';
 
 
 import {
@@ -23,15 +22,11 @@ import {
 } from '../actions/actionTypes';
 
 /**
- * Usage: action can optionally have "prune" and "state" trees
+ * `action` can optionally have "state" trees
  * to "declaratively" modify the old state tree.
- * - action.prune is a tree of values of the old state tree to
- *   "remove" (by not copying them to the new state). Only leaves
- *   will be pruned
- * - action.state is a tree of new values to merge into the old
+ *
+ * `action.state` must be a tree of new values to merge into the old
  *   state tree, resulting in the new state.
- * If both are provided, prune is applied first (which lets us
- * _replace_ objects wholesale, instead of merging them).
  * IMPORTANT: use simple, "plain" JS objects only; this borks when
  * passed JSX objects, for example.
  */
@@ -68,8 +63,10 @@ function setViewStateURL(state, action) {
 			// A bit hackish, but basically we default to current view
 			view = browserHistory.getCurrentLocation().pathname.split('/')[2];
 	}
-	const encodedViewstate = JSON.stringify(encodeViewstate(state.list[path]));
-	const url = `/dataset/${view}/${path}/${compressToEncodedURIComponent(encodedViewstate)}`;
+	const dataset = state.list[path];
+	const encodedVS = JSON.stringify(dataset.viewStateConverter.encode(dataset.viewState));
+	const compressedViewState = compressToEncodedURIComponent(encodedVS);
+	const url = `/dataset/${view}/${path}/${compressedViewState}`;
 	browserHistory.replace(url);
 	return state;
 }
@@ -181,7 +178,7 @@ function updateAttrSort(order, sortAttrName) {
 				break;
 			}
 		}
-		i = i === -1 ? order.length-1 : i;
+		i = i === -1 ? order.length - 1 : i;
 		while (i--) {
 			order[i + 1] = order[i];
 		}
@@ -200,28 +197,33 @@ function updateFiltered(dataset, axis, prevFilter) {
 	prevFilter = prevFilter.slice();
 	disjointArrays(filter, prevFilter);
 
-	// Update filterCount.
+	// Update filterCount. First we decrease removed filters
+	const axisData = dataset[axis], prevFilterCount = axisData.filterCount;
 	// we pass filterCount and keep changing the same array
-	const prevFilterCount = dataset[axis].filterCount;
-	let filterCount = prevFilterCount.slice();
-	let newAttrs = {};
-	let i = prevFilter.length;
+	let filterCount = prevFilterCount.slice(),
+		newAttrs = {}, i = prevFilter.length;
 	while (i--) {
-		let filterEntry = prevFilter[i];
-		newAttrs = merge(
-			newAttrs,
+		let filterEntry = prevFilter[i], filterAttrName = filterEntry.attr;
+		let attr = newAttrs[filterAttrName] ? newAttrs[filterAttrName] : axisData.attrs[filterAttrName];
+		if (attr){ // attr may be an unfetched gene
+			newAttrs = mergeInplace(
+				newAttrs,
 
-			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, false, filterCount).attrs
-		);
+				newFilterValues(attr, filterAttrName, filterEntry.val, false, filterCount).attrs
+			);
+		}
 	}
-
+	// Update filtercount. Increase added filters
 	i = filter.length;
 	while (i--) {
-		let filterEntry = filter[i];
-		newAttrs = merge(
-			newAttrs,
-			newFilterValues(dataset, axis, filterEntry.attr, filterEntry.val, true, filterCount).attrs
-		);
+		let filterEntry = filter[i], filterAttrName = filterEntry.attr;
+		let attr = newAttrs[filterAttrName] ? newAttrs[filterAttrName] : axisData.attrs[filterAttrName];
+		if (attr){ // attr may be an unfetched gene
+			newAttrs = mergeInplace(
+				newAttrs,
+				newFilterValues(attr, filterAttrName, filterEntry.val, true, filterCount).attrs
+			);
+		}
 	}
 
 	i = filterCount.length;
@@ -237,7 +239,7 @@ function updateFiltered(dataset, axis, prevFilter) {
 			mismatches++;
 		}
 		// count all zeros in the new filterCount
-		if (fc === 0){
+		if (fc === 0) {
 			sfiLength++;
 		}
 	}
@@ -245,7 +247,7 @@ function updateFiltered(dataset, axis, prevFilter) {
 	if (mismatches) {
 		sortedFilterIndices = new Uint16Array(sfiLength);
 		let i = filterCount.length;
-		while(i--) {
+		while (i--) {
 			if (filterCount[i] === 0) {
 				sortedFilterIndices[--sfiLength] = i;
 			}
@@ -261,31 +263,31 @@ function updateFiltered(dataset, axis, prevFilter) {
 	};
 }
 
-function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, filterCount) {
-	const axisData = dataset[axis];
-	let attr = axisData.attrs[filterAttrName];
-	const oldUniques = attr.uniques;
-	let uniques = [];
-	for (let i = 0; i < oldUniques.length; i++) {
+function newFilterValues(attr, filterAttrName, filterVal, filtered, filterCount) {
+	// const axisData = dataset[axis];
+	// let attr = axisData.attrs[filterAttrName];
+	const oldUniques = attr.uniques, data = attr.data;
+	let i = oldUniques.length, uniques = new Array(i);
+	while (i--) {
 		let uniqueEntry = oldUniques[i];
 		if (filterVal === uniqueEntry.val) {
-			uniques.push(merge(uniqueEntry, { filtered: !uniqueEntry.filtered }));
+			uniques[i] = merge(uniqueEntry, { filtered: !uniqueEntry.filtered });
 		} else {
-			uniques.push(uniqueEntry);
+			uniques[i] = uniqueEntry;
 		}
 	}
 
 	// update filterCount
-	filterCount = filterCount ? filterCount : axisData.filterCount.slice(0);
+	i = filterCount.length;
 	if (filtered) {
-		for (let i = 0; i < filterCount.length; i++) {
-			if (attr.data[i] === filterVal) {
+		while (i--) {
+			if (data[i] === filterVal) {
 				filterCount[i]++;
 			}
 		}
 	} else {
-		for (let i = 0; i < filterCount.length; i++) {
-			if (attr.data[i] === filterVal) {
+		while (i--) {
+			if (data[i] === filterVal) {
 				filterCount[i]--;
 			}
 		}
@@ -296,6 +298,7 @@ function newFilterValues(dataset, axis, filterAttrName, filterVal, filtered, fil
 		attrs: {
 			[filterAttrName]: {
 				uniques,
+				data,
 			},
 		},
 	};
@@ -347,7 +350,8 @@ function maybeSortIndices(state, newState, action) {
 	const rowOrder = newDataset.viewState.row.order;
 	const colOrder = newDataset.viewState.col.order;
 
-	for (let i = 0; i < rowOrder.length; i++) {
+	let i = rowOrder.length;
+	while (i--) {
 		const { key } = rowOrder[i];
 		// If these differ, it's because it was a row
 		// that was fetched. In that case we need to update
@@ -358,7 +362,8 @@ function maybeSortIndices(state, newState, action) {
 		}
 	}
 
-	for (let i = 0; i < colOrder.length; i++) {
+	i = colOrder.length;
+	while (i--) {
 		const { key } = colOrder[i];
 		if (col.attrs[key] !== newCol.attrs[key]) {
 			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, colOrder);

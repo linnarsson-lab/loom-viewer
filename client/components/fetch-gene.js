@@ -4,7 +4,6 @@ import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
 
 import { uniq, difference } from 'lodash';
-import { binaryIndexOf } from '../js/util';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends Component {
@@ -21,8 +20,8 @@ export class FetchGeneComponent extends Component {
 		let { selectedGenes, dispatch, dataset, onChange } = this.props;
 		const { geneKeys } = dataset.col;
 
-		let selectOptions = new Array(geneKeys.length);
-		for (let i = 0; i < selectOptions.length; i++) {
+		let i = geneKeys.length, selectOptions = new Array(i);
+		while (i--) {
 			selectOptions[i] = {
 				value: geneKeys[i],
 				label: geneKeys[i],
@@ -35,7 +34,7 @@ export class FetchGeneComponent extends Component {
 			dispatch(fetchGene(dataset, validGenes));
 			let diff = difference(selectedGenes, validGenes);
 			let diff2 = difference(validGenes, selectedGenes);
-			if (diff.length+diff2.length){
+			if (diff.length + diff2.length) {
 				// difference length is only non-zero when
 				// some values in validGenes have changed
 				onChange(validGenes);
@@ -66,19 +65,19 @@ export class FetchGeneComponent extends Component {
 		onChange ? onChange(validGenes) : null;
 
 		const selectedGenes = validGenes.join(',\ ');
-		this.setState({selectedGenes});
+		this.setState({ selectedGenes });
 	}
 
-	filterValidGenes(selection){
+	filterValidGenes(selection) {
 		const { col } = this.props.dataset;
 		const genes = selection.split(/[,;'"`\s]+/g);
 
 		let validGenes = [];
-		const { sortedGeneKeys, sortedGeneKeysLowerCase } = col;
-		for (let i = 0; i < genes.length; i++){
-			const geneIdx = binaryIndexOf(sortedGeneKeysLowerCase, genes[i].toLowerCase());
-			if (geneIdx !== -1){
-				validGenes.push(sortedGeneKeys[geneIdx]);
+		const { geneKeys, geneKeysLowerCase } = col;
+		for (let i = 0; i < genes.length; i++) {
+			const geneIdx = geneKeysLowerCase.indexOf(genes[i].toLowerCase());
+			if (geneIdx !== -1) {
+				validGenes.push(geneKeys[geneIdx]);
 			}
 		}
 		return uniq(validGenes);
@@ -87,26 +86,31 @@ export class FetchGeneComponent extends Component {
 	render() {
 		const col = this.props.dataset.col;
 		return (
-			<div>
-				<FormControl
-					componentClass={'textarea'}
-					rows={8}
-					placeholder={'Paste genes here or use the dropdown below to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
-					onChange={this.handleTextAreaChange}
-					value={this.state.selectedGenes} />
-				<Select
-					placeholder={'Type to search available genes'}
-					options={this.state.selectOptions}
-					filterOptions={col.dropdownOptions.keyAttr}
-					onChange={this.addSelection}
-					style={this.props.style}
-					maxHeight={100}
-				/>
+			<div><div className={'view'}>
+				<div style={{ flex: 8 }}>
+					<Select
+						placeholder={'Type to search'}
+						options={this.state.selectOptions}
+						filterOptions={col.dropdownOptions.keyAttr}
+						onChange={this.addSelection}
+						style={this.props.style}
+						maxHeight={100}
+					/>
+				</div>
 				<Button
 					bsStyle={'default'}
+					style={{ flex: 1 }}
 					onClick={this.applySelection} >
-					Apply Selection
+					Apply
 					</Button>
+			</div>
+				<FormControl
+					componentClass={'textarea'}
+					rows={6}
+					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
+					onChange={this.handleTextAreaChange}
+					value={this.state.selectedGenes} />
+
 			</div>
 		);
 	}

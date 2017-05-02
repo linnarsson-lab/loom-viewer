@@ -5,19 +5,38 @@ import * as colors from '../js/colors';
 export function AttrLegend(props) {
 	const { filterFunc, attr, mode } = props;
 	const { uniques, indexedVal } = attr;
-	let visibleData = [];
-	const nullfunc = () => {};
+	const nullfunc = () => { };
 
 	const isFloat = attr.arrayType === 'float32' ||
 		attr.arrayType === 'number' ||
 		attr.arrayType === 'float64';
-	let l = Math.min(uniques.length, 20);
-	for (let i = 0; i < l; i++) {
+
+	let selectColor = () => {
+		return 'black';		// Bars
+	};
+	if (mode === 'Categorical') {
+		selectColor = (i) => {
+			return colors.category20[i + 1];
+		};
+	} else if (mode === 'Heatmap' || mode === 'Heatmap2') {
+		let { min, max } = attr;
+		const heatmapScale = ((colors.solar256.length - 1) / (max - min) || 1);
+		const palette = mode === 'Heatmap' ? colors.solar256 : colors.YlGnBu256;
+		selectColor = (i, val) => {
+			const heatmapIdx = ((val - min) * heatmapScale) | 0;
+			return palette[heatmapIdx];
+		};
+	}
+
+	let l = Math.min(uniques.length, 20),
+		i = l,
+		visibleData = new Array(l + (l < uniques.length ? 1 : 0));
+	while (i--) {
 		let { val, count, filtered } = uniques[i];
-		const filter = filterFunc ? filterFunc(val) : nullfunc;
+		const color = filtered ? 'lightgrey' : selectColor(i, val);
+
 		const cellStyle = {
 			display: 'inline-block',
-			color: filtered ? 'lightgrey' : mode === 'Categorical' ? colors.category20[i + 1] : 'black',
 			cursor: 'pointer',
 			textDecoration: (filtered ? 'line-through' : null),
 		};
@@ -26,21 +45,32 @@ export function AttrLegend(props) {
 		if (isFloat) {
 			dataVal = dataVal.toExponential(3);
 		}
-		visibleData.push(
+
+		const filter = filterFunc ? filterFunc(val) : nullfunc;
+
+		visibleData[i] = (
 			<td
 				key={`${i}_${val}`}
 				onClick={filter}
 				style={cellStyle}>
-				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>■ {dataVal}:</span> {count}
+				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}><span style={{ color }}>⬛</span> {dataVal}:</span> {count}
 			</td>
 		);
 	}
 
 	// sum count for remaining values
 	if (l < uniques.length) {
-		let rest = 0;
-		while (l < uniques.length) { rest += uniques[l++].count; }
-		visibleData.push(
+		// by definition, data.length is the total
+		// number of datapoints. So the remaining
+		// number of datapoints is the total
+		// total datapoints minus shown
+		// datapoints
+		let rest = attr.data.length, i = l;
+		while (i--) {
+			rest -= uniques[i].count;
+		}
+
+		visibleData[l] = (
 			<td key={20} style={{ display: 'inline-block' }}>
 				<span style={{ fontStyle: 'normal' }}>□ </span>(other): {rest}
 			</td>

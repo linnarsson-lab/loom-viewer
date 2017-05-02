@@ -1,7 +1,7 @@
 
 /**
  * Crude normal curve approximation by taking the average of 4 random values.
- * Returns random value between [-0.5, 0.5)
+ * Returns random value between (-0.5, 0.5)
  */
 const { random } = Math;
 export function rndNorm() {
@@ -20,26 +20,6 @@ export function inBounds(r1, r2) {
 }
 
 /**
- * @param {[]} array - sorted array
- * @param {*} element - element in array
- */
-export function binaryIndexOf(array, element) {
-	let minIdx = 0, maxIdx = array.length - 1, idx, cElement;
-	while (minIdx <= maxIdx) {
-		idx = ((minIdx + maxIdx) * 0.5) | 0;
-		cElement = array[idx];
-		if (cElement < element) {
-			minIdx = idx + 1;
-		} else if (cElement > element) {
-			maxIdx = idx - 1;
-		} else {
-			return idx;
-		}
-	}
-	return -1;
-}
-
-/**
  * Returns array of all unique values as `{ val, count }`
  * objects. Sorted by `val`.
  */
@@ -50,15 +30,18 @@ export function countElements(array, start, end) {
 	// undefined values will be at the end of the array!
 	let sorted = array.slice(start, end);
 	sorted.sort();
-	let i = end;
-	while (end-- > start && array[end] === undefined) { }
+
+	// skip undefined elements
+	let i = sorted.indexOf(undefined);
+	if (i !== -1) {
+		end = i;
+	}
+	i = end - 1;
 
 	// By using a sentinel value we can skip counting the
 	// smallest element of the array.
-	// Given that many gene arrays contain mostly zeros,
-	// this can save a bit of time.
-
-	i = end-1;
+	// Many gene arrays contain mostly zeros, which will
+	// be at the front, so this can save a bit of time.
 	let val = sorted[i], sentinel = sorted[start], j = i, uniques = [];
 	while (val !== sentinel) {
 		// keep going until a different value is found
@@ -67,6 +50,7 @@ export function countElements(array, start, end) {
 		i = j;
 		val = sorted[j];
 	}
+	// add skipped first value
 	uniques.push({ val, count: j + 1 });
 
 	return uniques;
@@ -112,20 +96,6 @@ export function calcMinMax(data, start, end) {
 
 /**
  * Tests if all values in an array are integer values
-*/
-export function isInteger(array) {
-	// |0 forces to integer value, we can
-	//  then compare strict equality
-	let i = array.length;
-	while (i-- && array[i] === (array[i] | 0)) { }
-	// if i === 0, the while loop
-	// must have gone through the whole array,
-	// so all values are integer numbers
-	return i === 0;
-}
-
-/**
- * Tests if all values in an array are integer values
  * and finds min and max values of the array.
 */
 export function isIntegerMinMax(array) {
@@ -151,299 +121,55 @@ export function isIntegerMinMax(array) {
 // and genes in an object containing useful metadata about them.
 // This includes array type (typed arrays are much faster
 // to use, and we also have a special format for indexed strings)
-// to which attribute and dataset the data belongs, if the array
-// has zeros, min and max value excluding zeros, which twenty
-// values are most common, by how much, whether they are filtered,
-// and a color indices LUT matching these common values
+// to which attribute and dataset the data belongs, min and max
+// value, which twenty values are most common, by how much,
+// whether they are filtered, and a color indices LUT matching
+// these common values
 
 
 // Convert plain array to object with
 // typed/indexed array and metadata
-export function convertArray(data, name) {
-	let uniques = countElements(data);
-	if (uniques.length === 1) {
-		return convertUnique(data, name, uniques, uniques[0].val);
-	} else {
-		return convertWholeArray(data, name, uniques);
-	}
-}
+export function convertJSONarray(arr, name) {
+	let { arrayType, data, indexedVal, uniques,
+		colorIndices, min, max } = arr;
 
-function convertWholeArray(data, name, uniques) {
-	// Data is either a string or a number; assumes no
-	// invalid input is given here (no objects, arrays,
-	// and so on)
-	let arrayType = (typeof data[0]) === 'number' ? 'number' : 'string';
-
-	// For our plotters we often need to know the dynamic range
-	// for non-zero values. If all values are integers, we can
-	// also use this information to convert to smaller types
-	let { min, max, isInt } = isIntegerMinMax(data);
-
-	// convert number values to typed arrays matching the schema,
-	// and string arrays with few unique values to indexedString
-	let indexedVal;
-	if (arrayType === 'number') {
-		const nArray = makeNumberArray(data, isInt, min, max);
-		data = nArray.data;
-		arrayType = nArray.arrayType;
-	} else {
-		const strArray = makeStringArray(data, min, max, uniques); // string data
-		data = strArray.data;
-		indexedVal = strArray.indexedVal;
-		min = strArray.min;
-		max = strArray.max;
-		uniques = strArray.uniques;
+	if (indexedVal) {
+		indexedVal.unshift(null);
 	}
 
-	// create lookup table to convert attribute values
-	// to color indices (so a look-up table for finding
-	// indices for another lookup table).
-	// Use an array if possible for faster lookup
-	let colorIndices = arrayType === 'string' && !indexedVal ? cIdxStringConverter(uniques, data) : cIdxConverter(uniques, data);
+	let retArr = {
+		name, arrayType, indexedVal,
+		uniques, colorIndices, min, max,
+	};
 
-	if (process.env.NODE_ENV === 'production') {
-		return {
+	retArr.data = indexedVal ? Uint8Array.from(data) : arrayConstr(arrayType).from(data);
+
+	if (uniques.length === 1 && uniques[0].count === data.length) {
+		retArr.uniqueVal = data[0];
+	} else if (uniques.length === 0 || uniques.length === data.length) {
+		retArr.allUnique = true;
+	}
+
+	if (process.env.NODE_ENV !== 'production') {
+		// redux tools trips over gigantic typed arrays
+		const reduxJSON = {
+			name,
 			arrayType,
-			data,
+			data: Array.from(data.slice(0, Math.min(3, data.length))),
+			data_length: `${data.length} items`,
 			indexedVal,
-			uniques,
+			uniques: uniques.slice(0, Math.min(3, uniques.length)),
+			total_uniques: `${uniques.length} items`,
 			colorIndices,
 			min,
 			max,
 		};
-	} else {
-		// Custom function for redux devtools, to avoid having to serialize
-		// the large data arrays (which tends to kill the devtools)
-		const toJSON = () => {
-			return {
-				arrayType,
-				data: Array.from(data.slice(0, Math.min(3, data.length))),
-				data_length: `${data.length} items`,
-				indexedVal,
-				uniques: uniques.slice(0, Math.min(3, uniques.length)),
-				total_uniques: `${uniques.length} items`,
-				colorIndices,
-				min,
-				max,
-			};
-		};
-		return {
-			arrayType,
-			data,
-			indexedVal,
-			uniques,
-			colorIndices,
-			min,
-			max,
-			toJSON,
-		};
+		retArr.toJSON = () => { return reduxJSON; };
 	}
+	return retArr;
 }
 
-function cIdxConverter(uniques, data) {
-	let mostFreq = [], max = [];
 
-	uniques.sort((a, b) => {
-		return (
-			a.val > b.val ? -1 : 1
-		);
-	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		max[uniques[i].val] = i + 1;
-	}
-
-	// if every value is unique, we keep the sort-by-max order
-	if (uniques.length < data.length) {
-		uniques.sort((a, b) => {
-			return (
-				a.count > b.count ? -1 :
-					a.count < b.count ? 1 :
-						a.val < b.val ? -1 : 1
-			);
-		});
-	}
-
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		mostFreq[uniques[i].val] = i + 1;
-	}
-	return { mostFreq, max };
-}
-
-function cIdxStringConverter(uniques, data) {
-	let mostFreq = {}, max = {};
-
-	uniques.sort((a, b) => {
-		return (
-			a.val > b.val ? -1 : 1
-		);
-	});
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		max[uniques[i].val] = i + 1;
-	}
-
-	// if every value is unique, we keep the sort-by-max order
-	if (uniques.length < data.length) {
-		uniques.sort((a, b) => {
-			return (
-				a.count > b.count ? -1 :
-					a.count < b.count ? 1 :
-						a.val < b.val ? -1 : 1
-			);
-		});
-	}
-
-	for (let i = 0; i < 20 && i < uniques.length; i++) {
-		mostFreq[uniques[i].val] = i + 1;
-	}
-	return { mostFreq, max };
-}
-
-// if we know all values are the same,
-// we can convert the array much easier
-function convertUnique(data, name, uniques, uniqueVal) {
-	let arrayType = (typeof uniqueVal) === 'number' ? 'number' : 'string';
-
-	if (arrayType === 'number') {
-		arrayType = uniqueVal === (uniqueVal | 0) ? 'integer' : 'float32';
-	}
-
-	let min = uniqueVal,
-		max = uniqueVal;
-	let indexedVal;
-	if (arrayType === 'string') {
-		indexedVal = [null, uniqueVal];
-		data = new Uint8Array(data.length).fill(1);
-		uniques[0].val = 1;
-		min = 1;
-		max = 1;
-	} else { // No, this is not an else-if bug
-		if (arrayType === 'integer') {
-			if (min >= 0) {
-				if (max < 256) {
-					arrayType = 'uint8';
-				} else if (max < 65535) {
-					arrayType = 'uint16';
-				} else {
-					arrayType = 'uint32';
-				}
-			} else if (min > -128 && max < 128) {
-				arrayType = 'int8';
-			} else if (min > -32769 && max < 32768) {
-				arrayType = 'int16';
-			} else {
-				arrayType = 'int32';
-			}
-		} else {
-			arrayType = 'float32';
-		}
-		let arrayCon = arrayConstr(arrayType);
-		data = new arrayCon(data.length).fill(uniqueVal);
-	}
-
-
-	let colorIndices = (arrayType.startsWith('uint') || indexedVal !== null) ? ({
-		mostFreq: [],
-		max: [],
-		min: [],
-	}) : ({
-		mostFreq: {},
-		max: {},
-		min: {},
-	});
-	colorIndices.mostFreq[data[0]] = 1;
-	colorIndices.max[data[0]] = 1;
-	colorIndices.min[data[0]] = 1;
-
-	uniques[0].filtered = false;
-
-	return {
-		arrayType,
-		data,
-		indexedVal,
-		uniques,
-		uniqueVal,
-		colorIndices,
-		min,
-		max,
-	};
-}
-
-function makeNumberArray(data, isInt, min, max) {
-	let arrayType = 'float32';
-	if (isInt) {
-		// convert to most compact integer representation
-		// for better performance.
-		if (min >= 0) {
-			if (max < 256) {
-				arrayType = 'uint8';
-			} else if (max < 65535) {
-				arrayType = 'uint16';
-			} else {
-				arrayType = 'uint32';
-			}
-		} else if (min > -128 && max < 128) {
-			arrayType = 'int8';
-		} else if (min > -32769 && max < 32768) {
-			arrayType = 'int16';
-		} else {
-			arrayType = 'int32';
-		}
-	}
-	return {
-		data: arrayConstr(arrayType).from(data),
-		arrayType,
-	};
-}
-
-function makeStringArray(data, min, max, uniques) {
-	// in case of string arrays, we assume they represent
-	// categories when plotted as x/y attributes. For this
-	// we need to set min/max to the number of unique categories
-	min = 0;
-	max = uniques.length - 1;
-	let indexedVal;
-	// convert to indexed form if fewer than 256 unique strings
-	// Using indexed strings can be much faster, since Uint8Arrays
-	// are smaller, remove pointer indirection, and allow
-	// for quicker comparisons than strings.
-	if (uniques.length < 256) {
-		// sort by least frequent, see below
-		uniques.sort((a, b) => {
-			return (
-				a.count < b.count ? -1 :
-					a.count > b.count ? 1 :
-						a.val < b.val ? -1 : 1
-			);
-		});
-		// Store original values, with zero value as null
-		indexedVal = [null];
-		let i = uniques.length;
-		while (i--) {
-			indexedVal.push(uniques[i].val);
-		}
-
-		// Create array of index values
-		let indexedData = new Uint8Array(data.length);
-		let j = data.length;
-		while (j--) {
-			const dataVal = data[j];
-			i = indexedVal.length;
-			// because we sorted earlier, we tend to
-			// leave this loop as early as possible.
-			while (i-- && dataVal !== indexedVal[i]) { }
-			// indexedVal.length - i, so that the most
-			// common values have the smallest indices
-			indexedData[j] = indexedVal.length - i;
-		}
-		data = indexedData;
-		uniques = countElements(data);
-		min = 1;
-		max = uniques.length;
-	}
-	return {
-		data, indexedVal, uniques, min, max,
-	};
-}
 /**
  * - `array`: array to be sorted
  * - `comparator`: comparison closure that takes *indices* i and j,
@@ -463,15 +189,17 @@ function makeStringArray(data, min, max, uniques) {
  *  // ==> [{n:0, s: "a"}, {n:1, s: "b"}, {n:1, s: "a"}]
  * ```
  */
+
 export function stableSortInPlace(array, comparator) {
 	return sortFromIndices(array, findIndices(array, comparator));
 }
 
 export function stableSortedCopy(array, comparator) {
 	let indices = findIndices(array, comparator);
-	let sortedArray = [];
-	for (let i = 0; i < array.length; i++) {
-		sortedArray.push(array[indices[i]]);
+	let i = array.length;
+	let sortedArray = new Array(i);
+	while (i--) {
+		sortedArray[i] = array[indices[i]];
 	}
 	return sortedArray;
 }
@@ -501,9 +229,29 @@ export function stableSortedCopy(array, comparator) {
  */
 export function findIndices(array, comparator) {
 	// Assumes we don't have to worry about sorting more than
-	// 4 billion elements; if you know the upper bounds of your
-	// input you could replace it with a smaller typed array
-	let indices = new Uint32Array(array.length), i = indices.length;
+	// 4 billion elements; replace it with a smaller typed array
+	// for smaller input sizes.
+	const arrayType = array.length < 256 ? 'uint8' : array.length < 65535 ? 'uint16' : 'uint32';
+	let indices = new (arrayConstr(arrayType))(array.length), i = array.length;
+	// unrolled 16-decrement loop was benchmarked as the fastest
+	while (i - 16 > 0) {
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+		indices[--i] = i;
+	}
 	while (i--) {
 		indices[i] = i;
 	}
@@ -554,7 +302,7 @@ export function sortFromIndices(array, indices) {
 				j = indices[j];
 			}
 			// put original array[k] back in
-			// and update indices
+			// the array and update indices
 			array[i] = v0;
 			indices[i] = i;
 		}
@@ -562,7 +310,7 @@ export function sortFromIndices(array, indices) {
 	return array;
 }
 
-export function arraySubset(data, indices, arrayType) {
+export function arraySubset(data, arrayType, indices) {
 	let selection = new (arrayConstr(arrayType))(indices.length),
 		i = indices.length;
 	while (i--) {
@@ -752,137 +500,6 @@ export function mergeInplace(oldObj, newObj) {
 	}
 	return oldObj;
 }
-
-/**
-* Similar to `util.merge`, but for "deleting" fields from trees
-* Produces a new object, with leaves of `delTree` that are marked
-* with 0 pruned out of `sourceTree` (by virtue of not copying).
-* - `sourceTree` is the pre-existing state, assumed
-*   to be an object structured like a tree.
-* - `delTree` should be a tree where the values
-*   are either subtrees (objects) that matching
-*   the structure of `sourceTree`, or a leaf with 0
-*   to mark a field for pruning. Anything else is
-*   ignored (and thus, does not affect the structure
-*   of the sourceTree)
-*/
-// export function prune(sourceTree, delTree) {
-// 	if (!sourceTree) {
-// 		// we might be trying to recursively
-// 		// prune on a non-existent node in
-// 		// sourceTree
-// 		return undefined;
-// 	} else if (!delTree) {
-// 		return sourceTree;
-// 	}
-// 	let sourceKeys = Object.keys(sourceTree);
-// 	let delKeys = Object.keys(delTree);
-// 	let subKeys = [];
-// 	for (let i = 0; i < delKeys.length; i++) {
-// 		let delKey = delKeys[i];
-// 		for (let j = 0; j < sourceKeys.length; j++) {
-// 			let sourceKey = sourceKeys[j];
-// 			if (sourceKey === delKey) {
-// 				// check if we need to recurse or delete
-// 				let val = delTree[delKey];
-// 				if (val === 0 || typeof val === 'object' && !Array.isArray(val)) {
-// 					sourceKeys[j] = sourceKeys[sourceKeys.length - 1];
-// 					sourceKey = sourceKeys.pop();
-// 					if (val) { subKeys.push(delKey); }
-// 				}
-// 				break;
-// 			}
-// 		}
-// 	}
-
-// 	let prunedObj = {};
-// 	// copy all values that aren't pruned
-// 	for (let i = 0; i < sourceKeys.length; i++) {
-// 		let key = sourceKeys[i];
-// 		prunedObj[key] = sourceTree[key];
-// 	}
-// 	// recurse on all subtrees
-// 	for (let i = 0; i < subKeys.length; i++) {
-// 		let key = subKeys[i];
-// 		prunedObj[key] = prune(sourceTree[key], delTree[key]);
-// 	}
-// 	// don't return prunedObj if it is empty
-// 	return prunedObj;
-// }
-
-// Examples:
-// let a =	{
-// 	a: {
-// 		a: {
-// 			a: 0,
-// 			b: 1
-// 		},
-// 		b: {
-// 			a: 2,
-// 			b: 3
-// 		}
-// 	},
-// 	b: {
-// 		foo: 'bar'
-// 	}
-// }
-//
-// let b = {
-// 	a: {
-// 		a: {
-// 			a: true
-// 		}
-// 	},
-// 	b: {
-// 		fizz: 'buzz'
-// 	}
-// }
-//
-// Object.assign({}, a, b)
-// =>	{
-// =>		a: {
-// =>			a: {
-// =>				a: true
-// =>			}
-// =>		},
-// =>		b: {
-// =>			fizz: 'buzz'
-// =>		}
-// =>	}
-//
-// merge(a,b)
-// =>	{
-// =>		a: {
-// =>			a: {
-// =>				a: true,
-// =>				b: 1
-// =>			},
-// =>			b: {
-// =>				a: 2,
-// =>				b: 3
-// =>			}
-// =>		},
-// =>		b: {
-// =>			foo: 'bar',
-// =>			fizz: 'buzz'
-// =>		}
-// =>	}
-//
-// prune(a,b)
-// =>	{
-// =>		a: {
-// =>			a: {
-// =>				b: 1
-// =>			},
-// =>			b: {
-// =>				a: 2,
-// =>				b: 3
-// =>			}
-// =>		},
-// =>		b: {
-// =>			foo: 'bar'
-// =>		}
-// =>	}
 
 /*
 // cycle detector

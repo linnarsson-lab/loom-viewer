@@ -3,7 +3,6 @@ import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
 import { fetchGene } from '../actions/actions';
-import { binaryIndexOf } from '../js/util';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -12,10 +11,10 @@ export class SortAttributeComponent extends Component {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
-		const { sortedKeys } = dataset[axis];
+		const { keys } = dataset[axis];
 
 		this.onChange = (value) => {
-			if (binaryIndexOf(sortedKeys, value) === -1 && !dataset.fetchedGenes[value]) {
+			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
 				dispatch(fetchGene(dataset, [value]));
 			}
 
@@ -40,15 +39,6 @@ export class SortAttributeComponent extends Component {
 		// Show first four attributes to use as sort keys
 		const { order } = dataset.viewState[axis];
 		let sortOrderList = [(
-			<span key={'front'}>
-				<span style={{ fontWeight: 'bold' }}>
-					Order by: &nbsp;&nbsp;&nbsp;
-				</span>
-				<span style={{ fontStyle: 'italic' }}>
-					(select twice to toggle ascending)
-				</span>
-			</span>
-		), (
 			<DropdownMenu
 				key={'dropdown'}
 				value={order[0].key}

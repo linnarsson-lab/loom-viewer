@@ -5,17 +5,22 @@ import os
 import argparse
 import logging
 import requests
+from shutil import rmtree
+import warnings
+
 try:
 	from urllib.parse import urlparse
 except ImportError:
 	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
+from loompy import start_server, np_to_list, JSON_array
+
 from io import StringIO
 import pandas as pd
 import numpy as np
 import gzip
-import ujson
+import json
 
 import timeit
 import random
@@ -32,7 +37,7 @@ import random
 
 def save_compressed_json(filename, data):
 		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
-			ujson.dump(data, f)
+			json.dump(data, f)
 
 
 def expand_md(ds, project, filename, truncate=False):
@@ -87,31 +92,13 @@ def expand_attrs(ds, project, filename, truncate=False):
 			logging.info('  Attributes already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded ttributes (truncate set)')
+			logging.info('  Removing previously expanded attributes (truncate set)')
 			os.remove(attrs_name)
 
 	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
 	dims = ds.dz_dimensions()
-	rowAttrs = {}
-	for (name,vals) in ds.row_attrs.items():
-		try:
-			vals_int = vals.astype(int)
-			if np.all((vals - vals_int) == 0):
-				vals = vals_int
-		except:
-			"not a numeric type"
-		rowAttrs[name] = vals.tolist()
-
-	colAttrs = {}
-	for (name,vals) in ds.col_attrs.items():
-		try:
-			vals_int = vals.astype(int)
-			if np.all((vals - vals_int) == 0):
-				vals = vals_int
-		except:
-			"not a numeric type"
-		colAttrs[name] = vals.tolist()
-
+	rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
+	colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 	fileinfo = {
 		"project": project,
 		"filename": filename,
@@ -121,7 +108,7 @@ def expand_attrs(ds, project, filename, truncate=False):
 		"fullZoomHeight": dims[1],
 		"fullZoomWidth": dims[0],
 		"rowAttrs": rowAttrs,
-		"colAttrs": colAttrs,
+		"colAttrs": colAttrs
 	}
 	save_compressed_json(attrs_name, fileinfo)
 
@@ -154,23 +141,12 @@ def expand_rows(ds, truncate=False):
 	while i+64 < total_rows:
 		row64 = ds[i:i+64,:]
 		for j in range(64):
-			row = row64[j]
-			# test if all values are integer
-			row_int = row.astype(int)
-			if np.all((row - row_int) == 0):
-				row = row_int
-			row = {'idx': i+j, 'data': row.tolist()}
+			row = {'idx': i+j, 'data': JSON_array(row64[j])}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
 			save_compressed_json(row_file_name, row)
 		i += 64
 	while i < total_rows:
-		row = ds[i,:]
-		row_mod = np.mod(row, 1)
-		row_is_int = row_mod == 0
-		is_int = np.all(row_is_int)
-		if is_int:
-			row = row.astype(int)
-		row = {'idx': i+j, 'data': row.tolist()}
+		row = {'idx': i+j, 'data': JSON_array(ds[i,:])}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
 		i += 1
@@ -201,29 +177,18 @@ def expand_columns(ds, truncate=False):
 	total_cols = ds.shape[1]
 	i = 0
 	while i+64 < total_cols:
-		#col64 = ds[:, i:i+64].tolist()
 		col64 = ds[:, i:i+64]
 		for j in range(64):
-			# turn it into a row, so that it
+			# Transpose it into a row, so that it
 			# will get converted to a list properly
-			# later on the server
-			col = col64[:, j].transpose()
-			col_int = col.astype(int)
-			is_int = np.all((col - col_int) == 0)
-			if (is_int):
-				col = col_int
-			col = {'idx': i, 'data': col.tolist()}
+			data = JSON_array(col64[:, j].transpose())
+			col = {'idx': i, 'data': data}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
 			save_compressed_json(col_file_name, col)
 		i += 64
 	while i < total_cols:
-		col = ds[:, i].transpose()
-		col_mod = np.mod(col, 1)
-		col_is_int = col_mod == 0
-		is_int = np.all(col_is_int)
-		if (is_int):
-			col = col.astype(int)
-		col = {'idx': i, 'data': col.tolist()}
+		data = JSON_array(ds[:, i].transpose())
+		col = {'idx': i, 'data': data}
 		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 		save_compressed_json(col_file_name, col)
 		i += 1
@@ -239,12 +204,15 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
-	logging.info("Looking for " + filename)
+	logging.info("Looking for %s" % filename)
 	if os.path.exists(filename):
+		logging.info("Found %s locally" % filename)
 		return loompy.connect(filename)
-	logging.info("Looking for " + os.path.join(dataset_path, filename))
-	if os.path.exists(os.path.join(dataset_path, filename)):
-		return loompy.connect(os.path.join(dataset_path, filename))
+	full_path = os.path.join(dataset_path, filename)
+	logging.info("Looking for %s" % full_path )
+	if os.path.exists(full_path):
+		logging.info("Found %s at full path" % filename)
+		return loompy.connect(full_path)
 	return None
 
 def tile_command(dataset_path, filename):
@@ -259,30 +227,39 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
-		ds = connect_loom(project_path, filename)
-		if ds == None:
-			continue
-		expand_md(ds, project, filename, truncate or metadata)
-		expand_attrs(ds, project, filename, truncate or attributes)
-		expand_rows(ds, truncate or rows)
-		expand_columns(ds, truncate or cols)
-		return
-
-def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
-
-	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
-	for project in projects:
-		project_path = os.path.join(dataset_path, project)
-		for filename in os.listdir(project_path):
-			if filename.endswith(".loom"):
+		if os.path.exists(os.path.join(project_path, filename)):
+			try:
 				ds = connect_loom(project_path, filename)
 				if ds == None:
-					logging.error("File not found")
-					sys.exit(1)
+					raise warnings.warn("Could not connect to %s" % filename)
 				expand_md(ds, project, filename, truncate or metadata)
 				expand_attrs(ds, project, filename, truncate or attributes)
 				expand_rows(ds, truncate or rows)
 				expand_columns(ds, truncate or cols)
+			except Exception as e:
+				logging.error(e)
+
+def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
+
+	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	logging.info('Found %i projects' % len(projects))
+	for project in projects:
+		project_path = os.path.join(dataset_path, project)
+		logging.info('Entering project %s' % project_path)
+		project_files = os.listdir(project_path)
+		loom_files = [filename for filename in project_files if filename.endswith(".loom")]
+		logging.info('Found %i loom files' % len(loom_files))
+		for filename in loom_files:
+			try:
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
+				expand_md(ds, project, filename, truncate or metadata)
+				expand_attrs(ds, project, filename, truncate or attributes)
+				expand_rows(ds, truncate or rows)
+				expand_columns(ds, truncate or cols)
+			except Exception as e:
+				logging.error(e)
 
 def stats_command(dataset_path, filename):
 	ds = connect_loom(dataset_path, filename)
@@ -320,7 +297,7 @@ def list_command(dataset_path, server, username, password):
 			else:
 				url = "http://" + server + "/loom"
 
-			logging.debug(url)
+			logging.info(url)
 			response = requests.get(url , stream=True, auth=(username, password))
 
 			if not response.ok:
@@ -373,8 +350,8 @@ def clone_command(dataset_path, project, url, username, password):
 		os.mkdir(projdir)
 	fpath = os.path.join(projdir, fname)
 
-	logging.debug("Cloning from " + url)
-	logging.debug("Cloning to " + fpath)
+	logging.info("Cloning from " + url)
+	logging.info("Cloning to " + fpath)
 	try:
 		response = requests.get(url, stream=True, auth=(username, password))
 
@@ -549,7 +526,7 @@ if __name__ == '__main__':
 		expand_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
 
 		# loom expand all datasets
-		expand_all_parser = subparsers.add_parser('exp_all', help="Expand all loom files in the data folder for better server performance")
+		expand_all_parser = subparsers.add_parser('expand_all', help="Expand all loom files in the data folder for better server performance")
 		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
@@ -630,7 +607,7 @@ if __name__ == '__main__':
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "expand":
 		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "exp_all":
+	elif args.command == "expand_all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
