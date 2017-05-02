@@ -24,7 +24,7 @@ setup(
     ],
 
     # loom command
-    scripts=['loompy/loom'],
+    scripts=['loom_viewer/loom'],
 
     # static files from MANIFEST.in
     include_package_data=True,

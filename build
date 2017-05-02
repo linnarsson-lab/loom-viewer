@@ -1,11 +1,11 @@
 #! /bin/bash
 
 # Remove old files
-if [ -a ./python/loompy/static/js ]; then
-  rm -r ./python/loompy/static/js
+if [ -a ./python/loom_viewer/static/js ]; then
+  rm -r ./python/loom_viewer/static/js
 fi
-if [ -a ./python/loompy/static/css ]; then
-  rm -r ./python/loompy/static/css
+if [ -a ./python/loom_viewer/static/css ]; then
+  rm -r ./python/loom_viewer/static/css
 fi
 if [ -a ./python/build ]; then
   rm -r ./python/build
@@ -18,8 +18,8 @@ set -o nounset
 set -o errexit
 
 # Set up the static directory
-mkdir ./python/loompy/static/js
-mkdir ./python/loompy/static/css
+mkdir ./python/loom_viewer/static/js
+mkdir ./python/loom_viewer/static/css
 
 # Build static assets
 
@@ -32,12 +32,12 @@ else
 fi
 
 echo "Building static assets."
-uglifycss ./client/css/*.css > ./python/loompy/static/css/bundle.min.css
+uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
 # I can't figure out how to both generate correct paths in the HTML template
 # of webpack, and have the resulting index.html be put in the right folders.
 # Yes, it's an ugly hack, but it works - Job
-mv ./python/loompy/index.html ./python/loompy/static/index.html
-cp -R ./client/fonts ./python/loompy/static/
+mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+cp -R ./client/fonts ./python/loom_viewer/static/
 
 cd python
 echo "Installing loom python package"
