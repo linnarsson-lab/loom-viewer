@@ -9,7 +9,11 @@ export class FetchDatasetComponent extends Component {
 	}
 
 	render() {
-		return <div className='view centered' ><h1>Fetching dataset: {this.props.path}</h1></div>;
+		return (
+			<div className='view centered'>
+				<h1>Fetching dataset: {this.props.path}</h1>
+			</div>
+		);
 	}
 }
 

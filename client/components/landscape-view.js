@@ -39,10 +39,11 @@ const LandscapeComponent = function (props) {
 	};
 	let matrix = [];
 	for (let j = 0; j < newYattrs.length; j++) {
+		const yAttr = newYattrs[j];
 		let row = [];
 		for (let i = 0; i < newXattrs.length; i++) {
 			let paint;
-			const xAttr = newXattrs[i], yAttr = newYattrs[j];
+			const xAttr = newXattrs[i];
 			const logscale = { x: xAttr.logscale, y: yAttr.logscale };
 			const jitter = { x: xAttr.jitter, y: yAttr.jitter };
 			const x = col.attrs[xAttr.attr];

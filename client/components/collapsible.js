@@ -15,7 +15,6 @@ export class CollapsibleSettings extends Component {
 
 	render() {
 		const { placement, tooltip, label, unmountOnExit, children } = this.props;
-		console.log({ children });
 
 		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
 		let _label = (
