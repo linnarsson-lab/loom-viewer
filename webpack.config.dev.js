@@ -9,10 +9,10 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 
 module.exports = {
 	entry: {
-		'/static/js/bundle': './client/loom',
+		'/static/js/bundle': __dirname + '/client/loom',
 	},
 	output: {
-		path: './python/loompy',
+		path: __dirname + '/python/loompy',
 		filename: '[name].[hash].js',
 		sourceMapFilename: '[name].[hash].map',
 	},
