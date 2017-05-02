@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 # pylint: disable=exec-used
 __version__ = '0.0.0'
-exec(open('loompy/_version.py').read())
+exec(open('loom_viewer/_version.py').read())
 
 setup(
     name="loom-viewer",
