@@ -14,10 +14,17 @@ export function AttrLegend(props) {
 	let selectColor = () => {
 		return 'black';		// Bars
 	};
+	let block = '';
 	if (mode === 'Categorical') {
 		selectColor = (i) => {
 			return colors.category20[i + 1];
 		};
+		// We're using █ (FULL BLOCK) because some fonts replace
+		// BLACK SQUARE BLOCK with a graphical icon, and we need
+		// to be able to color the block.
+		// https://en.wikipedia.org/wiki/Block_Elements
+		// https://en.wikipedia.org/wiki/Geometric_Shapes
+		block = '██';
 	} else if (mode === 'Heatmap' || mode === 'Heatmap2') {
 		let { min, max } = attr;
 		const heatmapScale = ((colors.solar256.length - 1) / (max - min) || 1);
@@ -26,6 +33,7 @@ export function AttrLegend(props) {
 			const heatmapIdx = ((val - min) * heatmapScale) | 0;
 			return palette[heatmapIdx];
 		};
+		block = '██';
 	}
 
 	let l = Math.min(uniques.length, 20),
@@ -41,6 +49,10 @@ export function AttrLegend(props) {
 			textDecoration: (filtered ? 'line-through' : null),
 		};
 
+		let icon = block ? (
+			<span style={{ color }}>██</span>
+		) : null;
+
 		let dataVal = indexedVal ? indexedVal[val] : val;
 		if (isFloat) {
 			dataVal = dataVal.toExponential(3);
@@ -48,17 +60,14 @@ export function AttrLegend(props) {
 
 		const filter = filterFunc ? filterFunc(val) : nullfunc;
 
-		// We're using █ (FULL BLOCK) because some fonts replace
-		// BLACK SQUARE BLOCK with a graphical icon, and we need
-		// to be able to color the block.
-		// https://en.wikipedia.org/wiki/Block_Elements
-		// https://en.wikipedia.org/wiki/Geometric_Shapes
 		visibleData[i] = (
 			<td
 				key={`${i}_${val}`}
 				onClick={filter}
 				style={cellStyle}>
-				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}><span style={{ color }}>██</span> {dataVal}:</span> {count}
+				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
+					{icon} {dataVal}:
+				</span> {count}
 			</td>
 		);
 	}
@@ -74,10 +83,12 @@ export function AttrLegend(props) {
 		while (i--) {
 			rest -= uniques[i].count;
 		}
-
+		let icon = block ? (
+			<span style={{ fontStyle: 'normal' }}>□ </span>
+		) : null;
 		visibleData[l] = (
 			<td key={20} style={{ display: 'inline-block' }}>
-				<span style={{ fontStyle: 'normal' }}>□ </span>(other): {rest}
+				{icon} (other): {rest}
 			</td>
 		);
 	}
