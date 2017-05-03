@@ -99,6 +99,18 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 	// Scale of data
 	let xmin = x.min, xmax = x.max, ymin = y.min, ymax = y.max;
 
+	// For small value ranges (happens with PCA a lot),
+	// jittering needs to be scaled down
+	let xJitter = 1, xDelta = xmax-xmin, yJitter = 1, yDelta = ymax-ymin;
+	while(xDelta < 8){
+		xJitter /= 2;
+		xDelta *= 2;
+	}
+	while(yDelta < 8){
+		yJitter /= 2;
+		yDelta *= 2;
+	}
+
 	// If we have an unindexed string array, convert it
 	// to numbers as a form of categorisation
 	let xData = maybeStringArray(x, indices);
@@ -113,23 +125,17 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 		while (i--) {
 			const r = rndNorm();
 			const t = PI * 2 * random();
-			xData[i] += r * sin(t);
-			yData[i] += r * cos(t);
+			xData[i] += xJitter * r * sin(t);
+			yData[i] += yJitter * r * cos(t);
 		}
-		// rndNorm() returns a range [-0.5, 0.5),
-		// so we adjust min/max accordingly
-		xmin -= 0.25; xmax += 0.25;
-		ymin -= 0.25; ymax += 0.25;
 	} else if (jitter.x) {
 		while (i--) {
-			xData[i] += rndNorm();
+			xData[i] += xJitter * rndNorm();
 		}
-		xmin -= 0.25; xmax += 0.25;
 	} else if (jitter.y) {
 		while (i--) {
-			yData[i] += rndNorm();
+			yData[i] += yJitter * rndNorm();
 		}
-		ymin -= 0.25; ymax += 0.25;
 	}
 
 	// Log transform if requested
