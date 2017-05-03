@@ -1,2 +1,2 @@
-include loompy/static/index.html
-recursive-include loompy/static *
+include loom_viewer/static/index.html
+recursive-include loom_viewer/static *

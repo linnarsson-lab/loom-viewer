@@ -14,7 +14,7 @@ except ImportError:
 	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
-from loompy import start_server, np_to_list, JSON_array
+from loom_viewer import start_server, np_to_list, JSON_array
 
 from io import StringIO
 import pandas as pd
@@ -598,7 +598,7 @@ if __name__ == '__main__':
 	elif args.command == "clone":
 		clone_command(args.dataset_path, args.project, args.url, args.username, args.password)
 	elif args.command == "server":
-		loompy.start_server(args.dataset_path, args.show_browser, args.port, args.debug)
+		start_server(args.dataset_path, args.show_browser, args.port, args.debug)
 	elif args.command == "stats":
 		stats_command(args.dataset_path, args.file)
 	elif args.command == "tsne":
