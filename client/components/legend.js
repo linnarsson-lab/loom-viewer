@@ -48,12 +48,17 @@ export function AttrLegend(props) {
 
 		const filter = filterFunc ? filterFunc(val) : nullfunc;
 
+		// We're using █ (FULL BLOCK) because some fonts replace
+		// BLACK SQUARE BLOCK with a graphical icon, and we need
+		// to be able to color the block.
+		// https://en.wikipedia.org/wiki/Block_Elements
+		// https://en.wikipedia.org/wiki/Geometric_Shapes
 		visibleData[i] = (
 			<td
 				key={`${i}_${val}`}
 				onClick={filter}
 				style={cellStyle}>
-				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}><span style={{ color }}>⬛</span> {dataVal}:</span> {count}
+				<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}><span style={{ color }}>██</span> {dataVal}:</span> {count}
 			</td>
 		);
 	}
