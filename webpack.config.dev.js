@@ -2,14 +2,14 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
-	template: __dirname + '/client/index.html',
+	template: path.join(__dirname + '/client/index.html'),
 	filename: 'index.html',
 	inject: 'body',
 });
 
 module.exports = {
 	entry: {
-		'/static/js/bundle': __dirname + '/client/loom',
+		'/static/js/bundle': path.join(__dirname + '/client/loom'),
 	},
 	output: {
 		path:  path.join(__dirname, './python/loom_viewer'),
