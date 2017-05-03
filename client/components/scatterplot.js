@@ -2,9 +2,9 @@ import * as colorLUT from '../js/colors';
 import { rndNorm, arraySubset } from '../js/util';
 
 // "global" array of sprite canvases. Contexts will be filled in later
-// multiple radiuses; no need to draw a 32x32 image for a 8x8 dot
+// multiple radiuses; no need to draw a 128x128 image for a 8x8 dot
 const { sprites, contexts } = (() => {
-	let i = 257, j = 5;
+	let i = 257, j = 7;
 	const sprites = new Array(j), contexts = new Array(i);
 	while (j--) {
 		i = 257;
