@@ -6,8 +6,9 @@
 
 # Build folder for static files, and cache for loom files
 python/static/
-python/loom_viewer/test
 python/cache/
+python/build/
+python/loom_viewer/test
 python/loom_viewer/static/
 python/loom_viewer/cache/
 cache/
