@@ -14,13 +14,14 @@ except ImportError:
 	from urlparse import urlparse
 from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
-from loom_viewer import start_server, np_to_list, JSON_array
+from loom_viewer import start_server, np_to_list, JSON_array, LoomTiles
 
 from io import StringIO
 import pandas as pd
 import numpy as np
 import gzip
 import json
+import time
 
 import timeit
 import random
@@ -65,7 +66,7 @@ def expand_md(ds, project, filename, truncate=False):
 	total_genes = ds.shape[0]
 	# default to last_modified for older files that do
 	# not have a creation_date field
-	last_mod = ds.format_last_mod()
+	last_mod = ds.last_modified()
 	creation_date = ds.attrs.get("creation_date", last_mod)
 	md_data = {
 		"project": project,
@@ -216,12 +217,24 @@ def connect_loom(dataset_path, filename):
 	return None
 
 def tile_command(dataset_path, filename):
-	ds = connect_loom(dataset_path, filename)
-	if ds == None:
-		logging.error("File not found")
-		sys.exit(1)
-	logging.info("Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
-	ds.prepare_heatmap()
+	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	for project in projects:
+		project_path = os.path.join(dataset_path, project)
+		if os.path.exists(os.path.join(project_path, filename)):
+			ds = None
+			try:
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
+			except Exception as e:
+				logging.error(e)
+				return
+			try:
+				logging.info("Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
+				tiles = LoomTiles(ds)
+				tiles.prepare_heatmap()
+			except Exception as e:
+				logging.error(e)
 
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]

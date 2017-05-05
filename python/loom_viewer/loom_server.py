@@ -435,17 +435,18 @@ def send_tile(project, filename, z,x,y):
 	tilepath = '%s%s' % (tiledir, tile)
 
 	if not os.path.isfile(tilepath):
-		return "", 404 # if there are no tiles, don't generate them during server-time
-		# if the tile doesn't exist, we're either out of range,
-		# or it still has to be generated
-		#ds = app.cache.connect_dataset_locally(project, filename, u, p)
-		#if ds == None:
-		#	return "", 404
-		#ds.dz_get_zoom_tile(x, y, z)
-		# if the file still does not exist at this point,
-		# we are out of range
-		#if not os.path.isfile(tilepath):
-		#	return "", 404
+		return "", 404
+		# if there are no tiles, don't generate them during server-time
+			## if the tile doesn't exist, we're either out of range,
+			## or it still has to be generated
+			#ds = app.cache.connect_dataset_locally(project, filename, u, p)
+			#if ds == None:
+			#	return "", 404
+			#ds.dz_get_zoom_tile(x, y, z)
+			## if the file still does not exist at this point,
+			## we are out of range
+			#if not os.path.isfile(tilepath):
+			#	return "", 404
 
 	return flask.send_file(open(tilepath, 'rb'), mimetype='image/png')
 
