@@ -41,7 +41,7 @@ def save_compressed_json(filename, data):
 			json.dump(data, f)
 
 
-def expand_md(ds, project, filename, truncate=False):
+def expand_md(ds, dataset_path, project, filename, truncate=False):
 	"""
 	Generate object containing list entry metadata
 	"""
@@ -66,7 +66,7 @@ def expand_md(ds, project, filename, truncate=False):
 	total_genes = ds.shape[0]
 	# default to last_modified for older files that do
 	# not have a creation_date field
-	last_mod = ds.last_modified()
+	last_mod = format_last_mod(dataset_path, project, filename)
 	creation_date = ds.attrs.get("creation_date", last_mod)
 	md_data = {
 		"project": project,
@@ -83,6 +83,15 @@ def expand_md(ds, project, filename, truncate=False):
 	}
 	save_compressed_json(md_filename, md_data)
 
+def format_last_mod(dataset_path, project, filename):
+	"""
+	Returns the last time the file was modified as a string,
+	formatted year/month/day hour:minute:second
+	"""
+	path = os.path.join(dataset_path, project, filename)
+	mtime = time.gmtime(os.path.getmtime(path))
+	return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
+
 # Includes attributes
 def expand_attrs(ds, project, filename, truncate=False):
 
@@ -97,7 +106,8 @@ def expand_attrs(ds, project, filename, truncate=False):
 			os.remove(attrs_name)
 
 	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
-	dims = ds.dz_dimensions()
+	tile_data = LoomTiles(ds)
+	dims = tile_data.dz_dimensions()
 	rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
 	colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
 	fileinfo = {
@@ -105,7 +115,7 @@ def expand_attrs(ds, project, filename, truncate=False):
 		"filename": filename,
 		"dataset": ds.filename,
 		"shape": ds.shape,
-		"zoomRange": ds.dz_zoom_range(),
+		"zoomRange": tile_data.dz_zoom_range(),
 		"fullZoomHeight": dims[1],
 		"fullZoomWidth": dims[0],
 		"rowAttrs": rowAttrs,
@@ -237,23 +247,34 @@ def tile_command(dataset_path, filename):
 				logging.error(e)
 
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
+	if not (metadata or attributes or rows or cols):
+		logging.info('Must explicitly state what to expand!')
+		return
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
-		if os.path.exists(os.path.join(project_path, filename)):
+		file_path = os.path.join(project_path, filename)
+		if os.path.exists(file_path):
 			try:
 				ds = connect_loom(project_path, filename)
 				if ds == None:
 					raise warnings.warn("Could not connect to %s" % filename)
-				expand_md(ds, project, filename, truncate or metadata)
-				expand_attrs(ds, project, filename, truncate or attributes)
-				expand_rows(ds, truncate or rows)
-				expand_columns(ds, truncate or cols)
+				if metadata:
+					expand_md(ds, dataset_path, project, filename, truncate)
+				if attributes:
+					expand_attrs(ds, project, filename, truncate)
+				if rows:
+					expand_rows(ds, truncate)
+				if cols:
+					expand_columns(ds, truncate)
 			except Exception as e:
 				logging.error(e)
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
+	if not (metadata or attributes or rows or cols):
+		logging.info('Must explicitly state what to expand!')
+		return
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
 	for project in projects:
@@ -267,10 +288,14 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 				ds = connect_loom(project_path, filename)
 				if ds == None:
 					raise warnings.warn("Could not connect to %s" % filename)
-				expand_md(ds, project, filename, truncate or metadata)
-				expand_attrs(ds, project, filename, truncate or attributes)
-				expand_rows(ds, truncate or rows)
-				expand_columns(ds, truncate or cols)
+				if metadata:
+					expand_md(ds, dataset_path, project, filename, truncate)
+				if attributes:
+					expand_attrs(ds, project, filename, truncate)
+				if rows:
+					expand_rows(ds, truncate)
+				if cols:
+					expand_columns(ds, truncate)
 			except Exception as e:
 				logging.error(e)
 
@@ -532,19 +557,20 @@ if __name__ == '__main__':
 		# loom expand
 		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands the first file with a matching name.")
 		expand_parser.add_argument("file", help="Loom input file")
-		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
-		expand_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-r", "--rows", help="Remove previously expanded row files if present (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
 
 		# loom expand all datasets
 		expand_all_parser = subparsers.add_parser('expand_all', help="Expand all loom files in the data folder for better server performance")
-		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (supercedes other options, False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-m", "--metadata", help="Remove previously expanded metadata if present (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-a", "--attributes", help="Remove previously expanded attribute data if present (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-r", "--rows", help="Remove previously expanded row files if present (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-c", "--cols", help="Remove previously expanded column files if present (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
+
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
 		stats_parser.add_argument("file", help="Loom input file")
@@ -563,7 +589,7 @@ if __name__ == '__main__':
 		loom_parser.add_argument('--dtype', help='Matrix data type. Defaults to "float32"', default="float32")
 		loom_parser.add_argument('--chunks', help='Chunk tile size, i.e. "--chunks 10" (defaults to 64)', type=int, default=64)
 		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
-		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Deafult: no compression', type=int)
+		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Default: 4', type=int, default=4)
 		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', type=bool, default=False)
 		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to True', type=bool, default=True)
 

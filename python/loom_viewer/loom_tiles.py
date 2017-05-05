@@ -11,8 +11,16 @@ class LoomTiles(object):
 	#############
 	def __init__(self, ds: LoomConnection) -> None:
 		self.ds = ds
-		self.maxes = self.ds.map([max], 0)[0]
-		self.mins = self.ds.map([min], 0)[0]
+
+	def maxes(self):
+		if self._maxes is None:
+			self._maxes = self.ds.map([max], 0)[0]
+		return self._maxes
+
+	def mins(self):
+		if self._mins is None:
+			self._mins = self.ds.map([min], 0)[0]
+		return self._mins
 
 	def prepare_heatmap(self):
 		if self.ds._file.__contains__("tiles"):
@@ -133,8 +141,8 @@ class LoomTiles(object):
 			if tile.shape[0] < 256 or tile.shape[1] < 256:
 				tile = np.pad(tile, ((0,256-tile.shape[0]), (0,256-tile.shape[1])), 'constant', constant_values=0)
 			# Rescale
-			maxes = self.maxes[y*256:y*256+256]
-			mins = self.mins[y*256:y*256+256]
+			maxes = self.maxes()[y*256:y*256+256]
+			mins = self.mins()[y*256:y*256+256]
 			if maxes.shape[0] < 256:
 				maxes = np.pad(maxes, (0, 256 - maxes.shape[0]), 'constant', constant_values=0)
 				mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values=0)
