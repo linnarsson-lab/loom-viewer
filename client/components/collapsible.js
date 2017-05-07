@@ -6,7 +6,7 @@ export class CollapsibleSettings extends Component {
 	constructor(...args) {
 		super(...args);
 		this.toggle = this.toggle.bind(this);
-		this.state = { open: true };
+		this.state = { open: !this.props.mountClosed };
 	}
 
 	toggle() {
@@ -21,8 +21,7 @@ export class CollapsibleSettings extends Component {
 			<label
 				onClick={this.toggle}
 				style={{ cursor: 'pointer' }}>
-				<Glyphicon glyph={chevron} />
-				{label}
+				<Glyphicon glyph={chevron} /> {label}
 			</label>);
 		if (tooltip) {
 			let __label = _label;
@@ -55,4 +54,5 @@ CollapsibleSettings.propTypes = {
 	label: PropTypes.string.isRequired,
 	unmountOnExit: PropTypes.bool,
 	children: PropTypes.node.isRequired,
+	mountClosed: PropTypes.boolean,
 };
