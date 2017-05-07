@@ -74,7 +74,7 @@ function setViewStateURL(state, action) {
 // Merges new viewState, and updates sorting and filter data
 // if necessary.
 function updateViewState(state, action) {
-	const { path } = action;
+	const { path, axis } = action;
 	let dataset = state.list[path];
 	let prevViewState = dataset.viewState;
 	const prevRowFilter = prevViewState.row.filter,
@@ -83,15 +83,12 @@ function updateViewState(state, action) {
 	let viewState = merge(prevViewState, action.viewState);
 
 	if (action.sortAttrName) {
-		const { axis } = action;
 		let order = updateAttrSort(viewState[axis].order, action.sortAttrName);
-		viewState = merge(viewState, {
-			[axis]: { order },
-		});
+		viewState = merge(viewState, { [axis]: { order } });
 	}
 
 	if (action.filterAttrName) {
-		const { filterAttrName, filterVal, axis } = action;
+		const { filterAttrName, filterVal } = action;
 		let filter = viewState[axis].filter.slice();
 		let i = filter.length;
 		while (i--) {

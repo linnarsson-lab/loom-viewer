@@ -9,6 +9,7 @@ import Slider from 'rc-slider';
 import { AttrLegend } from './legend';
 import { DropdownMenu } from './dropdown';
 import { CollapsibleSettings } from './collapsible';
+import { FilteredValues } from './filtered';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -146,7 +147,8 @@ class CoordinateSettings extends Component {
 					return (
 						<CollapsibleSettings
 							label={'X/Y Quick Settings'}
-							tooltip={'Quickly set to default X and Y attributes'}>
+							tooltip={'Quickly set to default X and Y attributes'}
+							mountClosed>
 							<ListGroup>
 								{setTSNE(xAttrs, yAttrs)}
 								{setPCA(xAttrs, yAttrs)}
@@ -620,7 +622,8 @@ export const ScatterplotSidepanel = (props) => {
 				<ListGroupItem>
 					<CollapsibleSettings
 						label={'Radius Scale Factor'}
-						tooltip={'Change the radius of the drawn points'}>
+						tooltip={'Change the radius of the drawn points'}
+						mountClosed>
 						<div>
 							<ScaleFactorSettings
 								dispatch={dispatch}
@@ -639,6 +642,13 @@ export const ScatterplotSidepanel = (props) => {
 					colorAttr={colorAttr}
 					colorMode={colorMode}
 				/>
+				<ListGroupItem>
+					<FilteredValues
+						dispatch={dispatch}
+						dataset={dataset}
+						axis={axis}
+						filtered={dataset.viewState[axis].filter} />
+				</ListGroupItem>
 			</ListGroup>
 		</Panel >
 	);

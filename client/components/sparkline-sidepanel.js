@@ -3,6 +3,7 @@ import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
 import { CollapsibleSettings } from './collapsible';
+import { FilteredValues } from './filtered';
 
 import { fetchGene } from '../actions/actions';
 
@@ -222,9 +223,17 @@ export const SparklineSidepanel = function (props) {
 					colAttr={sparkline.colAttr}
 					colMode={sparkline.colMode} />
 				<ListGroupItem>
+					<FilteredValues
+						dispatch={dispatch}
+						dataset={dataset}
+						axis={'col'}
+						filtered={dataset.viewState.col.filter} />
+				</ListGroupItem>
+				<ListGroupItem>
 					<CollapsibleSettings
 						label={'Order'}
-						tooltip={'Keys to sort datapoints by (select same value twice to toggle ascending/descending)'}>
+						tooltip={'Keys to sort datapoints by (select same value twice to toggle ascending/descending)'}
+						mountClosed>
 						<div>
 							<SortAttributeComponent
 								attributes={dataset.col.attrs}
