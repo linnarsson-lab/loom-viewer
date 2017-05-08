@@ -257,7 +257,7 @@ class CoordinateSettings extends Component {
 			xAttrDropdowns = new Array(i + 1);
 		// dropdown for appending a new value
 		xAttrDropdowns[i] = (
-			<div className={'view'}>
+			<div className={'view'} key={'x_' + i}>
 				<div style={{ flex: 8 }}>
 					<DropdownMenu
 						key={i}
@@ -288,7 +288,7 @@ class CoordinateSettings extends Component {
 			const xJitterHC = attrJitterFactory(attrName, newXattrs, i),
 				xLogscaleHC = attrLogscaleFactory(attrName, newXattrs, i);
 			xAttrDropdowns[i] = (
-				<div className={'view'}>
+				<div className={'view'} key={attrData.attr + '_x_' + i}>
 					<div style={{ flex: 8 }}>
 						<DropdownMenu
 							key={i}
@@ -324,7 +324,7 @@ class CoordinateSettings extends Component {
 		attrName = 'yAttrs';
 		let yAttrDropdowns = new Array(i + 1);
 		yAttrDropdowns[i] = (
-			<div className={'view'}>
+			<div className={'view'} key={'y_' + i}>
 				<div style={{ flex: 8 }}>
 					<DropdownMenu
 						key={i}
@@ -354,7 +354,7 @@ class CoordinateSettings extends Component {
 			const yJitterHC = attrJitterFactory(attrName, newYattrs, i),
 				yLogscaleHC = attrLogscaleFactory(attrName, newYattrs, i);
 			yAttrDropdowns[i] = (
-				<div className={'view'}>
+				<div className={'view'} key={attrData.attr + '_y_' + i}>
 					<div style={{ flex: 8 }}>
 						<DropdownMenu
 							key={i}
