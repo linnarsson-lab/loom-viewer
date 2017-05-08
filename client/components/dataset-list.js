@@ -164,14 +164,14 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-						key={path + '_doi'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={'http://dx.doi.org/' + doi}
-						title={'Original reference: http://dx.doi.org/' + doi}
-						style={{ padding: 0 }} >
-						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-					</Button>
+							key={path + '_doi'}
+							bsSize='xsmall'
+							bsStyle='link'
+							href={'http://dx.doi.org/' + doi}
+							title={'Original reference: http://dx.doi.org/' + doi}
+							style={{ padding: 0 }} >
+							<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+						</Button>
 					);
 				const urlButton = url === '' ? (
 					<Glyphicon
@@ -180,15 +180,15 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-						key={path + '_url'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={url}
-						title={'External web page: ' + url}
-						style={{ padding: 0 }}
+							key={path + '_url'}
+							bsSize='xsmall'
+							bsStyle='link'
+							href={url}
+							title={'External web page: ' + url}
+							style={{ padding: 0 }}
 						>
-						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-					</Button>
+							<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+						</Button>
 					);
 
 				tableData.push({
@@ -208,7 +208,7 @@ class DatasetList extends Component {
 				<CollapsibleSettings
 					key={project}
 					label={projectLabel}
-					size={'large'}
+					size={filteredList.length ? 'large' : 'xsmall'}
 					mountClosed={mountClosed}
 					unmountOnExit>
 					<div>
@@ -288,6 +288,8 @@ class SearchDataSetViewComponent extends Component {
 		let {
 			dispatch,
 			list,
+			order,
+			search,
 		} = this.props;
 
 		const searchAll = handleSearchChangeFactory('all', dispatch);
@@ -309,7 +311,12 @@ class SearchDataSetViewComponent extends Component {
 		if (!list) {
 			dispatch(fetchProjects());
 		} else {
-			const { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
+			let { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
+			let i = projectNames.length;
+			projectListsFiltered = new Array(i);
+			while (i--) {
+				projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
+			}
 			state.projectNames = projectNames;
 			state.projectLists = projectLists;
 			state.projectListsFiltered = projectListsFiltered;
