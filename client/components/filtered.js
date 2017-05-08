@@ -70,7 +70,7 @@ export function FilteredValues(props) {
 		return (
 			<CollapsibleSettings
 				label={'Filtered Values'}
-				tooltip={'Overview of all values across all attributes currently being filtered out. Click to remove filter'}>
+				tooltip={'All values currently being filtered out. Click a value to stop filtering it'}>
 				<ListGroup>
 					{filteredList}
 				</ListGroup>
