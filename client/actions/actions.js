@@ -57,7 +57,7 @@ function requestProjectsFailed() {
 function receiveProjects(json) {
 
 	// initialise sorting order
-	let order = { key: 'lastModified', asc: false };
+	let order = { key: 'creationDate', asc: false };
 	// convert json array to hashmap
 	let list = {};
 	let i = json.length;

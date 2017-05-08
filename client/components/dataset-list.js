@@ -1,7 +1,6 @@
 import React, { Component, PropTypes } from 'react';
-import { Pagination, Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap';
+import { Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap';
 import { Link } from 'react-router';
-import Select from 'react-virtualized-select';
 
 import { SortableTable } from './sortabletable';
 import { DebouncedFormcontrol } from './debounced-formcontrol';
@@ -34,13 +33,7 @@ function handleSearchChangeFactory(field, dispatch) {
 class DatasetList extends Component {
 
 	componentWillMount() {
-		const { datasets, dispatch, search, order } = this.props;
-
-
-		const searchByLastModified = handleSearchChangeFactory('lastModified', dispatch);
-		const searchByProject = handleSearchChangeFactory('project', dispatch);
-		const searchByTitle = handleSearchChangeFactory('title', dispatch);
-		const searchByDescription = handleSearchChangeFactory('description', dispatch);
+		const { dispatch } = this.props;
 
 		const sortByProject = () => {
 			dispatch({ type: SORT_DATASETS, key: 'project' });
@@ -51,87 +44,14 @@ class DatasetList extends Component {
 		const sortByDescription = () => {
 			dispatch({ type: SORT_DATASETS, key: 'description' });
 		};
-		const sortByLastModified = () => {
-			dispatch({ type: SORT_DATASETS, key: 'lastModified' });
+		const sortByCreationDate = () => {
+			dispatch({ type: SORT_DATASETS, key: 'creationDate' });
 		};
 		const sortByTotalCells = () => {
 			dispatch({ type: SORT_DATASETS, key: 'totalCells' });
 		};
 
-		this.setState({
-			searchByLastModified,
-			searchByProject,
-			searchByTitle,
-			searchByDescription,
-			sortByProject,
-			sortByTitle,
-			sortByDescription,
-			sortByLastModified,
-			sortByTotalCells,
-		});
-	}
-
-	render() {
-		const { datasets, dispatch, search, order } = this.props;
-		const { searchByLastModified, searchByProject, searchByTitle, searchByDescription, sortByProject, sortByTitle, sortByDescription, sortByLastModified, sortByTotalCells } = this.state;
-
-		const dateSearch = (<DebouncedFormcontrol type='text' value={search.lastModified}
-			onChange={searchByLastModified} time={500} />);
-
-		const projectSearch = (<DebouncedFormcontrol type='text' value={search.project}
-			onChange={searchByProject} time={500} />);
-
-		const titleSearch = (<DebouncedFormcontrol type='text' value={search.title}
-			onChange={searchByTitle} time={500} />);
-
-		const descriptionSearch = (<DebouncedFormcontrol type='text' value={search.description}
-			onChange={searchByDescription} time={500} />);
-
 		const headerStyles = [{ border: 'none 0px' }, { padding: '4px' }];
-
-		const searchColumns = [
-			{
-				headers: ['PROJECT', projectSearch],
-				key: 'project',
-				mergeRows: true,
-				sortIcon: 'sort-by-alphabet',
-				headerStyles,
-				dataStyle: { width: '16%', fontSize: '16px', fontWeight: 'bold', fontStyle: 'normal' },
-				onHeaderClick: [sortByProject, null],
-			},
-			{
-				headers: ['TITLE', titleSearch],
-				key: 'title',
-				sortIcon: 'sort-by-alphabet',
-				headerStyles,
-				dataStyle: { width: '32%', fontWeight: 'bold' },
-				onHeaderClick: [sortByTitle, null],
-			},
-			{
-				headers: ['DESCRIPTION', descriptionSearch],
-				key: 'description',
-				sortIcon: 'sort-by-alphabet',
-				headerStyles,
-				dataStyle: { width: '32%', fontStyle: 'italic' },
-				onHeaderClick: [sortByDescription, null],
-			},
-			{
-				headers: ['DATE', dateSearch],
-				key: 'lastModified',
-				sortIcon: 'sort-by-order',
-				headerStyles,
-				dataStyle: { width: '10%', fontSize: '12px' },
-				onHeaderClick: [sortByLastModified, null],
-			},
-			{
-				headers: ['SIZE', null],
-				key: 'totalCells',
-				sortIcon: 'sort-by-attributes',
-				headerStyles,
-				dataStyle: { width: '10%', fontSize: '12px' },
-				onHeaderClick: [sortByTotalCells, null],
-			},
-		];
 
 		const columns = [
 			{
@@ -140,7 +60,7 @@ class DatasetList extends Component {
 				sortIcon: 'sort-by-alphabet',
 				headerStyles,
 				dataStyle: { width: '34%', fontWeight: 'bold' },
-				onHeaderClick: [null],
+				onHeaderClick: [sortByTitle],
 			},
 			{
 				headers: ['Description'],
@@ -148,15 +68,15 @@ class DatasetList extends Component {
 				sortIcon: 'sort-by-alphabet',
 				headerStyles,
 				dataStyle: { width: '36%', fontStyle: 'italic' },
-				onHeaderClick: [null],
+				onHeaderClick: [sortByDescription],
 			},
 			{
 				headers: ['Date'],
-				key: 'lastModified',
+				key: 'creationDate',
 				sortIcon: 'sort-by-order',
 				headerStyles,
 				dataStyle: { width: '14%', fontSize: '12px' },
-				onHeaderClick: [null],
+				onHeaderClick: [sortByCreationDate],
 			},
 			{
 				headers: ['Size'],
@@ -164,7 +84,7 @@ class DatasetList extends Component {
 				sortIcon: 'sort-by-attributes',
 				headerStyles,
 				dataStyle: { width: '6%', fontSize: '12px' },
-				onHeaderClick: [null],
+				onHeaderClick: [sortByTotalCells],
 			},
 			{
 				headers: [(
@@ -179,14 +99,37 @@ class DatasetList extends Component {
 				dataStyle: { width: '10%', padding: '8px 0px' },
 			},
 		];
-		let dataSetByProject = {}, projects = [];
-		if (datasets) {
-			for (let i = 0; i < datasets.length; i++) {
-				const { path, project, title, description, lastModified, totalCells, dataset, url, doi } = datasets[i];
 
-				if (projects.indexOf(project) === -1) {
-					projects.push(project);
-				}
+		this.setState({
+			sortByProject,
+			sortByTitle,
+			sortByDescription,
+			sortByCreationDate,
+			sortByTotalCells,
+			headerStyles,
+			columns,
+		});
+	}
+
+	render() {
+
+		const {
+			dispatch,
+			project,
+			fullDatasetList,
+			filteredList,
+			order,
+			mountClosed,
+		} = this.props;
+
+		const {
+			columns,
+		} = this.state;
+
+		if (filteredList) {
+			let tableData = [];
+			for (let i = 0; i < filteredList.length; i++) {
+				const { path, project, title, description, creationDate, totalCells, dataset, url, doi } = filteredList[i];
 				// create new datasets object with proper tags
 				// strip '.loom' ending
 				const titleURL = (
@@ -221,15 +164,14 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_doi'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={'http://dx.doi.org/' + doi}
-							title={'Original reference: http://dx.doi.org/' + doi}
-							style={{ padding: 0 }}
-						>
-							<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-						</Button>
+						key={path + '_doi'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }} >
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
 					);
 				const urlButton = url === '' ? (
 					<Glyphicon
@@ -238,22 +180,20 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_url'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={url}
-							title={'External web page: ' + url}
-							style={{ padding: 0 }}
+						key={path + '_url'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
 						>
-							<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-						</Button>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
 					);
-				if (!dataSetByProject[project]) {
-					dataSetByProject[project] = [];
-				}
-				dataSetByProject[project].push({
+
+				tableData.push({
 					rowKey: path,
-					path, project, description, lastModified, totalCells,
+					path, project, description, creationDate, totalCells,
 					title: titleURL,
 					buttons: (
 						<div style={{ textAlign: 'center' }}>
@@ -263,105 +203,170 @@ class DatasetList extends Component {
 				});
 			}
 
-			let projectTables = [];
-			for (let i = 0; i < projects.length; i++) {
-				let project = projects[i];
-				let _dataset = dataSetByProject[project];
-				let projectLabel = `${project} (${_dataset.length} ${_dataset.length === 1 ? 'dataset' : 'datasets'})`;
-				projectTables.push(
-					<CollapsibleSettings
-						label={projectLabel}>
-						<div>
-							<SortableTable
-								data={_dataset}
-								columns={columns}
-								dispatch={dispatch}
-								order={order}
-								condensed
-								responsive
-							/>
-						</div>
-					</CollapsibleSettings>
-				);
-			}
-
+			let projectLabel = `${project} (${filteredList.length}/${fullDatasetList.length} ${fullDatasetList.length === 1 ? 'dataset' : 'datasets'})`;
 			return (
-				<div>
-					<SortableTable
-						data={[]}
-						columns={searchColumns}
-						dispatch={dispatch}
-						order={order}
-					/>
-					{projectTables}
-				</div>
+				<CollapsibleSettings
+					label={projectLabel}
+					mountClosed={mountClosed}
+					unmountOnExit
+					key={projectLabel}>
+					<div>
+						<SortableTable
+							data={tableData}
+							columns={columns}
+							dispatch={dispatch}
+							order={order}
+							condensed
+							responsive
+						/>
+					</div>
+				</CollapsibleSettings>
 			);
+
 		} else {
-			return (<div className='view centered'><h2>Downloading list of available datasets...</h2></div>
-			);
+			return null;
 		}
 	}
 }
 
 DatasetList.propTypes = {
 	dispatch: PropTypes.func.isRequired,
-	datasets: PropTypes.array,
+	project: PropTypes.string,
+	fullDatasetList: PropTypes.array,
+	filteredList: PropTypes.array,
 	search: PropTypes.object,
 	order: PropTypes.shape({
 		key: PropTypes.string,
 		asc: PropTypes.bool,
 	}),
+	mountClosed: PropTypes.bool,
 };
 
+function SearchField(props) {
+	return (
+		<CollapsibleSettings
+			label={props.label}
+			tooltip={props.tooltip}
+			tooltipId={props.tooltipId}
+			mountClosed={props.mountClosed}>
+			<div>
+				<DebouncedFormcontrol
+					type='text'
+					value={props.value}
+					onChange={props.onChange}
+					time={500} />
+			</div>
+		</CollapsibleSettings>
+	);
+}
+
+SearchField.propTypes = {
+	label: PropTypes.string.isRequired,
+	tooltip: PropTypes.string.isRequired,
+	tooltipId: PropTypes.string.isRequired,
+	value: PropTypes.string.isRequired,
+	onChange: PropTypes.func.isRequired,
+	mountClosed: PropTypes.bool,
+};
 
 class SearchDataSetViewComponent extends Component {
 	constructor(props) {
 		super(props);
-
 		this.filterProjects = this.filterProjects.bind(this);
-		let selectOptions = [10, 20, 50, 100, 200, 500, 1000];
-		for (let i = 0; i < selectOptions.length; i++) {
-			let value = selectOptions[i];
-			selectOptions[i] = { value, label: value };
-		}
-		this.state = {
-			list: null,
-			filtered: null,
-			page: 1,
-			datasetsPerPage: 50,
-			selectOptions,
-		};
+		this.prepareProjects = this.prepareProjects.bind(this);
+
 	}
 
 	componentWillMount() {
-		let { dispatch, list, order, search } = this.props;
+		let {
+			dispatch,
+			list,
+		} = this.props;
+
+		const searchAll = handleSearchChangeFactory('all', dispatch);
+		const searchByCreationDate = handleSearchChangeFactory('creationDate', dispatch);
+		const searchByProject = handleSearchChangeFactory('project', dispatch);
+		const searchByTitle = handleSearchChangeFactory('title', dispatch);
+		const searchByDescription = handleSearchChangeFactory('description', dispatch);
+
+		let state = {
+			projectLists: null,
+			projectNames: null,
+			searchAll,
+			searchByCreationDate,
+			searchByProject,
+			searchByTitle,
+			searchByDescription,
+		};
+
 		if (!list) {
 			dispatch(fetchProjects());
 		} else {
-			// convert to array
-			list = Object.keys(list).map((key) => { return list[key]; });
-			this.filterProjects(list, order, search);
+			const { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
+			state.projectNames = projectNames;
+			state.projectLists = projectLists;
+			state.projectListsFiltered = projectListsFiltered;
 		}
+		this.setState(state);
 	}
 
 	componentWillReceiveProps(nextProps) {
-		let { list } = this.state;
+		let {
+			projectNames,
+			projectLists,
+			projectListsFiltered,
+		} = this.state;
 
-		if (!list && nextProps.list) {
-			// convert to array
-			list = Object.keys(nextProps.list).map((key) => { return nextProps.list[key]; });
+		if (!projectNames && nextProps.list) {
+			let t = this.prepareProjects(nextProps.list);
+			projectLists = t.projectLists;
+			projectNames = t.projectNames;
 		}
 
-		if (list) {
+		if (projectNames) {
 			const { order, search } = nextProps;
 			if (JSON.stringify(order) !== JSON.stringify(this.props.order) ||
 				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
-				this.filterProjects(list, order, search);
+				let i = projectNames.length;
+				projectListsFiltered = new Array(i);
+				while (i--) {
+					projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
+				}
 			}
-			this.setState({ list });
+			this.setState({ projectNames, projectLists, projectListsFiltered });
 		}
 	}
 
+	prepareProjects(list) {
+		// Convert to array sorted by dataset creation date
+		list = Object.keys(list).map((key) => { return list[key]; });
+		stableSortInPlace(list, (i, j) => {
+			let vi = list[i].creationDate;
+			let vj = list[j].creationDate;
+			return (
+				vi < vj ? 1 :
+					vi > vj ? -1 :
+						i - j
+			);
+		});
+
+
+		let projectNames = [], projectLists = [], projectListsFiltered = [];
+		let i = list.length;
+		while (i--) {
+			const dataset = list[i];
+			const { project } = dataset;
+			let j = projectNames.indexOf(project);
+			if (j === -1) {
+				j = projectNames.length;
+				projectNames.push(project);
+				projectLists.push([]);
+				projectListsFiltered.push([]);
+			}
+			projectLists[j].push(dataset);
+		}
+		return { projectNames, projectLists, projectListsFiltered };
+	}
 
 	filterProjects(list, order, search) {
 		let filtered;
@@ -389,14 +394,13 @@ class SearchDataSetViewComponent extends Component {
 			filtered = list.slice(0);
 		} else {	// search/filter projects
 
-			// give date special (exact) treatment
-			// and sort list in the process
-			const date = search.lastModified;
+			// give date special (exact stringmatch) treatment
+			const date = search.creationDate;
 			if (date) {
 				filtered = [];
 				for (let i = 0; i < list.length; i++) {
 					const entry = list[i];
-					if (entry.lastModified.indexOf(date) !== -1) {
+					if (entry.creationDate.indexOf(date) !== -1) {
 						filtered.push(entry);
 					}
 				}
@@ -437,73 +441,114 @@ class SearchDataSetViewComponent extends Component {
 			}
 		}
 
-		this.setState({ filtered });
+		return filtered;
 	}
 
 
 
 	render() {
-		const { filtered, datasetsPerPage } = this.state;
-		let { dispatch, search, order } = this.props;
-		search = search ? search : {};
+		const {
+			projectNames,
+			projectLists,
+			projectListsFiltered,
+			searchAll,
+			searchByCreationDate,
+			searchByProject,
+			searchByTitle,
+			searchByDescription,
+		} = this.state;
 
-		let totalPages = filtered ? Math.ceil(filtered.length / datasetsPerPage) : 0;
-		let shownDatasets = filtered;
-		let pagination;
-		if (totalPages > 1) {
-			let page = Math.min(this.state.page, totalPages);
-			const iOffset = (page - 1) * datasetsPerPage;
-			const iMax = Math.min(iOffset + datasetsPerPage, filtered.length);
-			shownDatasets = new Array(iMax - iOffset);
-			for (let i = 0; i + iOffset < iMax; i++) {
-				shownDatasets[i] = filtered[i + iOffset];
+		let {
+			dispatch,
+			search,
+			order,
+		} = this.props;
+
+		search = search ? search : {};
+		let datasetList = null;
+		if (projectNames && projectNames.length) {
+			let i = projectNames.length;
+			datasetList = new Array(i);
+			while (i--) {
+				let project = projectNames[i];
+				datasetList[i] = (
+					<DatasetList
+						key={project + '_' + i}
+						dispatch={dispatch}
+						project={projectNames[i]}
+						fullDatasetList={projectLists[i]}
+						filteredList={projectListsFiltered[i]}
+						search={search}
+						order={order}
+						mountClosed={i > 1} />
+				);
 			}
-			pagination = (
+		} else {
+			datasetList = (
 				<div className='view centered'>
-					<Pagination
-						prev
-						next
-						items={datasetsPerPage}
-						maxButtons={5}
-						activePage={page}
-						onSelect={
-							(eventKey) => { this.setState({ page: eventKey }); }
-						} />
+					<h2>Downloading list of available datasets...</h2>
 				</div>
 			);
 		}
 
-		const resultsPerPage = (
-			<Select
-				options={this.state.selectOptions}
-				value={datasetsPerPage}
-				onChange={(val) => { this.setState({ datasetsPerPage: val }); }}
-			/>
-		);
-
 		return (
 			<Grid>
 				<Row>
-					<Col
-						xs={12}
-						md={12}
-						lg={12}>
+					<Col xs={12} md={12} lg={12}>
 						<div className='view-vertical'>
-							<h1>Dataset Search</h1>
-							<h2>Search all fields:</h2>
-							<DebouncedFormcontrol
-								type='text'
-								placeholder='All fields..'
+							<h1>Data Sets</h1>
+							<h1><i>Search</i></h1>
+							<SearchField
+								label={'Search all metadata'}
+								tooltip={'Filter using fuzzy string matching on project, title or description'}
+								tooltipId={'allsearch-tltp'}
 								value={search.all}
-								onChange={handleSearchChangeFactory('all', dispatch)}
-								style={{ width: '100%' }}
-								time={500} />
-							<h2>Search specific field: (click header to sort by that field)</h2>
-							<DatasetList
-								dispatch={dispatch}
-								datasets={filtered}
-								search={search}
-								order={order} />
+								onChange={searchAll}
+							/>
+							<Row>
+								<Col xs={3} md={3} lg={3}>
+									<SearchField
+										label={'Project'}
+										tooltip={'Filter by project (fuzzy substring match)'}
+										tooltipId={'projectsearch-tltp'}
+										value={search.project}
+										onChange={searchByProject}
+										mountClosed
+									/>
+								</Col>
+								<Col xs={3} md={3} lg={3}>
+									<SearchField
+										label={'Title'}
+										tooltip={'Filter by title (fuzzy substring match)'}
+										tooltipId={'titlesearch-tltp'}
+										value={search.title}
+										onChange={searchByTitle}
+										mountClosed
+									/>
+								</Col>
+								<Col xs={3} md={3} lg={3}>
+									<SearchField
+										label={'Description'}
+										tooltip={'Filter by description (fuzzy substring match)'}
+										tooltipId={'descriptionsearch-tltp'}
+										value={search.description}
+										onChange={searchByDescription}
+										mountClosed
+									/>
+								</Col>
+								<Col xs={3} md={3} lg={3}>
+									<SearchField
+										label={'Date'}
+										tooltip={'Filter by date (exact substring match)'}
+										tooltipId={'datesearch-tltp'}
+										value={search.creationDate}
+										onChange={searchByCreationDate}
+										mountClosed
+									/>
+								</Col>
+							</Row>
+							<h1><i>Results</i></h1>
+							{datasetList}
 						</div>
 					</Col>
 				</Row>
