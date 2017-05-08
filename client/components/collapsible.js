@@ -1,6 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 
-import { Glyphicon, Collapse, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Glyphicon, Collapse, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 export class CollapsibleSettings extends Component {
 	constructor(...args) {
@@ -18,11 +18,10 @@ export class CollapsibleSettings extends Component {
 
 		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
 		let _label = (
-			<label
-				onClick={this.toggle}
-				style={{ cursor: 'pointer' }}>
+			<Button onClick={this.toggle} bsStyle='link'>
 				<Glyphicon glyph={chevron} /> {label}
-			</label>);
+			</Button>
+			); // using Button so it can be triggered by keyboard
 		if (tooltip) {
 			let __label = _label;
 			_label = (<OverlayTrigger
