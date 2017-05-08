@@ -14,7 +14,15 @@ export class CollapsibleSettings extends Component {
 	}
 
 	render() {
-		const { placement, tooltip, toolipId, label, unmountOnExit, children } = this.props;
+		const {
+			placement,
+			tooltip,
+			toolipId,
+			label,
+			size,
+			unmountOnExit,
+			children,
+		} = this.props;
 
 		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
 		// using Button so it can be triggered by keyboard
@@ -23,12 +31,18 @@ export class CollapsibleSettings extends Component {
 			overlay={(
 				<Tooltip id={toolipId}>{tooltip}</Tooltip>)
 			}>
-			<Button onClick={this.toggle} bsStyle='link'>
+			<Button
+				onClick={this.toggle}
+				bsStyle='link'
+				bsSize={size}>
 				<Glyphicon glyph={chevron} /> {label}
 			</Button>
 		</OverlayTrigger>
 		) : label ? (
-			<Button onClick={this.toggle} bsStyle='link'>
+			<Button
+				onClick={this.toggle}
+				bsStyle='link'
+				bsSize={size}>
 				<Glyphicon glyph={chevron} /> {label}
 			</Button>
 		) : null;
@@ -52,6 +66,7 @@ CollapsibleSettings.propTypes = {
 	tooltip: PropTypes.string,
 	toolipId: PropTypes.string,
 	label: PropTypes.string.isRequired,
+	size: PropTypes.string,
 	unmountOnExit: PropTypes.bool,
 	children: PropTypes.node.isRequired,
 	mountClosed: PropTypes.bool,

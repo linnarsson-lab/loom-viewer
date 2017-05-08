@@ -206,19 +206,25 @@ class DatasetList extends Component {
 			let projectLabel = `${project} (${filteredList.length}/${fullDatasetList.length} ${fullDatasetList.length === 1 ? 'dataset' : 'datasets'})`;
 			return (
 				<CollapsibleSettings
+					key={project}
 					label={projectLabel}
+					size={'large'}
 					mountClosed={mountClosed}
-					unmountOnExit
-					key={projectLabel}>
+					unmountOnExit>
 					<div>
-						<SortableTable
-							data={tableData}
-							columns={columns}
-							dispatch={dispatch}
-							order={order}
-							condensed
-							responsive
-						/>
+						{
+							filteredList.length ? (
+								<SortableTable
+									data={tableData}
+									columns={columns}
+									dispatch={dispatch}
+									order={order}
+									condensed
+									responsive
+								/>
+
+							) : null
+						}
 					</div>
 				</CollapsibleSettings>
 			);
@@ -248,6 +254,7 @@ function SearchField(props) {
 			label={props.label}
 			tooltip={props.tooltip}
 			tooltipId={props.tooltipId}
+			size={'large'}
 			mountClosed={props.mountClosed}>
 			<div>
 				<DebouncedFormcontrol
@@ -419,10 +426,8 @@ class SearchDataSetViewComponent extends Component {
 				if (query) {
 					const fuse = new Fuse(filtered, {
 						keys: [key],
-						treshold: 0.4,
+						treshold: 0.05,
 						shouldSort: true,
-						tokenize: true,
-						matchAllTokens: true,
 					});
 					filtered = fuse.search(query);
 				}
@@ -431,10 +436,8 @@ class SearchDataSetViewComponent extends Component {
 			if (search.all && filtered.length) {
 				const options = {
 					keys,
-					treshold: 0.4,
+					treshold: 0.05,
 					shouldSort: true,
-					tokenize: true,
-					matchAllTokens: true,
 				};
 				const fuse = new Fuse(filtered, options);
 				filtered = fuse.search(search.all);
@@ -473,7 +476,7 @@ class SearchDataSetViewComponent extends Component {
 				let project = projectNames[i];
 				datasetList[i] = (
 					<DatasetList
-						key={project + '_' + i}
+						key={project}
 						dispatch={dispatch}
 						project={projectNames[i]}
 						fullDatasetList={projectLists[i]}
