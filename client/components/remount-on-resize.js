@@ -7,7 +7,11 @@ export class RemountOnResize extends PureComponent {
 		super(props);
 		this.state = { resizing: true };
 
-		const resize = () => { this.setState({ resizing: true }); };
+		const resize = () => {
+			if (!this.state.resizing) {
+				this.setState({ resizing: true });
+			}
+		};
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// (unmount, resize, remount)-ing of the child nodes.
@@ -21,10 +25,11 @@ export class RemountOnResize extends PureComponent {
 
 	componentWillUnmount() {
 		window.removeEventListener('resize', this.setResize);
+		this.setResize.cancel();
 	}
 
-	componentWillReceiveProps(nextProps){
-		if (this.props.watchedVal !== nextProps.watchedVal){
+	componentWillReceiveProps(nextProps) {
+		if (this.props.watchedVal !== nextProps.watchedVal) {
 			this.setState({ resizing: true });
 		}
 	}

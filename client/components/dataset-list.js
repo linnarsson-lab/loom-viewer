@@ -260,7 +260,7 @@ function SearchField(props) {
 			<div>
 				<DebouncedFormcontrol
 					type='text'
-					value={props.value}
+					value={props.value || ''}
 					onChange={props.onChange}
 					time={500} />
 			</div>
@@ -272,7 +272,7 @@ SearchField.propTypes = {
 	label: PropTypes.string.isRequired,
 	tooltip: PropTypes.string.isRequired,
 	tooltipId: PropTypes.string.isRequired,
-	value: PropTypes.string.isRequired,
+	value: PropTypes.string,
 	onChange: PropTypes.func.isRequired,
 	mountClosed: PropTypes.bool,
 };
