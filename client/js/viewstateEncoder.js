@@ -167,8 +167,13 @@ function constDecoder(val) {
 function oneOf(valArr) {
 	// make sure valArr isn't accidentally mutated later
 	valArr = valArr.slice();
+	// hashmap lookup is usually faster than indexOf in modern browsers
+	let valToIdx = {}, i = valArr.length;
+	while(i--){
+		valToIdx[valArr[i]] = i;
+	}
 	let retVal = () => { };
-	retVal.encoder = (val) => { return valArr.indexOf(val); };
+	retVal.encoder = (val) => { return valToIdx[val]; };
 	retVal.decoder = (idx) => { return valArr[idx]; };
 	return retVal;
 }
