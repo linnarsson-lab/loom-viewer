@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { DropdownMenu } from './dropdown';
 //import { PrintSettings } from './print-settings';
 import { AttrLegend } from './legend';

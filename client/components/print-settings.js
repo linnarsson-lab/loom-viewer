@@ -1,8 +1,9 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { DropdownMenu } from './dropdown';
 import {
 	ListGroupItem, Glyphicon,
-	Button, ButtonGroup
+	Button, ButtonGroup,
 } from 'react-bootstrap';
 import { merge } from '../js/util';
 

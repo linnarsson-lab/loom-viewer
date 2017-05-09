@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { ScatterplotSidepanel } from './scatterplot-sidepanel';
 
 export const GenescapeSidepanel = function (props) {

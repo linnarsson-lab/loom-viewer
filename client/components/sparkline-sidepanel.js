@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
@@ -59,7 +60,9 @@ class LegendSettings extends Component {
 		return (
 			<ListGroupItem>
 				<CollapsibleSettings
-					label={'Attribute legend'}>
+					label={'Attribute legend'}
+					tooltip={'Metadata attribute to identify the sparklines. Click a value to filter it out'}
+					tooltipId={'attrlgnd-tltp'}>
 					<div>
 						<DropdownMenu
 							value={colAttr}
@@ -111,7 +114,8 @@ class AttributeSelection extends Component {
 			<ListGroupItem>
 				<CollapsibleSettings
 					label={'Genes'}
-					tooltip={'Select genes to display'}>
+					tooltip={'Select genes to display as sparkline or heatmap plots'}
+					tooltipId={'gene-tltp'}>
 					<div>
 						<FetchGeneComponent
 							dataset={dataset}
@@ -167,7 +171,8 @@ class ColorSettings extends Component {
 			<ListGroupItem>
 				<CollapsibleSettings
 					label={'Mode'}
-					tooltip={'Show sparklines as'}>
+					tooltip={'Show sparklines as bar or heatmap plot'}
+					tooltipId={'sparklinemode-tltp'}>
 					<div>
 						<div className={'view'}>
 							<div style={{ flex: 5 }}>
@@ -222,17 +227,23 @@ export const SparklineSidepanel = function (props) {
 					dispatch={dispatch}
 					colAttr={sparkline.colAttr}
 					colMode={sparkline.colMode} />
-				<ListGroupItem>
-					<FilteredValues
-						dispatch={dispatch}
-						dataset={dataset}
-						axis={'col'}
-						filtered={dataset.viewState.col.filter} />
-				</ListGroupItem>
+				{
+					dataset.viewState.col.filter &&
+						dataset.viewState.col.filter.length ? (
+							<ListGroupItem>
+								<FilteredValues
+									dispatch={dispatch}
+									dataset={dataset}
+									axis={'col'}
+									filtered={dataset.viewState.col.filter} />
+							</ListGroupItem>
+						) : null
+				}
 				<ListGroupItem>
 					<CollapsibleSettings
 						label={'Order'}
 						tooltip={'Keys to sort datapoints by (select same value twice to toggle ascending/descending)'}
+						tooltipId={'order-tltp'}
 						mountClosed>
 						<div>
 							<SortAttributeComponent

@@ -1,14 +1,14 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import {
 	Panel, ListGroup, ListGroupItem,
 	Button, ButtonGroup,
-	OverlayTrigger, Tooltip,
 } from 'react-bootstrap';
 import Slider from 'rc-slider';
 
 import { AttrLegend } from './legend';
 import { DropdownMenu } from './dropdown';
-import { CollapsibleSettings } from './collapsible';
+import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 import { FilteredValues } from './filtered';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
@@ -17,6 +17,9 @@ import { debounce } from 'lodash';
 
 import { merge } from '../js/util';
 
+function nullFunc() { }
+
+
 class CoordinateSettings extends Component {
 	componentWillMount() {
 		const {
@@ -24,8 +27,6 @@ class CoordinateSettings extends Component {
 			stateName, axis } = this.props;
 
 		const { attrs } = dataset[axis];
-
-		const nullFunc = () => { };
 
 		// function to generate functions used in buttons
 		const setCoordinateFactory = (label, xAttr, yAttr) => {
@@ -109,8 +110,20 @@ class CoordinateSettings extends Component {
 					}
 					return (
 						<ListGroupItem>
-							<a onClick={handleClick}>{label}</a>
-							<a onClick={handleClickAppend}><abbr title='append after current selection'><b>+</b></abbr></a>
+							<OverlayTooltip
+								tooltip={`Set first attributes to ${xAttr} and ${yAttr} and unset the others`}
+								tooltipId={`set-${xAttr}_${yAttr}-tltp`}>
+								<Button bsStyle='link' onClick={handleClick}>
+									{label}
+								</Button>
+							</OverlayTooltip>
+							<OverlayTooltip
+								tooltip={'Append attributes after current selection'}
+								tooltipId={`appnd-${xAttr}_${yAttr}-tltp`}>
+								<Button bsStyle='link' onClick={handleClickAppend}>
+									<b>+</b>
+								</Button>
+							</OverlayTooltip>
 						</ListGroupItem>
 					);
 				};
@@ -119,23 +132,10 @@ class CoordinateSettings extends Component {
 			}
 		};
 
-		const TSNE_label = (<span> tSNE1 / tSNE2 </span>);
-		const PCA_label = (
-			<OverlayTrigger
-				placement='top'
-				overlay={(
-					<Tooltip>Principle Component Analysis</Tooltip>)
-				}>
-				<span> PCA 1 / PCA 2 </span>
-			</OverlayTrigger>
-		);
-		const SFDP_label = (<span> SFDP X / SFDP Y </span>);
-		const Log_label = (<span> LogMean / LogCV </span>);
-
-		const setTSNE = setCoordinateFactory(TSNE_label, '_tSNE1', '_tSNE2');
-		const setPCA = setCoordinateFactory(PCA_label, '_PC1', '_PC2');
-		const setSFDP = setCoordinateFactory(SFDP_label, 'SFDP_X', 'SFDP_Y');
-		const setLog = setCoordinateFactory(Log_label, '_LogMean', '_LogCV');
+		const setTSNE = setCoordinateFactory('tSNE1 / tSNE2', '_tSNE1', '_tSNE2');
+		const setPCA = setCoordinateFactory('PCA 1 / PCA 2', '_PC1', '_PC2');
+		const setSFDP = setCoordinateFactory('SFDP X / SFDP Y', 'SFDP_X', 'SFDP_Y');
+		const setLog = setCoordinateFactory('LogMean / LogCV', '_LogMean', '_LogCV');
 
 		const quickSettings = (
 			setTSNE !== nullFunc ||
@@ -147,7 +147,8 @@ class CoordinateSettings extends Component {
 					return (
 						<CollapsibleSettings
 							label={'X/Y Quick Settings'}
-							tooltip={'Quickly set to default X and Y attributes'}
+							tooltip={'Quickly set X and Y attributes to one of the listed default values'}
+							tooltipId={'quickstngs-tltp'}
 							mountClosed>
 							<ListGroup>
 								{setTSNE(xAttrs, yAttrs)}
@@ -251,36 +252,18 @@ class CoordinateSettings extends Component {
 				newXattrs.push(attr);
 			}
 		}
+		// dropdown for appending a new value
+		newXattrs.push({
+			attr: '<select attribute>',
+			jitter: newXattrs[i - 1] ? newXattrs[i - 1].jitter : false,
+			log: newXattrs[i - 1] ? newXattrs[i - 1].log : false,
+		});
+
 		// generate dropdowns for x attribute
 		let i = newXattrs.length,
 			attrName = 'xAttrs',
-			xAttrDropdowns = new Array(i + 1);
-		// dropdown for appending a new value
-		xAttrDropdowns[i] = (
-			<div className={'view'} key={'x_' + i}>
-				<div style={{ flex: 8 }}>
-					<DropdownMenu
-						key={i}
-						value={'<select attribute>'}
-						options={allKeysNoUniques}
-						filterOptions={filterOptions}
-						onChange={attrSelectFactory(attrName, newXattrs, i)}
-					/>
-				</div>
-				<Button
-					bsStyle={'default'}
-					style={{ flex: 1 }}
-					disabled>
-					log
-				</Button>
-				<Button
-					bsStyle={'default'}
-					style={{ flex: 1 }}
-					disabled>
-					jitter
-				</Button>
-			</div>
-		);
+			xAttrDropdowns = new Array(i);
+
 		// set attribute values
 		while (i--) {
 			const attrData = newXattrs[i],
@@ -289,29 +272,44 @@ class CoordinateSettings extends Component {
 				xLogscaleHC = attrLogscaleFactory(attrName, newXattrs, i);
 			xAttrDropdowns[i] = (
 				<div className={'view'} key={attrData.attr + '_x_' + i}>
-					<div style={{ flex: 8 }}>
-						<DropdownMenu
-							key={i}
-							value={attrData.attr}
-							options={allKeysNoUniques}
-							filterOptions={filterOptions}
-							onChange={xAttrHC}
-						/>
-					</div>
-					<Button
-						bsStyle={attrData.logscale ? 'primary' : 'default'}
-						style={{ flex: 1 }}
-						onClick={xLogscaleHC}>
-						log
+					<OverlayTooltip
+						tooltip={`select attribute ${i + 1}`}
+						tooltipId={`xattr-${i}-tltp`}>
+						<div style={{ flex: 8 }}>
+							<DropdownMenu
+								key={i}
+								value={attrData.attr}
+								options={allKeysNoUniques}
+								filterOptions={filterOptions}
+								onChange={xAttrHC}
+							/>
+						</div>
+					</OverlayTooltip>
+					<OverlayTooltip
+						tooltip={`toggle log2-scaling for attribute ${i + 1}`}
+						tooltipId={`xattr-log-${i}-tltp`}>
+						<Button
+							bsStyle={attrData.logscale ? 'primary' : 'default'}
+							style={{ flex: 1 }}
+							onClick={xLogscaleHC}>
+							log
 						</Button>
-					<Button
-						bsStyle={attrData.jitter ? 'primary' : 'default'}
-						style={{ flex: 1 }}
-						onClick={xJitterHC}>
-						jitter
+					</OverlayTooltip>
+					<OverlayTooltip
+						tooltip={`toggle jitter for attribute ${i + 1}`}
+						tooltipId={`xattr-jitter-${i}-tltp`}>
+						<Button
+							bsStyle={attrData.jitter ? 'primary' : 'default'}
+							style={{ flex: 1 }}
+							onClick={xJitterHC}>
+							jitter
 						</Button>
-				</div >);
+					</OverlayTooltip>
+				</div >
+			);
 		}
+		// remove '<select attribute>'
+		newXattrs.pop();
 
 		let newYattrs = [];
 		for (let i = 0; i < yAttrs.length; i++) {
@@ -320,34 +318,15 @@ class CoordinateSettings extends Component {
 				newYattrs.push(attr);
 			}
 		}
+		newYattrs.push({
+			attr: '<select attribute>',
+			jitter: newYattrs[i - 1] ? newYattrs[i - 1].jitter : false,
+			log: newYattrs[i - 1] ? newYattrs[i - 1].log : false,
+		});
+
 		i = newYattrs.length;
 		attrName = 'yAttrs';
-		let yAttrDropdowns = new Array(i + 1);
-		yAttrDropdowns[i] = (
-			<div className={'view'} key={'y_' + i}>
-				<div style={{ flex: 8 }}>
-					<DropdownMenu
-						key={i}
-						value={'<select attribute>'}
-						options={allKeysNoUniques}
-						filterOptions={filterOptions}
-						onChange={attrSelectFactory(attrName, newYattrs, i)}
-					/>
-				</div>
-				<Button
-					bsStyle={'default'}
-					style={{ flex: 1 }}
-					disabled>
-					log
-				</Button>
-				<Button
-					bsStyle={'default'}
-					style={{ flex: 1 }}
-					disabled>
-					jitter
-				</Button>
-			</div>
-		);
+		let yAttrDropdowns = new Array(i);
 		while (i--) {
 			const attrData = newYattrs[i],
 				yAttrHC = attrSelectFactory(attrName, newYattrs, i);
@@ -355,29 +334,43 @@ class CoordinateSettings extends Component {
 				yLogscaleHC = attrLogscaleFactory(attrName, newYattrs, i);
 			yAttrDropdowns[i] = (
 				<div className={'view'} key={attrData.attr + '_y_' + i}>
-					<div style={{ flex: 8 }}>
-						<DropdownMenu
-							key={i}
-							value={attrData.attr}
-							options={allKeysNoUniques}
-							filterOptions={filterOptions}
-							onChange={yAttrHC}
-						/>
-					</div>
-					<Button
-						bsStyle={attrData.logscale ? 'primary' : 'default'}
-						style={{ flex: 1 }}
-						onClick={yLogscaleHC}>
-						log
+					<OverlayTooltip
+						tooltip={`select attribute ${i + 1}`}
+						tooltipId={`yattr-${i}-tltp`}>
+						<div style={{ flex: 8 }}>
+							<DropdownMenu
+								key={i}
+								value={attrData.attr}
+								options={allKeysNoUniques}
+								filterOptions={filterOptions}
+								onChange={yAttrHC}
+							/>
+						</div>
+					</OverlayTooltip>
+					<OverlayTooltip
+						tooltip={`toggle log2-scaling for attribute ${i + 1}`}
+						tooltipId={`yattr-log-${i}-tltp`}>
+						<Button
+							bsStyle={attrData.logscale ? 'primary' : 'default'}
+							style={{ flex: 1 }}
+							onClick={yLogscaleHC}>
+							log
 					</Button>
-					<Button
-						bsStyle={attrData.jitter ? 'primary' : 'default'}
-						style={{ flex: 1 }}
-						onClick={yJitterHC}>
-						jitter
+					</OverlayTooltip>
+					<OverlayTooltip
+						tooltip={`toggle jitter for attribute ${i + 1}`}
+						tooltipId={`yattr-jitter-${i}-tltp`}>
+						<Button
+							bsStyle={attrData.jitter ? 'primary' : 'default'}
+							style={{ flex: 1 }}
+							onClick={yJitterHC}>
+							jitter
 					</Button>
+					</OverlayTooltip>
 				</div>);
 		}
+		// remove '<select attribute>'
+		newYattrs.pop();
 
 		return (
 			<div>
@@ -387,7 +380,8 @@ class CoordinateSettings extends Component {
 				<ListGroupItem>
 					<CollapsibleSettings
 						label={'X attributes'}
-						tooltip={'Select attributes for the X axis, with optional logaritmic scaling and jittering'}>
+						tooltip={'Select attributes for the X axis, with optional logaritmic scaling and jittering'}
+						tooltipId={'xattrs-tltp'}>
 						<div>
 							{xAttrDropdowns}
 						</div>
@@ -396,7 +390,8 @@ class CoordinateSettings extends Component {
 				<ListGroupItem>
 					<CollapsibleSettings
 						label={'Y attributes'}
-						tooltip={'Select attributes for the Y axis, with optional logaritmic scaling and jittering'}>
+						tooltip={'Select attributes for the Y axis, with optional logaritmic scaling and jittering'}
+						tooltipId={'yattrs-tltp'}>
 						<div>
 							{yAttrDropdowns}
 						</div>
@@ -454,7 +449,6 @@ class ColorSettings extends Component {
 	}
 
 	shouldComponentUpdate(nextProps) {
-
 		return nextProps.colorAttr !== this.props.colorAttr ||
 			nextProps.colorMode !== this.props.colorMode ||
 			nextProps.dataset[nextProps.axis].attrs[nextProps.colorAttr] !== this.props.dataset[this.props.axis].attrs[this.props.colorAttr];
@@ -495,7 +489,8 @@ class ColorSettings extends Component {
 			<ListGroupItem>
 				<CollapsibleSettings
 					label={'Color'}
-					tooltip={'Select attribute for coloring the points'}>
+					tooltip={'Select attribute for coloring the points'}
+					tooltipId={'colorsttngs-tltp'}>
 					<div>
 						<DropdownMenu
 							value={colorAttr}
@@ -623,6 +618,7 @@ export const ScatterplotSidepanel = (props) => {
 					<CollapsibleSettings
 						label={'Radius Scale Factor'}
 						tooltip={'Change the radius of the drawn points'}
+						tooltipId={'radiusstngs-tltp'}
 						mountClosed>
 						<div>
 							<ScaleFactorSettings
@@ -642,13 +638,18 @@ export const ScatterplotSidepanel = (props) => {
 					colorAttr={colorAttr}
 					colorMode={colorMode}
 				/>
-				<ListGroupItem>
-					<FilteredValues
-						dispatch={dispatch}
-						dataset={dataset}
-						axis={axis}
-						filtered={dataset.viewState[axis].filter} />
-				</ListGroupItem>
+				{
+					dataset.viewState[axis].filter &&
+						dataset.viewState[axis].filter.length ? (
+							<ListGroupItem>
+								<FilteredValues
+									dispatch={dispatch}
+									dataset={dataset}
+									axis={axis}
+									filtered={dataset.viewState[axis].filter} />
+							</ListGroupItem>
+						) : null
+				}
 			</ListGroup>
 		</Panel >
 	);

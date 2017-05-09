@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DebouncedFormcontrol } from './debounced-formcontrol';
 import { AttrLegend } from './legend';

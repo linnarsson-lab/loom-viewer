@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import { RemountOnResize } from './remount-on-resize';
 
 
@@ -33,7 +34,7 @@ export function drawText(context, text, x, y) {
 	context.fillText(text, x, y);
 }
 
-class CanvasComponent extends Component {
+class CanvasComponent extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.draw = this.draw.bind(this);
@@ -118,33 +119,36 @@ CanvasComponent.propTypes = {
 // Whenever this component updates it will call this paint function
 // to draw on the canvas. For convenience, pixel dimensions are stored
 // in context.width, context.height and contex.pixelRatio.
-export function Canvas(props) {
-	// If not given a width or height prop, make these fill their parent div
-	// This will implicitly set the size of the <Canvas> component, which
-	// will then call the passed paint function with the right dimensions.
-	let style = props.style ? props.style : {};
-	if (props.width) {
-		style['minWidth'] = (props.width | 0) + 'px';
-		style['maxWidth'] = (props.width | 0) + 'px';
+export class Canvas extends PureComponent {
+	render() {
+		// If not given a width or height prop, make these fill their parent div
+		// This will implicitly set the size of the <Canvas> component, which
+		// will then call the passed paint function with the right dimensions.
+		let { width, height, style } = this.props;
+		style = style || {};
+		if (width) {
+			style['minWidth'] = (width | 0) + 'px';
+			style['maxWidth'] = (width | 0) + 'px';
+		}
+		if (height) {
+			style['minHeight'] = (height | 0) + 'px';
+			style['maxHeight'] = (height | 0) + 'px';
+		}
+		return (
+			<RemountOnResize
+			/* Since canvas interferes with CSS layouting,
+			we unmount and remount it on resize events */
+			>
+				<CanvasComponent
+					paint={this.props.paint}
+					clear={this.props.clear}
+					redraw={this.props.redraw}
+					className={this.props.className}
+					style={style}
+				/>
+			</RemountOnResize>
+		);
 	}
-	if (props.height) {
-		style['minHeight'] = (props.height | 0) + 'px';
-		style['maxHeight'] = (props.height | 0) + 'px';
-	}
-	return (
-		<RemountOnResize
-		/* Since canvas interferes with CSS layouting,
-		we unmount and remount it on resize events */
-		>
-			<CanvasComponent
-				paint={props.paint}
-				clear={props.clear}
-				redraw={props.redraw}
-				className={props.className}
-				style={style}
-			/>
-		</RemountOnResize>
-	);
 }
 
 Canvas.propTypes = {

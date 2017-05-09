@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import { ListGroup, ListGroupItem } from 'react-bootstrap';
 
 import { CollapsibleSettings } from './collapsible';
@@ -70,7 +71,8 @@ export function FilteredValues(props) {
 		return (
 			<CollapsibleSettings
 				label={'Filtered Values'}
-				tooltip={'All values currently being filtered out. Click a value to stop filtering it'}>
+				tooltip={'All values currently being filtered out. Click a value to stop filtering it'}
+				tooltipId={'filter-tltp'}>
 				<ListGroup>
 					{filteredList}
 				</ListGroup>

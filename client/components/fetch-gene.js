@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { fetchGene } from '../actions/actions';
 import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
