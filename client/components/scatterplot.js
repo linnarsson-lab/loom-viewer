@@ -103,11 +103,11 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 	// jittering needs to be scaled down
 	let xJitter = 1, xDelta = xmax-xmin, yJitter = 1, yDelta = ymax-ymin;
 	while(xDelta < 8){
-		xJitter /= 2;
+		xJitter *= 0.5;
 		xDelta *= 2;
 	}
 	while(yDelta < 8){
-		yJitter /= 2;
+		yJitter *= 0.5;
 		yDelta *= 2;
 	}
 
@@ -142,18 +142,18 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 	if (logscale.x) {
 		i = l;
 		while (i--) {
-			xData[i] = log2(1 + xData[i]);
+			xData[i] = xData[i] > 0 ? log2(1 + xData[i]) : -log2(1 - xData[i]);
 		}
-		xmin = log2(1 + xmin);
-		xmax = log2(1 + xmax);
+		xmin = xmin > 0 ? log2(1 + xmin) : -log2(1 - xmin);
+		xmax = xmax > 0 ? log2(1 + xmax) : -log2(1 - xmax);
 	}
 	if (logscale.y) {
 		i = l;
 		while (i--) {
-			yData[i] = log2(1 + yData[i]);
+			yData[i] = yData[i] > 0 ? log2(1 + yData[i]) : -log2(1 - yData[i]);
 		}
-		ymin = log2(1 + ymin);
-		ymax = log2(1 + ymax);
+		ymin = ymin > 0 ? log2(1 + ymin) : -log2(1 - ymin);
+		ymax = ymax > 0 ? log2(1 + ymax) : -log2(1 - ymax);
 	}
 
 	// Scale to screen dimensions with margins
@@ -175,7 +175,8 @@ function maybeStringArray(attr, indices) {
 }
 
 // returns an uint32 array `xy` that contains y and x bitpacked into it,
-// as `((y & 0xFFFF)<<16) + (x & 0xFFFF)`. Supposedly faster
+// as `((y & 0xFFFF)<<16) + (x & 0xFFFF)`. Supposedly faster than using
+// separate uint16 arrays. Also sorts a bit quicker.
 function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius) {
 	const xmargin = (xmax - xmin) * 0.0625;
 	const yMargin = (ymax - ymin) * 0.0625;
