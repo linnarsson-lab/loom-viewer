@@ -15,7 +15,7 @@ export class LandscapeSidepanel extends PureComponent {
 
 	fetchGenes(props) {
 		const { dispatch, dataset } = props;
-		const { keys } = dataset.col;
+		const { geneToRow } = dataset.col;
 		const viewState = dataset.viewState.landscape;
 		const { xAttrs, yAttrs, colorAttr } = viewState;
 
@@ -23,23 +23,19 @@ export class LandscapeSidepanel extends PureComponent {
 		let genes = [];
 		for (let i = 0; i < xAttrs.length; i++) {
 			let value = xAttrs[i].attr;
-			// `keys` will be in the range of a few dozen attributes
-			// at most, whereas `genes` or `CellID` will be in the
-			// thousands. So it's likely faster to check if a value
-			// *isn't* in `keys`.
-			if (value && keys.indexOf(value) === -1 &&
+			if (geneToRow[value] &&
 				!dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}
 		for (let i = 0; i < yAttrs.length; i++) {
 			let value = yAttrs[i].attr;
-			if (value && keys.indexOf(value) === -1 &&
+			if (value && geneToRow[value] === -1 &&
 				!dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}
-		if (keys.indexOf(colorAttr) === -1 && !dataset.fetchedGenes[colorAttr]) {
+		if (geneToRow[colorAttr] !== undefined && !dataset.fetchedGenes[colorAttr]) {
 			genes.push(colorAttr);
 		}
 		if (genes.length) {

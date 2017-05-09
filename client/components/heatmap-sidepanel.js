@@ -65,7 +65,7 @@ export class HeatmapSidepanel extends PureComponent {
 
 	maybeFetch(gene, dataset, dispatch) {
 		if (gene &&
-			dataset.col.keys.indexOf(gene) === -1 && // note how we check if the key *isn't* an attribute key, implying it's a gene
+			dataset.col.geneToRow[gene] !== undefined &&
 			!dataset.fetchedGenes[gene]) {
 			dispatch(fetchGene(dataset, [gene]));
 		}

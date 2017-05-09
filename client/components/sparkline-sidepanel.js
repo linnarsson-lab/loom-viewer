@@ -18,10 +18,10 @@ import { SET_VIEW_PROPS } from '../actions/actionTypes';
 class LegendSettings extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		const { keys } = dataset.col;
+		const { geneToRow } = dataset.col;
 
 		const colAttrsHC = (val) => {
-			if (keys.indexOf(val) === -1 && !dataset.fetchedGenes[val]) {
+			if (geneToRow[val] !== undefined && !dataset.fetchedGenes[val]) {
 				dispatch(fetchGene(dataset, [val]));
 			}
 			dispatch({
@@ -85,7 +85,7 @@ class LegendSettings extends PureComponent {
 LegendSettings.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	colAttr: PropTypes.string.isRequired,
+	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
 };
 

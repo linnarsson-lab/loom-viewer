@@ -139,14 +139,16 @@ function receiveDataSet(data, path) {
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
 
 	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
-	cols.geneToRow = {};
 	cols.rowToGenes = new Array(cols.geneKeys.length);
+	cols.geneToRow = {};
+	cols.geneToRowLowerCase = {};
 	// store row indices for gene fetching later
 	let i = cols.geneKeys.length;
 	while(i--){
 		let gene = cols.geneKeys[i];
-		cols.geneToRow[gene] = i;
 		cols.rowToGenes[i] = gene;
+		cols.geneToRow[gene] = i;
+		cols.geneToRowLowerCase[gene.toLowerCase()] = i;
 	}
 	cols.geneKeys.sort();
 	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });

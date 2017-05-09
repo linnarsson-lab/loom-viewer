@@ -12,10 +12,10 @@ export class SortAttributeComponent extends PureComponent {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
-		const { keys } = dataset[axis];
+		const { geneToRow } = dataset[axis];
 
 		this.onChange = (value) => {
-			if (keys.indexOf(value) === -1 && !dataset.fetchedGenes[value]) {
+			if (geneToRow[value] !== undefined && !dataset.fetchedGenes[value]) {
 				dispatch(fetchGene(dataset, [value]));
 			}
 
