@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { fetchGene } from '../actions/actions';
 import Select from 'react-virtualized-select';
@@ -7,7 +7,7 @@ import { FormControl, Button } from 'react-bootstrap';
 import { uniq, difference } from 'lodash';
 
 // TODO: document how FetchGeneComponent works and what it expects
-export class FetchGeneComponent extends Component {
+export class FetchGeneComponent extends PureComponent {
 
 	constructor(props) {
 		super(props);

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import { Heatmap } from './heatmap';
@@ -14,7 +14,7 @@ import { SET_VIEW_PROPS } from '../actions/actionTypes';
 import * as _ from 'lodash';
 
 // Just the map+sparklines part
-class HeatmapMapComponent extends Component {
+class HeatmapMapComponent extends PureComponent {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
@@ -109,7 +109,7 @@ HeatmapMapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-class HeatmapComponent extends Component {
+class HeatmapComponent extends PureComponent {
 
 	componentWillMount() {
 		this.setState({ heatmapState: this.props.dataset.viewState.heatmap });

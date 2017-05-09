@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Grid, Row, Col, Button, Glyphicon } from 'react-bootstrap';
 import { Link } from 'react-router';
@@ -31,7 +31,7 @@ function handleSearchChangeFactory(field, dispatch) {
 
 // Generates tabular list of datasets
 
-class DatasetList extends Component {
+class DatasetList extends PureComponent {
 
 	componentWillMount() {
 		const { dispatch } = this.props;
@@ -165,14 +165,14 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_doi'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={'http://dx.doi.org/' + doi}
-							title={'Original reference: http://dx.doi.org/' + doi}
-							style={{ padding: 0 }} >
-							<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-						</Button>
+						key={path + '_doi'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }} >
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
 					);
 				const urlButton = url === '' ? (
 					<Glyphicon
@@ -181,15 +181,15 @@ class DatasetList extends Component {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_url'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={url}
-							title={'External web page: ' + url}
-							style={{ padding: 0 }}
+						key={path + '_url'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
 						>
-							<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-						</Button>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
 					);
 
 				tableData.push({
@@ -277,7 +277,7 @@ SearchField.propTypes = {
 	mountClosed: PropTypes.bool,
 };
 
-class SearchDataSetViewComponent extends Component {
+class SearchDataSetViewComponent extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.filterProjects = this.filterProjects.bind(this);

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DebouncedFormcontrol } from './debounced-formcontrol';
@@ -11,7 +11,7 @@ import { TypedArrayProp } from '../js/proptypes-typedarray';
 
 import Fuse from 'fuse.js';
 
-export class MetadataPlot extends Component {
+export class MetadataPlot extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.modeCycler = this.modeCycler.bind(this);
@@ -59,7 +59,7 @@ MetadataPlot.propTypes = {
 };
 
 
-class MetadataTable extends Component {
+class MetadataTable extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.createTableData = this.createTableData.bind(this);
@@ -213,7 +213,7 @@ MetadataTable.propTypes = {
 };
 
 
-export class MetadataComponent extends Component {
+export class MetadataComponent extends PureComponent {
 	// given that this component will only be rendered
 	// after the dataset has been fetched, and that the
 	// dataset is immutable, we might as well pre-process

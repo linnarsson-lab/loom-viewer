@@ -1,18 +1,20 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import { Button, Glyphicon, Collapse, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
-export function OverlayTooltip(props) {
-	return (
-		<OverlayTrigger
-			placement={props.placement || 'top'}
-			overlay={(
-				<Tooltip id={props.tooltipId}>{props.tooltip}</Tooltip>)
-			}>
-			{props.children}
-		</OverlayTrigger>
-	);
+export class OverlayTooltip extends PureComponent {
+	render() {
+		return (
+			<OverlayTrigger
+				placement={this.props.placement || 'top'}
+				overlay={(
+					<Tooltip id={this.props.tooltipId}>{this.props.tooltip}</Tooltip>)
+				}>
+				{this.props.children}
+			</OverlayTrigger>
+		);
+	}
 }
 
 OverlayTooltip.propTypes = {
@@ -22,11 +24,13 @@ OverlayTooltip.propTypes = {
 	children: PropTypes.node.isRequired,
 };
 
-export class CollapsibleSettings extends Component {
+export class CollapsibleSettings extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.toggle = this.toggle.bind(this);
-		this.state = { open: !this.props.mountClosed };
+		this.state = {
+			open: !this.props.mountClosed,
+		};
 	}
 
 	toggle() {
@@ -50,7 +54,7 @@ export class CollapsibleSettings extends Component {
 			<OverlayTooltip
 				placement={placement || 'top'}
 				tooltip={tooltip}
-				id={tooltipId}>
+				tooltipId={tooltipId}>
 				<Button
 					onClick={this.toggle}
 					bsStyle='link'

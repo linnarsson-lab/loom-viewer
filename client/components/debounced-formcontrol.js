@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { FormControl } from 'react-bootstrap';
 
 import { debounce } from 'lodash';
 
-export class DebouncedFormcontrol extends Component {
+export class DebouncedFormcontrol extends PureComponent {
 
 	constructor(props) {
 		super(props);

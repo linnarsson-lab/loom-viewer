@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { debounce } from 'lodash';
 
-export class RemountOnResize extends React.Component {
+export class RemountOnResize extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.state = { resizing: true };

@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { fetchDataSet } from '../actions/actions';
 
 // A placeholder <div> that simultaneously
 // dispatches a fetchDataSet action.
-export class FetchDatasetComponent extends Component {
+export class FetchDatasetComponent extends PureComponent {
 	componentWillMount() {
 		this.props.dispatch(fetchDataSet(this.props.datasets, this.props.path));
 	}

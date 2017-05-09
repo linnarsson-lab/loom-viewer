@@ -176,7 +176,7 @@ Canvas.propTypes = {
 
 //import { inBounds } from '../js/util';
 
-// class CanvasGridComponent extends React.Component {
+// class CanvasGridComponent extends PureComponent {
 // 	constructor(props) {
 // 		super(props);
 // 		this.draw = this.draw.bind(this);

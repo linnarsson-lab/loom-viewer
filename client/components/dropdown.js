@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import Select from 'react-virtualized-select';
 import createFilterOptions from 'react-select-fast-filter-options';
 
 //TODO: document what DropdownMenu expects
-export class DropdownMenu extends Component {
+export class DropdownMenu extends PureComponent {
 
 	constructor(props) {
 		super(props);

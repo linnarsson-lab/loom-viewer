@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import {
 	Panel, ListGroup, ListGroupItem,
@@ -20,7 +20,7 @@ import { merge } from '../js/util';
 function nullFunc() { }
 
 
-class CoordinateSettings extends Component {
+class CoordinateSettings extends PureComponent {
 	componentWillMount() {
 		const {
 			dispatch, dataset,
@@ -252,12 +252,6 @@ class CoordinateSettings extends Component {
 				newXattrs.push(attr);
 			}
 		}
-		// dropdown for appending a new value
-		newXattrs.push({
-			attr: '<select attribute>',
-			jitter: newXattrs[i - 1] ? newXattrs[i - 1].jitter : false,
-			log: newXattrs[i - 1] ? newXattrs[i - 1].log : false,
-		});
 
 		// generate dropdowns for x attribute
 		let i = newXattrs.length,
@@ -308,21 +302,19 @@ class CoordinateSettings extends Component {
 				</div >
 			);
 		}
-		// remove '<select attribute>'
-		newXattrs.pop();
 
 		let newYattrs = [];
-		for (let i = 0; i < yAttrs.length; i++) {
+		for (i = 0; i < yAttrs.length; i++) {
 			let attr = yAttrs[i];
 			if (attr) {
 				newYattrs.push(attr);
 			}
 		}
-		newYattrs.push({
-			attr: '<select attribute>',
-			jitter: newYattrs[i - 1] ? newYattrs[i - 1].jitter : false,
-			log: newYattrs[i - 1] ? newYattrs[i - 1].log : false,
-		});
+		// newYattrs.push({
+		// 	attr: '<select attribute>',
+		// 	jitter: newYattrs[i - 1] ? newYattrs[i - 1].jitter : false,
+		// 	log: newYattrs[i - 1] ? newYattrs[i - 1].log : false,
+		// });
 
 		i = newYattrs.length;
 		attrName = 'yAttrs';
@@ -369,8 +361,6 @@ class CoordinateSettings extends Component {
 					</OverlayTooltip>
 				</div>);
 		}
-		// remove '<select attribute>'
-		newYattrs.pop();
 
 		return (
 			<div>
@@ -412,7 +402,7 @@ CoordinateSettings.propTypes = {
 };
 
 
-class ColorSettings extends Component {
+class ColorSettings extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset, stateName } = this.props;
 
@@ -539,7 +529,7 @@ ColorSettings.propTypes = {
 	colorMode: PropTypes.string.isRequired,
 };
 
-class ScaleFactorSettings extends Component {
+class ScaleFactorSettings extends PureComponent {
 	componentWillMount() {
 		const { stateName, dataset, dispatch } = this.props;
 
@@ -594,66 +584,69 @@ ScaleFactorSettings.propTypes = {
 	scaleFactor: PropTypes.number,
 	time: PropTypes.number,
 };
-export const ScatterplotSidepanel = (props) => {
-	const { dispatch, dataset, stateName, axis } = props;
-	const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = props.viewState;
 
-	return (
-		<Panel
-			className='sidepanel'
-			key={`${stateName}-settings`}
-			header='Settings'
-			bsStyle='default'>
+export class ScatterplotSidepanel extends PureComponent {
+	render() {
+		const { dispatch, dataset, stateName, axis } =this.props;
+		const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = this.props.viewState;
 
-			<ListGroup fill>
-				<CoordinateSettings
-					dispatch={dispatch}
-					dataset={dataset}
-					stateName={stateName}
-					axis={axis}
-					xAttrs={xAttrs}
-					yAttrs={yAttrs}
-				/>
-				<ListGroupItem>
-					<CollapsibleSettings
-						label={'Radius Scale Factor'}
-						tooltip={'Change the radius of the drawn points'}
-						tooltipId={'radiusstngs-tltp'}
-						mountClosed>
-						<div>
-							<ScaleFactorSettings
-								dispatch={dispatch}
-								dataset={dataset}
-								stateName={stateName}
-								scaleFactor={scaleFactor}
-								time={200} />
-						</div>
-					</CollapsibleSettings>
-				</ListGroupItem>
-				<ColorSettings
-					dispatch={dispatch}
-					dataset={dataset}
-					stateName={stateName}
-					axis={axis}
-					colorAttr={colorAttr}
-					colorMode={colorMode}
-				/>
-				{
-					dataset.viewState[axis].filter &&
-						dataset.viewState[axis].filter.length ? (
-							<ListGroupItem>
-								<FilteredValues
+		return (
+			<Panel
+				className='sidepanel'
+				key={`${stateName}-settings`}
+				header='Settings'
+				bsStyle='default'>
+
+				<ListGroup fill>
+					<CoordinateSettings
+						dispatch={dispatch}
+						dataset={dataset}
+						stateName={stateName}
+						axis={axis}
+						xAttrs={xAttrs}
+						yAttrs={yAttrs}
+					/>
+					<ListGroupItem>
+						<CollapsibleSettings
+							label={'Radius Scale Factor'}
+							tooltip={'Change the radius of the drawn points'}
+							tooltipId={'radiusstngs-tltp'}
+							mountClosed>
+							<div>
+								<ScaleFactorSettings
 									dispatch={dispatch}
 									dataset={dataset}
-									axis={axis}
-									filtered={dataset.viewState[axis].filter} />
-							</ListGroupItem>
-						) : null
-				}
-			</ListGroup>
-		</Panel >
-	);
-};
+									stateName={stateName}
+									scaleFactor={scaleFactor}
+									time={200} />
+							</div>
+						</CollapsibleSettings>
+					</ListGroupItem>
+					<ColorSettings
+						dispatch={dispatch}
+						dataset={dataset}
+						stateName={stateName}
+						axis={axis}
+						colorAttr={colorAttr}
+						colorMode={colorMode}
+					/>
+					{
+						dataset.viewState[axis].filter &&
+							dataset.viewState[axis].filter.length ? (
+								<ListGroupItem>
+									<FilteredValues
+										dispatch={dispatch}
+										dataset={dataset}
+										axis={axis}
+										filtered={dataset.viewState[axis].filter} />
+								</ListGroupItem>
+							) : null
+					}
+				</ListGroup>
+			</Panel >
+		);
+	}
+}
 
 ScatterplotSidepanel.propTypes = {
 	dispatch: PropTypes.func.isRequired,

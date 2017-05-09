@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { FetchDatasetComponent } from './fetch-dataset';
 
@@ -9,7 +9,7 @@ import { decompressFromEncodedURIComponent } from 'lz-string';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
-class ViewStateInitialiser extends Component {
+class ViewStateInitialiser extends PureComponent {
 
 	componentWillMount() {
 		let { dispatch, dataset,

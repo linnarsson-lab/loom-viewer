@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
@@ -15,7 +15,7 @@ import {
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
-class LegendSettings extends Component {
+class LegendSettings extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 		const { keys } = dataset.col;
@@ -89,7 +89,7 @@ LegendSettings.propTypes = {
 	colMode: PropTypes.string.isRequired,
 };
 
-class AttributeSelection extends Component {
+class AttributeSelection extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 		const genesHC = (val) => {
@@ -136,7 +136,7 @@ AttributeSelection.propTypes = {
 	genes: PropTypes.string.isRequired,
 };
 
-class ColorSettings extends Component {
+class ColorSettings extends PureComponent {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;

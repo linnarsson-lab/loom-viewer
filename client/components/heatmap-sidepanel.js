@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { DropdownMenu } from './dropdown';
 //import { PrintSettings } from './print-settings';
@@ -10,7 +10,7 @@ import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { fetchGene } from '../actions/actions';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
-export class HeatmapSidepanel extends Component {
+export class HeatmapSidepanel extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.maybeFetch = this.maybeFetch.bind(this);

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
@@ -7,7 +7,7 @@ import { fetchGene } from '../actions/actions';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
-export class SortAttributeComponent extends Component {
+export class SortAttributeComponent extends PureComponent {
 	constructor(props) {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;

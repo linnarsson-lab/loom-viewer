@@ -1,7 +1,8 @@
 import L from 'leaflet';
-import React, {PropTypes} from 'react';
+import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 
-export class Heatmap extends React.Component {
+export class Heatmap extends PureComponent {
 
 	componentDidMount() {
 		const { dataset, project, viewState } = this.props.dataset;
