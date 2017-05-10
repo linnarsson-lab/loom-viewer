@@ -4,7 +4,7 @@ import { fetchGene } from '../actions/actions';
 import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
 
-import { uniq, difference } from 'lodash';
+import { uniq, difference, isEqual } from 'lodash';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends PureComponent {
@@ -28,10 +28,10 @@ export class FetchGeneComponent extends PureComponent {
 				label: geneKeys[i],
 			};
 		}
-
+		let validGenes;
 		if (selectedGenes && selectedGenes.length) {
 			selectedGenes = selectedGenes.join(',\ ');
-			let validGenes = this.filterValidGenes(selectedGenes);
+			validGenes = this.filterValidGenes(selectedGenes);
 			dispatch(fetchGene(dataset, validGenes));
 			let diff = difference(selectedGenes, validGenes);
 			let diff2 = difference(validGenes, selectedGenes);
@@ -43,7 +43,7 @@ export class FetchGeneComponent extends PureComponent {
 			}
 		}
 
-		this.setState({ selectOptions, selectedGenes });
+		this.setState({ selectOptions, validGenes, selectedGenes });
 	}
 
 	handleTextAreaChange(event) {
@@ -60,13 +60,15 @@ export class FetchGeneComponent extends PureComponent {
 		const { dataset, dispatch, onChange } = this.props;
 
 		let validGenes = this.filterValidGenes(this.state.selectedGenes);
-		dispatch(fetchGene(dataset, validGenes));
-		// We also call onChange if there is no value,
-		// to handle "resetting" the view
-		onChange ? onChange(validGenes) : null;
+		if (!isEqual(validGenes, this.state.validGenes)) {
+			dispatch(fetchGene(dataset, validGenes));
+			// We also call onChange if there is no value,
+			// to handle "resetting" the view
+			onChange ? onChange(validGenes) : null;
 
-		const selectedGenes = validGenes.join(',\ ');
-		this.setState({ selectedGenes });
+			const selectedGenes = validGenes.join(',\ ');
+			this.setState({ validGenes, selectedGenes });
+		}
 	}
 
 	filterValidGenes(selection) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import { LandscapeSidepanel } from './landscape-sidepanel';
@@ -7,91 +7,92 @@ import { Canvas } from './canvas';
 import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
-const LandscapeComponent = function (props) {
-	const { dispatch, dataset } = props;
-	const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = dataset.viewState.landscape;
+class LandscapeComponent extends PureComponent {
+	render() {
+		const { dispatch, dataset } = this.props;
+		const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = dataset.viewState.landscape;
 
-	// filter out undefined attributes;
-	let newXattrs = [];
-	for (let i = 0; i < xAttrs.length; i++) {
-		let attr = xAttrs[i];
-		if (attr) {
-			newXattrs.push(attr);
+		// filter out undefined attributes;
+		let newXattrs = [];
+		for (let i = 0; i < xAttrs.length; i++) {
+			let attr = xAttrs[i];
+			if (attr) {
+				newXattrs.push(attr);
+			}
 		}
-	}
-	let newYattrs = [];
-	for (let i = 0; i < yAttrs.length; i++) {
-		let attr = yAttrs[i];
-		if (attr) {
-			newYattrs.push(attr);
+		let newYattrs = [];
+		for (let i = 0; i < yAttrs.length; i++) {
+			let attr = yAttrs[i];
+			if (attr) {
+				newYattrs.push(attr);
+			}
 		}
-	}
 
-	const { col } = dataset;
-	const color = col.attrs[colorAttr];
+		const { col } = dataset;
+		const color = col.attrs[colorAttr];
 
-	const cellStyle = {
-		border: '1px solid lightgrey',
-		flex: '1 1 auto',
-		margin: '1px',
-	};
-	const rowStyle = {
-		flex: '1 1 auto',
-	};
-	let matrix = [];
-	for (let j = 0; j < newYattrs.length; j++) {
-		const yAttr = newYattrs[j];
-		let row = [];
-		for (let i = 0; i < newXattrs.length; i++) {
-			let paint;
-			const xAttr = newXattrs[i];
-			const logscale = { x: xAttr.logscale, y: yAttr.logscale };
-			const jitter = { x: xAttr.jitter, y: yAttr.jitter };
-			const x = col.attrs[xAttr.attr];
-			const y = col.attrs[yAttr.attr];
-			paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
-			row.push(
-				<Canvas
-					key={`${j}_${newYattrs[j].attr}_${i}_${newXattrs[i].attr}`}
-					style={cellStyle}
-					paint={paint}
-					redraw
-					clear
-				/>
+		const cellStyle = {
+			border: '1px solid lightgrey',
+			flex: '1 1 auto',
+			margin: '1px',
+		};
+		const rowStyle = {
+			flex: '1 1 auto',
+		};
+		let matrix = [];
+		for (let j = 0; j < newYattrs.length; j++) {
+			const yAttr = newYattrs[j];
+			let row = [];
+			for (let i = 0; i < newXattrs.length; i++) {
+				let paint;
+				const xAttr = newXattrs[i];
+				const logscale = { x: xAttr.logscale, y: yAttr.logscale };
+				const jitter = { x: xAttr.jitter, y: yAttr.jitter };
+				const x = col.attrs[xAttr.attr];
+				const y = col.attrs[yAttr.attr];
+				paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
+				row.push(
+					<Canvas
+						key={`${j}_${newYattrs[j].attr}_${i}_${newXattrs[i].attr}`}
+						style={cellStyle}
+						paint={paint}
+						redraw
+						clear
+					/>
+				);
+
+			}
+			matrix.push(
+				<div
+					key={'row_' + j}
+					className={'view'}
+					style={rowStyle}>
+					{row}
+				</div>
 			);
-
 		}
-		matrix.push(
-			<div
-				key={'row_' + j}
-				className={'view'}
-				style={rowStyle}>
-				{row}
+
+		let matrixChanged = [];
+		for (let i = 0; i < newXattrs.length; i++) {
+			matrixChanged.push(newXattrs[i].attr);
+		}
+		for (let i = 0; i < newYattrs.length; i++) {
+			matrixChanged.push(newYattrs[i].attr);
+		}
+		return (
+			<div className='view'>
+				<LandscapeSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
+				/>
+				{/*If any x or y attributes in our grid change, we need to remount*/}
+				<RemountOnResize watchedVal={matrixChanged.join('')}>
+					<div className={'view-vertical'}>{matrix}</div>
+				</RemountOnResize>
 			</div>
 		);
 	}
-
-	let matrixChanged = [];
-	for (let i = 0; i < newXattrs.length; i++){
-		matrixChanged.push(newXattrs[i].attr);
-	}
-	for (let i = 0; i < newYattrs.length; i++){
-		matrixChanged.push(newYattrs[i].attr);
-	}
-	return (
-		<div className='view'>
-			<LandscapeSidepanel
-				dataset={dataset}
-				dispatch={dispatch}
-			/>
-			{/*If any x or y attributes in our grid change, we need to remount*/}
-			<RemountOnResize watchedVal={matrixChanged.join('')}>
-				<div className={'view-vertical'}>{matrix}</div>
-			</RemountOnResize>
-		</div>
-	);
-
-};
+}
 
 LandscapeComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
@@ -106,17 +107,19 @@ const initialState = { // Initialise landscapeState for this dataset
 	colorMode: 'Heatmap',
 };
 
-export const LandscapeViewInitialiser = function (props) {
-	return (
-		<ViewInitialiser
-			View={LandscapeComponent}
-			stateName={'landscape'}
-			initialState={initialState}
-			dispatch={props.dispatch}
-			params={props.params}
-			datasets={props.datasets} />
-	);
-};
+export class LandscapeViewInitialiser extends PureComponent {
+	render() {
+		return (
+			<ViewInitialiser
+				View={LandscapeComponent}
+				stateName={'landscape'}
+				initialState={initialState}
+				dispatch={this.props.dispatch}
+				params={this.props.params}
+				datasets={this.props.datasets} />
+		);
+	}
+}
 
 LandscapeViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,

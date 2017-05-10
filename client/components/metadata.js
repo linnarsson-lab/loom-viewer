@@ -16,7 +16,7 @@ export class MetadataPlot extends PureComponent {
 		super(props);
 		this.modeCycler = this.modeCycler.bind(this);
 
-		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Heatmap2', 'Categorical'];
+		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Heatmap2', 'Categorical', 'Stacked'];
 		let idx = modes.indexOf(props.mode);
 		const mode = idx !== -1 ? idx : 0;
 		this.state = { modes, mode };
@@ -37,7 +37,7 @@ export class MetadataPlot extends PureComponent {
 					onClick={this.modeCycler}
 					style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 					<Canvas
-						height={30}
+						height={40}
 						paint={sparkline(attr, indices, modes[mode])}
 						redraw clear />
 				</div>
@@ -163,7 +163,7 @@ class MetadataTable extends PureComponent {
 						tableRow.val = (
 							<MetadataPlot
 								attr={attr}
-								modes={['Categorical']}
+								modes={['Stacked', 'Categorical']}
 								indices={sortedFilterIndices}
 								filterFunc={filterFunc} />
 						);
@@ -173,7 +173,7 @@ class MetadataTable extends PureComponent {
 							<MetadataPlot
 								attr={attr}
 								mode={ /* guess default category based on nr of unique values*/
-									uniques.length <= 20 ? 'Categorical' : 'Bars'}
+									uniques.length <= 20 ? 'Stacked' : 'Bars'}
 								indices={sortedFilterIndices}
 								filterFunc={filterFunc} />
 						);

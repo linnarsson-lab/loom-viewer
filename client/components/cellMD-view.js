@@ -1,24 +1,26 @@
-import React from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
 
-function CellMDComponent(props) {
-	const { dataset, dispatch } = props;
-	const { col } = dataset;
-	const { attrs, keys } = col;
+class CellMDComponent extends PureComponent {
+	render() {
+		const { dataset, dispatch } = this.props;
+		const { col } = dataset;
+		const { attrs, keys } = col;
 
-	return (
-		<MetadataComponent
-			attributes={attrs}
-			attrKeys={keys}
-			axis={'col'}
-			mdName={'Cell'}
-			stateName={'cellMD'}
-			dispatch={dispatch}
-			dataset={dataset}
-		/>
-	);
+		return (
+			<MetadataComponent
+				attributes={attrs}
+				attrKeys={keys}
+				axis={'col'}
+				mdName={'Cell'}
+				stateName={'cellMD'}
+				dispatch={dispatch}
+				dataset={dataset}
+			/>
+		);
+	}
 }
 
 CellMDComponent.propTypes = {
@@ -28,18 +30,21 @@ CellMDComponent.propTypes = {
 
 const initialState = { searchVal: '' };
 
-const CellMetadataViewInitialiser = function (props) {
-	// Initialise cellMetadataState for this dataset
-	return (
-		<ViewInitialiser
-			View={CellMDComponent}
-			stateName={'cellMD'}
-			initialState={initialState}
-			dispatch={props.dispatch}
-			params={props.params}
-			datasets={props.datasets} />
-	);
-};
+class CellMetadataViewInitialiser extends PureComponent {
+
+	render() {
+		// Initialise cellMetadataState for this dataset
+		return (
+			<ViewInitialiser
+				View={CellMDComponent}
+				stateName={'cellMD'}
+				initialState={initialState}
+				dispatch={this.props.dispatch}
+				params={this.props.params}
+				datasets={this.props.datasets} />
+		);
+	}
+}
 
 CellMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,

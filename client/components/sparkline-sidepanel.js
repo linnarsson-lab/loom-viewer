@@ -41,7 +41,7 @@ class LegendSettings extends PureComponent {
 			});
 		};
 
-		const colModeOptions = ['Bars', 'Categorical', 'Heatmap', 'Heatmap2'];
+		const colModeOptions = ['Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2'];
 
 		this.setState({ colAttrsHC, colModeHC, colModeOptions });
 	}

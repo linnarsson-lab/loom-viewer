@@ -1,24 +1,26 @@
-import React from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { MetadataComponent } from './metadata';
 import { ViewInitialiser } from './view-initialiser';
 
-function GeneMDComponent(props) {
-	const { dataset, dispatch } = props;
-	const { row } = dataset;
-	const { attrs, keys } = row;
+class GeneMDComponent extends PureComponent {
+	render() {
+		const { dataset, dispatch } = this.props;
+		const { row } = dataset;
+		const { attrs, keys } = row;
 
-	return (
-		<MetadataComponent
-			attributes={attrs}
-			attrKeys={keys}
-			axis={'row'}
-			mdName={'Gene'}
-			stateName={'geneMD'}
-			dispatch={dispatch}
-			dataset={dataset}
-		/>
-	);
+		return (
+			<MetadataComponent
+				attributes={attrs}
+				attrKeys={keys}
+				axis={'row'}
+				mdName={'Gene'}
+				stateName={'geneMD'}
+				dispatch={dispatch}
+				dataset={dataset}
+			/>
+		);
+	}
 }
 
 GeneMDComponent.propTypes = {
@@ -28,18 +30,20 @@ GeneMDComponent.propTypes = {
 
 const initialState = { searchVal: '' };
 
-const GeneMetadataViewInitialiser = function (props) {
-	// Initialise geneMetadata state for this dataset
-	return (
-		<ViewInitialiser
-			View={GeneMDComponent}
-			stateName={'geneMD'}
-			initialState={initialState}
-			dispatch={props.dispatch}
-			params={props.params}
-			datasets={props.datasets} />
-	);
-};
+class GeneMetadataViewInitialiser extends PureComponent {
+	render() {
+		// Initialise geneMetadata state for this dataset
+		return (
+			<ViewInitialiser
+				View={GeneMDComponent}
+				stateName={'geneMD'}
+				initialState={initialState}
+				dispatch={this.props.dispatch}
+				params={this.props.params}
+				datasets={this.props.datasets} />
+		);
+	}
+}
 
 GeneMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,

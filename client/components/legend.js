@@ -17,7 +17,7 @@ export class AttrLegend extends PureComponent {
 			return 'black';		// Bars
 		};
 		let block = '';
-		if (mode === 'Categorical') {
+		if (mode === 'Categorical' || mode === 'Stacked') {
 			selectColor = (i) => {
 				return colors.category20[i + 1];
 			};
@@ -74,17 +74,18 @@ export class AttrLegend extends PureComponent {
 			);
 		}
 
-		// sum count for remaining values
-		if (l < uniques.length) {
-			// by definition, data.length is the total
-			// number of datapoints. So the remaining
-			// number of datapoints is the total
-			// total datapoints minus shown
-			// datapoints
-			let rest = attr.data.length, i = l;
-			while (i--) {
-				rest -= uniques[i].count;
-			}
+		// Sum count for remaining values.
+		// by definition, data.length is the total
+		// number of datapoints. So the remaining
+		// number of datapoints is the total
+		// total datapoints minus shown
+		// datapoints
+		let rest = attr.data.length;
+		i = l;
+		while (i--) {
+			rest -= uniques[i].count;
+		}
+		if (rest) {
 			let icon = block ? (
 				<span style={{ fontStyle: 'normal' }}>□ </span>
 			) : null;
