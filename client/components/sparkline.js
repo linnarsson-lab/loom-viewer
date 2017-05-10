@@ -403,33 +403,52 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	} else {
 		// more data than pixels
 		const barWidth = ratio;
-		let i = 0;
 		context.fillStyle = colors.category20[0];
-		while (i < width) {
+
+		let barSlices = {}, i = width;
+		while (i--) {
 			const x = (xOffset + i * barWidth) | 0;
 			const x1 = (xOffset + (i + 1) * barWidth) | 0;
 			const roundedWidth = x1 - x;
 
-			const i0 = (i * data.length / width) | 0;
-			const i1 = ((i + 1) * data.length / width) | 0;
-			let barSlice = data.slice(i0, i1);
-			barSlice.sort();
+			let i0 = i - 1 < 0 ? 0 : i - 1;
+			let i1 = i + 2 > width ? width : i + 2;
+			i0 = (i0 * data.length / width) | 0;
+			i1 = (i1 * data.length / width) | 0;
 
+			// Old way. Don't do this!
+			// let barSlice = data.slice(i0, i1);
+			// barSlice.sort();
+
+			const l = i1 - i0;
+			let barSlice = barSlices[l];
+			if (barSlice) {
+				while (i1-- > i0) {
+					barSlice[i1 - i0] = data[i1];
+				}
+			} else {
+				// Cach the barSlice to avoid allocating thousands of
+				// tiny typed arrays and immediately throwing them away.
+				// Realistically we only have to cache a few options
+				// due to possible rounding error.
+				barSlice = data.slice(i0, i1);
+				barSlices[l] = barSlice;
+			}
+			barSlice.sort();
 			let j = 0, k = 0;
-			while (j < barSlice.length) {
+			while (j < l) {
 				const val = barSlice[k];
 				do {
 					k++;
-				} while (barSlice[k] !== undefined && val === barSlice[k]);
-				const y = (height * j / barSlice.length) | 0;
-				const y1 = (height * k / barSlice.length) | 0;
+				} while (k < l && val === barSlice[k]);
+				const y = (height * j / l) | 0;
+				const y1 = (height * k / l) | 0;
 				const roundedHeight = y1 - y;
 				const cIdx = colorIndices.mostFreq[val] || 0;
 				context.fillStyle = colors.category20[cIdx];
 				context.fillRect(x, y, roundedWidth, roundedHeight);
 				j = k;
 			}
-			i++;
 		}
 	}
 }
