@@ -10,7 +10,7 @@ import { textSize, textStyle, drawText } from './canvas';
 // thirty genes...)
 
 // Convert data to a data range ready for plotting.
-export function sparklineDataPrep(attr, dataRange, indices, unfiltered){
+export function sparklineDataPrep(attr, dataRange, indices, unfiltered) {
 	let { data, arrayType, indexedVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
@@ -84,6 +84,9 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 	switch (mode) {
 		case 'Categorical':
 			paint = categoriesPainter;
+			break;
+		case 'Stacked':
+			paint = stackedCategoriesPainer;
 			break;
 		case 'Bars':
 			paint = barPainter(attr, label);
@@ -199,6 +202,7 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 	// Which is equal to:
 	range.leftFrac = Math.floor(range.left) - range.left;
 	range.xOffset = (range.leftFrac * context.width / range.unrounded) | 0;
+	range.ratio = context.pixelRatio;
 	paint(context, range, colorIndices);
 
 	// Make sure our rotation from before is undone
@@ -215,7 +219,11 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 const abs = Math.abs;
 
 function calcMeans(range) {
-	const { data, width } = range;
+	const { data } = range;
+	// Support high-density displays.
+	// Downside: using browser-zoom scales up plots as well
+	const ratio = range.ratio > 1 ? range.ratio : 1;
+	const width = range.width / ratio;
 	// determine real start and end of range,
 	// skipping undefined padding if present.
 	let start = 0;
@@ -228,14 +236,14 @@ function calcMeans(range) {
 	let means, minima, maxima, outliers;
 	if (data.length <= width) {
 		// more pixels than data
-		barWidth = width / data.length;
+		barWidth = range.width / data.length;
 		means = data;
 		minima = data;
 		maxima = data;
 		outliers = data;
 	} else {
 		// more data than pixels
-		barWidth = 1;
+		barWidth = ratio;
 
 		// calculate means, find minima and maxima
 		means = [];
@@ -315,6 +323,7 @@ function calcMeans(range) {
 
 function categoriesPainter(context, range, colorIndices) {
 	const { data, width, xOffset } = range;
+
 	if (data.length <= width) {
 		// more pixels than data
 		const barWidth = width / data.length;
@@ -332,9 +341,9 @@ function categoriesPainter(context, range, colorIndices) {
 			const cIdx = colorIndices.mostFreq[val] || 0;
 			context.fillStyle = colors.category20[cIdx];
 			// force to pixel grid
-			const x = xOffset + i * barWidth;
-			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
-			context.fillRect(x | 0, 0, roundedWidth, context.height);
+			const x = (xOffset + i * barWidth) | 0;
+			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - x;
+			context.fillRect(x, 0, roundedWidth, context.height);
 			i = j;
 		}
 	} else {
@@ -356,6 +365,70 @@ function categoriesPainter(context, range, colorIndices) {
 			context.fillStyle = colors.category20[cIdx];
 			context.fillRect(xOffset + i, 0, (j - i), context.height);
 			i = j;
+		}
+	}
+}
+
+function stackedCategoriesPainer(context, range, colorIndices) {
+	const { data, xOffset } = range;
+	// Support high-density displays.
+	// Downside: using browser-zoom scales up plots as well
+	const ratio = range.ratio > 1 ? range.ratio : 1;
+	const width = range.width / ratio;
+	const { height } = context;
+
+	if (data.length <= width) {
+		// more pixels than data
+		const barWidth = width / data.length;
+		let i = 0;
+		context.fillStyle = colors.category20[0];
+		while (i < data.length) {
+			let val = data[i];
+			let j = i, nextVal;
+			// advance while value doesn't change
+			do {
+				j++;
+				nextVal = data[j];
+			} while (val === nextVal && i + j < data.length);
+			val = val || 0;
+			const cIdx = colorIndices.mostFreq[val] || 0;
+			context.fillStyle = colors.category20[cIdx];
+			// force to pixel grid
+			const x = xOffset + i * barWidth;
+			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
+			context.fillRect(x | 0, 0, roundedWidth, height);
+			i = j;
+		}
+	} else {
+		// more data than pixels
+		const barWidth = ratio;
+		let i = 0;
+		context.fillStyle = colors.category20[0];
+		while (i < width) {
+			const x = (xOffset + i * barWidth) | 0;
+			const x1 = (xOffset + (i + 1) * barWidth) | 0;
+			const roundedWidth = x1 - x;
+
+			const i0 = (i * data.length / width) | 0;
+			const i1 = ((i + 1) * data.length / width) | 0;
+			let barSlice = data.slice(i0, i1);
+			barSlice.sort();
+
+			let j = 0, k = 0;
+			while (j < barSlice.length) {
+				const val = barSlice[k];
+				do {
+					k++;
+				} while (barSlice[k] !== undefined && val === barSlice[k]);
+				const y = (height * j / barSlice.length) | 0;
+				const y1 = (height * k / barSlice.length) | 0;
+				const roundedHeight = y1 - y;
+				const cIdx = colorIndices.mostFreq[val] || 0;
+				context.fillStyle = colors.category20[cIdx];
+				context.fillRect(x, y, roundedWidth, roundedHeight);
+				j = k;
+			}
+			i++;
 		}
 	}
 }
