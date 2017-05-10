@@ -492,21 +492,21 @@ class ColorSettings extends PureComponent {
 							<ButtonGroup>
 								<Button
 									bsStyle={colorMode === 'Heatmap' ? 'primary' : 'default'}
-									onClick={heatmapHC}>
+									onClick={colorMode === 'Heatmap' ? nullFunc : heatmapHC}>
 									Heatmap
 							</Button>
 							</ButtonGroup>
 							<ButtonGroup>
 								<Button
 									bsStyle={colorMode === 'Heatmap2' ? 'primary' : 'default'}
-									onClick={heatmap2HC}>
+									onClick={colorMode === 'Heatmap2' ? nullFunc : heatmap2HC}>
 									Heatmap2
 							</Button>
 							</ButtonGroup>
 							<ButtonGroup>
 								<Button
 									bsStyle={colorMode === 'Categorical' ? 'primary' : 'default'}
-									onClick={categoricalHC}>
+									onClick={colorMode === 'Categorical' ? nullFunc : categoricalHC}>
 									Categorical
 							</Button>
 
