@@ -74,11 +74,11 @@ export class FetchGeneComponent extends PureComponent {
 		const genes = selection.split(/[,;'"`\s]+/g);
 
 		let validGenes = [];
-		const { geneKeys, geneToRowLowerCase } = col;
+		const { rowToGenes, geneToRowLowerCase } = col;
 		for (let i = 0; i < genes.length; i++) {
 			const geneIdx = geneToRowLowerCase[genes[i].toLowerCase()];
 			if (geneIdx !== undefined) {
-				validGenes.push(geneKeys[geneIdx]);
+				validGenes.push(rowToGenes[geneIdx]);
 			}
 		}
 		return uniq(validGenes);
