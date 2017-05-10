@@ -23,7 +23,7 @@ export function textSize(context, size = 10) {
 	}
 }
 
-export function textStyle(context, fill = 'black', stroke = 'white', lineWidth = 2) {
+export function textStyle(context, fill = 'black', stroke = 'white', lineWidth = 3) {
 	context.fillStyle = fill;
 	context.strokeStyle = stroke;
 	context.lineWidth = lineWidth;

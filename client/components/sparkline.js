@@ -89,13 +89,13 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 			paint = stackedCategoriesPainer;
 			break;
 		case 'Bars':
-			paint = barPainter(attr, label);
+			paint = barPainter(attr);
 			break;
 		case 'Heatmap':
-			paint = heatmapPainter(attr, label, colors.solar256);
+			paint = heatmapPainter(attr, colors.solar256);
 			break;
 		case 'Heatmap2':
-			paint = heatmapPainter(attr, label, colors.YlGnBu256);
+			paint = heatmapPainter(attr, colors.YlGnBu256);
 			break;
 		default:
 			paint = textPaint;
@@ -168,6 +168,7 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 
 	return (context) => {
 		sparklinePainter(context, paint, attr, mode, range, orientation);
+		if (label) { labelPainter(context, label); }
 	};
 }
 
@@ -433,17 +434,17 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	}
 }
 
-function barPainter(attr, label) {
+function barPainter(attr) {
 	let { min, max } = attr;
 	min = min || 0;
 	max = max || 0;
 	return (context, range) => {
-		barPaint(context, range, min, max, label);
+		barPaint(context, range, min, max);
 	};
 }
 
 
-function barPaint(context, range, min, max, label) {
+function barPaint(context, range, min, max) {
 
 	const { means, outliers, barWidth } = calcMeans(range);
 	// factor to multiply the bar values by, to calculate bar height
@@ -512,25 +513,20 @@ function barPaint(context, range, min, max, label) {
 		drawText(context, min.toPrecision(3), 4 * ratio, context.height - 2);
 		drawText(context, max.toPrecision(3), 4 * ratio, 2 + minmaxSize);
 	}
-	if (label) {
-		const labelSize = Math.max(8, 10 * ratio);
-		textSize(context, labelSize);
-		drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
-	}
 }
 
 
 
-function heatmapPainter(attr, label, colorLUT) {
+function heatmapPainter(attr, colorLUT) {
 	let { min, max } = attr;
 	min = min || 0;
 	max = max || 0;
 	return (context, range) => {
-		heatmapPaint(context, range, min, max, label, colorLUT);
+		heatmapPaint(context, range, min, max, colorLUT);
 	};
 }
 
-function heatmapPaint(context, range, min, max, label, colorLUT) {
+function heatmapPaint(context, range, min, max, colorLUT) {
 	const { means, outliers, barWidth } = calcMeans(range);
 	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	let i = 0, x = range.xOffset;
@@ -551,12 +547,6 @@ function heatmapPaint(context, range, min, max, label, colorLUT) {
 		// force to pixel grid
 		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
 		i = j; x += w;
-	}
-	textStyle(context);
-	if (label) {
-		const labelSize = Math.max(8, 10 * context.pixelRatio);
-		textSize(context, labelSize);
-		drawText(context, label, 6 * context.pixelRatio, (context.height + labelSize) * 0.5);
 	}
 }
 
@@ -591,4 +581,11 @@ function textPaint(context, range) {
 		// undo all rotations/translations
 		context.restore();
 	}
+}
+
+function labelPainter(context, label) {
+	textStyle(context);
+	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
+	textSize(context, labelSize);
+	drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
 }

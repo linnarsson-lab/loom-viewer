@@ -46,7 +46,7 @@ export class AttrLegend extends PureComponent {
 			const color = filtered ? 'lightgrey' : selectColor(i, val);
 
 			const cellStyle = {
-				display: 'inline-block',
+				display: 'flex',
 				cursor: 'pointer',
 				textDecoration: (filtered ? 'line-through' : null),
 			};
@@ -90,16 +90,16 @@ export class AttrLegend extends PureComponent {
 				<span style={{ fontStyle: 'normal' }}>□ </span>
 			) : null;
 			visibleData[l] = (
-				<td key={20} style={{ display: 'inline-block' }}>
+				<td key={20} style={{ display: 'flex' }}>
 					{icon} (other): {rest}
 				</td>
 			);
 		}
 
 		return (
-			<table style={{ display: 'block' }}>
+			<table>
 				<tbody>
-					<tr>
+					<tr style={{ display: 'flex', flex: '0 0 auto', flexWrap: 'wrap', justifyContent: 'start', alignContent: 'start', flexDirection: 'row' }}>
 						{visibleData}
 					</tr>
 				</tbody>

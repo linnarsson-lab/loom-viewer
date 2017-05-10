@@ -7,47 +7,23 @@ import { ViewInitialiser } from './view-initialiser';
 
 import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
-import { AttrLegend } from './legend';
 
 import { isEqual } from 'lodash';
 
-
-import {
-	SET_VIEW_PROPS,
-} from '../actions/actionTypes';
-
-
 class Legend extends PureComponent {
 	render() {
-		const { col, colAttr, colMode, dispatch, path } = this.props;
+		const { col, colAttr, colMode } = this.props;
 		const legendData = col.attrs[colAttr];
 		if (legendData) {
-			const filterFunc = (val) => {
-				return () => {
-					dispatch({
-						type: SET_VIEW_PROPS,
-						path,
-						axis: 'col',
-						filterAttrName: colAttr,
-						filterVal: val,
-					});
-				};
-			};
 			return (
 				<div style={{
 					flex: '0 0 auto',
-					minHeight: '20px',
 					overflowY: 'scroll',
 					overflowX: 'hidden',
 				}}>
-					<AttrLegend
-						mode={colMode}
-						filterFunc={filterFunc}
-						attr={legendData}
-					/>
 					<Canvas
-						height={20}
-						paint={sparkline(legendData, col.sortedFilterIndices, colMode)}
+						height={40}
+						paint={sparkline(legendData, col.sortedFilterIndices, colMode, null, legendData.name)}
 						redraw
 						clear
 					/>
@@ -127,7 +103,7 @@ class Sparklines extends PureComponent {
 Sparklines.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	sortedFilterIndices: PropTypes.oneOf([PropTypes.array, TypedArrayProp]),
+	sortedFilterIndices: TypedArrayProp,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
 };
@@ -182,7 +158,7 @@ SparklineViewComponent.propTypes = {
 const initialState = { // Initialise sparklineState for this dataset
 	colMode: 'Stacked',
 	geneMode: 'Bars',
-	genes: '',
+	genes: [],
 	showLabels: true,
 };
 

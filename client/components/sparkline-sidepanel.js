@@ -4,6 +4,7 @@ import { DropdownMenu } from './dropdown';
 import { SortAttributeComponent } from './sort-attributes';
 import { FetchGeneComponent } from './fetch-gene';
 import { CollapsibleSettings } from './collapsible';
+import { AttrLegend } from './legend';
 import { FilteredValues } from './filtered';
 
 import { fetchGene } from '../actions/actions';
@@ -54,8 +55,32 @@ class LegendSettings extends PureComponent {
 
 	render() {
 		const { colAttrsHC, colModeOptions, colModeHC } = this.state;
-		const { dataset, colAttr, colMode } = this.props;
+		const { dispatch, dataset, colAttr, colMode } = this.props;
 		const { col } = dataset;
+
+		const { path } = dataset;
+		const filterFunc = colAttr ? (val) => {
+			return () => {
+				dispatch({
+					type: SET_VIEW_PROPS,
+					path,
+					axis: 'col',
+					filterAttrName: colAttr,
+					filterVal: val,
+				});
+			};
+		} : () => { };
+		const legendData = col.attrs[colAttr];
+		let legend;
+		if (legendData) {
+			legend = (
+				<AttrLegend
+					mode={colMode}
+					filterFunc={filterFunc}
+					attr={legendData} />
+			);
+		}
+
 
 		return (
 			<ListGroupItem>
@@ -77,6 +102,7 @@ class LegendSettings extends PureComponent {
 						/>
 					</div>
 				</CollapsibleSettings>
+				{legend}
 			</ListGroupItem>
 		);
 	}
@@ -133,7 +159,7 @@ class AttributeSelection extends PureComponent {
 AttributeSelection.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
-	genes: PropTypes.string.isRequired,
+	genes: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 class ColorSettings extends PureComponent {

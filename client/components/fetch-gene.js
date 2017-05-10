@@ -123,7 +123,7 @@ export class FetchGeneComponent extends PureComponent {
 FetchGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	selectedGenes: PropTypes.string,
+	selectedGenes: PropTypes.arrayOf(PropTypes.string),
 	onChange: PropTypes.func,
 	style: PropTypes.object,
 };
