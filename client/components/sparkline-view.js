@@ -49,6 +49,7 @@ class Sparklines extends PureComponent {
 		// attrs object changes, so we check if
 		// the objects contained are different
 		return this.props.selection !== nextProps.selection ||
+		this.props.order !== nextProps.order ||
 		this.props.sortedFilterIndices !== nextProps.sortedFilterIndices ||
 		this.props.geneMode !== nextProps.geneMode ||
 		this.props.showLabels !== nextProps.showLabels ||
@@ -103,6 +104,7 @@ class Sparklines extends PureComponent {
 Sparklines.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
+	order: PropTypes.object,
 	sortedFilterIndices: TypedArrayProp.any,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
@@ -140,6 +142,7 @@ class SparklineViewComponent extends PureComponent {
 					<Sparklines
 						attrs={dataset.col.attrs}
 						selection={sl.genes}
+						order={dataset.viewState.col.order}
 						sortedFilterIndices={col.sortedFilterIndices}
 						geneMode={sl.geneMode}
 						showLabels={sl.showLabels} />
