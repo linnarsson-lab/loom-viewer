@@ -1,5 +1,7 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
+import { Button } from 'react-bootstrap';
+import { OverlayTooltip } from './collapsible';
 
 import * as colors from '../js/colors';
 
@@ -65,11 +67,15 @@ export class AttrLegend extends PureComponent {
 			visibleData[i] = (
 				<td
 					key={`${i}_${val}`}
-					onClick={filter}
 					style={cellStyle}>
-					<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
-						{icon} {dataVal}:
-				</span> {count}
+					<OverlayTooltip
+						tooltip={filtered ? `Click to remove "${dataVal}" from filter` : `Click to filter out "${dataVal}"`}
+						tooltipId={`filter-${i}_${val}-tltp`}>
+						<Button bsStyle='link' style={{ whiteSpace: 'normal', textAlign: 'left' }} onClick={filter} >
+							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
+								{icon} {dataVal}: </span> {count}
+						</Button>
+					</OverlayTooltip>
 				</td>
 			);
 		}
