@@ -103,7 +103,7 @@ class Sparklines extends PureComponent {
 Sparklines.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	sortedFilterIndices: TypedArrayProp,
+	sortedFilterIndices: TypedArrayProp.any,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
 };
