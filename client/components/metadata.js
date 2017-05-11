@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { Glyphicon } from 'react-bootstrap';
+import { Glyphicon, Button } from 'react-bootstrap';
 import { DebouncedFormcontrol } from './debounced-formcontrol';
 import { AttrLegend } from './legend';
 import { SortableTable } from './sortabletable';
@@ -8,6 +8,7 @@ import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 import { TypedArrayProp } from '../js/proptypes-typedarray';
+import { OverlayTooltip } from './collapsible';
 
 import Fuse from 'fuse.js';
 
@@ -33,14 +34,19 @@ export class MetadataPlot extends PureComponent {
 		const { attr, indices, filterFunc } = this.props;
 		return (
 			<div className='view-vertical'>
-				<div
-					onClick={this.modeCycler}
-					style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
-					<Canvas
-						height={40}
-						paint={sparkline(attr, indices, modes[mode])}
-						redraw clear />
-				</div>
+				<OverlayTooltip
+					tooltip={`Click to cycle trough plot modes for "${attr.name}". Currently ${modes[mode]}`}
+					tooltipId={`${attr.name.replace(/\s+/g, '-').toLowerCase()}-plt-tltp`}>
+					<Button
+						onClick={this.modeCycler}
+						bsStyle='link'
+						style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
+						<Canvas
+							height={40}
+							paint={sparkline(attr, indices, modes[mode])}
+							redraw clear />
+					</Button>
+				</OverlayTooltip>
 				<AttrLegend
 					mode={modes[mode]}
 					filterFunc={filterFunc}
@@ -124,11 +130,16 @@ class MetadataTable extends PureComponent {
 			let tableRow = {
 				rowKey: key,
 				name: (
-					<div
-						onClick={onClick}
-						style={{ width: '100%', height: '100%', cursor: 'pointer' }}>
-						<span>{key}</span>
-					</div>),
+					<OverlayTooltip
+						tooltip={`Sort attributes by "${key}"`}
+						tooltipId={`${key.replace(/\s+/g, '-').toLowerCase()}-sort-tltp`}>
+						<Button
+							onClick={onClick}
+							bsStyle='link'
+							style={{ width: '100%', height: '100%', whiteSpace: 'normal', textAlign: 'left' }}>
+							{key}
+						</Button>
+					</OverlayTooltip>),
 			};
 			const attr = attributes[key];
 			const { data, indexedVal, arrayType, uniques, uniqueVal } = attr;
@@ -299,21 +310,21 @@ export class MetadataComponent extends PureComponent {
 		const { sortedFilterIndices } = dataset[axis];
 		const { order } = dataset.viewState[axis];
 		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
-		for (let i = 0; i < Math.min(order.length, 4); i++){
+		for (let i = 0; i < Math.min(order.length, 4); i++) {
 			const val = order[i];
 			sortOrderList.push(
-				<span key={i+1}>
+				<span key={i + 1}>
 					&nbsp;&nbsp;&nbsp;
 					{val.key}
 					<Glyphicon
-						glyph={ val.asc ?
-						'sort-by-attributes' : 'sort-by-attributes-alt' } />
+						glyph={val.asc ?
+							'sort-by-attributes' : 'sort-by-attributes-alt'} />
 				</span>
 			);
 		}
 
 		return (
-			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em' }}>
+			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden', overflowY: 'scroll', willChange: 'scroll-position' }}>
 				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataTable
 					attributes={attributes}

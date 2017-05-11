@@ -80,14 +80,20 @@ class LandscapeComponent extends PureComponent {
 			matrixChanged.push(newYattrs[i].attr);
 		}
 		return (
-			<div className='view'>
-				<LandscapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-				/>
-				{/*If any x or y attributes in our grid change, we need to remount*/}
-				<RemountOnResize watchedVal={matrixChanged.join('')}>
-					<div className={'view-vertical'}>{matrix}</div>
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<div style={{ overflowX: 'hidden', overflowY: 'scroll' }}>
+					<LandscapeSidepanel
+						dataset={dataset}
+						dispatch={dispatch}
+					/>
+				</div>
+				<RemountOnResize watchedVal={
+					/*If any x or y attributes in
+					our grid change, we need to remount*/
+					matrixChanged.join('')}>
+					<div className={'view-vertical'} >
+						{matrix}
+					</div>
 				</RemountOnResize>
 			</div>
 		);

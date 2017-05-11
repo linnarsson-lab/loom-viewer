@@ -96,19 +96,27 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
 	const { PI, random, sin, cos, log2 } = Math;
-	// Scale of data
-	let xmin = x.min, xmax = x.max, ymin = y.min, ymax = y.max;
+
+	let xmin = x.min,
+		xmax = x.max,
+		xDelta = xmax-xmin,
+		xOrder = Math.log10(xDelta) | 0,
+		xJitter = 1,
+		ymin = y.min,
+		ymax = y.max,
+		yDelta = ymax-ymin,
+		yOrder = Math.log10(yData) | 0,
+		yJitter = 1;
+
+
 
 	// For small value ranges (happens with PCA a lot),
 	// jittering needs to be scaled down
-	let xJitter = 1, xDelta = xmax-xmin, yJitter = 1, yDelta = ymax-ymin;
-	while(xDelta < 8){
-		xJitter *= 0.5;
-		xDelta *= 2;
+	if(xDelta/xJitter < 8){
+		xJitter = ((Math.log2(xDelta)*8)|0) / 32;
 	}
-	while(yDelta < 8){
-		yJitter *= 0.5;
-		yDelta *= 2;
+	if(yDelta/yJitter < 8){
+		yJitter = ((Math.log2(yDelta)*8)|0) / 32;
 	}
 
 	// If we have an unindexed string array, convert it

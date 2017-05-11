@@ -69,7 +69,7 @@ export class AttrLegend extends PureComponent {
 					key={`${i}_${val}`}
 					style={cellStyle}>
 					<OverlayTooltip
-						tooltip={filtered ? `Click to remove "${dataVal}" from filter` : `Click to filter out "${dataVal}"`}
+						tooltip={filtered ? `Click to remove "${dataVal}" from filter` : `Filter out "${dataVal}"`}
 						tooltipId={`filter-${i}_${val}-tltp`}>
 						<Button bsStyle='link' style={{ whiteSpace: 'normal', textAlign: 'left' }} onClick={filter} >
 							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>

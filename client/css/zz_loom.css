@@ -95,6 +95,16 @@ a {
   color: gray;
 }
 
+div::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: #FFFFFF;
+}
+
+div::-webkit-scrollbar-thumb {
+  background: #AAAAAA;
+}
+
 h1 {
   font-size: 1.7em;
   margin-top: 0.5em;

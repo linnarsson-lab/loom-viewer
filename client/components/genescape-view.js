@@ -79,13 +79,17 @@ class GenescapeComponent extends PureComponent {
 			matrixChanged.push(newYattrs[i].attr);
 		}
 		return (
-			<div className='view'>
-				<GenescapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<div style={{ overflowY: 'scroll' }}>
+					<GenescapeSidepanel
+						dataset={dataset}
+						dispatch={dispatch}
 				/>
-				{/*If any x or y attributes in our grid change, we need to remount*/}
-				<RemountOnResize watchedVal={matrixChanged.join('')}>
+				</div>
+				<RemountOnResize watchedVal={
+					/*If any x or y attributes in our
+					grid change, we need to remount*/
+					matrixChanged.join('')}>
 					<div className={'view-vertical'}>{matrix}</div>
 				</RemountOnResize>
 			</div>

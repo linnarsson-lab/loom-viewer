@@ -587,7 +587,7 @@ ScaleFactorSettings.propTypes = {
 
 export class ScatterplotSidepanel extends PureComponent {
 	render() {
-		const { dispatch, dataset, stateName, axis } =this.props;
+		const { dispatch, dataset, stateName, axis } = this.props;
 		const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = this.props.viewState;
 
 		return (

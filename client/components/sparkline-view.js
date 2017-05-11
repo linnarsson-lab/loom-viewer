@@ -45,15 +45,15 @@ Legend.propTypes = {
 
 class Sparklines extends PureComponent {
 
-	shouldComponentUpdate(nextProps){
+	shouldComponentUpdate(nextProps) {
 		// attrs object changes, so we check if
 		// the objects contained are different
 		return this.props.selection !== nextProps.selection ||
-		this.props.order !== nextProps.order ||
-		this.props.sortedFilterIndices !== nextProps.sortedFilterIndices ||
-		this.props.geneMode !== nextProps.geneMode ||
-		this.props.showLabels !== nextProps.showLabels ||
-		!isEqual(this.props.attrs, nextProps.attrs);
+			this.props.order !== nextProps.order ||
+			this.props.sortedFilterIndices !== nextProps.sortedFilterIndices ||
+			this.props.geneMode !== nextProps.geneMode ||
+			this.props.showLabels !== nextProps.showLabels ||
+			!isEqual(this.props.attrs, nextProps.attrs);
 	}
 
 	render() {
@@ -71,6 +71,7 @@ class Sparklines extends PureComponent {
 						flexDirection: 'column',
 						minHeight: '30px',
 						maxHeight: '30px',
+						willChange: 'scroll-position',
 					}}>
 					<Canvas
 						height={30}
@@ -83,17 +84,21 @@ class Sparklines extends PureComponent {
 		}
 
 		return (
-			<div style={{
-				display: 'flex',
-				flex: 1,
-				overflowY: 'scroll',
-				overflowX: 'hidden',
-			}}>
-				<div style={{
+			<div
+				style={{
 					display: 'flex',
-					flexDirection: 'column',
-					width: '100%',
+					flex: 1,
+					overflowY: 'scroll',
+					overflowX: 'hidden',
+					minHeight: 0,
 				}}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						width: '100%',
+						willChange: 'contents',
+					}}>
 					{sparklines}
 				</div>
 			</div>
@@ -124,8 +129,8 @@ class SparklineViewComponent extends PureComponent {
 		}
 
 		return (
-			<div className='view' style={{ overflowX: 'hidden' }}>
-				<div style={{ overflowY: 'auto' }}>
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<div style={{ overflowY: 'scroll' }}>
 					<SparklineSidepanel
 						dispatch={dispatch}
 						dataset={dataset}
