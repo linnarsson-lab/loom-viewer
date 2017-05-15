@@ -66,9 +66,10 @@ export class FetchGeneComponent extends PureComponent {
 			// to handle "resetting" the view
 			onChange ? onChange(validGenes) : null;
 
-			const selectedGenes = validGenes.join(',\ ');
-			this.setState({ validGenes, selectedGenes });
 		}
+		const selectedGenes = validGenes.join(',\ ');
+		this.setState({ validGenes, selectedGenes });
+
 	}
 
 	filterValidGenes(selection) {
