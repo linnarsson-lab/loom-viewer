@@ -42,7 +42,7 @@ export class MetadataPlot extends PureComponent {
 						bsStyle='link'
 						style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 						<Canvas
-							height={40}
+							height={80}
 							paint={sparkline(attr, indices, modes[mode])}
 							redraw clear />
 					</Button>
@@ -324,7 +324,7 @@ export class MetadataComponent extends PureComponent {
 		}
 
 		return (
-			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden', overflowY: 'scroll', willChange: 'scroll-position' }}>
+			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden', overflowY: 'scroll' }}>
 				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataTable
 					attributes={attributes}
