@@ -91,8 +91,8 @@ class LegendSettings extends PureComponent {
 					<div>
 						<DropdownMenu
 							value={colAttr}
-							options={col.allKeysNoUniques}
-							filterOptions={col.dropdownOptions.allNoUniques}
+							options={col.keysNoUniques}
+							filterOptions={col.dropdownOptions.attrsNoUniques}
 							onChange={colAttrsHC}
 						/>
 						<DropdownMenu

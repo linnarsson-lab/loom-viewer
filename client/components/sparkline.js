@@ -1,6 +1,8 @@
 import { findMostCommon, arrayConstr, arraySubset } from '../js/util';
-import { category20, YlGnBu256, solar256 }  from '../js/colors';
 import { textSize, textStyle, drawText } from './canvas';
+
+import * as colors from '../js/colors';
+const { category20, solar256, YlGnBu256 } = colors;
 
 // TODO: change the way sparkline plotters prepare and consume data
 // current version is too memory-intensive and leads to issues with

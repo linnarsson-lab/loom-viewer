@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { TypedArrayProp } from '../js/proptypes-typedarray';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
+import { RemountOnResize } from './remount-on-resize';
 import { ViewInitialiser } from './view-initialiser';
 
 import { Canvas } from './canvas';
@@ -11,6 +12,15 @@ import { sparkline } from './sparkline';
 import { isEqual } from 'lodash';
 
 class Legend extends PureComponent {
+
+	shouldComponentUpdate(nextProps) {
+		return (
+			this.props.colAttr !== nextProps.colAttr ||
+			this.props.colMode !== nextProps.colMode ||
+			nextProps.indicesChanged
+		);
+	}
+
 	render() {
 		const { col, colAttr, colMode } = this.props;
 		const legendData = col.attrs[colAttr];
@@ -22,7 +32,7 @@ class Legend extends PureComponent {
 					overflowX: 'hidden',
 				}}>
 					<Canvas
-						height={40}
+						height={60}
 						paint={sparkline(legendData, col.sortedFilterIndices, colMode, null, legendData.name)}
 						redraw
 						clear
@@ -39,8 +49,50 @@ Legend.propTypes = {
 	col: PropTypes.object.isRequired,
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
-	dispatch: PropTypes.func.isRequired,
 	path: PropTypes.string.isRequired,
+	indicesChanged: PropTypes.bool.isRequired,
+};
+
+class Sparkline extends PureComponent {
+
+	shouldComponentUpdate(nextProps) {
+		// let gene = this.props.gene !== nextProps.gene,
+		// 	indices = this.props.order !== nextProps.order,
+		// 	mode = this.props.geneMode !== nextProps.geneMode,
+		// 	label = this.props.showLabels !== nextProps.showLabels,
+		// 	data = this.props.geneData === undefined && (this.props.geneData !== nextProps.geneData);
+
+		return this.props.gene !== nextProps.gene ||
+			this.props.geneMode !== nextProps.geneMode ||
+			this.props.showLabels !== nextProps.showLabels ||
+			nextProps.indicesChanged ||
+			(this.props.geneData === undefined &&
+			nextProps.geneData !== undefined);
+	}
+
+	render() {
+		const { gene, geneData, sortedFilterIndices, geneMode, showLabels, style } = this.props;
+		return (
+			<div style={style}>
+				<Canvas
+					height={30}
+					paint={sparkline(geneData, sortedFilterIndices, geneMode, false, showLabels ? gene : null)}
+					redraw
+					clear
+				/>
+			</div>
+		);
+	}
+}
+
+Sparkline.propTypes = {
+	gene: PropTypes.string,
+	geneData: PropTypes.object,
+	geneMode: PropTypes.string,
+	indicesChanged: PropTypes.bool,
+	showLabels: PropTypes.bool,
+	sortedFilterIndices: TypedArrayProp.any,
+	style: PropTypes.object,
 };
 
 class Sparklines extends PureComponent {
@@ -49,37 +101,42 @@ class Sparklines extends PureComponent {
 		// attrs object changes, so we check if
 		// the objects contained are different
 		return this.props.selection !== nextProps.selection ||
-			this.props.order !== nextProps.order ||
-			this.props.sortedFilterIndices !== nextProps.sortedFilterIndices ||
 			this.props.geneMode !== nextProps.geneMode ||
 			this.props.showLabels !== nextProps.showLabels ||
+			nextProps.indicesChanged ||
 			!isEqual(this.props.attrs, nextProps.attrs);
 	}
 
-	render() {
-		const { attrs, selection, sortedFilterIndices, geneMode, showLabels } = this.props;
 
-		let sparklines = [], j = 0;
+	render() {
+		const {
+			attrs,
+			selection,
+			sortedFilterIndices,
+			indicesChanged,
+			geneMode,
+			showLabels,
+		} = this.props;
+
+		let sparklines = [];
 		for (let i = 0; i < selection.length; i++) {
-			let geneData = attrs[selection[i]];
+			let gene = selection[i];
+			let geneData = attrs[gene];
 			sparklines.push(
-				<div
-					key={selection[i]}
+				<Sparkline
+					key={gene}
+					gene={gene}
+					geneData={geneData}
+					geneMode={geneMode}
+					indicesChanged={indicesChanged}
+					sortedFilterIndices={sortedFilterIndices}
+					showLabels={showLabels}
 					style={{
-						background: ((j++ % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-						display: 'flex',
-						flexDirection: 'column',
+						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
 						minHeight: '30px',
 						maxHeight: '30px',
-						willChange: 'scroll-position',
-					}}>
-					<Canvas
-						height={30}
-						paint={sparkline(geneData, sortedFilterIndices, geneMode, false, showLabels ? selection[i] : null)}
-						redraw
-						clear
-					/>
-				</div>
+					}}
+				/>
 			);
 		}
 
@@ -88,8 +145,8 @@ class Sparklines extends PureComponent {
 				style={{
 					display: 'flex',
 					flex: 1,
-					overflowY: 'scroll',
 					overflowX: 'hidden',
+					overflowY: 'scroll',
 					minHeight: 0,
 				}}>
 				<div
@@ -97,7 +154,7 @@ class Sparklines extends PureComponent {
 						display: 'flex',
 						flexDirection: 'column',
 						width: '100%',
-						willChange: 'contents',
+						height: `${selection.length * 30}px`,
 					}}>
 					{sparklines}
 				</div>
@@ -109,13 +166,29 @@ class Sparklines extends PureComponent {
 Sparklines.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	order: PropTypes.object,
 	sortedFilterIndices: TypedArrayProp.any,
+	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
 };
 
 class SparklineViewComponent extends PureComponent {
+	componentWillMount() {
+		this.setState({
+			indicesChanged: false,
+		});
+	}
+
+	componentWillUpdate(nextProps) {
+		const indicesChanged = !isEqual(
+			this.props.dataset.col.sortedFilterIndices,
+			nextProps.dataset.col.sortedFilterIndices);
+		this.setState({
+			indicesChanged,
+		});
+
+	}
+
 	render() {
 		const { dispatch, dataset } = this.props;
 		const { col } = dataset;
@@ -127,31 +200,34 @@ class SparklineViewComponent extends PureComponent {
 		if (legendData === undefined) {
 			legendData = col.attrs[col.keys[0]];
 		}
+		const { indicesChanged } = this.state;
 
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-				<div style={{ overflowY: 'scroll' }}>
+				<div style={{ overflowY: 'scroll', minWidth: '300px' }}>
 					<SparklineSidepanel
 						dispatch={dispatch}
 						dataset={dataset}
 					/>
 				</div>
-				<div className='view-vertical' style={{ margin: '20px 20px 20px 20px' }}>
-					<Legend
-						col={col}
-						colAttr={sl.colAttr}
-						colMode={sl.colMode}
-						dispatch={dispatch}
-						path={dataset.path}
-					/>
-					<Sparklines
-						attrs={dataset.col.attrs}
-						selection={sl.genes}
-						order={dataset.viewState.col.order}
-						sortedFilterIndices={col.sortedFilterIndices}
-						geneMode={sl.geneMode}
-						showLabels={sl.showLabels} />
-				</div>
+				<RemountOnResize>
+					<div className='view-vertical' style={{ overflowX: 'hidden', minHeight: 0, padding: '20px' }}>
+						<Legend
+							col={col}
+							colAttr={sl.colAttr}
+							colMode={sl.colMode}
+							path={dataset.path}
+							indicesChanged={indicesChanged}
+						/>
+						<Sparklines
+							attrs={dataset.col.attrs}
+							selection={sl.genes}
+							indicesChanged={indicesChanged}
+							sortedFilterIndices={col.sortedFilterIndices}
+							geneMode={sl.geneMode}
+							showLabels={sl.showLabels} />
+					</div>
+				</RemountOnResize>
 			</div>
 		);
 	}

@@ -4,6 +4,7 @@ import { Button } from 'react-bootstrap';
 import { OverlayTooltip } from './collapsible';
 
 import * as colors from '../js/colors';
+const { category20, solar256, YlGnBu256 } = colors;
 
 export class AttrLegend extends PureComponent {
 	render() {
@@ -21,7 +22,7 @@ export class AttrLegend extends PureComponent {
 		let block = '';
 		if (mode === 'Categorical' || mode === 'Stacked') {
 			selectColor = (i) => {
-				return colors.category20[i + 1];
+				return category20[i + 1];
 			};
 			// We're using █ (FULL BLOCK) because some fonts replace
 			// BLACK SQUARE BLOCK with a graphical icon, and we need
@@ -31,8 +32,8 @@ export class AttrLegend extends PureComponent {
 			block = '██';
 		} else if (mode === 'Heatmap' || mode === 'Heatmap2') {
 			let { min, max } = attr;
-			const heatmapScale = ((colors.solar256.length - 1) / (max - min) || 1);
-			const palette = mode === 'Heatmap' ? colors.solar256 : colors.YlGnBu256;
+			const heatmapScale = ((solar256.length - 1) / (max - min) || 1);
+			const palette = mode === 'Heatmap' ? solar256 : YlGnBu256;
 			selectColor = (i, val) => {
 				const heatmapIdx = ((val - min) * heatmapScale) | 0;
 				return palette[heatmapIdx];
@@ -69,9 +70,14 @@ export class AttrLegend extends PureComponent {
 					key={`${i}_${val}`}
 					style={cellStyle}>
 					<OverlayTooltip
-						tooltip={filtered ? `Click to remove "${dataVal}" from filter` : `Filter out "${dataVal}"`}
+						tooltip={filtered ?
+							`Click to remove "${dataVal}" from filter` :
+							`Filter out "${dataVal}"`}
 						tooltipId={`filter-${i}_${val}-tltp`}>
-						<Button bsStyle='link' style={{ whiteSpace: 'normal', textAlign: 'left' }} onClick={filter} >
+						<Button
+							bsStyle='link'
+							style={{ whiteSpace: 'normal', textAlign: 'left' }}
+							onClick={filter} >
 							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
 								{icon} {dataVal}: </span> {count}
 						</Button>
