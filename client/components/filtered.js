@@ -1,8 +1,8 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { ListGroup, ListGroupItem } from 'react-bootstrap';
+import { ListGroup, ListGroupItem, Button } from 'react-bootstrap';
 
-import { CollapsibleSettings } from './collapsible';
+import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -29,6 +29,44 @@ export class FilteredValues extends PureComponent {
 				let filterAttrName = attrNames[i],
 					attr = attrs[filterAttrName],
 					label = `${attrNames[i]}: (${filteredVals[i].length})`;
+				const listGroupElements = filteredVals[i].map(
+					(filterVal) => {
+						return (
+							<OverlayTooltip
+								key={filterAttrName + '_' + filterVal}
+								tooltip={`Click to remove "${filterVal}" from filter`}
+								tooltipId={`filter-${filterAttrName}_${filterVal}-tltp`}>
+								<ListGroupItem>
+									<Button
+										bsStyle='link'
+										style={{
+											fontWeight: 'bold',
+											whiteSpace: 'normal',
+											textAlign: 'left',
+											width: '100%',
+										}}
+										onClick={
+											() => {
+												dispatch({
+													type: SET_VIEW_PROPS,
+													path: dataset.path,
+													axis,
+													filterAttrName,
+													filterVal,
+												});
+											}
+										}>
+
+										{attr.indexedVal ?
+											attr.indexedVal[filterVal] :
+											filterVal}
+									</Button>
+								</ListGroupItem>
+							</OverlayTooltip>
+						);
+					}
+				);
+
 
 				filteredList[i] = (
 					<ListGroupItem key={i + attr}>
@@ -36,33 +74,7 @@ export class FilteredValues extends PureComponent {
 							label={label}
 							mountClosed>
 							<ListGroup>
-								{
-									filteredVals[i].map((filterVal) => {
-										return (
-											<ListGroupItem
-												key={filterAttrName + '_' + filterVal}
-												style={{
-													cursor: 'pointer',
-													fontWeight: 'bold',
-												}}
-												onClick={
-													() => {
-														dispatch({
-															type: SET_VIEW_PROPS,
-															path: dataset.path,
-															axis,
-															filterAttrName,
-															filterVal,
-														});
-													}
-												}>
-												{attr.indexedVal ?
-													attr.indexedVal[filterVal] :
-													filterVal}
-											</ListGroupItem>
-										);
-									})
-								}
+								{listGroupElements}
 							</ListGroup>
 						</CollapsibleSettings>
 					</ListGroupItem>

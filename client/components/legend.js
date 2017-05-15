@@ -76,7 +76,10 @@ export class AttrLegend extends PureComponent {
 						tooltipId={`filter-${i}_${val}-tltp`}>
 						<Button
 							bsStyle='link'
-							style={{ whiteSpace: 'normal', textAlign: 'left' }}
+							style={{
+								whiteSpace: 'normal',
+								textAlign: 'left',
+							}}
 							onClick={filter} >
 							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
 								{icon} {dataVal}: </span> {count}
