@@ -144,7 +144,7 @@ function receiveDataSet(data, path) {
 	cols.geneToRowLowerCase = {};
 	// store row indices for gene fetching later
 	let i = cols.geneKeys.length;
-	while(i--){
+	while (i--) {
 		let gene = cols.geneKeys[i];
 		cols.rowToGenes[i] = gene;
 		cols.geneToRow[gene] = i;
@@ -171,12 +171,17 @@ function receiveDataSet(data, path) {
 
 	cols.dropdownOptions = {};
 	//cols.dropdownOptions.attrs = prepFilter(cols.keys);
-	//cols.dropdownOptions.attrsNoUniques = prepFilter(cols.keysNoUniques);
+	cols.dropdownOptions.attrsNoUniques = prepFilter(cols.keysNoUniques);
 	cols.dropdownOptions.keyAttr = prepFilter(cols.geneKeys);
 	//cols.dropdownOptions.all = prepFilter(cols.allKeys);
 	cols.dropdownOptions.allNoUniques = prepFilter(cols.allKeysNoUniques);
 
-	let dataset = { col: cols, row: rows };
+	let dataset = {
+		col: cols,
+		row: rows,
+		totalCols: cols.geneKeys.length,
+		totalRows: rows.cellKeys.length,
+	};
 
 	dataset.viewState = {
 		row: { order: prepRows.order, filter: [] },
@@ -267,7 +272,7 @@ function originalOrderArray(length) {
 		uniques: [],
 		allUnique: true,
 		min: 0,
-		max: data.length-1,
+		max: data.length - 1,
 	};
 }
 
@@ -406,50 +411,67 @@ export function fetchGene(dataset, genes) {
 	} else {
 		// `genes` can be either a string or an array of strings
 		genes = typeof genes === 'string' ? [genes] : genes;
-		return (dispatch) => {
 
-			let fetchGeneNames = [], fetchRows = [];
-			for (let i = 0; i < genes.length; i++) {
-				const gene = genes[i];
-				const row = geneToRow[gene];
-				// If gene is already cached, being fetched or
-				// not part of the dataset, skip fetching.
-				if (!fetchedGenes[gene] && row !== -1) {
-					fetchGeneNames.push(gene);
-					fetchRows.push(row);
+		// To avoid memory overhead issues (this has crashed
+		// the browser in testing), we shouldn't make the
+		// individual fetches *too* big. After a bit of testing
+		// I guesstimate that for 50k cells, we want to fetch
+		// at most 50 rows at once.
+		const rowsPerFetch = (5000000 / dataset.totalCols)|0;
+		let fetchGeneNames = [], fetchRows = [];
+		for (let i = 0; i < genes.length; i++) {
+			const gene = genes[i];
+			const row = geneToRow[gene];
+			// If gene is already cached, being fetched or
+			// not part of the dataset, skip fetching.
+			if (!fetchedGenes[gene] && row !== undefined) {
+				fetchGeneNames.push(gene);
+				fetchRows.push(row);
+			}
+		}
+		if (fetchRows.length > 0) {
+			return (dispatch) => {
+				_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
+			};
+		} else {
+			return () => { };
+		}
+	}
+}
+
+function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes) {
+	for (let i = 0; i < fetchGeneNames.length; i += rowsPerFetch) {
+		let i1 = Math.min(i + rowsPerFetch, fetchGeneNames.length);
+		const _fetchGeneNames = fetchGeneNames.slice(i, i1),
+			_fetchRows = fetchRows.slice(i, i1);
+
+		// Announce gene request from server, add to geneKeys
+		// to indicate it is being fetched
+		dispatch(requestGenesFetch(_fetchGeneNames, path, title));
+		// Second, perform the request (async)
+		fetch(`/loom/${path}/row/${_fetchRows.join('+')}`)
+			// Third, once the response comes in,
+			// dispatch an action to provide the data
+			.then((response) => { return response.json(); })
+			.then((data) => {
+				// Genes are appended to the attrs object
+				let attrs = {};
+				let i = data.length;
+				while (i--) {
+					// we set data[i] to null as early as possible, so JS can
+					// GC the rows after converting them to TypedArrays.
+					// I actually had an allocation failure so this is a real risk when fetching large amounts of data.
+					let geneName = rowToGenes[data[i].idx],
+						geneData = data[i].data;
+					data[i] = null;
+					attrs[geneName] = convertJSONarray(geneData, geneName);
 				}
-			}
-
-			if (fetchRows.length > 0) {
-				// Announce gene request from server, add to geneKeys
-				// to indicate it is being fetched
-				dispatch(requestGenesFetch(fetchGeneNames, path, title));
-				// Second, perform the request (async)
-				fetch(`/loom/${path}/row/${fetchRows.join('+')}`)
-					// Third, once the response comes in, dispatch an action to provide the data
-					.then((response) => { return response.json(); })
-					.then((data) => {
-						// Genes are appended to the attrs object
-						let attrs = {};
-						let i = data.length;
-						while (i--) {
-							// we set data[i] to null as early as possible, so JS can
-							// GC the rows after converting them to TypedArrays.
-							// I actually had an allocation failure so this is a real risk when fetching large amounts of data.
-							let geneName = rowToGenes[data[i].idx],
-								geneData = data[i].data;
-							data[i] = null;
-							attrs[geneName] = convertJSONarray(geneData, geneName);
-						}
-
-						dispatch(receiveGenes(attrs, dataset.path));
-					})
-					// Or, if it failed, dispatch an action to set the error flag
-					.catch((err) => {
-						console.log({ err }, err);
-						dispatch(requestGenesFailed(fetchGeneNames, path, title));
-					});
-			}
-		};
+				dispatch(receiveGenes(attrs, path));
+			})
+			// Or, if it failed, dispatch an action to set the error flag
+			.catch((err) => {
+				console.log({ err }, err);
+				dispatch(requestGenesFailed(_fetchGeneNames, path, title));
+			});
 	}
 }
