@@ -67,7 +67,7 @@ class Sparkline extends PureComponent {
 			this.props.showLabels !== nextProps.showLabels ||
 			nextProps.indicesChanged ||
 			(this.props.geneData === undefined &&
-			nextProps.geneData !== undefined);
+				nextProps.geneData !== undefined);
 	}
 
 	render() {
@@ -182,7 +182,11 @@ class SparklineViewComponent extends PureComponent {
 	componentWillReceiveProps(nextProps) {
 		const indicesChanged = !isEqual(
 			this.props.dataset.viewState.col.order,
-			nextProps.dataset.viewState.col.order);
+			nextProps.dataset.viewState.col.order
+		) || !isEqual(
+			this.props.dataset.col.sortedFilterIndices,
+			nextProps.dataset.col.sortedFilterIndices
+		);
 		this.setState({
 			indicesChanged,
 		});
