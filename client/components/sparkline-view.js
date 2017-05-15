@@ -179,10 +179,10 @@ class SparklineViewComponent extends PureComponent {
 		});
 	}
 
-	componentWillUpdate(nextProps) {
+	componentWillReceiveProps(nextProps) {
 		const indicesChanged = !isEqual(
-			this.props.dataset.col.sortedFilterIndices,
-			nextProps.dataset.col.sortedFilterIndices);
+			this.props.dataset.viewState.col.order,
+			nextProps.dataset.viewState.col.order);
 		this.setState({
 			indicesChanged,
 		});
