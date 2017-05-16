@@ -216,12 +216,12 @@ class VerboseArgParser(argparse.ArgumentParser):
 
 def connect_loom(dataset_path, filename):
 	if os.path.exists(filename):
-		logging.info("  Found %s locally" % filename)
+		logging.info("  Connecting to %s locally" % filename)
 		return loompy.connect(filename)
 	full_path = os.path.join(dataset_path, filename)
 	#logging.info("  Looking for %s" % full_path )
 	if os.path.exists(full_path):
-		logging.info("  Found %s at full path" % filename)
+		logging.info("  Connecting to %s at full path" % filename)
 		return loompy.connect(full_path)
 	logging.warn("  Could not find %s" % filename)
 	return None
