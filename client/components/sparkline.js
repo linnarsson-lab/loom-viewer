@@ -378,7 +378,7 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	// Support high-density displays.
 	// Downside: using browser-zoom scales up plots as well
 	const ratio = range.ratio > 1 ? range.ratio : 1;
-	const width = range.width / ratio;
+	const width = (range.width / ratio)|0;
 	const { height } = context;
 
 	if (data.length <= width) {
@@ -419,7 +419,12 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 			i0 = (i0 * data.length / width) | 0;
 			i1 = (i1 * data.length / width) | 0;
 
-			// Old way. Don't do this!
+			/**
+			 * Old way. Don't do this! Creates too many throwaway arrays,
+			 * leads to high GC churn, and sometimes allocation errors
+			 * can crash the tab! Only kept as a reminder why we should
+			 *  not "simplify" this code later
+			 */
 			// let barSlice = data.slice(i0, i1);
 			// barSlice.sort();
 
