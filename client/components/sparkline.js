@@ -378,6 +378,9 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	// Support high-density displays.
 	// Downside: using browser-zoom scales up plots as well
 	const ratio = range.ratio > 1 ? range.ratio : 1;
+	// Important: we MUST round this number, or the plotter
+	// crashes the browser for results that are not
+	// powers of two.
 	const width = (range.width / ratio)|0;
 	const { height } = context;
 
