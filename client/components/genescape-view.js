@@ -7,11 +7,9 @@ import { Canvas } from './canvas';
 import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
 
-class GenescapeComponent extends PureComponent {
-	render() {
-		const { dispatch, dataset } = this.props;
-		const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = dataset.viewState.genescape;
-
+class GenescapeMatrix extends PureComponent {
+	componentWillMount() {
+		const { xAttrs, yAttrs } = this.props.dataset.viewState.genescape;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -28,71 +26,179 @@ class GenescapeComponent extends PureComponent {
 			}
 		}
 
-		const { row } = dataset;
-		const color = row.attrs[colorAttr];
+		let matrixChangedArr = [];
+		for (let i = 0; i < xAttrs.length; i++) {
+			matrixChangedArr.push(xAttrs[i].attr);
+		}
+		for (let i = 0; i < yAttrs.length; i++) {
+			matrixChangedArr.push(yAttrs[i].attr);
+		}
+		const matrixChanged = matrixChangedArr.join('');
 
-		const cellStyle = {
-			border: '1px solid lightgrey',
-			flex: '1 1 auto',
-			margin: '1px',
-		};
-		const rowStyle = {
-			flex: '1 1 auto',
-		};
-		let matrix = [];
-		for (let j = 0; j < newYattrs.length; j++) {
-			let _row = [];
-			for (let i = 0; i < newXattrs.length; i++) {
-				let paint;
-				const xAttr = newXattrs[i], yAttr = newYattrs[j];
-				const logscale = { x: xAttr.logscale, y: yAttr.logscale };
-				const jitter = { x: xAttr.jitter, y: yAttr.jitter };
-				const x = row.attrs[xAttr.attr];
-				const y = row.attrs[yAttr.attr];
-				paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
-				_row.push(
-					<Canvas
-						key={`${j}_${newYattrs[j].attr}_${i}_${newXattrs[i].attr}`}
-						style={cellStyle}
-						paint={paint}
-						redraw
-						clear
-					/>
-				);
+		this.setState({
+			mounted: false,
+			xAttrs: newXattrs,
+			yAttrs: newYattrs,
+			matrixChanged,
+		});
+	}
 
+	componentDidMount() {
+		this.setState({ mounted: true });
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const { xAttrs, yAttrs } = nextProps.dataset.viewState.genescape;
+		// filter out undefined attributes;
+		let newXattrs = [];
+		for (let i = 0; i < xAttrs.length; i++) {
+			let attr = xAttrs[i];
+			if (attr) {
+				newXattrs.push(attr);
 			}
-			matrix.push(
-				<div
-					key={'row_' + j}
-					className={'view'}
-					style={rowStyle}>
-					{_row}
+		}
+		let newYattrs = [];
+		for (let i = 0; i < yAttrs.length; i++) {
+			let attr = yAttrs[i];
+			if (attr) {
+				newYattrs.push(attr);
+			}
+		}
+
+		let matrixChangedArr = [];
+		for (let i = 0; i < xAttrs.length; i++) {
+			matrixChangedArr.push(xAttrs[i].attr);
+		}
+		for (let i = 0; i < yAttrs.length; i++) {
+			matrixChangedArr.push(yAttrs[i].attr);
+		}
+
+		const matrixChanged = matrixChangedArr.join(''),
+			mounted = matrixChanged === this.state.matrixChanged;
+
+		this.setState({
+			mounted,
+			matrixChanged,
+			xAttrs: newXattrs,
+			yAttrs: newYattrs,
+		});
+	}
+
+	componentDidUpdate() {
+		if (!this.state.mounted) {
+			this.setState({ mounted: true });
+		}
+	}
+
+	render() {
+		const { mounted, xAttrs, yAttrs } = this.state;
+		if (mounted) {
+			const { dataset } = this.props;
+			const {
+				colorAttr,
+				colorMode,
+				scaleFactor,
+			} = dataset.viewState.genescape;
+
+			const el = this.refs.genescapeContainer;
+			const containerWidth = el.clientWidth-20;
+			const containerHeight = el.clientHeight-20;
+
+			const { row } = dataset;
+			const color = row.attrs[colorAttr];
+			let matrix = [];
+			for (let j = 0; j < yAttrs.length; j++) {
+				const rowWidth = containerWidth;
+				const rowHeight = (((containerHeight * (j + 1) / yAttrs.length) | 0) - ((containerHeight * j / yAttrs.length) | 0) | 0);
+				let _row = [];
+				for (let i = 0; i < xAttrs.length; i++) {
+					const canvasWidth = (((containerWidth * (i + 1) / xAttrs.length) | 0) - ((containerWidth * i / xAttrs.length) | 0) | 0) - 2;
+					const canvasHeight = rowHeight - 2;
+					let paint;
+					const xAttr = xAttrs[i], yAttr = yAttrs[j];
+					const logscale = { x: xAttr.logscale, y: yAttr.logscale };
+					const jitter = { x: xAttr.jitter, y: yAttr.jitter };
+					const x = row.attrs[xAttr.attr];
+					const y = row.attrs[yAttr.attr];
+					paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
+					_row.push(
+						<Canvas
+							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
+							style={{
+								border: '1px solid lightgrey',
+								flex: '0 0 auto',
+								margin: '1px',
+							}}
+							width={canvasWidth}
+							height={canvasHeight}
+							paint={paint}
+							redraw
+							clear
+						/>
+					);
+
+				}
+				matrix.push(
+					<div
+						key={'row_' + j}
+						className={'view'}
+						style={{
+							flex: '0 0 auto',
+							minWidth: `${rowWidth}px`,
+							maxWidth: `${rowWidth}px`,
+							minHeight: `${rowHeight}px`,
+							maxHeight: `${rowHeight}px`,
+						}}>
+						{_row}
+					</div>
+				);
+			}
+
+			return (
+				<div className='view-vertical' ref='genescapeContainer'>
+					{matrix}
+				</div>
+			);
+		} else {
+			return (
+				<div className='view-vertical' ref='genescapeContainer'>
+					Initialising Genescape
 				</div>
 			);
 		}
+	}
+}
 
-		let matrixChanged = [];
-		for (let i = 0; i < newXattrs.length; i++) {
-			matrixChanged.push(newXattrs[i].attr);
-		}
-		for (let i = 0; i < newYattrs.length; i++) {
-			matrixChanged.push(newYattrs[i].attr);
-		}
+GenescapeMatrix.propTypes = {
+	// Passed down by ViewInitialiser
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+};
+
+class GenescapeComponent extends PureComponent {
+	render() {
+		const { dispatch, dataset } = this.props;
+
 		return (
-			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-				<div style={{ overflowY: 'scroll' }}>
-					<GenescapeSidepanel
+			<RemountOnResize>
+				<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+					<div
+						style={{
+							width: '300px',
+							margin: '10px',
+							overflowY: 'scroll',
+						}}>
+						<GenescapeSidepanel
+							dataset={dataset}
+							dispatch={dispatch}
+						/>
+					</div>
+					<GenescapeMatrix
 						dataset={dataset}
 						dispatch={dispatch}
-				/>
+					/>
 				</div>
-				<RemountOnResize watchedVal={
-					/*If any x or y attributes in our
-					grid change, we need to remount*/
-					matrixChanged.join('')}>
-					<div className={'view-vertical'}>{matrix}</div>
-				</RemountOnResize>
-			</div>
+			</RemountOnResize>
 		);
 	}
 }

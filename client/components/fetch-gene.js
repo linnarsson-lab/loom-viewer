@@ -109,8 +109,9 @@ export class FetchGeneComponent extends PureComponent {
 					</Button>
 			</div>
 				<FormControl
+					className='scroll'
 					componentClass={'textarea'}
-					rows={6}
+					rows={8}
 					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
 					onChange={this.handleTextAreaChange}
 					value={this.state.selectedGenes} />
