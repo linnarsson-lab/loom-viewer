@@ -32,7 +32,7 @@ setup(
     # metadata for upload to PyPI
     author="Linnarsson Lab",
     author_email="sten.linnarsson@ki.se",
-    description="Create, browse and manipulate .loom files",
+    description="View .loom files in the browser",
     license="BSD",
     keywords="loom omics transcriptomics bioinformatics",
     url="https://github.com/linnarsson-lab/Loom",
