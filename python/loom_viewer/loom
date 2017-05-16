@@ -49,13 +49,13 @@ def expand_md(ds, dataset_path, project, filename, truncate=False):
 
 	if os.path.isfile(md_filename):
 		if not truncate:
-			logging.info('  Metadata already expanded (truncate not set)')
+			#logging.info('  Metadata already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded metadata (truncate set)')
+			#logging.info('  Removing previously expanded metadata (truncate set)')
 			os.remove(md_filename)
 
-	logging.info("  Expanding metada (stored as %s.file_md.json.gzip)" % filename)
+	logging.info("    Expanding metada (stored as %s.file_md.json.gzip)" % filename)
 	title = ds.attrs.get("title", filename)
 	descr = ds.attrs.get("description", "")
 	url = ds.attrs.get("url", "")
@@ -99,13 +99,13 @@ def expand_attrs(ds, project, filename, truncate=False):
 
 	if os.path.isfile(attrs_name):
 		if not truncate:
-			logging.info('  Attributes already expanded (truncate not set)')
+			#logging.info('  Attributes already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded attributes (truncate set)')
+			#logging.info('  Removing previously expanded attributes (truncate set)')
 			os.remove(attrs_name)
 
-	logging.info("  Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
+	logging.info("    Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
 	tile_data = LoomTiles(ds)
 	dims = tile_data.dz_dimensions()
 	rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
@@ -129,10 +129,10 @@ def expand_rows(ds, truncate=False):
 
 	if os.path.isdir(row_dir):
 		if not truncate:
-			logging.info('  Rows already expanded (truncate not set)')
+			#logging.info('  Rows already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded rows (truncate set)')
+			#logging.info('  Removing previously expanded rows (truncate set)')
 			rmtree(row_dir)
 
 	try:
@@ -143,7 +143,7 @@ def expand_rows(ds, truncate=False):
 		if exception.errno != errno.EEXIST:
 			raise
 
-	logging.info("  Expanding rows (stored in %s subfolder)" % row_dir)
+	logging.info("    Expanding rows (stored in %s subfolder)" % row_dir)
 
 	# 64 is the default chunk size, so probably the most cache
 	# friendly option to batch over
@@ -169,10 +169,10 @@ def expand_columns(ds, truncate=False):
 
 	if os.path.isdir(col_dir):
 		if not truncate:
-			logging.info('  Columns already expanded (truncate not set)')
+			#logging.info('  Columns already expanded (truncate not set)')
 			return
 		else:
-			logging.info('  Removing previously expanded columns (truncate set)')
+			#logging.info('  Removing previously expanded columns (truncate set)')
 			rmtree(col_dir)
 
 	try:
@@ -215,14 +215,14 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
-	logging.info("Looking for %s" % filename)
+	logging.info("  Looking for %s" % filename)
 	if os.path.exists(filename):
-		logging.info("Found %s locally" % filename)
+		logging.info("  Found %s locally" % filename)
 		return loompy.connect(filename)
 	full_path = os.path.join(dataset_path, filename)
-	logging.info("Looking for %s" % full_path )
+	#logging.info("  Looking for %s" % full_path )
 	if os.path.exists(full_path):
-		logging.info("Found %s at full path" % filename)
+		logging.info("  Found %s at full path" % filename)
 		return loompy.connect(full_path)
 	return None
 

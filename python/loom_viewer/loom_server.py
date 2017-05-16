@@ -51,6 +51,12 @@ def np_to_list(vals):
 		if np.all(safe_conversion):
 			return vals_int.tolist()
 		else:
+			# Because we use the client mainly to view, we
+			# do not need the 20 digits of precision given
+			# by float64 values. Eight digits lets us
+			# blow up a single pixel to full screen size;
+			# presumably this is enough.
+			vals = np.around(vals, 8)
 			# if there are _some_ integers, convert them
 			# (arrays will likely have many zero values,
 			# so this could still save a bit of space)
