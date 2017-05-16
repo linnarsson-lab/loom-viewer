@@ -215,7 +215,6 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 def connect_loom(dataset_path, filename):
-	logging.info("  Looking for %s" % filename)
 	if os.path.exists(filename):
 		logging.info("  Found %s locally" % filename)
 		return loompy.connect(filename)
@@ -224,6 +223,7 @@ def connect_loom(dataset_path, filename):
 	if os.path.exists(full_path):
 		logging.info("  Found %s at full path" % filename)
 		return loompy.connect(full_path)
+	logging.warn("  Could not find %s" % filename)
 	return None
 
 def tile_command(dataset_path, filename):
