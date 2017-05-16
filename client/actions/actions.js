@@ -19,7 +19,7 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { convertJSONarray, arrayConstr } from '../js/util';
+import { convertJSONarray } from '../js/util';
 import { createViewStateConverter } from '../js/viewstateEncoder';
 
 
@@ -258,8 +258,8 @@ function prepData(attrs) {
 }
 
 function originalOrderArray(length) {
-	let arrayType = length < 256 ? 'uint8' : length < 65535 ? 'uint16' : 'uint32';
-	let data = new (arrayConstr(arrayType))(length);
+	let arrayType = length < 256 ? Uint8Array : (length < 65535 ? Uint16Array : Uint32Array);
+	let data = new arrayType(length);
 	let i = length;
 	while (i--) {
 		data[i] = i;
