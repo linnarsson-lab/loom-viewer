@@ -608,7 +608,7 @@ export class ScatterplotSidepanel extends PureComponent {
 					/>
 					<ListGroupItem>
 						<CollapsibleSettings
-							label={'Radius Scale Factor'}
+							label={`Radius Scale Factor (x${(scaleFactor/40).toFixed(1)})`}
 							tooltip={'Change the radius of the drawn points'}
 							tooltipId={'radiusstngs-tltp'}
 							mountClosed>
