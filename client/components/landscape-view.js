@@ -161,7 +161,7 @@ class LandscapeMatrix extends PureComponent {
 			);
 		} else {
 			return (
-				<div className='view-vertical' ref='landscapeContainer'>
+				<div className='view centered' ref='landscapeContainer'>
 					Initialising Landscape
 				</div>
 			);

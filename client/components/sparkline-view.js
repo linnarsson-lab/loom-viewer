@@ -35,7 +35,7 @@ class Legend extends PureComponent {
 				maxHeight: `${height}px`,
 				minWidth: `${width}px`,
 				maxWidth: `${width}px`,
-				width:  `${width}px`,
+				width: `${width}px`,
 			}}>
 				<Canvas
 					width={width - 20}
@@ -147,7 +147,6 @@ class Sparklines extends PureComponent {
 				/>
 			);
 		}
-
 		return (
 			<div
 				style={{
@@ -155,9 +154,13 @@ class Sparklines extends PureComponent {
 					flexDirection: 'column',
 					minWidth: `${containerWidth - 20}px`,
 					maxWidth: `${containerWidth - 20}px`,
-					height: `${selection.length * 30}px`,
+					height: `${Math.max(200, selection.length * 30)}px`,
 				}}>
-				{sparklines}
+				{sparklines.length ? sparklines : (
+					<div className='view centered'>
+						<span>Select genes to display sparklines</span>
+					</div>
+				)}
 			</div>
 		);
 	}
@@ -247,8 +250,8 @@ class SparklineList extends PureComponent {
 		}
 		else {
 			return (
-				<div className='view-vertical' ref='sparklineContainer'>
-					Initialising Sparklines
+				<div className='view centered' ref='sparklineContainer'>
+					Initialising sparklines
 				</div>
 			);
 		}

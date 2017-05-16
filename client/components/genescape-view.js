@@ -161,7 +161,7 @@ class GenescapeMatrix extends PureComponent {
 			);
 		} else {
 			return (
-				<div className='view-vertical' ref='genescapeContainer'>
+				<div className='view centered' ref='genescapeContainer'>
 					Initialising Genescape
 				</div>
 			);
