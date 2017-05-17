@@ -132,6 +132,7 @@ class CoordinateSettings extends PureComponent {
 			}
 		};
 
+		const setXY = setCoordinateFactory('default X / Y', '_X', '_Y');
 		const setTSNE = setCoordinateFactory('tSNE1 / tSNE2', '_tSNE1', '_tSNE2');
 		const setPCA = setCoordinateFactory('PCA 1 / PCA 2', '_PC1', '_PC2');
 		const setSFDP = setCoordinateFactory('SFDP X / SFDP Y', 'SFDP_X', 'SFDP_Y');
@@ -151,6 +152,7 @@ class CoordinateSettings extends PureComponent {
 							tooltipId={'quickstngs-tltp'}
 							mountClosed>
 							<ListGroup>
+								{setXY(xAttrs, yAttrs)}
 								{setTSNE(xAttrs, yAttrs)}
 								{setPCA(xAttrs, yAttrs)}
 								{setSFDP(xAttrs, yAttrs)}

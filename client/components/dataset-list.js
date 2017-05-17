@@ -165,14 +165,14 @@ class DatasetList extends PureComponent {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_doi'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={'http://dx.doi.org/' + doi}
-							title={'Original reference: http://dx.doi.org/' + doi}
-							style={{ padding: 0 }} >
-							<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-						</Button>
+						key={path + '_doi'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={'http://dx.doi.org/' + doi}
+						title={'Original reference: http://dx.doi.org/' + doi}
+						style={{ padding: 0 }} >
+						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+					</Button>
 					);
 				const urlButton = url === '' ? (
 					<Glyphicon
@@ -181,15 +181,15 @@ class DatasetList extends PureComponent {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-							key={path + '_url'}
-							bsSize='xsmall'
-							bsStyle='link'
-							href={url}
-							title={'External web page: ' + url}
-							style={{ padding: 0 }}
+						key={path + '_url'}
+						bsSize='xsmall'
+						bsStyle='link'
+						href={url}
+						title={'External web page: ' + url}
+						style={{ padding: 0 }}
 						>
-							<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-						</Button>
+						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+					</Button>
 					);
 
 				tableData.push({
@@ -498,7 +498,8 @@ class SearchDataSetViewComponent extends PureComponent {
 			datasetList = (
 				<div className='view centered'>
 					<h2>Downloading list of available datasets...</h2>
-					<span>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</span>
+					<br />
+					<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
 				</div>
 			);
 		}

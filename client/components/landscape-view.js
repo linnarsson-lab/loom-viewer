@@ -209,11 +209,11 @@ LandscapeComponent.propTypes = {
 };
 
 const initialState = { // Initialise landscapeState for this dataset
-	xAttrs: [{ attr: '_tSNE1', jitter: false, logscale: false }],
-	yAttrs: [{ attr: '_tSNE2', jitter: false, logscale: false }],
+	xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
+	yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
 	scaleFactor: 40,
-	colorAttr: '(original order)',
-	colorMode: 'Heatmap',
+	colorAttr: 'Clusters',
+	colorMode: 'Categorical',
 };
 
 export class LandscapeViewInitialiser extends PureComponent {

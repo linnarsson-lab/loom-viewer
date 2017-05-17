@@ -343,9 +343,10 @@ SparklineViewComponent.propTypes = {
 };
 
 const initialState = { // Initialise sparklineState for this dataset
+	colAttr: 'Clusters',
 	colMode: 'Stacked',
 	geneMode: 'Bars',
-	genes: [],
+	genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
 	showLabels: true,
 };
 

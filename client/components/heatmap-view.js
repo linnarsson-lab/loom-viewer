@@ -162,8 +162,10 @@ HeatmapComponent.propTypes = {
 
 const initialState = { // Initialise heatmap state for this dataset
 	dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-	rowMode: 'Text',
-	colMode: 'Text',
+	colAttr: 'Clusters',
+	colMode: 'Stacked',
+	rowAttr: '_Selected',
+	rowMode: 'Stacked',
 };
 
 export const HeatmapViewInitialiser = function (props) {

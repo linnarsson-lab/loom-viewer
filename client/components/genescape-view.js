@@ -211,11 +211,11 @@ GenescapeComponent.propTypes = {
 
 const initialState = {
 	// Initialise genescape state for this dataset
-	xAttrs: [{ attr: '_tSNE1', jitter: false, logscale: false }],
-	yAttrs: [{ attr: '_tSNE2', jitter: false, logscale: false }],
+	xAttrs: [{ attr: '_LogMean', jitter: false, logscale: false }],
+	yAttrs: [{ attr: '_LogCV', jitter: false, logscale: false }],
 	scaleFactor: 40,
-	colorAttr: '(original order)',
-	colorMode: 'Heatmap',
+	colorAttr: '_Selected',
+	colorMode: 'Categorical',
 };
 
 export class GenescapeViewInitialiser extends PureComponent {
