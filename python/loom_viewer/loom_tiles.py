@@ -13,6 +13,7 @@ class LoomTiles(object):
 	def __init__(self, ds: LoomConnection) -> None:
 		self.ds = ds
 		self._maxes = None  # type: np.ndarray
+		self._mins = None
 
 	def maxes(self):
 		if self._maxes is None:
