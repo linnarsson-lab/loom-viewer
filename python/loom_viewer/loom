@@ -248,6 +248,29 @@ def tile_command(dataset_path, filename):
 			except Exception as e:
 				logging.error(e)
 
+def tile_project_command(dataset_path, project):
+	project_path = os.path.join(dataset_path, project)
+	logging.info('Entering project %s' % project_path)
+	project_files = os.listdir(project_path)
+	loom_files = [filename for filename in project_files if filename.endswith(".loom")]
+	logging.info('Found %i loom files' % len(loom_files))
+	for filename in loom_files:
+		if os.path.exists(os.path.join(project_path, filename)):
+			ds = None
+			try:
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
+			except Exception as e:
+				logging.error(e)
+				return
+			try:
+				logging.info("    Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
+				tiles = LoomTiles(ds)
+				tiles.prepare_heatmap()
+			except Exception as e:
+				logging.error(e)
+
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
@@ -273,6 +296,28 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 					expand_columns(ds, truncate)
 			except Exception as e:
 				logging.error(e)
+
+def expand_project_command(dataset_path, project, truncate, metadata, attributes, rows, cols):
+	project_path = os.path.join(dataset_path, project)
+	logging.info('Entering project %s' % project_path)
+	project_files = os.listdir(project_path)
+	loom_files = [filename for filename in project_files if filename.endswith(".loom")]
+	logging.info('Found %i loom files' % len(loom_files))
+	for filename in loom_files:
+		try:
+			ds = connect_loom(project_path, filename)
+			if ds == None:
+				raise warnings.warn("Could not connect to %s" % filename)
+			if metadata:
+				expand_md(ds, dataset_path, project, filename, truncate)
+			if attributes:
+				expand_attrs(ds, project, filename, truncate)
+			if rows:
+				expand_rows(ds, truncate)
+			if cols:
+				expand_columns(ds, truncate)
+		except Exception as e:
+			logging.error(e)
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 
@@ -558,8 +603,13 @@ if __name__ == '__main__':
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
 		tile_parser.add_argument("file", help="Loom input file")
 
+
+		# loom tile all within project
+		tile_parser = subparsers.add_parser('tile-project', help="Precompute heatmap tiles for all loom files in a project")
+		tile_parser.add_argument("project", help="Project directory name")
+
 		# loom expand
-		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands the first file with a matching name.")
+		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name.")
 		expand_parser.add_argument("file", help="Loom input file")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
 		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
@@ -567,8 +617,17 @@ if __name__ == '__main__':
 		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
 		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
 
+		# loom expand all loom files in a project
+		expand_parser = subparsers.add_parser('expand-project', help="Expand all loom files in given project of the datasets folder to compressed pickle/json files for better server performance.")
+		expand_parser.add_argument("project", help="Project directory name")
+		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
+
 		# loom expand all datasets
-		expand_all_parser = subparsers.add_parser('expand_all', help="Expand all loom files in the data folder for better server performance")
+		expand_all_parser = subparsers.add_parser('expand-all', help="Expand all loom files in the data folder for better server performance")
 		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
@@ -648,9 +707,13 @@ if __name__ == '__main__':
 		tsne_command(args.dataset_path, args.file, args.perplexity)
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
+	elif args.command == "tile-project":
+		tile_project_command(args.dataset_path, args.project)
 	elif args.command == "expand":
 		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "expand_all":
+	elif args.command == "expand-project":
+		expand_project_command(args.dataset_path, args.project, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
+	elif args.command == "expand-all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "backspin":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
