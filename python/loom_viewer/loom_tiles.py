@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 import scipy
 import logging
+
 from loompy import LoomConnection
 
 
@@ -27,9 +28,10 @@ class LoomTiles(object):
 
 	def prepare_heatmap(self):
 		if self.ds._file.__contains__("tiles"):
-			logging.debug("Removing deprecated tile pyramid, use h5repack to reclaim space")
+			logging.info("    Removing deprecated tile pyramid, use h5repack to reclaim space")
 			del self.ds._file['tiles']
 		self.dz_get_zoom_tile(0, 0, 8)
+		logging.info("    done")
 
 	def dz_zoom_range(self):
 		"""
@@ -95,7 +97,8 @@ class LoomTiles(object):
 			img = self.dz_tile_to_image(x, y, z, tile)
 			# save to file, overwriting the old one
 			with open(tilepath, 'wb') as img_io:
-				logging.info("saving %s" % tilepath)
+				#logging.info("saving %s" % tilepath)
+				print('.', end='', flush=True)
 				img.save(img_io, 'PNG', compress_level=4)
 			return img
 
