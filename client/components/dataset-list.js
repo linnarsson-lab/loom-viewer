@@ -165,14 +165,14 @@ class DatasetList extends PureComponent {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-						key={path + '_doi'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={'http://dx.doi.org/' + doi}
-						title={'Original reference: http://dx.doi.org/' + doi}
-						style={{ padding: 0 }} >
-						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
-					</Button>
+							key={path + '_doi'}
+							bsSize='xsmall'
+							bsStyle='link'
+							href={'http://dx.doi.org/' + doi}
+							title={'Original reference: http://dx.doi.org/' + doi}
+							style={{ padding: 0 }} >
+							<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+						</Button>
 					);
 				const urlButton = url === '' ? (
 					<Glyphicon
@@ -181,15 +181,15 @@ class DatasetList extends PureComponent {
 						style={{ fontSize: '14px', color: 'lightgrey' }} />
 				) : (
 					<Button
-						key={path + '_url'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={url}
-						title={'External web page: ' + url}
-						style={{ padding: 0 }}
+							key={path + '_url'}
+							bsSize='xsmall'
+							bsStyle='link'
+							href={url}
+							title={'External web page: ' + url}
+							style={{ padding: 0 }}
 						>
-						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
-					</Button>
+							<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+						</Button>
 					);
 
 				tableData.push({
@@ -498,72 +498,81 @@ class SearchDataSetViewComponent extends PureComponent {
 			datasetList = (
 				<div className='view centered'>
 					<h2>Downloading list of available datasets...</h2>
+					<span>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</span>
 				</div>
 			);
 		}
 
 		return (
-			<Grid>
-				<Row>
-					<Col xs={12} md={12} lg={12}>
-						<div className='view-vertical'>
-							<h1>Data Sets</h1>
-							<h1><i>Search</i></h1>
-							<SearchField
-								label={'Search all metadata'}
-								tooltip={'Filter using fuzzy string matching on project, title or description'}
-								tooltipId={'allsearch-tltp'}
-								value={search.all}
-								onChange={searchAll}
-							/>
-							<Row>
-								<Col xs={3} md={3} lg={3}>
-									<SearchField
-										label={'Project'}
-										tooltip={'Filter by project (fuzzy substring match)'}
-										tooltipId={'projectsearch-tltp'}
-										value={search.project}
-										onChange={searchByProject}
-										mountClosed
-									/>
-								</Col>
-								<Col xs={3} md={3} lg={3}>
-									<SearchField
-										label={'Title'}
-										tooltip={'Filter by title (fuzzy substring match)'}
-										tooltipId={'titlesearch-tltp'}
-										value={search.title}
-										onChange={searchByTitle}
-										mountClosed
-									/>
-								</Col>
-								<Col xs={3} md={3} lg={3}>
-									<SearchField
-										label={'Description'}
-										tooltip={'Filter by description (fuzzy substring match)'}
-										tooltipId={'descriptionsearch-tltp'}
-										value={search.description}
-										onChange={searchByDescription}
-										mountClosed
-									/>
-								</Col>
-								<Col xs={3} md={3} lg={3}>
-									<SearchField
-										label={'Date'}
-										tooltip={'Filter by date (exact substring match)'}
-										tooltipId={'datesearch-tltp'}
-										value={search.creationDate}
-										onChange={searchByCreationDate}
-										mountClosed
-									/>
-								</Col>
-							</Row>
-							<h1><i>Results</i></h1>
-							{datasetList}
-						</div>
-					</Col>
-				</Row>
-			</Grid>
+			<div
+				className='view'
+				style={{
+					justifyContent: 'center',
+					overflowX: 'hidden',
+					overflowY: 'scroll',
+				}}>
+				<Grid>
+					<Row>
+						<Col xs={12} md={12} lg={12}>
+							<div className='view-vertical'>
+								<h1>Data Sets</h1>
+								<h1><i>Search</i></h1>
+								<SearchField
+									label={'Search all metadata'}
+									tooltip={'Filter using fuzzy string matching on project, title or description'}
+									tooltipId={'allsearch-tltp'}
+									value={search.all}
+									onChange={searchAll}
+								/>
+								<Row>
+									<Col xs={3} md={3} lg={3}>
+										<SearchField
+											label={'Project'}
+											tooltip={'Filter by project (fuzzy substring match)'}
+											tooltipId={'projectsearch-tltp'}
+											value={search.project}
+											onChange={searchByProject}
+											mountClosed
+										/>
+									</Col>
+									<Col xs={3} md={3} lg={3}>
+										<SearchField
+											label={'Title'}
+											tooltip={'Filter by title (fuzzy substring match)'}
+											tooltipId={'titlesearch-tltp'}
+											value={search.title}
+											onChange={searchByTitle}
+											mountClosed
+										/>
+									</Col>
+									<Col xs={3} md={3} lg={3}>
+										<SearchField
+											label={'Description'}
+											tooltip={'Filter by description (fuzzy substring match)'}
+											tooltipId={'descriptionsearch-tltp'}
+											value={search.description}
+											onChange={searchByDescription}
+											mountClosed
+										/>
+									</Col>
+									<Col xs={3} md={3} lg={3}>
+										<SearchField
+											label={'Date'}
+											tooltip={'Filter by date (exact substring match)'}
+											tooltipId={'datesearch-tltp'}
+											value={search.creationDate}
+											onChange={searchByCreationDate}
+											mountClosed
+										/>
+									</Col>
+								</Row>
+								<h1><i>Results</i></h1>
+								{datasetList}
+							</div>
+						</Col>
+					</Row>
+				</Grid>
+			</div>
 		);
 	}
 }

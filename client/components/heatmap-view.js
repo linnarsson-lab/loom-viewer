@@ -133,22 +133,24 @@ class HeatmapComponent extends PureComponent {
 	render() {
 		const { dispatch, dataset } = this.props;
 		return (
-			<div className='view'>
-				<div className='sidepanel'>
-					<HeatmapSidepanel
-						dataset={dataset}
-						dispatch={dispatch}
-					/>
-				</div>
-				<RemountOnResize
-				/* Leaflet's canvas interferes with CSS layouting,
-				so we unmount and remount it on resize events */
-				>
+			<RemountOnResize>
+				<div className='view'>
+					<div
+						style={{
+							width: '300px',
+							margin: '10px',
+							overflowY: 'scroll',
+						}}>
+						<HeatmapSidepanel
+							dataset={dataset}
+							dispatch={dispatch}
+						/>
+					</div>
 					<HeatmapMapComponent
 						dataset={dataset}
 						dispatch={dispatch} />
-				</RemountOnResize>
-			</div>
+				</div>
+			</RemountOnResize>
 		);
 	}
 }

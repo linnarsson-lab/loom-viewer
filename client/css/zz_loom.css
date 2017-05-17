@@ -62,13 +62,6 @@ body {
   align-items: center;
 }
 
-.sidepanel {
-  min-width: 300px;
-  max-width: 300px;
-  margin: 10px;
-  flex: 1 1 auto;
-}
-
 code {
   font-size: 80%;
 }
@@ -102,6 +95,16 @@ div::-webkit-scrollbar {
 }
 
 div::-webkit-scrollbar-thumb {
+  background: #AAAAAA;
+}
+
+.scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: #FFFFFF;
+}
+
+.scroll::-webkit-scrollbar-thumb {
   background: #AAAAAA;
 }
 

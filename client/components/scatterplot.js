@@ -36,7 +36,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 
 		// Suitable radius of the markers
 		// - smaller canvas size -> smaller points
-		const radius = Math.min(63, (Math.max(1, Math.min(width, height) / 100)) * context.pixelRatio * scaleFactor / 50);
+		const radius = Math.min(63, (Math.max(1, Math.min(width, height) / 100)) * scaleFactor / 50);
 		const spriteIdx = Math.min(sprites.length-1, Math.log2(radius + 1) | 0), spriteRadius = 2 << spriteIdx;
 		const _sprites = sprites[spriteIdx];
 

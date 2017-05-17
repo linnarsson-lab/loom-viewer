@@ -23,7 +23,7 @@ import logging
 import signal
 import inspect
 import time
-from loom_viewer import LoomCache
+from loom_viewer import LoomCache, LoomTiles
 from wsgiref.handlers import format_date_time
 
 import gzip
@@ -51,6 +51,12 @@ def np_to_list(vals):
 		if np.all(safe_conversion):
 			return vals_int.tolist()
 		else:
+			# Because we use the client mainly to view, we
+			# do not need the 20 digits of precision given
+			# by float64 values. Eight digits lets us
+			# blow up a single pixel to full screen size;
+			# presumably this is enough.
+			vals = np.around(vals, 8)
 			# if there are _some_ integers, convert them
 			# (arrays will likely have many zero values,
 			# so this could still save a bit of space)
@@ -294,7 +300,8 @@ def send_fileinfo(project, filename):
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
 		if ds == None:
 			return "", 404
-		dims = ds.dz_dimensions()
+		tile_data = LoomTiles(ds)
+		dims = tile_data.dz_dimensions()
 
 		rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
 		colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
@@ -304,7 +311,7 @@ def send_fileinfo(project, filename):
 			"dataset": filename,
 			"filename": filename,
 			"shape": ds.shape,
-			"zoomRange": ds.dz_zoom_range(),
+			"zoomRange": tile_data.dz_zoom_range(),
 			"fullZoomHeight": dims[1],
 			"fullZoomWidth": dims[0],
 			"rowAttrs": rowAttrs,
