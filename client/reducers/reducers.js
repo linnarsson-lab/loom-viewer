@@ -105,11 +105,7 @@ function updateViewState(state, action) {
 			filter[i] = filter[filter.length - 1];
 			filter.pop();
 		}
-		// remember that merge returns a new object,
-		// so here we can safely replace entries in viewState
-		// viewState without breaking the redux guarantee of
-		// immutability.
-		viewState[axis].filter = filter;
+		viewState = merge( viewState, { [axis]: { filter } });
 	}
 
 	dataset = merge(dataset, { viewState });
