@@ -5,12 +5,14 @@ import scipy
 import logging
 from loompy import LoomConnection
 
+
 class LoomTiles(object):
 	#############
 	# DEEP ZOOM #
 	#############
 	def __init__(self, ds: LoomConnection) -> None:
 		self.ds = ds
+		self._maxes = None  # type: np.ndarray
 
 	def maxes(self):
 		if self._maxes is None:
@@ -35,7 +37,7 @@ class LoomTiles(object):
 		Returns:
 			Tuple (middle, min_zoom, max_zoom) of integer zoom levels.
 		"""
-		return (8, int(max(np.ceil(np.log2(self.ds.shape)))), int(max(np.ceil(np.log2(self.ds.shape)))+8))
+		return (8, int(max(np.ceil(np.log2(self.ds.shape)))), int(max(np.ceil(np.log2(self.ds.shape))) + 8))
 
 	def dz_dimensions(self):
 		"""

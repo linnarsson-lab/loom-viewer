@@ -107,3 +107,5 @@ target/
 
 # Loom files
 *.loom
+
+*.mypy_cache/
