@@ -228,8 +228,10 @@ def connect_loom(dataset_path, filename):
 
 def tile_command(dataset_path, filename):
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
+		logging.info('Entering project %s' % project_path)
 		if os.path.exists(os.path.join(project_path, filename)):
 			ds = None
 			try:
@@ -240,7 +242,7 @@ def tile_command(dataset_path, filename):
 				logging.error(e)
 				return
 			try:
-				logging.info("Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
+				logging.info("    Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
 				tiles = LoomTiles(ds)
 				tiles.prepare_heatmap()
 			except Exception as e:
@@ -251,8 +253,10 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 		logging.info('Must explicitly state what to expand!')
 		return
 	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
+		logging.info('Entering project %s' % project_path)
 		file_path = os.path.join(project_path, filename)
 		if os.path.exists(file_path):
 			try:
