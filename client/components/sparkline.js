@@ -169,26 +169,37 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 	}
 
 	return (context) => {
+		// All of our plotting functions draw horizontaly
+		// To get a vertical plot, we simply rotate the canvas
+		// before invoking them. To not mess up the context
+		// settings, we save before and restore at the end
+		if (orientation === 'vertical') {
+			context.save();
+			context.translate(context.width, 0);
+			context.rotate(90 * Math.PI / 180);
+			let t = context.width;
+			context.width = context.height;
+			context.height = t;
+		}
+
+		// draw sparkline + label
 		sparklinePainter(context, paint, attr, mode, range, orientation);
 		if (label) { labelPainter(context, label); }
+
+		// Make sure our rotation from before is undone
+		if (orientation === 'vertical') {
+			context.restore();
+			let t = context.width;
+			context.width = context.height;
+			context.height = t;
+		}
 	};
 }
 
 function sparklinePainter(context, paint, attr, mode, range, orientation) {
 	const { colorIndices } = attr;
 
-	// All of our plotting functions draw horizontaly
-	// To get a vertical plot, we simply rotate the canvas
-	// before invoking them. To not mess up the context
-	// settings, we save before and restore at the end
-	if (orientation === 'vertical') {
-		context.save();
-		context.translate(context.width, 0);
-		context.rotate(90 * Math.PI / 180);
-		let t = context.width;
-		context.width = context.height;
-		context.height = t;
-	}
+
 
 	range.unrounded = range.right - range.left;
 	// We need to find the effective rangeWidth spanned by all bars.
@@ -208,13 +219,6 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 	range.ratio = context.pixelRatio;
 	paint(context, range, colorIndices);
 
-	// Make sure our rotation from before is undone
-	if (orientation === 'vertical') {
-		context.restore();
-		let t = context.width;
-		context.width = context.height;
-		context.height = t;
-	}
 }
 
 // Helper functions
@@ -381,7 +385,7 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	// Important: we MUST round this number, or the plotter
 	// crashes the browser for results that are not
 	// powers of two.
-	const width = (range.width / ratio)|0;
+	const width = (range.width / ratio) | 0;
 	const { height } = context;
 
 	if (data.length <= width) {
@@ -434,7 +438,7 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 			const l = i1 - i0;
 			let barSlice = barSlices[l];
 			if (barSlice) {
-				while (i1 - 16 > i0){
+				while (i1 - 16 > i0) {
 					barSlice[--i1 - i0] = data[i1];
 					barSlice[--i1 - i0] = data[i1];
 					barSlice[--i1 - i0] = data[i1];
