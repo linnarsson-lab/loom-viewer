@@ -24,7 +24,7 @@ class Legend extends PureComponent {
 	render() {
 		const { width, height, col, colAttr, colMode } = this.props;
 		const legendData = col.attrs[colAttr];
-		const painter = legendData ? sparkline(legendData, col.sortedFilterIndices, colMode, null, legendData.name) : () => { };
+		const painter = legendData ? sparkline(legendData, col.sortedFilterIndices, colMode, null, legendData ? legendData.name : null) : () => { };
 		return (
 			<div style={{
 				flex: '0 0 auto',

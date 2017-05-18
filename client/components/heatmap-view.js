@@ -58,17 +58,22 @@ class HeatmapMapComponent extends PureComponent {
 			};
 			const { dataBounds } = hms;
 
+			const colAttr = col.attrs[hms.colAttr],
+				rowAttr = row.attrs[hms.rowAttr];
+
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
 						paint={sparkline(
-							col.attrs[hms.colAttr],
+							colAttr,
 							col.sortedFilterIndices,
 							hms.colMode,
 							[dataBounds[0], dataBounds[2]],
-							null, null, true)}
+							colAttr ? colAttr.name : null,
+							null,
+							true)}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
 						clear
@@ -87,7 +92,9 @@ class HeatmapMapComponent extends PureComponent {
 								row.sortedFilterIndices,
 								hms.rowMode,
 								[dataBounds[1], dataBounds[3]],
-								null, 'vertical', true)}
+								rowAttr ? rowAttr.name : null,
+								'vertical',
+								true)}
 							redraw
 							clear
 						/>
