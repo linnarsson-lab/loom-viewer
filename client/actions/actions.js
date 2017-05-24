@@ -1,4 +1,9 @@
 import createFilterOptions from 'react-select-fast-filter-options';
+// customise search to only care about prefixes, and ignore uppercase
+import { LowerCaseSanitizer, PrefixIndexStrategy } from 'js-search';
+const indexStrategy = new PrefixIndexStrategy();
+const sanitizer = new LowerCaseSanitizer();
+
 import 'whatwg-fetch';
 
 import {
@@ -300,7 +305,7 @@ function prepFilter(options) {
 			label: options[i],
 		};
 	}
-	return createFilterOptions({ options: newOptions });
+	return createFilterOptions({ indexStrategy, sanitizer, options: newOptions });
 }
 
 
@@ -417,7 +422,7 @@ export function fetchGene(dataset, genes) {
 		// individual fetches *too* big. After a bit of testing
 		// I guesstimate that for 50k cells, we want to fetch
 		// at most 50 rows at once.
-		const rowsPerFetch = (5000000 / dataset.totalCols)|0;
+		const rowsPerFetch = (5000000 / dataset.totalCols) | 0;
 		let fetchGeneNames = [], fetchRows = [];
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
