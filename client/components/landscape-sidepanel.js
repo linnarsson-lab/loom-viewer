@@ -30,12 +30,13 @@ export class LandscapeSidepanel extends PureComponent {
 		}
 		for (let i = 0; i < yAttrs.length; i++) {
 			let value = yAttrs[i].attr;
-			if (value && geneToRow[value] === -1 &&
+			if (value && geneToRow[value] &&
 				!dataset.fetchedGenes[value]) {
 				genes.push(value);
 			}
 		}
-		if (geneToRow[colorAttr] !== undefined && !dataset.fetchedGenes[colorAttr]) {
+		if (geneToRow[colorAttr] !== undefined &&
+			!dataset.fetchedGenes[colorAttr]) {
 			genes.push(colorAttr);
 		}
 		if (genes.length) {
