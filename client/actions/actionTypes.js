@@ -1,5 +1,6 @@
 const prod = process.env.NODE_ENV === 'production';
 
+// dirty trick to replace strings with integers in production
 if (prod) {
 	var _REQUEST_PROJECTS_FETCH = 1;
 	var _REQUEST_PROJECTS_FAILED = 2;

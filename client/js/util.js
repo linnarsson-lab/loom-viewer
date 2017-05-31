@@ -1,3 +1,100 @@
+import * as colorLUT from './colors';
+const { solar256, YlGnBu256, category20 } = colorLUT;
+
+export function getPalette(colorMode) {
+	switch (colorMode) {
+		case 'Heatmap':
+			return solar256;
+		case 'Heatmap2':
+			return YlGnBu256;
+		case 'Categorical':
+		case 'Stacked':
+			return category20;
+		default:
+			return [];
+	}
+}
+function blackColor() {
+	return 'black';
+}
+export function attrToColorFactory(colorAttr, colorMode) {
+	const palette = getPalette(colorMode);
+	switch (colorMode) {
+		case 'Categorical':
+		case 'Stacked':
+			let { mostFreq } = colorAttr.colorIndices;
+			return (
+				(val) => {
+					const cIdx = mostFreq[val] | 0;
+					return palette[cIdx];
+				}
+			);
+		case 'Heatmap':
+		case 'Heatmap2':
+			const { min, max } = colorAttr;
+			if (min === 0) { // zero-value is coloured differently
+				const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
+				return (
+					(val) => {
+						const cIdx = ((val - min) * colorIdxScale) | 0;
+						return palette[cIdx];
+					}
+				);
+			} else {
+				// skip using special color for the zero-value for
+				// dataranges that have either negative values and/or
+				// no zero value
+				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
+				return (
+					(val) => {
+						const cIdx = 1 + (((val - min) * colorIdxScale) | 0);
+						return palette[cIdx];
+					}
+				);
+			}
+		default:
+			return blackColor;
+	}
+}
+
+export function attrToColorIndexFactory(colorAttr, colorMode) {
+	switch (colorMode) {
+		case 'Categorical':
+		case 'Stacked':
+			let { mostFreq } = colorAttr.colorIndices;
+			return (
+				(val) => {
+					return mostFreq[val] | 0;
+				}
+			);
+
+		case 'Heatmap':
+		case 'Heatmap2':
+			const palette = getPalette(colorMode);
+			const { min, max } = colorAttr;
+			if (min === 0) { // zero-value is coloured differently
+				const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
+				return (
+					(val) => {
+						return ((val - min) * colorIdxScale) | 0;
+					}
+				);
+			} else {
+				// skip using special color for the zero-value for
+				// dataranges that have either negative values and/or
+				// no zero value
+				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
+				return (
+					(val) => {
+						return 1 + (((val - min) * colorIdxScale) | 0);
+					}
+				);
+			}
+		default:
+			return blackColor;
+	}
+}
+
 
 /**
  * Crude normal curve approximation by taking the average of 4 random values.
@@ -386,8 +483,9 @@ export function isTypedArray(obj) {
  * mutates `a` and `b` such that they only contain their
  * non-overlapping values. If there are any overlapping
  * values, `a` and `b` might change order. If either
- * array contains duplicates, this function will only
- * only find the number of matching duplicates
+ * array contains duplicates, the matching duplicates
+ * will be put in the returned array, and the rest in
+ * will remain in the original arrays.
  * Example:
  * - in: a = `[1, 2, 2, 3]`, b = `[2, 3, 4, 5, 6]`
  * - out: `[2, 3]`; a = `[1, 2]`, b = `[5, 6, 4]`
@@ -441,7 +539,7 @@ export function merge(oldObj, newObj) {
 	if (!oldObj) {
 		return Object.assign({}, newObj);
 	} else if (!newObj) {
-		return oldObj;
+		return Object.assign({}, oldObj);
 	}
 	let untouchedKeys = Object.keys(oldObj);
 	let newKeys = Object.keys(newObj);

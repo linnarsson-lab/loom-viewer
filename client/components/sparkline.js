@@ -1,15 +1,8 @@
-import { findMostCommon, arrayConstr, arraySubset } from '../js/util';
+import { attrToColorFactory, findMostCommon, arrayConstr, arraySubset } from '../js/util';
 import { textSize, textStyle, drawText } from './canvas';
 
-import * as colors from '../js/colors';
-const { category20, solar256, YlGnBu256 } = colors;
-
 // TODO: change the way sparkline plotters prepare and consume data
-// current version is too memory-intensive and leads to issues with
-// not having enough memory and allocation failures...
-// (at the moment only happens if a 45k cell dataset plots 600+ genes,
-// but bump the cell count up to 1 million and this will happen around
-// thirty genes...)
+// current version becomes memory-intensive for large arrays
 
 // Convert data to a data range ready for plotting.
 export function sparklineDataPrep(attr, dataRange, indices, unfiltered) {
@@ -76,33 +69,26 @@ export function sparklineDataPrep(attr, dataRange, indices, unfiltered) {
 	return range;
 }
 
+function selectPlotter(attr, mode) {
+	switch (mode) {
+		case 'Categorical':
+			return categoriesPainter;
+		case 'Stacked':
+			return stackedCategoriesPainer;
+		case 'Bars':
+			return barPainter(attr);
+		case 'Heatmap':
+		case 'Heatmap2':
+			return heatmapPainter;
+		default:
+			return textPaint;
+	}
+}
+
 export function sparkline(attr, indices, mode, dataRange, label, orientation, unfiltered) {
 	if (!attr) {
 		return () => { };
 	}
-
-	// Determine plotter
-	let paint = null;
-	switch (mode) {
-		case 'Categorical':
-			paint = categoriesPainter;
-			break;
-		case 'Stacked':
-			paint = stackedCategoriesPainer;
-			break;
-		case 'Bars':
-			paint = barPainter(attr);
-			break;
-		case 'Heatmap':
-			paint = heatmapPainter(attr, solar256);
-			break;
-		case 'Heatmap2':
-			paint = heatmapPainter(attr, YlGnBu256);
-			break;
-		default:
-			paint = textPaint;
-	}
-
 	// =====================
 	// Prep data for plotter
 	// =====================
@@ -168,6 +154,9 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 		}
 	}
 
+	const paint = selectPlotter(attr, mode);
+	const dataToColor = attrToColorFactory(attr, mode);
+
 	return (context) => {
 		// All of our plotting functions draw horizontaly
 		// To get a vertical plot, we simply rotate the canvas
@@ -183,7 +172,7 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 		}
 
 		// draw sparkline + label
-		sparklinePainter(context, paint, attr, mode, range, orientation);
+		sparklinePainter(context, paint, dataToColor, range);
 		if (label) { labelPainter(context, label); }
 
 		// Make sure our rotation from before is undone
@@ -196,11 +185,7 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 	};
 }
 
-function sparklinePainter(context, paint, attr, mode, range, orientation) {
-	const { colorIndices } = attr;
-
-
-
+function sparklinePainter(context, paint, dataToColor, range) {
 	range.unrounded = range.right - range.left;
 	// We need to find the effective rangeWidth spanned by all bars.
 	// Mathematically speaking the following equation is true:
@@ -217,8 +202,7 @@ function sparklinePainter(context, paint, attr, mode, range, orientation) {
 	range.leftFrac = Math.floor(range.left) - range.left;
 	range.xOffset = (range.leftFrac * context.width / range.unrounded) | 0;
 	range.ratio = context.pixelRatio;
-	paint(context, range, colorIndices);
-
+	paint(context, range, dataToColor);
 }
 
 // Helper functions
@@ -328,14 +312,13 @@ function calcMeans(range) {
 // If we have strings for data, we concatenate them.
 
 
-function categoriesPainter(context, range, colorIndices) {
+function categoriesPainter(context, range, dataToColor) {
 	const { data, width, xOffset } = range;
-	const { mostFreq } = colorIndices;
+	context.fillStyle = 'white';
 	if (data.length <= width) {
 		// more pixels than data
 		const barWidth = width / data.length;
 		let i = 0;
-		context.fillStyle = category20[0];
 		while (i < data.length) {
 			let val = data[i];
 			let j = i, nextVal;
@@ -343,20 +326,17 @@ function categoriesPainter(context, range, colorIndices) {
 			do {
 				j++;
 				nextVal = data[j];
-			} while (val === nextVal && i + j < data.length);
-			val = val || 0;
-			const cIdx = mostFreq[val] | 0;
-			context.fillStyle = category20[cIdx];
+			} while (val === nextVal && j < data.length);
+			context.fillStyle = dataToColor(val || 0);
 			// force to pixel grid
-			const x = (xOffset + i * barWidth) | 0;
-			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - x;
+			const x = (xOffset + i*barWidth) | 0;
+			const roundedWidth = ((xOffset + j*barWidth) | 0) - x;
 			context.fillRect(x, 0, roundedWidth, context.height);
 			i = j;
 		}
 	} else {
 		// more data than pixels
 		let i = 0;
-		context.fillStyle = category20[0];
 		while (i < width) {
 			const i0 = (i * data.length / width) | 0;
 			const i1 = ((i + 1) * data.length / width) | 0;
@@ -368,17 +348,15 @@ function categoriesPainter(context, range, colorIndices) {
 				const j1 = ((j + 1) * data.length / width) | 0;
 				nextCommonValue = findMostCommon(data, j0, j1) || 0;
 			} while (mostCommonValue === nextCommonValue && j < width);
-			const cIdx = mostFreq[mostCommonValue] | 0;
-			context.fillStyle = category20[cIdx];
+			context.fillStyle = dataToColor(mostCommonValue);
 			context.fillRect(xOffset + i, 0, (j - i), context.height);
 			i = j;
 		}
 	}
 }
 
-function stackedCategoriesPainer(context, range, colorIndices) {
+function stackedCategoriesPainer(context, range, dataToColor) {
 	const { data, xOffset } = range;
-	const { mostFreq } = colorIndices;
 	// Support high-density displays.
 	// Downside: using browser-zoom scales up plots as well
 	const ratio = range.ratio > 1 ? range.ratio : 1;
@@ -387,12 +365,11 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 	// powers of two.
 	const width = (range.width / ratio) | 0;
 	const { height } = context;
-
+	context.fillStyle = 'white';
 	if (data.length <= width) {
 		// more pixels than data
 		const barWidth = width / data.length;
 		let i = 0;
-		context.fillStyle = category20[0];
 		while (i < data.length) {
 			let val = data[i];
 			let j = i, nextVal;
@@ -400,20 +377,17 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 			do {
 				j++;
 				nextVal = data[j];
-			} while (val === nextVal && i + j < data.length);
-			val = val || 0;
-			const cIdx = mostFreq[val] | 0;
-			context.fillStyle = category20[cIdx];
+			} while (val === nextVal && j < data.length);
+			context.fillStyle = dataToColor(val || 0);
 			// force to pixel grid
-			const x = xOffset + i * barWidth;
-			const roundedWidth = ((xOffset + (i + j) * barWidth) | 0) - (x | 0);
-			context.fillRect(x | 0, 0, roundedWidth, height);
+			const x = (xOffset + i*barWidth) | 0;
+			const roundedWidth = ((xOffset + j*barWidth) | 0) - x;
+			context.fillRect(x, 0, roundedWidth, context.height);
 			i = j;
 		}
 	} else {
 		// more data than pixels
 		const barWidth = ratio;
-		context.fillStyle = category20[0];
 
 		let barSlices = {}, i = width;
 		while (i--) {
@@ -470,15 +444,14 @@ function stackedCategoriesPainer(context, range, colorIndices) {
 			barSlice.sort();
 			let j = 0, k = 0;
 			while (j < l) {
-				const val = barSlice[k];
+				const val = barSlice[j];
 				do {
 					k++;
 				} while (k < l && val === barSlice[k]);
 				const y = (height * j / l) | 0;
 				const y1 = (height * k / l) | 0;
 				const roundedHeight = y1 - y;
-				const cIdx = mostFreq[val] | 0;
-				context.fillStyle = category20[cIdx];
+				context.fillStyle = dataToColor(val || 0);
 				context.fillRect(x, y, roundedWidth, roundedHeight);
 				j = k;
 			}
@@ -540,7 +513,6 @@ function barPaint(context, range, min, max) {
 	x = range.xOffset;
 	while (i < means.length) {
 		const meanHeight = (means[i] * barScale) | 0;
-
 		let j = i, nextHeight;
 		do {
 			j++;
@@ -551,7 +523,6 @@ function barPaint(context, range, min, max) {
 
 		if (meanHeight) {
 			let y = context.height - meanHeight - 1;
-
 			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), 3);
 		}
 		i = j; x += w;
@@ -567,35 +538,20 @@ function barPaint(context, range, min, max) {
 	}
 }
 
-
-
-function heatmapPainter(attr, colorLUT) {
-	let { min, max } = attr;
-	min = min || 0;
-	max = max || 0;
-	return (context, range) => {
-		heatmapPaint(context, range, min, max, colorLUT);
-	};
-}
-
-function heatmapPaint(context, range, min, max, colorLUT) {
+function heatmapPainter(context, range, dataToColor) {
 	const { means, outliers, barWidth } = calcMeans(range);
-	const colorIdxScale = (colorLUT.length / (max - min) || 1);
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let colorIdx = (((outliers[i] || 0 + means[i] || 0) * 0.5 - min) * colorIdxScale) | 0;
-		context.fillStyle = colorLUT[colorIdx];
-
-		let j = i, nextIdx;
+		let color = dataToColor(outliers[i] || means[i] || 0);
+		context.fillStyle = color;
+		let j = i, nextColor;
 		// advance while colour value doesn't change
 		do {
 			j++;
-			nextIdx = (((outliers[j] || 0 + means[j] || 0) * 0.5 - min) * colorIdxScale) | 0;
-		} while (colorIdx === nextIdx && i + j < outliers.length);
-
+			nextColor = dataToColor(outliers[j] || means[j] || 0);
+		} while (color === nextColor && i + j < outliers.length);
 		const w = (j - i) * barWidth;
-
 		// force to pixel grid
 		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
 		i = j; x += w;
