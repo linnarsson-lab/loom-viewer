@@ -447,10 +447,40 @@ export function createViewStateConverter(dataset) {
 		row: {
 			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal}]),
+			xAttrs: vectorOf([{
+				attr: oneOfRowAllKeys,
+				jitter: boolVal,
+				logscale: boolVal,
+			}]),
+			yAttrs: vectorOf([{
+				attr: oneOfRowAllKeys,
+				jitter: boolVal,
+				logscale: boolVal,
+			}]),
+			scaleFactor: anyVal,
+			lowerBound: anyVal,
+			upperBound: anyVal,
+			colorAttr: oneOfRowAllKeys,
+			colorMode: scatterplotModes,
 		},
 		col: {
 			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal}]),
+			xAttrs: vectorOf([{
+				attr: oneOfColAllKeys,
+				jitter: boolVal,
+				logscale: boolVal,
+			}]),
+			yAttrs: vectorOf([{
+				attr: oneOfColAllKeys,
+				jitter: boolVal,
+				logscale: boolVal,
+			}]),
+			scaleFactor: anyVal,
+			lowerBound: anyVal,
+			upperBound: anyVal,
+			colorAttr: oneOfColAllKeys,
+			colorMode: scatterplotModes,
 		},
 		heatmap: {
 			center: { lat: anyVal, lng: anyVal },
@@ -467,37 +497,7 @@ export function createViewStateConverter(dataset) {
 			geneMode: sparklineGeneModes,
 			showLabels: boolVal,
 		},
-		landscape: {
-			xAttrs: vectorOf([{
-				attr: oneOfColAllKeys,
-				jitter: boolVal,
-				logscale: boolVal,
-			}]),
-			yAttrs: vectorOf([{
-				attr: oneOfColAllKeys,
-				jitter: boolVal,
-				logscale: boolVal,
-			}]),
-			scaleFactor: anyVal,
-			colorAttr: oneOfColAllKeys,
-			colorMode: scatterplotModes,
-		},
 		cellMD: { searchVal: anyVal },
-		genescape: {
-			xAttrs: vectorOf([{
-				attr: oneOfRowAllKeys,
-				jitter: boolVal,
-				logscale: boolVal,
-			}]),
-			yAttrs: vectorOf([{
-				attr: oneOfRowAllKeys,
-				jitter: boolVal,
-				logscale: boolVal,
-			}]),
-			scaleFactor: anyVal,
-			colorAttr: oneOfRowAllKeys,
-			colorMode: scatterplotModes,
-		},
 		geneMD: { searchVal: anyVal },
 	};
 

@@ -10,6 +10,7 @@ import { AttrLegend } from './legend';
 import { DropdownMenu } from './dropdown';
 import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 import { FilteredValues } from './filtered';
+import { ClipDataSettings } from './clip-data';
 
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -23,10 +24,14 @@ function nullFunc() { }
 class CoordinateSettings extends PureComponent {
 	componentWillMount() {
 		const {
-			dispatch, dataset,
-			stateName, axis } = this.props;
+			dispatch,
+			dataset,
+			axis,
+		} = this.props;
 
-		const { attrs } = dataset[axis];
+		const {
+			attrs,
+		} = dataset[axis];
 
 		// function to generate functions used in buttons
 		const setCoordinateFactory = (label, xAttr, yAttr) => {
@@ -34,10 +39,10 @@ class CoordinateSettings extends PureComponent {
 				return (xAttrs, yAttrs) => {
 					const resetAttrs = {
 						type: SET_VIEW_PROPS,
-						stateName,
+						stateName: axis,
 						path: dataset.path,
 						viewState: {
-							[stateName]: {
+							[axis]: {
 								xAttrs: [{
 									attr: xAttr,
 									jitter: false,
@@ -102,9 +107,9 @@ class CoordinateSettings extends PureComponent {
 						}
 						const appendAttrs = {
 							type: SET_VIEW_PROPS,
-							stateName,
+							stateName: axis,
 							path: dataset.path,
-							viewState: { [stateName]: newAttrs },
+							viewState: { [axis]: newAttrs },
 						};
 						handleClickAppend = () => { dispatch(appendAttrs); };
 					}
@@ -182,9 +187,9 @@ class CoordinateSettings extends PureComponent {
 				}
 				dispatch({
 					type: SET_VIEW_PROPS,
-					stateName,
+					stateName: axis,
 					path: dataset.path,
-					viewState: { [stateName]: { [attrName]: newAttrs } },
+					viewState: { [axis]: { [attrName]: newAttrs } },
 				});
 			};
 		};
@@ -195,9 +200,9 @@ class CoordinateSettings extends PureComponent {
 			newAttrs[idx] = merge(newAttrs[idx], { jitter });
 			const newState = {
 				type: SET_VIEW_PROPS,
-				stateName,
+				stateName: axis,
 				path: dataset.path,
-				viewState: { [stateName]: { [attrName]: newAttrs } },
+				viewState: { [axis]: { [attrName]: newAttrs } },
 			};
 			return () => {
 				dispatch(newState);
@@ -210,9 +215,9 @@ class CoordinateSettings extends PureComponent {
 			newAttrs[idx] = merge(newAttrs[idx], { logscale });
 			const newState = {
 				type: SET_VIEW_PROPS,
-				stateName,
+				stateName: axis,
 				path: dataset.path,
-				viewState: { [stateName]: { [attrName]: newAttrs } },
+				viewState: { [axis]: { [attrName]: newAttrs } },
 			};
 			return () => {
 				dispatch(newState);
@@ -397,7 +402,6 @@ class CoordinateSettings extends PureComponent {
 CoordinateSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	stateName: PropTypes.string.isRequired,
 	axis: PropTypes.string.isRequired,
 	xAttrs: PropTypes.array.isRequired,
 	yAttrs: PropTypes.array.isRequired,
@@ -406,14 +410,14 @@ CoordinateSettings.propTypes = {
 
 class ColorSettings extends PureComponent {
 	componentWillMount() {
-		const { dispatch, dataset, stateName } = this.props;
+		const { dispatch, dataset, axis } = this.props;
 
 		const colorAttrHC = (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				stateName,
+				stateName: axis,
 				path: dataset.path,
-				viewState: { [stateName]: { colorAttr: value } },
+				viewState: { [axis]: { colorAttr: value } },
 			});
 		};
 
@@ -421,9 +425,9 @@ class ColorSettings extends PureComponent {
 			return () => {
 				dispatch({
 					type: SET_VIEW_PROPS,
-					stateName,
+					stateName: axis,
 					path: dataset.path,
-					viewState: { [stateName]: { colorMode } },
+					viewState: { [axis]: { colorMode } },
 				});
 			};
 		};
@@ -525,7 +529,6 @@ class ColorSettings extends PureComponent {
 ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	stateName: PropTypes.string.isRequired,
 	axis: PropTypes.string.isRequired,
 	colorAttr: PropTypes.string.isRequired,
 	colorMode: PropTypes.string.isRequired,
@@ -533,14 +536,14 @@ ColorSettings.propTypes = {
 
 class ScaleFactorSettings extends PureComponent {
 	componentWillMount() {
-		const { stateName, dataset, dispatch } = this.props;
+		const { axis, dataset, dispatch } = this.props;
 
 		const scaleFactorHC = (value) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
-				stateName,
+				stateName: axis,
 				path: dataset.path,
-				viewState: { [stateName]: { scaleFactor: value } },
+				viewState: { [axis]: { scaleFactor: value } },
 			});
 		};
 
@@ -582,20 +585,34 @@ class ScaleFactorSettings extends PureComponent {
 ScaleFactorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	stateName: PropTypes.string.isRequired,
+	axis: PropTypes.string.isRequired,
 	scaleFactor: PropTypes.number,
 	time: PropTypes.number,
 };
 
 export class ScatterplotSidepanel extends PureComponent {
 	render() {
-		const { dispatch, dataset, stateName, axis } = this.props;
-		const { xAttrs, yAttrs, colorAttr, colorMode, scaleFactor } = this.props.viewState;
+
+		const {
+			dispatch,
+			dataset,
+			axis,
+		} = this.props;
+
+		const {
+			xAttrs,
+			yAttrs,
+			colorAttr,
+			colorMode,
+			scaleFactor,
+			lowerBound,
+			upperBound,
+		} = this.props.viewState;
 
 		return (
 			<Panel
 				className='sidepanel'
-				key={`${stateName}-settings`}
+				key={`${axis}-settings`}
 				header='Settings'
 				bsStyle='default'>
 
@@ -603,14 +620,13 @@ export class ScatterplotSidepanel extends PureComponent {
 					<CoordinateSettings
 						dispatch={dispatch}
 						dataset={dataset}
-						stateName={stateName}
 						axis={axis}
 						xAttrs={xAttrs}
 						yAttrs={yAttrs}
 					/>
 					<ListGroupItem>
 						<CollapsibleSettings
-							label={`Radius Scale Factor (x${(scaleFactor/40).toFixed(1)})`}
+							label={`Radius Scale Factor (x${(scaleFactor / 40).toFixed(1)})`}
 							tooltip={'Change the radius of the drawn points'}
 							tooltipId={'radiusstngs-tltp'}
 							mountClosed>
@@ -618,8 +634,25 @@ export class ScatterplotSidepanel extends PureComponent {
 								<ScaleFactorSettings
 									dispatch={dispatch}
 									dataset={dataset}
-									stateName={stateName}
+									axis={axis}
 									scaleFactor={scaleFactor}
+									time={200} />
+							</div>
+						</CollapsibleSettings>
+					</ListGroupItem>
+					<ListGroupItem>
+						<CollapsibleSettings
+							label={`Clip data (${lowerBound}% to ${upperBound}%)`}
+							tooltip={'Clip data between ${lowerBound}% to ${upperBound}% of min/max values'}
+							tooltipId={'clampstngs-tltp'}
+							mountClosed>
+							<div>
+								<ClipDataSettings
+									dispatch={dispatch}
+									dataset={dataset}
+									axis={axis}
+									lowerBound={lowerBound}
+									upperBound={upperBound}
 									time={200} />
 							</div>
 						</CollapsibleSettings>
@@ -627,7 +660,6 @@ export class ScatterplotSidepanel extends PureComponent {
 					<ColorSettings
 						dispatch={dispatch}
 						dataset={dataset}
-						stateName={stateName}
 						axis={axis}
 						colorAttr={colorAttr}
 						colorMode={colorMode}
@@ -653,7 +685,6 @@ export class ScatterplotSidepanel extends PureComponent {
 ScatterplotSidepanel.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
-	stateName: PropTypes.string.isRequired,
 	axis: PropTypes.string.isRequired,
 	viewState: PropTypes.object.isRequired,
 };

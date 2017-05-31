@@ -9,9 +9,8 @@ export const GenescapeSidepanel = function (props) {
 		<ScatterplotSidepanel
 			dispatch={dispatch}
 			dataset={dataset}
-			stateName={'genescape'}
 			axis={'row'}
-			viewState={dataset.viewState.genescape}
+			viewState={dataset.viewState.row}
 		/>
 	);
 };

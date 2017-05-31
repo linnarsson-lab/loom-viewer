@@ -16,7 +16,7 @@ export class LandscapeSidepanel extends PureComponent {
 	fetchGenes(props) {
 		const { dispatch, dataset } = props;
 		const { geneToRow } = dataset.col;
-		const viewState = dataset.viewState.landscape;
+		const viewState = dataset.viewState.col;
 		const { xAttrs, yAttrs, colorAttr } = viewState;
 
 		// fetch any selected genes (that aren't being fetched yet).
@@ -46,13 +46,12 @@ export class LandscapeSidepanel extends PureComponent {
 
 	render() {
 		const { dispatch, dataset } = this.props;
-		const viewState = dataset.viewState.landscape;
+		const viewState = dataset.viewState.col;
 
 		return (
 			<ScatterplotSidepanel
 				dispatch={dispatch}
 				dataset={dataset}
-				stateName={'landscape'}
 				axis={'col'}
 				viewState={viewState}
 			/>

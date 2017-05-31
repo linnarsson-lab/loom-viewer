@@ -9,7 +9,7 @@ import { scatterplot } from './scatterplot';
 
 class GenescapeMatrix extends PureComponent {
 	componentWillMount() {
-		const { xAttrs, yAttrs } = this.props.dataset.viewState.genescape;
+		const { xAttrs, yAttrs } = this.props.dataset.viewState.row;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -48,7 +48,7 @@ class GenescapeMatrix extends PureComponent {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { xAttrs, yAttrs } = nextProps.dataset.viewState.genescape;
+		const { xAttrs, yAttrs } = nextProps.dataset.viewState.row;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -98,7 +98,7 @@ class GenescapeMatrix extends PureComponent {
 				colorAttr,
 				colorMode,
 				scaleFactor,
-			} = dataset.viewState.genescape;
+			} = dataset.viewState.row;
 
 			const el = this.refs.genescapeContainer;
 			const containerWidth = el.clientWidth-20;
@@ -214,6 +214,8 @@ const initialState = {
 	xAttrs: [{ attr: '_LogMean', jitter: false, logscale: false }],
 	yAttrs: [{ attr: '_LogCV', jitter: false, logscale: false }],
 	scaleFactor: 40,
+	lowerBound: 0,
+	upperBound: 100,
 	colorAttr: '_Selected',
 	colorMode: 'Categorical',
 };
@@ -223,7 +225,7 @@ export class GenescapeViewInitialiser extends PureComponent {
 		return (
 			<ViewInitialiser
 				View={GenescapeComponent}
-				stateName={'genescape'}
+				stateName={'row'}
 				initialState={initialState}
 				dispatch={this.props.dispatch}
 				params={this.props.params}

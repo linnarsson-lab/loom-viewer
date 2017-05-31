@@ -9,7 +9,7 @@ import { scatterplot } from './scatterplot';
 
 class LandscapeMatrix extends PureComponent {
 	componentWillMount() {
-		const { xAttrs, yAttrs } = this.props.dataset.viewState.landscape;
+		const { xAttrs, yAttrs } = this.props.dataset.viewState.col;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -48,7 +48,7 @@ class LandscapeMatrix extends PureComponent {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { xAttrs, yAttrs } = nextProps.dataset.viewState.landscape;
+		const { xAttrs, yAttrs } = nextProps.dataset.viewState.col;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -98,7 +98,7 @@ class LandscapeMatrix extends PureComponent {
 				colorAttr,
 				colorMode,
 				scaleFactor,
-			} = dataset.viewState.landscape;
+			} = dataset.viewState.col;
 
 			const el = this.refs.landscapeContainer;
 			const containerWidth = el.clientWidth - 20;
@@ -212,6 +212,8 @@ const initialState = { // Initialise landscapeState for this dataset
 	xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
 	yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
 	scaleFactor: 40,
+	lowerBound: 0,
+	upperBound: 100,
 	colorAttr: 'Clusters',
 	colorMode: 'Categorical',
 };
@@ -221,7 +223,7 @@ export class LandscapeViewInitialiser extends PureComponent {
 		return (
 			<ViewInitialiser
 				View={LandscapeComponent}
-				stateName={'landscape'}
+				stateName={'col'}
 				initialState={initialState}
 				dispatch={this.props.dispatch}
 				params={this.props.params}

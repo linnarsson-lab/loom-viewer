@@ -26,7 +26,7 @@
     "lodash": "^4.17.4",
     "lz-string": "^1.4.4",
     "prop-types": "^15.5.8",
-    "rc-slider": "^7.0.3",
+    "rc-slider": "^8.0.0",
     "react": "^15.5.4",
     "react-addons-shallow-compare": "^15.5.2",
     "react-bootstrap": "^0.31.0",
