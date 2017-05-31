@@ -643,7 +643,7 @@ export class ScatterplotSidepanel extends PureComponent {
 					<ListGroupItem>
 						<CollapsibleSettings
 							label={`Clip data (${lowerBound}% to ${upperBound}%)`}
-							tooltip={'Clip data between ${lowerBound}% to ${upperBound}% of min/max values'}
+							tooltip={`Clip data between ${lowerBound}% to ${upperBound}% of min/max values`}
 							tooltipId={'clampstngs-tltp'}
 							mountClosed>
 							<div>
