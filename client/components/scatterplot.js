@@ -1,5 +1,7 @@
 import { getPalette, attrToColorIndexFactory, rndNorm, arraySubset } from '../js/util';
 
+import { textSize, textStyle, drawText } from './canvas';
+
 // "global" array of sprite canvases.
 // Dots will be drawed in later (depends on colour settings)
 // Multiple radiuses; no need to draw a 128x128 image for a 8x8 dot
@@ -29,16 +31,24 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		}
 		context.save();
 
-		let { width, height } = context;
+		let { width, height, pixelRatio } = context;
 
 		// Erase previous paint
 		context.clearRect(0, 0, width, height);
 
 		// Suitable radius of the markers
 		// - smaller canvas size -> smaller points
-		const radius = Math.min(63, (Math.max(1, Math.min(width, height) / 200)) * scaleFactor / 50);
+		const shortEdge = Math.min(width, height);
+		const radius = Math.min(63, (Math.max(1, shortEdge / 200)) * scaleFactor / 50);
 		const spriteIdx = Math.min(sprites.length - 1, Math.log2(radius + 1) | 0), spriteRadius = 2 << spriteIdx;
 		const _sprites = sprites[spriteIdx];
+
+
+		const labelSize = (Math.max(8, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio) | 0;
+		const labelMargin = (labelSize * 1.2) | 0;
+		width -= labelMargin;
+		height -= labelMargin;
+
 
 		// ===============================
 		// == Prepare Palette & Sprites ==
@@ -78,18 +88,30 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		// draw zero values first
 		while (i-- && zeros--) {
 			_xy = xy[i];
-			_x = (_xy - spriteRadius) & 0xFFFF;
+			_x = ((_xy - spriteRadius) & 0xFFFF) + labelMargin;
 			_y = (height - (_xy >>> 16) - spriteRadius) | 0;
 			context.drawImage(zeroSprite, _x, _y);
 		}
 		if (i >= 0) {
 			while (i--) {
 				_xy = xy[i];
-				_x = (_xy - spriteRadius) & 0xFFFF;
+				_x = ((_xy - spriteRadius) & 0xFFFF) + labelMargin;
 				_y = (height - (_xy >>> 16) - spriteRadius) | 0;
 				context.drawImage(cSprites[i], _x, _y);
 			}
 		}
+
+		// =================
+		// == draw labels ==
+		// =================
+		textStyle(context);
+		textSize(context, labelSize);
+		drawText(context, x.name, 3*labelMargin, (context.height - labelMargin * 0.5)|0);
+		context.translate(0, context.height);
+		context.rotate(-Math.PI / 2);
+		drawText(context, y.name, 3*labelMargin, ((labelMargin-labelSize)*0.5 + labelSize)|0);
+		context.rotate(Math.PI / 2);
+		context.translate(0, -context.height);
 		context.restore();
 	};
 }
