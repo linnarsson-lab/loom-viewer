@@ -1,4 +1,9 @@
-import { getPalette, attrToColorIndexFactory, rndNorm, arraySubset } from '../js/util';
+import {
+	getPalette,
+	attrToColorIndexFactory,
+	rndNorm,
+	arraySubset,
+} from '../js/util';
 
 import { textSize, textStyle, drawText } from './canvas';
 
@@ -44,8 +49,8 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		const _sprites = sprites[spriteIdx];
 
 
-		const labelSize = (Math.max(8, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio) | 0;
-		const labelMargin = (labelSize * 1.2) | 0;
+		let labelSize = (Math.max(12, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio*0.75) | 0;
+		let labelMargin = (labelSize * 1.8) | 0;
 		width -= labelMargin;
 		height -= labelMargin;
 
@@ -106,12 +111,54 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		// =================
 		textStyle(context);
 		textSize(context, labelSize);
-		drawText(context, x.name, 3*labelMargin, (context.height - labelMargin * 0.5)|0);
+		const labelY = (context.height - labelMargin * 0.5)|0;
+		drawText(context, x.name, 1.5 * labelMargin, labelY);
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
-		drawText(context, y.name, 3*labelMargin, ((labelMargin-labelSize)*0.5 + labelSize)|0);
+		drawText(context, y.name, 1.5 * labelMargin, ((labelMargin - labelSize) * 0.5 + labelSize) | 0);
 		context.rotate(Math.PI / 2);
 		context.translate(0, -context.height);
+
+		// =====================================
+		// == draw heatmap scale, if required ==
+		// =====================================
+		const cScaleSize = Math.min(
+			256 * pixelRatio,
+			Math.max(
+				16,
+				shortEdge/10
+			)
+		)|0;
+		const labelOffset = labelSize * 3;
+		const colorX0 = width - cScaleSize - labelOffset;
+		context.textAlign = 'end';
+		drawText(context, color.name, (colorX0 - labelOffset - 5) | 0, labelY);
+		context.textAlign = 'start';
+
+		if (colorMode === 'Heatmap' || colorMode === 'Heatmap2') {
+			const colorScale = getPalette(colorMode);
+			const colorMin = color.min !== color.min | 0 ?
+				color.min.toPrecision(3) : color.min | 0;
+			const colorMax = color.max !== color.max | 0 ?
+				color.max.toPrecision(3) : color.max | 0;
+			context.textAlign = 'end';
+			drawText(context, colorMin, (colorX0 - 5) | 0, labelY);
+			context.textAlign = 'start';
+			drawText(context, colorMax, (colorX0 + cScaleSize + 5) | 0, labelY);
+			let i = cScaleSize;
+			const cY = (labelY-labelSize)|0;
+			const cScaleFactor = colorScale.length/cScaleSize;
+			while (i--) {
+				const cIdx = (i*cScaleFactor)|0;
+				context.fillStyle = colorScale[cIdx];
+				const cX = (colorX0 + i)|0;
+				const cX1 = (colorX0 + i + 1)|0;
+				const cWidth = (cX1 - cX)|0;
+				context.fillRect(cX, cY, cWidth, labelSize*1.25);
+			}
+
+		}
+
 		context.restore();
 	};
 }
@@ -236,7 +283,7 @@ function convertColordata(colorAttr, indices, colorMode) {
 	const colData = arraySubset(colorAttr.data, colorAttr.arrayType, indices);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
-	let cIdx = new Uint8Array(colData.length);
+	let cIdx = new Uint16Array(colData.length);
 	let i = cIdx.length;
 	while (i--) {
 		cIdx[i] = dataToIdx(colData[i]);
