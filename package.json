@@ -21,7 +21,7 @@
   "homepage": "https://github.com/linnarsson-lab/loom-viewer",
   "dependencies": {
     "bootstrap": "^3.3.7",
-    "fuse.js": "^3.0.0",
+    "fuse.js": "^3.0.4",
     "leaflet": "^1.0.3",
     "lodash": "^4.17.4",
     "lz-string": "^1.4.4",
@@ -58,7 +58,7 @@
     "html-webpack-plugin": "^2.28.0",
     "prepack": "^0.2.0",
     "prepack-webpack-plugin": "^1.1.0",
-    "uglify-js": "^3.0.1",
+    "uglify-js": "^3.0.13",
     "uglifycss": "^0.0.27",
     "webpack": "^2.5.1"
   }
