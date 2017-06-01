@@ -137,10 +137,10 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 
 		if (colorMode === 'Heatmap' || colorMode === 'Heatmap2') {
 			const colorScale = getPalette(colorMode);
-			const colorMin = color.min !== color.min | 0 ?
-				color.min.toPrecision(3) : color.min | 0;
-			const colorMax = color.max !== color.max | 0 ?
-				color.max.toPrecision(3) : color.max | 0;
+			const colorMin = color.min !== (color.min | 0) ?
+				color.min.toExponential(2) : color.min | 0;
+			const colorMax = color.max !== (color.max | 0) ?
+				color.max.toExponential(2) : color.max | 0;
 			context.textAlign = 'end';
 			drawText(context, colorMin, (colorX0 - 5) | 0, labelY);
 			context.textAlign = 'start';
