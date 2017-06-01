@@ -80,6 +80,9 @@ function selectPlotter(attr, mode) {
 		case 'Heatmap':
 		case 'Heatmap2':
 			return heatmapPainter;
+		case 'Flame':
+		case 'Flame2':
+			return flamemapPainter;
 		default:
 			return textPaint;
 	}
@@ -213,7 +216,7 @@ function calcMeans(range) {
 	const { data } = range;
 	// Support high-density displays.
 	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio > 1 ? range.ratio : 1;
+	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
 	const width = range.width / ratio;
 	// determine real start and end of range,
 	// skipping undefined padding if present.
@@ -329,8 +332,8 @@ function categoriesPainter(context, range, dataToColor) {
 			} while (val === nextVal && j < data.length);
 			context.fillStyle = dataToColor(val || 0);
 			// force to pixel grid
-			const x = (xOffset + i*barWidth) | 0;
-			const roundedWidth = ((xOffset + j*barWidth) | 0) - x;
+			const x = (xOffset + i * barWidth) | 0;
+			const roundedWidth = ((xOffset + j * barWidth) | 0) - x;
 			context.fillRect(x, 0, roundedWidth, context.height);
 			i = j;
 		}
@@ -357,9 +360,10 @@ function categoriesPainter(context, range, dataToColor) {
 
 function stackedCategoriesPainer(context, range, dataToColor) {
 	const { data, xOffset } = range;
-	// Support high-density displays.
+	// Support high-density displays. However, we cut it by half
+	// to increase details a little bit.
 	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio > 1 ? range.ratio : 1;
+	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
 	// Important: we MUST round this number, or the plotter
 	// crashes the browser for results that are not
 	// powers of two.
@@ -380,8 +384,8 @@ function stackedCategoriesPainer(context, range, dataToColor) {
 			} while (val === nextVal && j < data.length);
 			context.fillStyle = dataToColor(val || 0);
 			// force to pixel grid
-			const x = (xOffset + i*barWidth) | 0;
-			const roundedWidth = ((xOffset + j*barWidth) | 0) - x;
+			const x = (xOffset + i * barWidth) | 0;
+			const roundedWidth = ((xOffset + j * barWidth) | 0) - x;
 			context.fillRect(x, 0, roundedWidth, context.height);
 			i = j;
 		}
@@ -555,6 +559,99 @@ function heatmapPainter(context, range, dataToColor) {
 		// force to pixel grid
 		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
 		i = j; x += w;
+	}
+}
+
+function flamemapPainter(context, range, dataToColor) {
+	const { data, xOffset } = range;
+	// Support high-density displays. However, we cut it by half
+	// to increase details a little bit.
+	// Downside: using browser-zoom scales up plots as well
+	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
+	// Important: we MUST round this number, or the plotter
+	// crashes the browser for results that are not
+	// powers of two.
+	const width = (range.width / ratio) | 0;
+
+	const barHeight = context.height;
+	if (data < width) {
+		// more pixels than data
+		const barWidth = width / data.length;
+
+		let i = 0, x = xOffset;
+		while (i < data.length) {
+			// Even if outliers[i] is not a number, OR-masking forces it to 0
+			let color = dataToColor(data[i] || 0);
+			context.fillStyle = color;
+			let j = i, nextColor;
+			// advance while colour value doesn't change
+			do {
+				j++;
+				nextColor = dataToColor(data[j] || 0);
+			} while (color === nextColor && i + j < data.length);
+			// force to pixel grid
+			const w = (j - i) * barWidth, roundedWidth = ((x + w) | 0) - (x | 0);
+			context.fillRect(x | 0, 0, roundedWidth, barHeight);
+			i = j; x += w;
+		}
+	} else {
+		// more data than pixels
+		const barWidth = ratio;
+		let heatmapSlices = {}, i = width;
+		while (i--) {
+			const x = (xOffset + i * barWidth) | 0;
+			const x1 = (xOffset + (i + 1) * barWidth) | 0;
+			const roundedWidth = x1 - x;
+
+			let i0 = (i * data.length / width) | 0;
+			let i1 = ((i + 1) * data.length / width) | 0;
+			const l = i1 - i0;
+			let heatmapSlice = heatmapSlices[l];
+			if (heatmapSlice) {
+				while (i1 - 16 > i0) {
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+					heatmapSlice[--i1 - i0] = data[i1];
+				}
+				while (i1-- > i0) {
+					heatmapSlice[i1 - i0] = data[i1];
+				}
+			} else {
+				// Cach the heatmapSlice to avoid allocating thousands of
+				// tiny typed arrays and immediately throwing them away.
+				// Realistically we only have to cache a few options
+				// due to possible rounding error.
+				heatmapSlice = data.slice(i0, i1);
+				heatmapSlices[l] = heatmapSlice;
+			}
+			heatmapSlice.sort();
+			let j = 0, k = 0;
+			while (j < l) {
+				const val = heatmapSlice[j];
+				do {
+					k++;
+				} while (k < l && val === heatmapSlice[k]);
+				const y = (barHeight * j / l) | 0;
+				const y1 = (barHeight * k / l) | 0;
+				const roundedHeight = y1 - y;
+				context.fillStyle = dataToColor(val || 0);
+				context.fillRect(x, y, roundedWidth, roundedHeight);
+				j = k;
+			}
+		}
 	}
 }
 

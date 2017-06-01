@@ -428,9 +428,9 @@ function createDecoder(schema) {
 // viewStateConverter generation function
 // ======================================
 
-const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked']);
-const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked']);
-const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Heatmap2']);
+const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Flame2']);
+const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Flame2']);
+const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2']);
 const scatterplotModes = oneOf(['Heatmap', 'Heatmap2', 'Categorical']);
 
 export function createViewStateConverter(dataset) {

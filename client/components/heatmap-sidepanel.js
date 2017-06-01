@@ -35,7 +35,7 @@ export class HeatmapSidepanel extends PureComponent {
 		const colModeHC = handleChangeFactory('colMode');
 		const rowAttrHC = handleChangeFactory('rowAttr');
 		const rowModeHC = handleChangeFactory('rowMode');
-		const modeNames = ['Text', 'Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2'];
+		const modeNames = ['Text', 'Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 
 		this.setState({
 			colAttrHC, colModeHC,

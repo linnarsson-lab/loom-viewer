@@ -17,7 +17,7 @@ export class MetadataPlot extends PureComponent {
 		super(props);
 		this.modeCycler = this.modeCycler.bind(this);
 
-		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Heatmap2', 'Categorical', 'Stacked'];
+		const modes = props.modes ? props.modes : ['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2', 'Categorical', 'Stacked'];
 		let idx = modes.indexOf(props.mode);
 		const mode = idx !== -1 ? idx : 0;
 		this.state = { modes, mode };

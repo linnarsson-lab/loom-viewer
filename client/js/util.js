@@ -6,8 +6,10 @@ const { solar256, YlGnBu256, category20 } = colorLUT;
 export function getPalette(colorMode) {
 	switch (colorMode) {
 		case 'Heatmap':
+		case 'Flame':
 			return solar256;
 		case 'Heatmap2':
+		case 'Flame2':
 			return YlGnBu256;
 		case 'Categorical':
 		case 'Stacked':
@@ -33,6 +35,8 @@ export function attrToColorFactory(colorAttr, colorMode) {
 			);
 		case 'Heatmap':
 		case 'Heatmap2':
+		case 'Flame':
+		case 'Flame2':
 			const { min, max } = colorAttr;
 			if (min === 0) { // zero-value is coloured differently
 				const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
@@ -72,6 +76,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode) {
 
 		case 'Heatmap':
 		case 'Heatmap2':
+		case 'Flame':
 			const palette = getPalette(colorMode);
 			const { min, max } = colorAttr;
 			if (min === 0) { // zero-value is coloured differently

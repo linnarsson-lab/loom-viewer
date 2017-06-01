@@ -42,7 +42,7 @@ class LegendSettings extends PureComponent {
 			});
 		};
 
-		const colModeOptions = ['Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2'];
+		const colModeOptions = ['Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 
 		this.setState({ colAttrsHC, colModeHC, colModeOptions });
 	}
@@ -177,7 +177,7 @@ class ColorSettings extends PureComponent {
 			};
 		};
 
-		const geneModeOptions = ['Bars', 'Heatmap', 'Heatmap2'];
+		const geneModeOptions = ['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 		const geneModeHC = handleChangeFactory('geneMode');
 		const showLabelsHC = handleChangeFactory('showLabels');
 		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
