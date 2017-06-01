@@ -1,3 +1,5 @@
+// === Color handling ===
+
 import * as colorLUT from './colors';
 const { solar256, YlGnBu256, category20 } = colorLUT;
 
@@ -42,7 +44,7 @@ export function attrToColorFactory(colorAttr, colorMode) {
 				);
 			} else {
 				// skip using special color for the zero-value for
-				// dataranges that have either negative values and/or
+				// dataranges that have negative values and/or
 				// no zero value
 				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
 				return (
@@ -81,7 +83,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode) {
 				);
 			} else {
 				// skip using special color for the zero-value for
-				// dataranges that have either negative values and/or
+				// dataranges that have negative values and/or
 				// no zero value
 				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
 				return (
@@ -95,6 +97,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode) {
 	}
 }
 
+// === Maths helper functions ===
 
 /**
  * Crude normal curve approximation by taking the average of 4 random values.
@@ -212,6 +215,33 @@ export function isIntegerMinMax(array) {
 	return { min, max, isInt };	// |0 forces to integer value, we can
 }
 
+export function normalise(array) {
+	let data = Float64Array.from(array);
+	// sorted summation reduces error
+	data.sort();
+	let sum = 0, i = 0;
+	for (; i < data.length; i++) {
+		sum += data[i];
+	}
+	const mean = sum / data.length;
+	// sum squared difference
+	sum = 0;
+	while (i--) {
+		const delta = data[i] - mean;
+		data[i] = delta;
+		sum += delta * delta;
+	}
+	i = data.length;
+	const deviation = sum / i;
+	let normMin = Number.MAX_VALUE, normMax = Number.MIN_VALUE;
+	while (i--) {
+		let norm = data[i] / deviation;
+		if (norm < normMin) { normMin = norm; }
+		if (norm > normMax) { normMax = norm; }
+		data[i] = norm;
+	}
+	return { data, mean, deviation, normMin, normMax };
+}
 
 // === Metadata Arrays ===
 // Instead of plain arrays, we wrap the data from our attributes
