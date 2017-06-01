@@ -1,26 +1,67 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { Button, Glyphicon, Collapse, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {
+	Button,
+	Glyphicon,
+	Collapse,
+	OverlayTrigger,
+	Tooltip,
+	Popover,
+} from 'react-bootstrap';
+
+export class OverlayPopover extends PureComponent {
+	render() {
+		const { props } = this;
+		const _popover = (
+			<Popover
+				id={props.popoverId}
+				title={props.popoverTitle}
+				style={{ maxWidth: '600px' }}>
+				{props.popover}
+			</Popover>
+		);
+		return (
+			<OverlayTrigger
+				trigger='click'
+				rootClose
+				placement={props.placement || 'right'}
+				overlay={_popover}>
+				<Button
+					bsStyle='link'
+					bsSize={props.size || 'small'}>
+					<Glyphicon glyph='info-sign' />
+				</Button>
+			</OverlayTrigger>);
+	}
+}
+
+OverlayPopover.propTypes = {
+	popover: PropTypes.node.isRequired,
+	popoverTitle: PropTypes.string,
+	popoverId: PropTypes.string.isRequired,
+	placement: PropTypes.string,
+};
 
 export class OverlayTooltip extends PureComponent {
 	render() {
+		const { props } = this;
 		return (
 			<OverlayTrigger
-				placement={this.props.placement || 'top'}
+				placement={props.placement || 'top'}
 				overlay={(
-					<Tooltip id={this.props.tooltipId}>{this.props.tooltip}</Tooltip>)
+					<Tooltip id={props.tooltipId}>{props.tooltip}</Tooltip>)
 				}>
-				{this.props.children}
+				{props.children}
 			</OverlayTrigger>
 		);
 	}
 }
 
 OverlayTooltip.propTypes = {
-	placement: PropTypes.string,
 	tooltip: PropTypes.string.isRequired,
 	tooltipId: PropTypes.string.isRequired,
+	placement: PropTypes.string,
 	children: PropTypes.node.isRequired,
 };
 
@@ -39,37 +80,51 @@ export class CollapsibleSettings extends PureComponent {
 
 	render() {
 		const {
-			placement,
+			label,
 			tooltip,
 			tooltipId,
-			label,
+			tooltipPlacement,
+			popover,
+			popoverTitle,
+			popoverId,
+			popoverPlacement,
 			size,
 			unmountOnExit,
 			children,
 		} = this.props;
 
-		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
+		let _popover = popover ? (
+			<OverlayPopover
+				popover={popover}
+				popoverTitle={popoverTitle}
+				popoverId={popoverId}
+				popoverPlacement={popoverPlacement}
+				size={size} />
+		) : null;
+
 		// using Button so it can be triggered by keyboard
-		let _label = tooltip ? (
-			<OverlayTooltip
-				placement={placement || 'top'}
-				tooltip={tooltip}
-				tooltipId={tooltipId}>
-				<Button
-					onClick={this.toggle}
-					bsStyle='link'
-					bsSize={size}>
-					<Glyphicon glyph={chevron} /> {label}
-				</Button>
-			</OverlayTooltip>
-		) : label ? (
+		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
+		let _button = (
 			<Button
 				onClick={this.toggle}
 				bsStyle='link'
-				bsSize={size}>
+				bsSize={size || 'small'}>
 				<Glyphicon glyph={chevron} /> {label}
 			</Button>
-		) : null;
+		);
+
+
+		let _label = tooltip ? (
+			<div>
+				<OverlayTooltip
+					placement={tooltipPlacement || 'top'}
+					tooltip={tooltip}
+					tooltipId={tooltipId}
+				>
+					{_button}
+				</OverlayTooltip> {_popover}
+			</div>
+		) : (<div>{_button} {_popover}</div>);
 
 
 		return (
@@ -86,9 +141,13 @@ export class CollapsibleSettings extends PureComponent {
 }
 
 CollapsibleSettings.propTypes = {
-	placement: PropTypes.string,
 	tooltip: PropTypes.string,
 	tooltipId: PropTypes.string,
+	tooltipPlacement: PropTypes.string,
+	popover: PropTypes.node,
+	popoverTitle: PropTypes.string,
+	popoverId: PropTypes.string,
+	popoverPlacement: PropTypes.string,
 	label: PropTypes.string.isRequired,
 	size: PropTypes.string,
 	unmountOnExit: PropTypes.bool,

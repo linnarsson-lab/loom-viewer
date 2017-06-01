@@ -20,6 +20,17 @@ import { merge } from '../js/util';
 
 function nullFunc() { }
 
+const popoverTest = (
+	<div>
+		<p>Hi there! You found a work in progress. Eventually this will be used for inline tutorials, but those have to be written first... for now I'm just filling this up with lots of text, to see what it looks like and if we need to alter anything in our CSS to accomodate that</p>
+		<p>The fun thing of pop-overs is that we can use plain HTML here. That will be useful, I'm sure.</p>
+		<p>For example, we can include images:</p>
+		<img src='http://linnarssonlab.org/img/Cell_2016b.jpg' width='80%' />
+		<p>And we can link to other pages:</p>
+		<p><i>Molecular Diversity of Midbrain Development in Mouse, Human, and Stem Cells</i>, <a href='http://linnarssonlab.org/ventralmidbrain/' target='_blank'>Supporting data and visualizations</a></p>
+		<p>And so forth and so on</p>
+	</div>
+);
 
 class CoordinateSettings extends PureComponent {
 	componentWillMount() {
@@ -155,6 +166,9 @@ class CoordinateSettings extends PureComponent {
 							label={'X/Y Quick Settings'}
 							tooltip={'Quickly set X and Y attributes to one of the listed default values'}
 							tooltipId={'quickstngs-tltp'}
+							popover={popoverTest}
+							popoverTitle={'Test'}
+							popoverId={'popoverId1'}
 							mountClosed>
 							<ListGroup>
 								{setXY(xAttrs, yAttrs)}
@@ -291,6 +305,7 @@ class CoordinateSettings extends PureComponent {
 						tooltipId={`xattr-log-${i}-tltp`}>
 						<Button
 							bsStyle={attrData.logscale ? 'primary' : 'default'}
+							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={xLogscaleHC}>
 							log
@@ -301,6 +316,7 @@ class CoordinateSettings extends PureComponent {
 						tooltipId={`xattr-jitter-${i}-tltp`}>
 						<Button
 							bsStyle={attrData.jitter ? 'primary' : 'default'}
+							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={xJitterHC}>
 							jitter
@@ -351,6 +367,7 @@ class CoordinateSettings extends PureComponent {
 						tooltipId={`yattr-log-${i}-tltp`}>
 						<Button
 							bsStyle={attrData.logscale ? 'primary' : 'default'}
+							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={yLogscaleHC}>
 							log
@@ -361,6 +378,7 @@ class CoordinateSettings extends PureComponent {
 						tooltipId={`yattr-jitter-${i}-tltp`}>
 						<Button
 							bsStyle={attrData.jitter ? 'primary' : 'default'}
+							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={yJitterHC}>
 							jitter
@@ -378,7 +396,11 @@ class CoordinateSettings extends PureComponent {
 					<CollapsibleSettings
 						label={'X attributes'}
 						tooltip={'Select attributes for the X axis, with optional logaritmic scaling and jittering'}
-						tooltipId={'xattrs-tltp'}>
+						tooltipId={'xattrs-tltp'}
+						popover={popoverTest}
+						popoverTitle={'Test'}
+						popoverId={'popoverId2'}
+					>
 						<div>
 							{xAttrDropdowns}
 						</div>
@@ -388,7 +410,11 @@ class CoordinateSettings extends PureComponent {
 					<CollapsibleSettings
 						label={'Y attributes'}
 						tooltip={'Select attributes for the Y axis, with optional logaritmic scaling and jittering'}
-						tooltipId={'yattrs-tltp'}>
+						tooltipId={'yattrs-tltp'}
+						popover={popoverTest}
+						popoverTitle={'Test'}
+						popoverId={'popoverId3'}
+					>
 						<div>
 							{yAttrDropdowns}
 						</div>
@@ -486,7 +512,11 @@ class ColorSettings extends PureComponent {
 				<CollapsibleSettings
 					label={'Color'}
 					tooltip={'Select attribute for coloring the points'}
-					tooltipId={'colorsttngs-tltp'}>
+					tooltipId={'colorsttngs-tltp'}
+					popover={popoverTest}
+					popoverTitle={'Test'}
+					popoverId={'popoverId4'}
+				>
 					<div>
 						<DropdownMenu
 							value={colorAttr}
@@ -629,6 +659,10 @@ export class ScatterplotSidepanel extends PureComponent {
 							label={`Radius Scale Factor (x${(scaleFactor / 40).toFixed(1)})`}
 							tooltip={'Change the radius of the drawn points'}
 							tooltipId={'radiusstngs-tltp'}
+							popover={popoverTest}
+							popoverTitle={'Test'}
+							popoverId={'popoverId5'}
+
 							mountClosed>
 							<div>
 								<ScaleFactorSettings
@@ -644,7 +678,11 @@ export class ScatterplotSidepanel extends PureComponent {
 						<CollapsibleSettings
 							label={`Clip data (${lowerBound}% to ${upperBound}%)`}
 							tooltip={`Clip data between ${lowerBound}% to ${upperBound}% of min/max values`}
-							tooltipId={'clampstngs-tltp'}
+							tooltipId={'clipstngs-tltp'}
+							popover={popoverTest}
+							popoverTitle={'Test'}
+							popoverId={'popoverId6'}
+
 							mountClosed>
 							<div>
 								<ClipDataSettings
