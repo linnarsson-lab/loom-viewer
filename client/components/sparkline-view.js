@@ -49,7 +49,6 @@ class Legend extends PureComponent {
 	}
 }
 
-
 Legend.propTypes = {
 	height: PropTypes.number.isRequired,
 	width: PropTypes.number.isRequired,
@@ -59,6 +58,8 @@ Legend.propTypes = {
 	path: PropTypes.string.isRequired,
 	indicesChanged: PropTypes.bool.isRequired,
 };
+
+const sparklineHeight = 40;
 
 class Sparkline extends PureComponent {
 
@@ -82,7 +83,7 @@ class Sparkline extends PureComponent {
 		return (
 			<div style={style}>
 				<Canvas
-					height={30}
+					height={sparklineHeight}
 					paint={sparkline(geneData, sortedFilterIndices, geneMode, false, showLabels ? gene : null)}
 					redraw
 					clear
@@ -139,8 +140,8 @@ class Sparklines extends PureComponent {
 					showLabels={showLabels}
 					style={{
 						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
-						minHeight: '30px',
-						maxHeight: '30px',
+						minHeight: `${sparklineHeight}px`,
+						maxHeight: `${sparklineHeight}px`,
 						minWidth: `${containerWidth - 20}px`,
 						maxWidth: `${containerWidth - 20}px`,
 					}}
@@ -154,7 +155,7 @@ class Sparklines extends PureComponent {
 					flexDirection: 'column',
 					minWidth: `${containerWidth - 20}px`,
 					maxWidth: `${containerWidth - 20}px`,
-					height: `${Math.max(200, selection.length * 30)}px`,
+					height: `${Math.max(200, selection.length * sparklineHeight)}px`,
 				}}>
 				{sparklines.length ? sparklines : (
 					<div className='view centered'>

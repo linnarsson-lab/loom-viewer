@@ -547,13 +547,13 @@ function heatmapPainter(context, range, dataToColor) {
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let color = dataToColor(outliers[i] || means[i] || 0);
+		let color = dataToColor((outliers[i] + means[i])*0.5|| 0);
 		context.fillStyle = color;
 		let j = i, nextColor;
 		// advance while colour value doesn't change
 		do {
 			j++;
-			nextColor = dataToColor(outliers[j] || means[j] || 0);
+			nextColor = dataToColor((outliers[j] + means[j])*0.5 || 0);
 		} while (color === nextColor && i + j < outliers.length);
 		const w = (j - i) * barWidth;
 		// force to pixel grid
@@ -573,10 +573,10 @@ function flamemapPainter(context, range, dataToColor) {
 	// powers of two.
 	const width = (range.width / ratio) | 0;
 
-	const barHeight = context.height;
 	if (data < width) {
 		// more pixels than data
 		const barWidth = width / data.length;
+		const barHeight = context.height;
 
 		let i = 0, x = xOffset;
 		while (i < data.length) {
@@ -596,8 +596,18 @@ function flamemapPainter(context, range, dataToColor) {
 		}
 	} else {
 		// more data than pixels
+
 		const barWidth = ratio;
-		let heatmapSlices = {}, i = width;
+
+		const flameHeight = context.height*0.90;
+		// the thin heatmap strip
+		const heatmapHeight = context.height - (flameHeight|0) - 1;
+		const { means, outliers } = calcMeans(range);
+
+		context.fillStyle= 'white';
+		context.fillRect(0, 0, context.width, context.height);
+
+		let flameSlices = {}, i = width;
 		while (i--) {
 			const x = (xOffset + i * barWidth) | 0;
 			const x1 = (xOffset + (i + 1) * barWidth) | 0;
@@ -606,52 +616,60 @@ function flamemapPainter(context, range, dataToColor) {
 			let i0 = (i * data.length / width) | 0;
 			let i1 = ((i + 1) * data.length / width) | 0;
 			const l = i1 - i0;
-			let heatmapSlice = heatmapSlices[l];
-			if (heatmapSlice) {
+			let flameSlice = flameSlices[l];
+			if (flameSlice) {
 				while (i1 - 16 > i0) {
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
-					heatmapSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
+					flameSlice[--i1 - i0] = data[i1];
 				}
 				while (i1-- > i0) {
-					heatmapSlice[i1 - i0] = data[i1];
+					flameSlice[i1 - i0] = data[i1];
 				}
 			} else {
-				// Cach the heatmapSlice to avoid allocating thousands of
+				// Cach the flameSlice to avoid allocating thousands of
 				// tiny typed arrays and immediately throwing them away.
 				// Realistically we only have to cache a few options
 				// due to possible rounding error.
-				heatmapSlice = data.slice(i0, i1);
-				heatmapSlices[l] = heatmapSlice;
+				flameSlice = data.slice(i0, i1);
+				flameSlices[l] = flameSlice;
 			}
-			heatmapSlice.sort();
+			flameSlice.sort();
 			let j = 0, k = 0;
 			while (j < l) {
-				const val = heatmapSlice[j];
+				const val = flameSlice[j];
 				do {
 					k++;
-				} while (k < l && val === heatmapSlice[k]);
-				const y = (barHeight * j / l) | 0;
-				const y1 = (barHeight * k / l) | 0;
+				} while (k < l && val === flameSlice[k]);
+				const y = (flameHeight * j / l) | 0;
+				const y1 = (flameHeight * k / l) | 0;
 				const roundedHeight = y1 - y;
 				context.fillStyle = dataToColor(val || 0);
 				context.fillRect(x, y, roundedWidth, roundedHeight);
 				j = k;
 			}
+			// draw heatmap strip to highlight outliers in sparse genes
+			context.fillStye = dataToColor((outliers[i] + means[i])*0.5 || 0);
+			context.fillRect(x, flameHeight, roundedWidth, heatmapHeight);
 		}
+		// slightly separate the heatmap from the flame-map with a faded strip
+		context.fillStyle = 'white';
+		context.globalAlpha = 0.25;
+		context.fillRect(0, flameHeight, context.width, 1);
+		context.globalAlpha = 1.0;
 	}
 }
 
