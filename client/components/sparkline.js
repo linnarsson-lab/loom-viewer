@@ -601,7 +601,7 @@ function flamemapPainter(context, range, dataToColor) {
 
 		const flameHeight = context.height*0.90;
 		// the thin heatmap strip
-		const heatmapHeight = context.height - (flameHeight|0) - 1;
+		const heatmapHeight = context.height - (flameHeight|0) - 2*ratio;
 		const { means, outliers } = calcMeans(range);
 
 		context.fillStyle= 'white';
@@ -662,13 +662,13 @@ function flamemapPainter(context, range, dataToColor) {
 				j = k;
 			}
 			// draw heatmap strip to highlight outliers in sparse genes
-			context.fillStye = dataToColor((outliers[i] + means[i])*0.5 || 0);
+			context.fillStyle = dataToColor((outliers[i] + means[i])*0.5 || 0);
 			context.fillRect(x, flameHeight, roundedWidth, heatmapHeight);
 		}
 		// slightly separate the heatmap from the flame-map with a faded strip
 		context.fillStyle = 'white';
 		context.globalAlpha = 0.25;
-		context.fillRect(0, flameHeight, context.width, 1);
+		context.fillRect(0, flameHeight, context.width, ratio);
 		context.globalAlpha = 1.0;
 	}
 }
