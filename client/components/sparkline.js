@@ -69,14 +69,14 @@ export function sparklineDataPrep(attr, dataRange, indices, unfiltered) {
 	return range;
 }
 
-function selectPlotter(attr, mode) {
+function selectPlotter(mode) {
 	switch (mode) {
 		case 'Categorical':
 			return categoriesPainter;
 		case 'Stacked':
 			return stackedCategoriesPainer;
 		case 'Bars':
-			return barPainter(attr);
+			return barPaint;
 		case 'Heatmap':
 		case 'Heatmap2':
 			return heatmapPainter;
@@ -124,8 +124,9 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 	let range = {
 		left: (dataRange ? dataRange[0] : 0),
 		right: (dataRange ? dataRange[1] : source.length),
+		min: attr.min,
+		max: attr.max,
 	};
-
 
 	// While we return if our total data range is zero, it *is*
 	// allowed to be out of bounds for the dataset. For the
@@ -157,7 +158,8 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 		}
 	}
 
-	const paint = selectPlotter(attr, mode);
+	const paint = selectPlotter(mode);
+
 	const dataToColor = attrToColorFactory(attr, mode);
 
 	return (context) => {
@@ -463,19 +465,10 @@ function stackedCategoriesPainer(context, range, dataToColor) {
 	}
 }
 
-function barPainter(attr) {
-	let { min, max } = attr;
-	min = min || 0;
-	max = max || 0;
-	return (context, range) => {
-		barPaint(context, range, min, max);
-	};
-}
-
-
-function barPaint(context, range, min, max) {
-
+function barPaint(context, range) {
 	const { means, outliers, barWidth } = calcMeans(range);
+	const min = range.min || 0;
+	const max = range.max || 0;
 	// factor to multiply the bar values by, to calculate bar height
 	// Scaled down a tiny bit to keep vertical space between sparklines
 	const barScale = context.height / (max * 1.1);
@@ -547,13 +540,13 @@ function heatmapPainter(context, range, dataToColor) {
 	let i = 0, x = range.xOffset;
 	while (i < outliers.length) {
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let color = dataToColor((outliers[i] + means[i])*0.5|| 0);
+		let color = dataToColor((outliers[i] + means[i]) * 0.5 || 0);
 		context.fillStyle = color;
 		let j = i, nextColor;
 		// advance while colour value doesn't change
 		do {
 			j++;
-			nextColor = dataToColor((outliers[j] + means[j])*0.5 || 0);
+			nextColor = dataToColor((outliers[j] + means[j]) * 0.5 || 0);
 		} while (color === nextColor && i + j < outliers.length);
 		const w = (j - i) * barWidth;
 		// force to pixel grid
@@ -573,7 +566,7 @@ function flamemapPainter(context, range, dataToColor) {
 	// powers of two.
 	const width = (range.width / ratio) | 0;
 
-	if (data < width) {
+	if (data.length < width) {
 		// more pixels than data
 		const barWidth = width / data.length;
 		const barHeight = context.height;
@@ -590,7 +583,8 @@ function flamemapPainter(context, range, dataToColor) {
 				nextColor = dataToColor(data[j] || 0);
 			} while (color === nextColor && i + j < data.length);
 			// force to pixel grid
-			const w = (j - i) * barWidth, roundedWidth = ((x + w) | 0) - (x | 0);
+			const w = (j - i) * barWidth;
+			const roundedWidth = ((x + w) | 0) - (x | 0);
 			context.fillRect(x | 0, 0, roundedWidth, barHeight);
 			i = j; x += w;
 		}
@@ -599,12 +593,11 @@ function flamemapPainter(context, range, dataToColor) {
 
 		const barWidth = ratio;
 
-		const flameHeight = context.height*0.90;
+		const flameHeight = context.height * 0.875;
 		// the thin heatmap strip
-		const heatmapHeight = context.height - (flameHeight|0) - 2*ratio;
-		const { means, outliers } = calcMeans(range);
+		const heatmapHeight = context.height - (flameHeight | 0) - ratio;
 
-		context.fillStyle= 'white';
+		context.fillStyle = 'white';
 		context.fillRect(0, 0, context.width, context.height);
 
 		let flameSlices = {}, i = width;
@@ -661,14 +654,14 @@ function flamemapPainter(context, range, dataToColor) {
 				context.fillRect(x, y, roundedWidth, roundedHeight);
 				j = k;
 			}
-			// draw heatmap strip to highlight outliers in sparse genes
-			context.fillStyle = dataToColor((outliers[i] + means[i])*0.5 || 0);
+			// draw strip to highlight max value, so dataset with
+			// sparse gene expression are more visible
 			context.fillRect(x, flameHeight, roundedWidth, heatmapHeight);
 		}
 		// slightly separate the heatmap from the flame-map with a faded strip
 		context.fillStyle = 'white';
-		context.globalAlpha = 0.25;
-		context.fillRect(0, flameHeight, context.width, ratio);
+		context.globalAlpha = 0.375;
+		context.fillRect(0, flameHeight, context.width, ratio * 2);
 		context.globalAlpha = 1.0;
 	}
 }
