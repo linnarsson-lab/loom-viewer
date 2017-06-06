@@ -218,7 +218,7 @@ function calcMeans(range) {
 	const { data } = range;
 	// Support high-density displays.
 	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
+	const ratio = range.ratio > 1 ? range.ratio * 0.5 : 1;
 	const width = range.width / ratio;
 	// determine real start and end of range,
 	// skipping undefined padding if present.
