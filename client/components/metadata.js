@@ -31,7 +31,7 @@ export class MetadataPlot extends PureComponent {
 
 	render() {
 		const { modes, mode } = this.state;
-		const { attr, indices, filterFunc } = this.props;
+		const { attr, indices, filterFunc, filteredAttrs } = this.props;
 		return (
 			<div className='view-vertical'>
 				<OverlayTooltip
@@ -50,7 +50,9 @@ export class MetadataPlot extends PureComponent {
 				<AttrLegend
 					mode={modes[mode]}
 					filterFunc={filterFunc}
-					attr={attr} />
+					attr={attr}
+					filteredAttrs={filteredAttrs}
+				/>
 			</div>
 		);
 	}
@@ -61,6 +63,7 @@ MetadataPlot.propTypes = {
 	indices: TypedArrayProp.any,
 	mode: PropTypes.string,
 	modes: PropTypes.arrayOf(PropTypes.string),
+	filteredAttrs: PropTypes.array.isRequired,
 	filterFunc: PropTypes.func.isRequired,
 };
 
@@ -87,10 +90,17 @@ class MetadataTable extends PureComponent {
 	}
 
 	createTableData(props) {
-		const { attributes, attrKeys,
-			searchField, searchVal,
-			sortOrderList, sortedFilterIndices,
-			onClickAttrFactory, onClickFilterFactory } = props;
+		const {
+			attributes,
+			attrKeys,
+			searchField,
+			searchVal,
+			sortOrderList,
+			indices,
+			filteredAttrs,
+			onClickAttrFactory,
+			onClickFilterFactory,
+		} = props;
 
 		const sortOrderStyle = {
 			fontWeight: 'normal',
@@ -149,16 +159,16 @@ class MetadataTable extends PureComponent {
 					<span>{uniqueVal}</span>
 				);
 			} else if (attr.allUnique) { // every value is unique
-				let list = data[sortedFilterIndices[0]];
+				let list = data[indices[0]];
 				const l = Math.min(data.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
 					for (let i = 1; i < l; i++) {
-						list += `, ${indexedVal[data[sortedFilterIndices[i]]]}`;
+						list += `, ${indexedVal[data[indices[i]]]}`;
 					}
 				} else {
 					for (let i = 1; i < l; i++) {
-						list += `, ${data[sortedFilterIndices[i]]}`;
+						list += `, ${data[indices[i]]}`;
 					}
 				}
 				if (l < data.length) {
@@ -175,8 +185,9 @@ class MetadataTable extends PureComponent {
 							<MetadataPlot
 								attr={attr}
 								modes={['Stacked', 'Categorical']}
-								indices={sortedFilterIndices}
-								filterFunc={filterFunc} />
+								indices={indices}
+								filterFunc={filterFunc}
+								filteredAttrs={filteredAttrs} />
 						);
 						break;
 					default:
@@ -185,8 +196,9 @@ class MetadataTable extends PureComponent {
 								attr={attr}
 								mode={ /* guess default category based on nr of unique values*/
 									uniques.length <= 20 ? 'Stacked' : 'Bars'}
-								indices={sortedFilterIndices}
-								filterFunc={filterFunc} />
+								indices={indices}
+								filterFunc={filterFunc}
+								filteredAttrs={filteredAttrs} />
 						);
 				}
 			}
@@ -217,7 +229,8 @@ MetadataTable.propTypes = {
 	searchField: PropTypes.node.isRequired,
 	searchVal: PropTypes.string.isRequired,
 	sortOrderList: PropTypes.array.isRequired,
-	sortedFilterIndices: TypedArrayProp.any,
+	filteredAttrs: PropTypes.array.isRequired,
+	indices: TypedArrayProp.any,
 	dispatch: PropTypes.func.isRequired,
 	onClickAttrFactory: PropTypes.func.isRequired,
 	onClickFilterFactory: PropTypes.func.isRequired,
@@ -288,6 +301,7 @@ export class MetadataComponent extends PureComponent {
 			attributes, attrKeys, axis,
 			stateName, mdName,
 		} = this.props;
+		const filteredAttrs = dataset.viewState[axis].filter;
 
 		const {
 			onClickAttrFactory,
@@ -307,8 +321,7 @@ export class MetadataComponent extends PureComponent {
 		);
 
 		// Show first four attributes to use as sort keys
-		const { sortedFilterIndices } = dataset[axis];
-		const { order } = dataset.viewState[axis];
+		const { order, indices } = dataset.viewState[axis];
 		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++) {
 			const val = order[i];
@@ -332,7 +345,8 @@ export class MetadataComponent extends PureComponent {
 					searchField={searchField}
 					searchVal={searchVal}
 					sortOrderList={sortOrderList}
-					sortedFilterIndices={sortedFilterIndices}
+					indices={indices}
+					filteredAttrs={filteredAttrs}
 					dispatch={dispatch}
 					onClickAttrFactory={onClickAttrFactory}
 					onClickFilterFactory={onClickFilterFactory} />

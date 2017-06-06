@@ -31,6 +31,15 @@ export class FilteredValues extends PureComponent {
 					label = `${attrNames[i]}: (${filteredVals[i].length})`;
 				const listGroupElements = filteredVals[i].map(
 					(filterVal) => {
+						const onFilterClick = () => {
+							dispatch({
+								type: SET_VIEW_PROPS,
+								path: dataset.path,
+								axis,
+								filterAttrName,
+								filterVal,
+							});
+						};
 						return (
 							<OverlayTooltip
 								key={filterAttrName + '_' + filterVal}
@@ -45,17 +54,7 @@ export class FilteredValues extends PureComponent {
 											textAlign: 'left',
 											width: '100%',
 										}}
-										onClick={
-											() => {
-												dispatch({
-													type: SET_VIEW_PROPS,
-													path: dataset.path,
-													axis,
-													filterAttrName,
-													filterVal,
-												});
-											}
-										}>
+										onClick={onFilterClick}>
 
 										{attr.indexedVal ?
 											attr.indexedVal[filterVal] :

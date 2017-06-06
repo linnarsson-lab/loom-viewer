@@ -593,6 +593,14 @@ function flamemapPainter(context, range, dataToColor) {
 
 		const barWidth = ratio;
 
+		// Because of rounding, our bins can come in two sizes.
+		// For small datasets this is a problem, because plotting
+		// a gradient for two or three cells gives a very result.
+		// to fix this, we always make the gradient as large as
+		// the largest bin size.
+		// If necessary, we'll pad it with a zero value.
+		const binSize = Math.ceil(data.length / width)|0;
+
 		const flameHeight = context.height * 0.875;
 		// the thin heatmap strip
 		const heatmapHeight = context.height - (flameHeight | 0) - ratio;
@@ -641,14 +649,15 @@ function flamemapPainter(context, range, dataToColor) {
 				flameSlices[l] = flameSlice;
 			}
 			flameSlice.sort();
+			const yOffset = binSize - flameSlice.length;
 			let j = 0, k = 0;
 			while (j < l) {
 				const val = flameSlice[j];
 				do {
 					k++;
 				} while (k < l && val === flameSlice[k]);
-				const y = (flameHeight * j / l) | 0;
-				const y1 = (flameHeight * k / l) | 0;
+				const y = (flameHeight * (j + yOffset) / binSize) | 0;
+				const y1 = (flameHeight * (k + yOffset) / binSize) | 0;
 				const roundedHeight = y1 - y;
 				context.fillStyle = dataToColor(val || 0);
 				context.fillRect(x, y, roundedWidth, roundedHeight);

@@ -13,11 +13,15 @@ import {
 } from './actionTypes';
 
 export function receiveDataSet(data, path) {
-	let prepRows = prepData(data.rowAttrs), prepCols = prepData(data.colAttrs);
-	let rows = prepRows.data, cols = prepCols.data;
+	let prepRows = prepData(data.rowAttrs),
+		prepCols = prepData(data.colAttrs);
+	let rows = prepRows.data,
+		cols = prepCols.data;
 
 	// some old loom files have 'Cell_ID'
-	rows.cellKeys = cols.attrs.CellID ? cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ? cols.attrs.Cell_ID.data.slice() : [];
+	rows.cellKeys = cols.attrs.CellID ?
+		cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ?
+			cols.attrs.Cell_ID.data.slice() : [];
 	rows.cellKeys.sort();
 	rows.allKeys = rows.keys.concat(rows.cellKeys);
 	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
@@ -68,8 +72,16 @@ export function receiveDataSet(data, path) {
 	};
 
 	dataset.viewState = {
-		row: { order: prepRows.order, filter: [] },
-		col: { order: prepCols.order, filter: [] },
+		row: {
+			order: prepRows.order,
+			filter: [],
+			indices: prepRows.indices,
+		},
+		col: {
+			order: prepCols.order,
+			filter: [],
+			indices: prepCols.indices,
+		},
 		heatmap: {
 			zoomRange: data.zoomRange,
 			fullZoomHeight: data.fullZoomHeight,
@@ -124,20 +136,17 @@ function prepData(attrs) {
 	}
 	keysNoUniques.sort();
 
-	// Add zero-initialised filter counting arrays, assumes
-	// that we will never have more than 65,535 attributes
-	const filterCount = new Uint16Array(dataLength);
-	const sortedFilterIndices = originalOrder.data.slice();
+	const indices = originalOrder.data.slice();
 
 	return {
 		data: {
 			keys,
 			keysNoUniques,
 			attrs: newAttrs,
-			filterCount,
-			sortedFilterIndices,
+			length: dataLength,
 		},
 		order,
+		indices,
 	};
 }
 

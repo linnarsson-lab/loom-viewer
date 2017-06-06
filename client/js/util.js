@@ -608,7 +608,7 @@ export function merge(oldObj, newObj) {
  * @param {object} oldObj - original object to be merged into
  * @param {object} newObj - new object to merge into oldObj
  */
-export function mergeInplace(oldObj, newObj) {
+export function mergeInPlace(oldObj, newObj) {
 	if (!oldObj) {
 		return Object.assign({}, newObj);
 	} else if (!newObj) {
@@ -624,7 +624,7 @@ export function mergeInplace(oldObj, newObj) {
 		let newVal = newObj[key];
 		// merge object values by recursion, otherwise just assign new value
 		oldObj[key] = (typeof newVal === 'object' && !isArray(newVal)) ?
-			mergeInplace(oldObj[key], newVal) : newVal;
+			mergeInPlace(oldObj[key], newVal) : newVal;
 	}
 	i = newKeys.length;
 	while (i--) {

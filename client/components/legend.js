@@ -5,22 +5,34 @@ import { OverlayTooltip } from './collapsible';
 
 import { attrToColorFactory } from '../js/util';
 
+const nullfunc = () => { };
+
 export class AttrLegend extends PureComponent {
 	render() {
-		const { filterFunc, attr, mode } = this.props;
+		const { filteredAttrs, filterFunc, attr, mode } = this.props;
 		const { uniques, indexedVal } = attr;
+
+		let filteredVals = {};
+		for (let i = 0; i < filteredAttrs.length; i++){
+			const filterEntry = filteredAttrs[i];
+			if (filterEntry.attr === attr.name) {
+				filteredVals[filterEntry.val] = true;
+			}
+		}
+
 		const selectColor = attrToColorFactory(attr, mode);
-		const nullfunc = () => { };
 
 		const isFloat = attr.arrayType === 'float32' ||
 			attr.arrayType === 'number' ||
 			attr.arrayType === 'float64';
+
 		const showBlock = mode !== 'Bars';
 		let l = Math.min(uniques.length, 20),
 			i = l,
 			visibleData = new Array(l + (l < uniques.length ? 1 : 0));
 		while (i--) {
-			let { val, count, filtered } = uniques[i];
+			let { val, count } = uniques[i];
+			const filtered = filteredVals[val];
 			const cellStyle = {
 				display: 'flex',
 				cursor: 'pointer',
@@ -36,7 +48,7 @@ export class AttrLegend extends PureComponent {
 				dataVal = dataVal.toExponential(3);
 			}
 
-			const filter = filterFunc ? filterFunc(val) : nullfunc;
+			const valFilterFunc = filterFunc ? filterFunc(val) : nullfunc;
 
 			visibleData[i] = (
 				<td
@@ -53,7 +65,7 @@ export class AttrLegend extends PureComponent {
 								whiteSpace: 'normal',
 								textAlign: 'left',
 							}}
-							onClick={filter} >
+							onClick={valFilterFunc} >
 							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
 								{icon} {dataVal}: </span> {count}
 						</Button>
@@ -98,7 +110,8 @@ export class AttrLegend extends PureComponent {
 
 
 AttrLegend.propTypes = {
-	mode: PropTypes.string,
+	filteredAttrs: PropTypes.array.isRequired,
 	filterFunc: PropTypes.func.isRequired,
 	attr: PropTypes.object.isRequired,
+	mode: PropTypes.string,
 };

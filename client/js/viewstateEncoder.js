@@ -443,10 +443,16 @@ export function createViewStateConverter(dataset) {
 		oneOfColKeys = oneOf(colData.keys),
 		oneOfGeneKeys = oneOf(colData.geneKeys);
 
+	// Note: this schema doesn't necessarily include
+	// all redux state! If it can be reconstructed from
+	// other state, it will be skipped.
+	// The skipped state is included as commented out
+	// strings for documentation purposes.
 	const viewStateSchema = {
 		row: {
 			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal}]),
+			// indices: vectorOf(rangeVal(0, 1<<32))
 			xAttrs: vectorOf([{
 				attr: oneOfRowAllKeys,
 				jitter: boolVal,
@@ -466,6 +472,7 @@ export function createViewStateConverter(dataset) {
 		col: {
 			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal}]),
+			// indices: vectorOf(rangeVal(0, 1<<32))
 			xAttrs: vectorOf([{
 				attr: oneOfColAllKeys,
 				jitter: boolVal,

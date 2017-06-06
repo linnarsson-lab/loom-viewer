@@ -503,6 +503,7 @@ class ColorSettings extends PureComponent {
 						});
 					};
 				}}
+				filteredAttrs={dataset.viewState[axis].filter}
 				attr={attrs[colorAttr]}
 			/>
 		) : null;

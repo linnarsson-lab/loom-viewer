@@ -7,7 +7,7 @@ export function updateDatasetSortOrder(state, key) {
 	});
 }
 
-export function updateAttrSort(order, sortAttrName) {
+export function updateSortOrder(order, sortAttrName) {
 	order = order.slice();
 
 	let orderEntry;
@@ -36,9 +36,9 @@ export function updateAttrSort(order, sortAttrName) {
 	return order;
 }
 
-export function sortFilterIndices(axisData, order, sortedFilterIndices) {
+/** mutates and returns indices */
+export function sortFilterIndices(axisData, order, indices) {
 	let attrs = [], ascending = [];
-	sortedFilterIndices = sortedFilterIndices ? sortedFilterIndices : axisData.sortedFilterIndices.slice();
 
 	// attr may be a gene being fetched, so its data might be undefined
 	for (let i = 0; i < order.length; i++) {
@@ -52,7 +52,7 @@ export function sortFilterIndices(axisData, order, sortedFilterIndices) {
 
 	if (attrs.length) {
 		// The comparator is somewhat tricky:
-		// We want to sort the sortedFilterIndices,
+		// We want to sort the indices,
 		// which are used to look up and compare
 		// entries in the various attributes
 		const comparator = (a, b) => {
@@ -68,9 +68,9 @@ export function sortFilterIndices(axisData, order, sortedFilterIndices) {
 			}
 			return rVal;
 		};
-		sortedFilterIndices.sort(comparator);
+		indices.sort(comparator);
 	}
-	return sortedFilterIndices;
+	return indices;
 }
 
 export function maybeSortIndices(state, newState, action) {

@@ -40,7 +40,10 @@ class HeatmapMapComponent extends PureComponent {
 	render() {
 		const { dataset } = this.props;
 		const { col, row } = dataset;
-		const hms = dataset.viewState.heatmap;
+		const vs = dataset.viewState;
+		const hms = vs.heatmap;
+		const colIndices = vs.col.indices;
+		const rowIndices = vs.row.indices;
 		if (this.state.mounted) {
 			// Calculate the layout of everything, which we can only
 			// do after mounting because we rely on the parent node.
@@ -68,7 +71,7 @@ class HeatmapMapComponent extends PureComponent {
 						height={sparklineHeight}
 						paint={sparkline(
 							colAttr,
-							col.sortedFilterIndices,
+							colIndices,
 							hms.colMode,
 							[dataBounds[0], dataBounds[2]],
 							colAttr ? colAttr.name : null,
@@ -89,7 +92,7 @@ class HeatmapMapComponent extends PureComponent {
 							height={heatmapHeight}
 							paint={sparkline(
 								row.attrs[hms.rowAttr],
-								row.sortedFilterIndices,
+								rowIndices,
 								hms.rowMode,
 								[dataBounds[1], dataBounds[3]],
 								rowAttr ? rowAttr.name : null,

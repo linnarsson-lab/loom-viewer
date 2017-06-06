@@ -77,6 +77,7 @@ class LegendSettings extends PureComponent {
 				<AttrLegend
 					mode={colMode}
 					filterFunc={filterFunc}
+					filteredAttrs={dataset.viewState.col.filter}
 					attr={legendData} />
 			);
 		}

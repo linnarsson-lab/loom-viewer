@@ -22,9 +22,9 @@ class Legend extends PureComponent {
 	}
 
 	render() {
-		const { width, height, col, colAttr, colMode } = this.props;
+		const { width, height, col, colAttr, colMode, indices } = this.props;
 		const legendData = col.attrs[colAttr];
-		const painter = legendData ? sparkline(legendData, col.sortedFilterIndices, colMode, null, legendData ? legendData.name : null) : () => { };
+		const painter = legendData ? sparkline(legendData, indices, colMode, null, legendData ? legendData.name : null) : () => { };
 		return (
 			<div style={{
 				flex: '0 0 auto',
@@ -56,6 +56,7 @@ Legend.propTypes = {
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
 	path: PropTypes.string.isRequired,
+	indices: TypedArrayProp.any,
 	indicesChanged: PropTypes.bool.isRequired,
 };
 
@@ -79,12 +80,12 @@ class Sparkline extends PureComponent {
 	}
 
 	render() {
-		const { gene, geneData, sortedFilterIndices, geneMode, showLabels, style } = this.props;
+		const { gene, geneData, indices, geneMode, showLabels, style } = this.props;
 		return (
 			<div style={style}>
 				<Canvas
 					height={sparklineHeight}
-					paint={sparkline(geneData, sortedFilterIndices, geneMode, false, showLabels ? gene : null)}
+					paint={sparkline(geneData, indices, geneMode, false, showLabels ? gene : null)}
 					redraw
 					clear
 				/>
@@ -99,7 +100,7 @@ Sparkline.propTypes = {
 	geneMode: PropTypes.string,
 	indicesChanged: PropTypes.bool,
 	showLabels: PropTypes.bool,
-	sortedFilterIndices: TypedArrayProp.any,
+	indices: TypedArrayProp.any,
 	style: PropTypes.object,
 };
 
@@ -118,7 +119,7 @@ class Sparklines extends PureComponent {
 		const {
 			attrs,
 			selection,
-			sortedFilterIndices,
+			indices,
 			indicesChanged,
 			geneMode,
 			showLabels,
@@ -136,7 +137,7 @@ class Sparklines extends PureComponent {
 					geneData={geneData}
 					geneMode={geneMode}
 					indicesChanged={indicesChanged}
-					sortedFilterIndices={sortedFilterIndices}
+					indices={indices}
 					showLabels={showLabels}
 					style={{
 						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
@@ -172,7 +173,7 @@ Sparklines.propTypes = {
 	containerWidth: PropTypes.number.isRequired,
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	sortedFilterIndices: TypedArrayProp.any,
+	indices: TypedArrayProp.any,
 	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
@@ -196,7 +197,7 @@ class SparklineList extends PureComponent {
 				path,
 				attrs,
 				selection,
-				sortedFilterIndices,
+				indices,
 				indicesChanged,
 				geneMode,
 				showLabels,
@@ -222,6 +223,7 @@ class SparklineList extends PureComponent {
 						col={col}
 						colAttr={colAttr}
 						colMode={colMode}
+						indices={indices}
 						path={path}
 						indicesChanged={indicesChanged}
 					/>
@@ -239,7 +241,7 @@ class SparklineList extends PureComponent {
 						<Sparklines
 							attrs={attrs}
 							selection={selection}
-							sortedFilterIndices={sortedFilterIndices}
+							indices={indices}
 							indicesChanged={indicesChanged}
 							geneMode={geneMode}
 							showLabels={showLabels}
@@ -262,7 +264,7 @@ class SparklineList extends PureComponent {
 SparklineList.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	sortedFilterIndices: TypedArrayProp.any,
+	indices: TypedArrayProp.any,
 	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,
 	showLabels: PropTypes.bool,
@@ -280,13 +282,11 @@ class SparklineViewComponent extends PureComponent {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const indicesChanged = !isEqual(
-			this.props.dataset.viewState.col.order,
-			nextProps.dataset.viewState.col.order
-		) || !isEqual(
-			this.props.dataset.col.sortedFilterIndices,
-			nextProps.dataset.col.sortedFilterIndices
-		);
+		const pVS = this.props.dataset.viewState.col,
+			nVS = nextProps.dataset.viewState.col;
+
+		const indicesChanged = !isEqual(pVS.order, nVS.order) ||
+			!isEqual(pVS.indices, nVS.indices);
 		this.setState({
 			indicesChanged,
 		});
@@ -297,6 +297,7 @@ class SparklineViewComponent extends PureComponent {
 		const { dispatch, dataset } = this.props;
 		const { col } = dataset;
 		const sl = dataset.viewState.sparkline;
+		const { indices } = dataset.viewState.col;
 		// The old column attribute values that we displayed in the "legend"
 		let legendData = col.attrs[sl.colAttr];
 		// if colAttr does not exist (for example, the default values
@@ -324,7 +325,7 @@ class SparklineViewComponent extends PureComponent {
 						attrs={dataset.col.attrs}
 						selection={sl.genes}
 						indicesChanged={indicesChanged}
-						sortedFilterIndices={col.sortedFilterIndices}
+						indices={indices}
 						geneMode={sl.geneMode}
 						col={col}
 						colAttr={sl.colAttr}

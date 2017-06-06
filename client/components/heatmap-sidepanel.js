@@ -72,9 +72,9 @@ export class HeatmapSidepanel extends PureComponent {
 	}
 
 	render() {
-		const { dispatch } = this.props;
-		const { col, row, path } = this.props.dataset;
-		const hms = this.props.dataset.viewState.heatmap;
+		const { dispatch, dataset } = this.props;
+		const { col, row, path } = dataset;
+		const hms = dataset.viewState.heatmap;
 		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
 
 		const colAttr = col.attrs[hms.colAttr];
@@ -119,6 +119,7 @@ export class HeatmapSidepanel extends PureComponent {
 										});
 									};
 								}}
+								filteredAttrs={dataset.viewState.col.filter}
 							/>
 						) : null
 						}
@@ -157,6 +158,7 @@ export class HeatmapSidepanel extends PureComponent {
 											});
 										};
 									}}
+									filteredAttrs={dataset.viewState.row.filter}
 								/>
 							) : null
 						}

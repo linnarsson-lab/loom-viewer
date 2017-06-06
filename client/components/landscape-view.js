@@ -98,6 +98,7 @@ class LandscapeMatrix extends PureComponent {
 				colorAttr,
 				colorMode,
 				scaleFactor,
+				indices,
 			} = dataset.viewState.col;
 
 			const el = this.refs.landscapeContainer;
@@ -120,7 +121,7 @@ class LandscapeMatrix extends PureComponent {
 					const jitter = { x: xAttr.jitter, y: yAttr.jitter };
 					const x = col.attrs[xAttr.attr];
 					const y = col.attrs[yAttr.attr];
-					paint = scatterplot(x, y, color, col.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
+					paint = scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor);
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}

@@ -98,6 +98,7 @@ class GenescapeMatrix extends PureComponent {
 				colorAttr,
 				colorMode,
 				scaleFactor,
+				indices,
 			} = dataset.viewState.row;
 
 			const el = this.refs.genescapeContainer;
@@ -120,7 +121,7 @@ class GenescapeMatrix extends PureComponent {
 					const jitter = { x: xAttr.jitter, y: yAttr.jitter };
 					const x = row.attrs[xAttr.attr];
 					const y = row.attrs[yAttr.attr];
-					paint = scatterplot(x, y, color, row.sortedFilterIndices, colorMode, logscale, jitter, scaleFactor);
+					paint = scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor);
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -230,7 +231,6 @@ export class GenescapeViewInitialiser extends PureComponent {
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />
-
 		);
 	}
 }
