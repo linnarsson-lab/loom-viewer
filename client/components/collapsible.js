@@ -108,7 +108,7 @@ export class CollapsibleSettings extends PureComponent {
 			<Button
 				onClick={this.toggle}
 				bsStyle='link'
-				bsSize={size || 'small'}>
+				bsSize={size}>
 				<Glyphicon glyph={chevron} /> {label}
 			</Button>
 		);

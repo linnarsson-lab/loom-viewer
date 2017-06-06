@@ -471,8 +471,10 @@ class ColorSettings extends PureComponent {
 	}
 
 	shouldComponentUpdate(nextProps) {
+		const { axis } = nextProps;
 		return nextProps.colorAttr !== this.props.colorAttr ||
 			nextProps.colorMode !== this.props.colorMode ||
+			nextProps.dataset.viewState[axis].filter !== this.props.dataset.viewState[axis].filter ||
 			nextProps.dataset[nextProps.axis].attrs[nextProps.colorAttr] !== this.props.dataset[this.props.axis].attrs[this.props.colorAttr];
 	}
 
