@@ -1,9 +1,7 @@
 import 'whatwg-fetch';
 
 import {
-	//REQUEST_GENE,
 	REQUEST_GENE_FETCH,
-	//REQUEST_GENE_CACHED,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 } from './actionTypes';
@@ -21,7 +19,7 @@ import { convertJSONarray } from '../js/util';
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataset, genes) {
-	const { title, path, col, fetchedGenes } = dataset;
+	const { title, path, col, fetchedGenes, fetchingGenes } = dataset;
 	const { geneToRow, rowToGenes } = col;
 	if (geneToRow === undefined) {
 		return () => { };
@@ -41,7 +39,7 @@ export function fetchGene(dataset, genes) {
 			const row = geneToRow[gene];
 			// If gene is already cached, being fetched or
 			// not part of the dataset, skip fetching.
-			if (!fetchedGenes[gene] && row !== undefined) {
+			if (!fetchedGenes[gene] && !fetchingGenes[gene] && row !== undefined) {
 				fetchGeneNames.push(gene);
 				fetchRows.push(row);
 			}
@@ -83,7 +81,7 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 					data[i] = null;
 					attrs[geneName] = convertJSONarray(geneData, geneName);
 				}
-				dispatch(receiveGenes(attrs, path));
+				dispatch(receiveGenes(attrs, _fetchGeneNames, path));
 			})
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch((err) => {
@@ -94,17 +92,17 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 }
 
 function requestGenesFetch(genes, path) {
-	let fetchedGenes = {};
+	let fetchingGenes = {};
 	let i = genes.length;
 	while (i--) {
-		fetchedGenes[genes[i]] = true;
+		fetchingGenes[genes[i]] = true;
 	}
 	return {
 		type: REQUEST_GENE_FETCH,
 		state: {
 			list: {
 				[path]: {
-					fetchedGenes,
+					fetchingGenes,
 				},
 			},
 		},
@@ -112,10 +110,10 @@ function requestGenesFetch(genes, path) {
 }
 
 function requestGenesFailed(genes, path) {
-	let fetchedGenes = {};
+	let fetchingGenes = {};
 	let i = genes.length;
 	while (i--) {
-		fetchedGenes[genes[i]] = false;
+		fetchingGenes[genes[i]] = false;
 	}
 	return {
 		type: REQUEST_GENE_FAILED,
@@ -123,14 +121,20 @@ function requestGenesFailed(genes, path) {
 		state: {
 			list: {
 				[path]: {
-					fetchedGenes,
+					fetchingGenes,
 				},
 			},
 		},
 	};
 }
 
-function receiveGenes(attrs, path) {
+function receiveGenes(attrs, genes, path) {
+	let fetchingGenes = {}, fetchedGenes = {};
+	let i = genes.length;
+	while (i--) {
+		fetchingGenes[genes[i]] = false;
+		fetchedGenes[genes[i]] = true;
+	}
 	return {
 		type: RECEIVE_GENE,
 		path,
@@ -138,6 +142,8 @@ function receiveGenes(attrs, path) {
 		state: {
 			list: {
 				[path]: {
+					fetchingGenes,
+					fetchedGenes,
 					col: {
 						attrs,
 					},
