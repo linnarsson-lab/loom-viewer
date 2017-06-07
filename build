@@ -31,15 +31,23 @@ else
   webpack --config='webpack.config.prod.js' --progress --profile --colors
 fi
 
-echo "Building static assets."
-uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
-# I can't figure out how to both generate correct paths in the HTML template
-# of webpack, and have the resulting index.html be put in the right folders.
-# Yes, it's an ugly hack, but it works - Job
-mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
-cp -R ./client/fonts ./python/loom_viewer/static/
+build_status=$?
 
-cd python
-echo "Installing loom python package"
-python setup.py install --force
-cd ..
+if [ $build_status == 0 ]; then
+
+  echo "Building static assets."
+  uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
+  # I can't figure out how to both generate correct paths in the HTML template
+  # of webpack, and have the resulting index.html be put in the right folders.
+  # Yes, it's an ugly hack, but it works - Job
+  mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  cp -R ./client/fonts ./python/loom_viewer/static/
+
+  cd python
+  echo "Installing loom python package"
+  python setup.py install --force
+  cd ..
+else
+  echo "Minification not finished properly, aborting build"
+  return $build_status
+fi
