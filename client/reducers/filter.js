@@ -1,6 +1,5 @@
 import { sortFilterIndices } from './sort-dataset';
 
-
 export function updateFilteredIndices(filter, order, data) {
 	let indices = new Array(data.length);
 

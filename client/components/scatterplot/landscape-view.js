@@ -1,15 +1,16 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { GenescapeSidepanel } from './genescape-sidepanel';
-import { ViewInitialiser } from './view-initialiser';
-import { Canvas } from './canvas';
-import { RemountOnResize } from './remount-on-resize';
 import { scatterplot } from './scatterplot';
+import { LandscapeSidepanel } from './landscape-sidepanel';
 
-class GenescapeMatrix extends PureComponent {
+import { ViewInitialiser } from '../view-initialiser';
+import { Canvas } from '../canvas';
+import { RemountOnResize } from '../remount-on-resize';
+
+class LandscapeMatrix extends PureComponent {
 	componentWillMount() {
-		const { xAttrs, yAttrs } = this.props.dataset.viewState.row;
+		const { xAttrs, yAttrs } = this.props.dataset.viewState.col;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -48,7 +49,7 @@ class GenescapeMatrix extends PureComponent {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { xAttrs, yAttrs } = nextProps.dataset.viewState.row;
+		const { xAttrs, yAttrs } = nextProps.dataset.viewState.col;
 		// filter out undefined attributes;
 		let newXattrs = [];
 		for (let i = 0; i < xAttrs.length; i++) {
@@ -99,14 +100,14 @@ class GenescapeMatrix extends PureComponent {
 				colorMode,
 				scaleFactor,
 				indices,
-			} = dataset.viewState.row;
+			} = dataset.viewState.col;
 
-			const el = this.refs.genescapeContainer;
-			const containerWidth = el.clientWidth-20;
-			const containerHeight = el.clientHeight-20;
+			const el = this.refs.landscapeContainer;
+			const containerWidth = el.clientWidth - 20;
+			const containerHeight = el.clientHeight - 20;
 
-			const { row } = dataset;
-			const color = row.attrs[colorAttr];
+			const { col } = dataset;
+			const color = col.attrs[colorAttr];
 			let matrix = [];
 			for (let j = 0; j < yAttrs.length; j++) {
 				const rowWidth = containerWidth;
@@ -119,8 +120,8 @@ class GenescapeMatrix extends PureComponent {
 					const xAttr = xAttrs[i], yAttr = yAttrs[j];
 					const logscale = { x: xAttr.logscale, y: yAttr.logscale };
 					const jitter = { x: xAttr.jitter, y: yAttr.jitter };
-					const x = row.attrs[xAttr.attr];
-					const y = row.attrs[yAttr.attr];
+					const x = col.attrs[xAttr.attr];
+					const y = col.attrs[yAttr.attr];
 					paint = scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor);
 					_row.push(
 						<Canvas
@@ -156,27 +157,27 @@ class GenescapeMatrix extends PureComponent {
 			}
 
 			return (
-				<div className='view-vertical' ref='genescapeContainer'>
+				<div className='view-vertical' ref='landscapeContainer'>
 					{matrix}
 				</div>
 			);
 		} else {
 			return (
-				<div className='view centered' ref='genescapeContainer'>
-					Initialising Genescape
+				<div className='view centered' ref='landscapeContainer'>
+					Initialising Landscape
 				</div>
 			);
 		}
 	}
 }
 
-GenescapeMatrix.propTypes = {
+LandscapeMatrix.propTypes = {
 	// Passed down by ViewInitialiser
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-class GenescapeComponent extends PureComponent {
+class LandscapeComponent extends PureComponent {
 	render() {
 		const { dispatch, dataset } = this.props;
 
@@ -189,12 +190,12 @@ class GenescapeComponent extends PureComponent {
 							margin: '10px',
 							overflowY: 'scroll',
 						}}>
-						<GenescapeSidepanel
+						<LandscapeSidepanel
 							dataset={dataset}
 							dispatch={dispatch}
 						/>
 					</div>
-					<GenescapeMatrix
+					<LandscapeMatrix
 						dataset={dataset}
 						dispatch={dispatch}
 					/>
@@ -204,29 +205,27 @@ class GenescapeComponent extends PureComponent {
 	}
 }
 
-GenescapeComponent.propTypes = {
-	// Passed down by ViewInitialiser
+LandscapeComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = {
-	// Initialise genescape state for this dataset
-	xAttrs: [{ attr: '_LogMean', jitter: false, logscale: false }],
-	yAttrs: [{ attr: '_LogCV', jitter: false, logscale: false }],
+const initialState = { // Initialise landscapeState for this dataset
+	xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
+	yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
 	scaleFactor: 40,
 	lowerBound: 0,
 	upperBound: 100,
-	colorAttr: '_Selected',
+	colorAttr: 'Clusters',
 	colorMode: 'Categorical',
 };
 
-export class GenescapeViewInitialiser extends PureComponent {
+export class LandscapeViewInitialiser extends PureComponent {
 	render() {
 		return (
 			<ViewInitialiser
-				View={GenescapeComponent}
-				stateName={'row'}
+				View={LandscapeComponent}
+				stateName={'col'}
 				initialState={initialState}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
@@ -235,7 +234,7 @@ export class GenescapeViewInitialiser extends PureComponent {
 	}
 }
 
-GenescapeViewInitialiser.propTypes = {
+LandscapeViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
 	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
@@ -253,4 +252,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export const GenescapeView = connect(mapStateToProps)(GenescapeViewInitialiser);
+export const LandscapeView = connect(mapStateToProps)(LandscapeViewInitialiser);

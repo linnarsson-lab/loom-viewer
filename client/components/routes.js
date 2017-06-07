@@ -1,7 +1,12 @@
 import React from 'react';
 
 // import Router dependencies
-import { Router, Route, IndexRoute, browserHistory } from 'react-router';
+import {
+	Router,
+	Route,
+	IndexRoute,
+	browserHistory,
+} from 'react-router';
 
 // import Redux deps
 import { Provider } from 'react-redux';
@@ -9,16 +14,13 @@ import { store } from '../store';
 
 // Components
 import { NavbarView } from './navbar';
-//import { DataSetView } from './dataset-view';
-import { DataSetList } from './dataset-list';
-import { HeatmapView } from './heatmap-view';
-import { SparklineView } from './sparkline-view';
-import { LandscapeView } from './landscape-view';
-import { GenescapeView } from './genescape-view';
-import { GeneMetadataView } from './geneMD-view';
-import { CellMetadataView } from './cellMD-view';
-
-//import { ViolinPlotView } from './violinplot-view';
+import { DataSetList } from './datasets/dataset-list';
+import { HeatmapView } from './heatmap/heatmap-view';
+import { SparklineView } from './sparkline/sparkline-view';
+import { LandscapeView } from './scatterplot/landscape-view';
+import { GenescapeView } from './scatterplot/genescape-view';
+import { GeneMetadataView } from './metadata/geneMD-view';
+import { CellMetadataView } from './metadata/cellMD-view';
 
 // layout of the routes
 const Routes = (

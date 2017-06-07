@@ -1,13 +1,14 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { TypedArrayProp } from '../js/proptypes-typedarray';
+import { TypedArrayProp } from '../../js/proptypes-typedarray';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
-import { RemountOnResize } from './remount-on-resize';
-import { ViewInitialiser } from './view-initialiser';
 
-import { Canvas } from './canvas';
 import { sparkline } from './sparkline';
+
+import { ViewInitialiser } from '../view-initialiser';
+import { RemountOnResize } from '../remount-on-resize';
+import { Canvas } from '../canvas';
 
 import { isEqual } from 'lodash';
 

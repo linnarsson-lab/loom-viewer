@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
+
 import { debounce } from 'lodash';
 
 export class RemountOnResize extends PureComponent {

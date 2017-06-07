@@ -1,8 +1,9 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
+
 import { Range } from 'rc-slider';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import { debounce } from 'lodash';
 

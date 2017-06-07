@@ -1,11 +1,16 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { DropdownMenu } from './dropdown';
+
 import {
-	ListGroupItem, Glyphicon,
-	Button, ButtonGroup,
+	ListGroupItem,
+	Glyphicon,
+	Button,
+	ButtonGroup,
 } from 'react-bootstrap';
-import { merge } from '../js/util';
+
+import { DropdownMenu } from './dropdown';
+
+import { merge } from '../../js/util';
 
 function makeCanvas(width, height) {
 	let c = document.createElement('canvas');

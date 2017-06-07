@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
-import { fetchGene } from '../actions/fetch-genes';
+import { fetchGene } from '../../actions/fetch-genes';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class SortAttributeComponent extends PureComponent {
 	constructor(props) {

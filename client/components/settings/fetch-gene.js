@@ -1,10 +1,19 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { fetchGene } from '../actions/fetch-genes';
-import Select from 'react-virtualized-select';
-import { FormControl, Button } from 'react-bootstrap';
 
-import { uniq, difference, isEqual } from 'lodash';
+import Select from 'react-virtualized-select';
+import {
+	FormControl,
+	Button,
+} from 'react-bootstrap';
+
+import { fetchGene } from '../../actions/fetch-genes';
+
+import {
+	uniq,
+	difference,
+	isEqual,
+} from 'lodash';
 
 // TODO: document how FetchGeneComponent works and what it expects
 export class FetchGeneComponent extends PureComponent {

@@ -1,10 +1,15 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { ListGroup, ListGroupItem, Button } from 'react-bootstrap';
+
+import {
+	ListGroup,
+	ListGroupItem,
+	Button,
+} from 'react-bootstrap';
 
 import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class FilteredValues extends PureComponent {
 	render() {

@@ -1,6 +1,11 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { Table, Glyphicon } from 'react-bootstrap';
+
+import {
+	Table,
+	Glyphicon,
+} from 'react-bootstrap';
+
 import { isEqual } from 'lodash';
 
 // we can map a single or multiple

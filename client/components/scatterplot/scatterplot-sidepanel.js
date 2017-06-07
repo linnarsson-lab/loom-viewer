@@ -1,22 +1,30 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import {
-	Panel, ListGroup, ListGroupItem,
-	Button, ButtonGroup,
-} from 'react-bootstrap';
+
 import Slider from 'rc-slider';
+import {
+	Panel,
+	ListGroup,
+	ListGroupItem,
+	Button,
+	ButtonGroup,
+} from 'react-bootstrap';
 
-import { AttrLegend } from './legend';
-import { DropdownMenu } from './dropdown';
-import { CollapsibleSettings, OverlayTooltip } from './collapsible';
-import { FilteredValues } from './filtered';
-import { ClipDataSettings } from './clip-data';
-
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import {
+	AttrLegend,
+	ClipDataSettings,
+	CollapsibleSettings,
+	DropdownMenu,
+	FilteredValues,
+	OverlayTooltip,
+} from '../settings/settings';
 
 import { debounce } from 'lodash';
 
-import { merge } from '../js/util';
+import { merge } from '../../js/util';
+
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+
 
 function nullFunc() { }
 

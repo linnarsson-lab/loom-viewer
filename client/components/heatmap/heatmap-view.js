@@ -3,13 +3,14 @@ import PropTypes from 'prop-types';
 
 import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
-import { ViewInitialiser } from './view-initialiser';
 
-import { RemountOnResize } from './remount-on-resize';
-import { Canvas } from './canvas';
-import { sparkline } from './sparkline';
+import { ViewInitialiser } from '../view-initialiser';
+import { RemountOnResize } from '../remount-on-resize';
+import { Canvas } from '../canvas';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { sparkline } from '../sparkline/sparkline';
+
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import * as _ from 'lodash';
 

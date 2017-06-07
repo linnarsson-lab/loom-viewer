@@ -1,14 +1,21 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { DropdownMenu } from './dropdown';
-//import { PrintSettings } from './print-settings';
-import { AttrLegend } from './legend';
-import { CollapsibleSettings } from './collapsible';
 
-import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
+import {
+	Panel,
+	ListGroup,
+	ListGroupItem,
+} from 'react-bootstrap';
 
-import { fetchGene } from '../actions/fetch-genes';
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import {
+	AttrLegend,
+	CollapsibleSettings,
+	DropdownMenu,
+	//PrintSettings,
+} from '../settings/settings';
+
+import { fetchGene } from '../../actions/fetch-genes';
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class HeatmapSidepanel extends PureComponent {
 	constructor(props) {

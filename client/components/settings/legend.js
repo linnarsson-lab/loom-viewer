@@ -1,9 +1,10 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'react-bootstrap';
+
 import { OverlayTooltip } from './collapsible';
 
-import { attrToColorFactory } from '../js/util';
+import { attrToColorFactory } from '../../js/util';
 
 const nullfunc = () => { };
 

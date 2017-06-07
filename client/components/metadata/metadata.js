@@ -1,14 +1,23 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { Glyphicon, Button } from 'react-bootstrap';
-import { DebouncedFormcontrol } from './debounced-formcontrol';
-import { AttrLegend } from './legend';
-import { SortableTable } from './sortabletable';
-import { Canvas } from './canvas';
-import { sparkline } from './sparkline';
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
-import { TypedArrayProp } from '../js/proptypes-typedarray';
-import { OverlayTooltip } from './collapsible';
+import { TypedArrayProp } from '../../js/proptypes-typedarray';
+
+import {
+	Glyphicon,
+	Button,
+} from 'react-bootstrap';
+
+import { SortableTable } from '../sortabletable';
+import { Canvas } from '../canvas';
+import { sparkline } from '../sparkline/sparkline';
+
+import {
+	DebouncedFormcontrol,
+	AttrLegend,
+	OverlayTooltip,
+} from '../settings/settings';
+
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import Fuse from 'fuse.js';
 

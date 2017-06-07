@@ -3,9 +3,13 @@ import {
 	attrToColorIndexFactory,
 	rndNorm,
 	arraySubset,
-} from '../js/util';
+} from '../../js/util';
 
-import { textSize, textStyle, drawText } from './canvas';
+import {
+	textSize,
+	textStyle,
+	drawText,
+} from '../canvas';
 
 // "global" array of sprite canvases.
 // Dots will be drawed in later (depends on colour settings)

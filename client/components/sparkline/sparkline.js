@@ -1,5 +1,15 @@
-import { attrToColorFactory, findMostCommon, arrayConstr, arraySubset } from '../js/util';
-import { textSize, textStyle, drawText } from './canvas';
+import {
+	textSize,
+	textStyle,
+	drawText,
+} from '../canvas';
+
+import {
+	attrToColorFactory,
+	findMostCommon,
+	arrayConstr,
+	arraySubset,
+} from '../../js/util';
 
 // TODO: change the way sparkline plotters prepare and consume data
 // current version becomes memory-intensive for large arrays
@@ -599,7 +609,7 @@ function flamemapPainter(context, range, dataToColor) {
 		// to fix this, we always make the gradient as large as
 		// the largest bin size.
 		// If necessary, we'll pad it with a zero value.
-		const binSize = Math.ceil(data.length / width)|0;
+		const binSize = Math.ceil(data.length / width) | 0;
 
 		const flameHeight = context.height * 0.875;
 		// the thin heatmap strip

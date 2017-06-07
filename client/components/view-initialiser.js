@@ -1,13 +1,13 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
+
 import { FetchDatasetComponent } from './fetch-dataset';
 
 import { fetchProjects } from '../actions/fetch-projects';
-import { merge } from '../js/util';
+import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import { decompressFromEncodedURIComponent } from 'lz-string';
-
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { merge } from '../js/util';
 
 class ViewStateInitialiser extends PureComponent {
 

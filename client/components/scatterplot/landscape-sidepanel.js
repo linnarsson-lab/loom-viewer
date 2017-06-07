@@ -1,7 +1,9 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
+
 import { ScatterplotSidepanel } from './scatterplot-sidepanel';
-import { fetchGene } from '../actions/fetch-genes';
+
+import { fetchGene } from '../../actions/fetch-genes';
 
 export class LandscapeSidepanel extends PureComponent {
 

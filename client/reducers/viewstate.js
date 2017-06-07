@@ -64,6 +64,7 @@ function updateFilter(viewState, action, axis) {
 		// a new filter entry
 		filter.push({ attr: filterAttrName, val: filterVal });
 	} else {
+		// a filter being removed
 		filter[i] = filter[filter.length - 1];
 		filter.pop();
 	}

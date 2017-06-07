@@ -1,21 +1,23 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { MetadataComponent } from './metadata';
-import { ViewInitialiser } from './view-initialiser';
 
-class GeneMDComponent extends PureComponent {
+import { MetadataComponent } from './metadata';
+
+import { ViewInitialiser } from '../view-initialiser';
+
+class CellMDComponent extends PureComponent {
 	render() {
 		const { dataset, dispatch } = this.props;
-		const { row } = dataset;
-		const { attrs, keys } = row;
+		const { col } = dataset;
+		const { attrs, keys } = col;
 
 		return (
 			<MetadataComponent
 				attributes={attrs}
 				attrKeys={keys}
-				axis={'row'}
-				mdName={'Gene'}
-				stateName={'geneMD'}
+				axis={'col'}
+				mdName={'Cell'}
+				stateName={'cellMD'}
 				dispatch={dispatch}
 				dataset={dataset}
 			/>
@@ -23,20 +25,21 @@ class GeneMDComponent extends PureComponent {
 	}
 }
 
-GeneMDComponent.propTypes = {
+CellMDComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
 const initialState = { searchVal: '' };
 
-class GeneMetadataViewInitialiser extends PureComponent {
+class CellMetadataViewInitialiser extends PureComponent {
+
 	render() {
-		// Initialise geneMetadata state for this dataset
+		// Initialise cellMetadataState for this dataset
 		return (
 			<ViewInitialiser
-				View={GeneMDComponent}
-				stateName={'geneMD'}
+				View={CellMDComponent}
+				stateName={'cellMD'}
 				initialState={initialState}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
@@ -45,9 +48,9 @@ class GeneMetadataViewInitialiser extends PureComponent {
 	}
 }
 
-GeneMetadataViewInitialiser.propTypes = {
+CellMetadataViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
-	datasets: PropTypes.object.isRequired,
+	datasets: PropTypes.object,
 	dispatch: PropTypes.func.isRequired,
 };
 
@@ -63,4 +66,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export const GeneMetadataView = connect(mapStateToProps)(GeneMetadataViewInitialiser);
+export const CellMetadataView = connect(mapStateToProps)(CellMetadataViewInitialiser);

@@ -1,20 +1,24 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { DropdownMenu } from './dropdown';
-import { SortAttributeComponent } from './sort-attributes';
-import { FetchGeneComponent } from './fetch-gene';
-import { CollapsibleSettings } from './collapsible';
-import { AttrLegend } from './legend';
-import { FilteredValues } from './filtered';
-
-import { fetchGene } from '../actions/fetch-genes';
 
 import {
-	Panel, Button,
-	ListGroup, ListGroupItem,
+	Panel,
+	Button,
+	ListGroup,
+	ListGroupItem,
 } from 'react-bootstrap';
 
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import {
+	CollapsibleSettings,
+	DropdownMenu,
+	FetchGeneComponent,
+	SortAttributeComponent,
+	AttrLegend,
+	FilteredValues,
+} from '../settings/settings';
+
+import { fetchGene } from '../../actions/fetch-genes';
+import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 class LegendSettings extends PureComponent {
 	componentWillMount() {
