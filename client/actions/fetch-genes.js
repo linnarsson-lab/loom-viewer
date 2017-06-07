@@ -32,14 +32,16 @@ export function fetchGene(dataset, genes) {
 		// individual fetches *too* big. After a bit of testing
 		// I guesstimate that for 50k cells, we want to fetch
 		// at most 10 rows at once.
-		const rowsPerFetch = (1000000 / dataset.totalCols) | 0;
+		const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
 		let fetchGeneNames = [], fetchRows = [];
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
 			const row = geneToRow[gene];
 			// If gene is already cached, being fetched or
 			// not part of the dataset, skip fetching.
-			if (!fetchedGenes[gene] && !fetchingGenes[gene] && row !== undefined) {
+			if (row !== undefined &&
+				!fetchedGenes[gene] &&
+				!fetchingGenes[gene]) {
 				fetchGeneNames.push(gene);
 				fetchRows.push(row);
 			}

@@ -1,3 +1,5 @@
+import { updateFilteredIndices } from './filter';
+
 import { merge } from '../js/util';
 
 export function updateDatasetSortOrder(state, key) {
@@ -44,6 +46,8 @@ export function sortFilterIndices(axisData, order, indices) {
 	for (let i = 0; i < order.length; i++) {
 		const { key, asc } = order[i];
 		const attr = axisData.attrs[key];
+		// an attribute could be a gene that is still
+		// being fetched, in which case it is undefined
 		if (attr) {
 			ascending.push(asc ? -1 : 1);
 			attrs.push(attr);
@@ -79,26 +83,44 @@ export function maybeSortIndices(state, newState, action) {
 	const newDataset = newState.list[path];
 	const newRow = newDataset.row;
 	const newCol = newDataset.col;
-	const rowOrder = newDataset.viewState.row.order;
-	const colOrder = newDataset.viewState.col.order;
+	const rowVS = newDataset.viewState.row;
+	const colVS = newDataset.viewState.col;
 
-	let i = rowOrder.length;
+	let i = rowVS.order.length;
 	while (i--) {
-		const { key } = rowOrder[i];
+		const { key } = rowVS.order[i];
 		// If these differ, it's because it was a row
 		// that was fetched. In that case we need to update
 		// the sortFilterIndices
-		if (row.attrs[key] !== newRow.attrs[key]) {
-			newState.list[path].row.sortFilterIndices = sortFilterIndices(newRow, rowOrder);
+		if (!row.attrs[key] && newRow.attrs[key]) {
+			const indices = updateFilteredIndices(rowVS.filter, rowVS.order, newDataset.row);
+			merge(newState, {
+				list: {
+					[path]: {
+						viewState: {
+							row: { indices },
+						},
+					},
+				},
+			});
 			break;
 		}
 	}
 
-	i = colOrder.length;
+	i = colVS.order.length;
 	while (i--) {
-		const { key } = colOrder[i];
-		if (col.attrs[key] !== newCol.attrs[key]) {
-			newState.list[path].col.sortFilterIndices = sortFilterIndices(newCol, colOrder);
+		const { key } = colVS.order[i];
+		if (!col.attrs[key] && newCol.attrs[key]) {
+			const indices = updateFilteredIndices(colVS.filter, colVS.order, newDataset.col);
+			merge(newState, {
+				list: {
+					[path]: {
+						viewState: {
+							col: { indices },
+						},
+					},
+				},
+			});
 			break;
 		}
 	}
