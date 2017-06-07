@@ -24,21 +24,24 @@ export class LandscapeSidepanel extends PureComponent {
 		// fetch any selected genes (that aren't being fetched yet).
 		let genes = [];
 		for (let i = 0; i < xAttrs.length; i++) {
-			let value = xAttrs[i].attr;
-			if (geneToRow[value] &&
-				!dataset.fetchedGenes[value]) {
-				genes.push(value);
+			let gene = xAttrs[i].attr;
+			if (geneToRow[gene] &&
+				!dataset.fetchedGenes[gene] &&
+				!dataset.fetchingGenes[gene]) {
+				genes.push(gene);
 			}
 		}
 		for (let i = 0; i < yAttrs.length; i++) {
-			let value = yAttrs[i].attr;
-			if (value && geneToRow[value] &&
-				!dataset.fetchedGenes[value]) {
-				genes.push(value);
+			let gene = yAttrs[i].attr;
+			if (gene && geneToRow[gene] &&
+				!dataset.fetchedGenes[gene] &&
+				!dataset.fetchingGenes[gene]) {
+				genes.push(gene);
 			}
 		}
 		if (geneToRow[colorAttr] !== undefined &&
-			!dataset.fetchedGenes[colorAttr]) {
+			!dataset.fetchedGenes[colorAttr] &&
+			!dataset.fetchingGenes[colorAttr]) {
 			genes.push(colorAttr);
 		}
 		if (genes.length) {

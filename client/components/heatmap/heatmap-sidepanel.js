@@ -73,7 +73,8 @@ export class HeatmapSidepanel extends PureComponent {
 	maybeFetch(gene, dataset, dispatch) {
 		if (gene &&
 			dataset.col.geneToRow[gene] !== undefined &&
-			!dataset.fetchedGenes[gene]) {
+			!dataset.fetchedGenes[gene] &&
+			!dataset.fetchingGenes[gene]) {
 			dispatch(fetchGene(dataset, [gene]));
 		}
 	}

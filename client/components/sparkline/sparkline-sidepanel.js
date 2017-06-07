@@ -26,7 +26,9 @@ class LegendSettings extends PureComponent {
 		const { geneToRow } = dataset.col;
 
 		const colAttrsHC = (val) => {
-			if (geneToRow[val] !== undefined && !dataset.fetchedGenes[val]) {
+			if (geneToRow[val] !== undefined &&
+				!dataset.fetchedGenes[val] &&
+				!dataset.fetchingGenes[val]) {
 				dispatch(fetchGene(dataset, [val]));
 			}
 			dispatch({
@@ -54,8 +56,8 @@ class LegendSettings extends PureComponent {
 	shouldComponentUpdate(nextProps) {
 		return nextProps.colAttr !== this.props.colAttr ||
 			nextProps.colMode !== this.props.colMode ||
-			nextProps.dataset.viewState.col.filter !== this.props.dataset.viewState.col.filter;
-		nextProps.dataset.col.attrs[this.props.colAttr] !== this.props.dataset.col.attrs[this.props.colAttr];
+			nextProps.dataset.viewState.col.filter !== this.props.dataset.viewState.col.filter ||
+			nextProps.dataset.col.attrs[this.props.colAttr] !== this.props.dataset.col.attrs[this.props.colAttr];
 	}
 
 	render() {

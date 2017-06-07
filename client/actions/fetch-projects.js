@@ -51,6 +51,7 @@ function receiveProjects(json) {
 		ds.path = ds.project + '/' + ds.filename;
 		ds.viewState = {};
 		ds.fetchedGenes = {};
+		ds.fetchingGenes = {};
 		ds.col = null;
 		ds.row = null;
 		list[ds.path] = ds;

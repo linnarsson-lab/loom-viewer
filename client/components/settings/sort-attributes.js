@@ -15,7 +15,9 @@ export class SortAttributeComponent extends PureComponent {
 		const { geneToRow } = dataset[axis];
 
 		this.onChange = (value) => {
-			if (geneToRow[value] !== undefined && !dataset.fetchedGenes[value]) {
+			if (geneToRow[value] !== undefined &&
+			!dataset.fetchedGenes[value] &&
+			!dataset.fetchingGenes[value]) {
 				dispatch(fetchGene(dataset, [value]));
 			}
 
