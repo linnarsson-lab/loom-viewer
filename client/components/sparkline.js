@@ -605,8 +605,10 @@ function flamemapPainter(context, range, dataToColor) {
 		// the thin heatmap strip
 		const heatmapHeight = context.height - (flameHeight | 0) - ratio;
 
-		context.fillStyle = 'white';
+		context.fillStyle = '#e0e0e0';
+		context.globalAlpha = 0.125;
 		context.fillRect(0, 0, context.width, context.height);
+		context.globalAlpha = 1.0;
 
 		let flameSlices = {}, i = width;
 		while (i--) {
@@ -668,9 +670,9 @@ function flamemapPainter(context, range, dataToColor) {
 			context.fillRect(x, flameHeight, roundedWidth, heatmapHeight);
 		}
 		// slightly separate the heatmap from the flame-map with a faded strip
-		context.fillStyle = 'white';
-		context.globalAlpha = 0.375;
-		context.fillRect(0, flameHeight, context.width, ratio * 2);
+		context.fillStyle = 'grey';
+		context.globalAlpha = 0.25;
+		context.fillRect(0, flameHeight, context.width, ratio);
 		context.globalAlpha = 1.0;
 	}
 }
