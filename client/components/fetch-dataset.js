@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { fetchDataSet } from '../actions/actions';
+import { fetchDataSet } from '../actions/fetch-dataset';
 
 // A placeholder <div> that simultaneously
 // dispatches a fetchDataSet action.

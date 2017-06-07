@@ -1,3 +1,5 @@
+import 'whatwg-fetch';
+
 import createFilterOptions from 'react-select-fast-filter-options';
 // customise search to only care about prefixes, and ignore uppercase
 import { LowerCaseSanitizer, PrefixIndexStrategy } from 'js-search';
@@ -7,12 +9,63 @@ const sanitizer = new LowerCaseSanitizer();
 import { convertJSONarray } from '../js/util';
 import { createViewStateConverter } from '../js/viewstateEncoder';
 
-
 import {
+	REQUEST_DATASET,
+	// REQUEST_DATASET_FETCH,
+	// REQUEST_DATASET_CACHED,
 	RECEIVE_DATASET,
+	REQUEST_DATASET_FAILED,
 } from './actionTypes';
 
-export function receiveDataSet(data, path) {
+////////////////////////////////////////////////////////////////////////////////
+//
+// Fetch metadata for a dataSet
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+// Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
+// Though its insides are different, you would use it just like any other action creator:
+// store.dispatch(fetchDataSet(...))
+
+export function fetchDataSet(datasets, path) {
+	return (dispatch) => {
+		// Announce that the request has been started
+		dispatch({
+			type: REQUEST_DATASET,
+			datasetName: path,
+		});
+		// See if the dataset already exists in the store
+		// If so, we can use cached version.
+		// If not, perform the actual fetch request (async)
+		if (!datasets[path].col) {
+			return (
+				fetch(`/loom/${path}`)
+					.then((response) => {
+						// convert the JSON to a JS object, and
+						// do some prep-work
+						return response.json();
+					})
+					.then((data) => {
+						// This goes last, to ensure the above defaults
+						// are set when the views are rendered
+						dispatch(receiveDataSet(data, path));
+					})
+					.catch((err) => {
+						// Or, if fetch request failed, dispatch
+						// an action to set the error flag
+						console.log({ err }, err);
+						dispatch({
+							type: REQUEST_DATASET_FAILED,
+							datasetName: path,
+						});
+					})
+			);
+		}
+	};
+}
+
+function receiveDataSet(data, path) {
 	let prepRows = prepData(data.rowAttrs),
 		prepCols = prepData(data.colAttrs);
 	let rows = prepRows.data,

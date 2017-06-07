@@ -7,7 +7,7 @@ import { CollapsibleSettings } from './collapsible';
 import { AttrLegend } from './legend';
 import { FilteredValues } from './filtered';
 
-import { fetchGene } from '../actions/actions';
+import { fetchGene } from '../actions/fetch-genes';
 
 import {
 	Panel, Button,

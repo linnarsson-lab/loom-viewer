@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { fetchGene } from '../actions/actions';
+import { fetchGene } from '../actions/fetch-genes';
 import Select from 'react-virtualized-select';
 import { FormControl, Button } from 'react-bootstrap';
 

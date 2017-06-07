@@ -7,7 +7,7 @@ import { CollapsibleSettings } from './collapsible';
 
 import { Panel, ListGroup, ListGroupItem } from 'react-bootstrap';
 
-import { fetchGene } from '../actions/actions';
+import { fetchGene } from '../actions/fetch-genes';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 export class HeatmapSidepanel extends PureComponent {

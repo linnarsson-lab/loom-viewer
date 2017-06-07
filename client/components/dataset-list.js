@@ -8,7 +8,7 @@ import { DebouncedFormcontrol } from './debounced-formcontrol';
 import { CollapsibleSettings } from './collapsible.js';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../actions/actionTypes';
-import { fetchProjects } from '../actions/actions';
+import { fetchProjects } from '../actions/fetch-projects';
 import { stableSortInPlace } from '../js/util';
 
 

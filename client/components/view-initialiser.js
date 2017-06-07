@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { FetchDatasetComponent } from './fetch-dataset';
 
-import { fetchProjects } from '../actions/actions';
+import { fetchProjects } from '../actions/fetch-projects';
 import { merge } from '../js/util';
 
 import { decompressFromEncodedURIComponent } from 'lz-string';
