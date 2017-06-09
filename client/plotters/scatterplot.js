@@ -3,13 +3,13 @@ import {
 	attrToColorIndexFactory,
 	rndNorm,
 	arraySubset,
-} from '../../js/util';
+} from '../js/util';
 
 import {
 	textSize,
 	textStyle,
 	drawText,
-} from '../canvas';
+} from './canvas';
 
 // "global" array of sprite canvases.
 // Dots will be drawed in later (depends on colour settings)
@@ -31,8 +31,21 @@ const { sprites, contexts } = (() => {
 	return { sprites, contexts };
 })();
 
-export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor) {
+export function scatterplot(x, y, color, indices, settings) {
+	let {
+		colorMode,
+		logscale,
+		jitter,
+		scaleFactor,
+		lowerBound,
+		upperBound,
+	} = settings;
+
+	const dataToIdx = attrToColorIndexFactory(color, colorMode, logscale.color, lowerBound, upperBound);
+
+
 	scaleFactor = scaleFactor || 50;
+
 	return (context) => {
 		// only render if all required data is supplied
 		if (!(x && y && color)) {
@@ -53,7 +66,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		const _sprites = sprites[spriteIdx];
 
 
-		let labelSize = (Math.max(12, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio*0.75) | 0;
+		let labelSize = (Math.max(12, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio * 0.75) | 0;
 		let labelMargin = (labelSize * 1.8) | 0;
 		width -= labelMargin;
 		height -= labelMargin;
@@ -76,7 +89,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		// numerical arrays representing the twenty most
 		// common strings as categories, plus "other"
 		let xy = convertCoordinates(x, y, indices, width, height, radius, jitter, logscale);
-		let { cIdx } = convertColordata(color, indices, colorMode);
+		let { cIdx } = convertColordata(color, indices, dataToIdx);
 
 		// ==============================
 		// == Sort for tiling purposes ==
@@ -115,7 +128,7 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 		// =================
 		textStyle(context);
 		textSize(context, labelSize);
-		const labelY = (context.height - labelMargin * 0.5)|0;
+		const labelY = (context.height - labelMargin * 0.5) | 0;
 		drawText(context, x.name, 1.5 * labelMargin, labelY);
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
@@ -130,9 +143,9 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 			256 * pixelRatio,
 			Math.max(
 				16,
-				shortEdge/10
+				shortEdge / 10
 			)
-		)|0;
+		) | 0;
 		const labelOffset = labelSize * 3;
 		const colorX0 = width - cScaleSize - labelOffset;
 		context.textAlign = 'end';
@@ -150,15 +163,15 @@ export function scatterplot(x, y, color, indices, colorMode, logscale, jitter, s
 			context.textAlign = 'start';
 			drawText(context, colorMax, (colorX0 + cScaleSize + 5) | 0, labelY);
 			let i = cScaleSize;
-			const cY = (labelY-labelSize)|0;
-			const cScaleFactor = colorScale.length/cScaleSize;
+			const cY = (labelY - labelSize) | 0;
+			const cScaleFactor = colorScale.length / cScaleSize;
 			while (i--) {
-				const cIdx = (i*cScaleFactor)|0;
+				const cIdx = (i * cScaleFactor) | 0;
 				context.fillStyle = colorScale[cIdx];
-				const cX = (colorX0 + i)|0;
-				const cX1 = (colorX0 + i + 1)|0;
-				const cWidth = (cX1 - cX)|0;
-				context.fillRect(cX, cY, cWidth, labelSize*1.25);
+				const cX = (colorX0 + i) | 0;
+				const cX1 = (colorX0 + i + 1) | 0;
+				const cWidth = (cX1 - cX) | 0;
+				context.fillRect(cX, cY, cWidth, labelSize * 1.25);
 			}
 
 		}
@@ -282,8 +295,7 @@ function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, rad
 	return xy;
 }
 
-function convertColordata(colorAttr, indices, colorMode) {
-	const dataToIdx = attrToColorIndexFactory(colorAttr, colorMode);
+function convertColordata(colorAttr, indices, dataToIdx) {
 	const colData = arraySubset(colorAttr.data, colorAttr.arrayType, indices);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx

@@ -2,14 +2,14 @@ import {
 	textSize,
 	textStyle,
 	drawText,
-} from '../canvas';
+} from './canvas';
 
 import {
 	attrToColorFactory,
 	findMostCommon,
 	arrayConstr,
 	arraySubset,
-} from '../../js/util';
+} from '../js/util';
 
 // TODO: change the way sparkline plotters prepare and consume data
 // current version becomes memory-intensive for large arrays
@@ -98,10 +98,21 @@ function selectPlotter(mode) {
 	}
 }
 
-export function sparkline(attr, indices, mode, dataRange, label, orientation, unfiltered) {
+export function sparkline(attr, indices, mode, settings, label) {
 	if (!attr) {
 		return () => { };
 	}
+
+	settings = settings || {};
+	const {
+		dataRange,
+		orientation,
+		unfiltered,
+		log2Color,
+		lowerBound,
+		upperBound,
+	} = settings;
+
 	// =====================
 	// Prep data for plotter
 	// =====================
@@ -170,7 +181,7 @@ export function sparkline(attr, indices, mode, dataRange, label, orientation, un
 
 	const paint = selectPlotter(mode);
 
-	const dataToColor = attrToColorFactory(attr, mode);
+	const dataToColor = attrToColorFactory(attr, mode, log2Color, lowerBound, upperBound);
 
 	return (context) => {
 		// All of our plotting functions draw horizontaly
@@ -615,10 +626,8 @@ function flamemapPainter(context, range, dataToColor) {
 		// the thin heatmap strip
 		const heatmapHeight = context.height - (flameHeight | 0) - ratio;
 
-		context.fillStyle = '#e0e0e0';
-		context.globalAlpha = 0.125;
+		context.fillStyle = '#e8e8e8';
 		context.fillRect(0, 0, context.width, context.height);
-		context.globalAlpha = 1.0;
 
 		let flameSlices = {}, i = width;
 		while (i--) {
