@@ -30,7 +30,11 @@ GeneMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { searchVal: '' };
+const initialState = {
+	geneMD: {
+		searchVal: '',
+	},
+};
 
 class GeneMetadataViewInitialiser extends PureComponent {
 	render() {

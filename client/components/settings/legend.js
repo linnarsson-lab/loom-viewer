@@ -10,8 +10,17 @@ const nullfunc = () => { };
 
 export class AttrLegend extends PureComponent {
 	render() {
-		const { filteredAttrs, filterFunc, attr, mode } = this.props;
-		const { uniques, indexedVal } = attr;
+		const {
+			filteredAttrs,
+			filterFunc,
+			attr,
+			mode,
+			settings,
+		} = this.props;
+		const {
+			uniques,
+			indexedVal,
+		} = attr;
 
 		let filteredVals = {};
 		for (let i = 0; i < filteredAttrs.length; i++){
@@ -21,7 +30,7 @@ export class AttrLegend extends PureComponent {
 			}
 		}
 
-		const selectColor = attrToColorFactory(attr, mode);
+		const selectColor = attrToColorFactory(attr, mode, settings);
 
 		const isFloat = attr.arrayType === 'float32' ||
 			attr.arrayType === 'number' ||
@@ -115,4 +124,5 @@ AttrLegend.propTypes = {
 	filterFunc: PropTypes.func.isRequired,
 	attr: PropTypes.object.isRequired,
 	mode: PropTypes.string,
+	settings: PropTypes.object,
 };

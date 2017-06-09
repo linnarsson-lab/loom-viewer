@@ -30,7 +30,11 @@ CellMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { searchVal: '' };
+const initialState = {
+	cellMD: {
+		searchVal: '',
+	},
+};
 
 class CellMetadataViewInitialiser extends PureComponent {
 

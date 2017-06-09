@@ -32,19 +32,19 @@ const { sprites, contexts } = (() => {
 })();
 
 export function scatterplot(x, y, color, indices, settings) {
+	if (!(x && y && color && indices && settings)) {
+		return () => {};
+	}
+
 	let {
 		colorMode,
 		logscale,
 		jitter,
 		scaleFactor,
-		lowerBound,
-		upperBound,
 	} = settings;
-
-	const dataToIdx = attrToColorIndexFactory(color, colorMode, logscale.color, lowerBound, upperBound);
-
-
 	scaleFactor = scaleFactor || 50;
+	const dataToIdx = attrToColorIndexFactory(color, colorMode, settings);
+
 
 	return (context) => {
 		// only render if all required data is supplied

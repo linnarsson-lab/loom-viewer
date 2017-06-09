@@ -8,7 +8,7 @@ import { ViewInitialiser } from '../view-initialiser';
 import { RemountOnResize } from '../remount-on-resize';
 import { Canvas } from '../canvas';
 
-import { sparkline } from '../sparkline/sparkline';
+import { sparkline } from '../../plotters/sparkline';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
@@ -172,11 +172,13 @@ HeatmapComponent.propTypes = {
 };
 
 const initialState = { // Initialise heatmap state for this dataset
-	dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-	colAttr: 'Clusters',
-	colMode: 'Stacked',
-	rowAttr: '_Selected',
-	rowMode: 'Stacked',
+	heatmap: {
+		dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
+		colAttr: 'Clusters',
+		colMode: 'Stacked',
+		rowAttr: '_Selected',
+		rowMode: 'Stacked',
+	},
 };
 
 export const HeatmapViewInitialiser = function (props) {

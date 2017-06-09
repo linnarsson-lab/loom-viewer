@@ -30,7 +30,7 @@ export function createViewStateConverter(dataset) {
 	const viewStateSchema = {
 		row: {
 			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
-			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal}]),
+			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			xAttrs: vectorOf([{
 				attr: oneOfRowAllKeys,
@@ -42,16 +42,20 @@ export function createViewStateConverter(dataset) {
 				jitter: boolVal,
 				logscale: boolVal,
 			}]),
-			scaleFactor: anyVal,
-			lowerBound: anyVal,
-			upperBound: anyVal,
-			log2Color: boolVal,
+			settings: {
+				scaleFactor: anyVal,
+				log2Color: boolVal,
+				normalise: boolVal,
+				clip: boolVal,
+				lowerBound: anyVal,
+				upperBound: anyVal,
+			},
 			colorAttr: oneOfRowAllKeys,
 			colorMode: scatterplotModes,
 		},
 		col: {
 			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
-			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal}]),
+			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			xAttrs: vectorOf([{
 				attr: oneOfColAllKeys,
@@ -63,10 +67,14 @@ export function createViewStateConverter(dataset) {
 				jitter: boolVal,
 				logscale: boolVal,
 			}]),
-			scaleFactor: anyVal,
-			lowerBound: anyVal,
-			upperBound: anyVal,
-			log2Color: boolVal,
+			settings: {
+				scaleFactor: anyVal,
+				log2Color: boolVal,
+				normalise: boolVal,
+				clip: boolVal,
+				lowerBound: anyVal,
+				upperBound: anyVal,
+			},
 			colorAttr: oneOfColAllKeys,
 			colorMode: scatterplotModes,
 		},

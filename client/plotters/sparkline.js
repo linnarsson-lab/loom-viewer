@@ -108,9 +108,6 @@ export function sparkline(attr, indices, mode, settings, label) {
 		dataRange,
 		orientation,
 		unfiltered,
-		log2Color,
-		lowerBound,
-		upperBound,
 	} = settings;
 
 	// =====================
@@ -181,7 +178,7 @@ export function sparkline(attr, indices, mode, settings, label) {
 
 	const paint = selectPlotter(mode);
 
-	const dataToColor = attrToColorFactory(attr, mode, log2Color, lowerBound, upperBound);
+	const dataToColor = attrToColorFactory(attr, mode, settings);
 
 	return (context) => {
 		// All of our plotting functions draw horizontaly
@@ -680,7 +677,8 @@ function flamemapPainter(context, range, dataToColor) {
 				const y = (flameHeight * (j + yOffset) / binSize) | 0;
 				const y1 = (flameHeight * (k + yOffset) / binSize) | 0;
 				const roundedHeight = y1 - y;
-				context.fillStyle = dataToColor(val || 0);
+				const col = dataToColor(val || 0);
+				context.fillStyle = col;
 				context.fillRect(x, y, roundedWidth, roundedHeight);
 				j = k;
 			}

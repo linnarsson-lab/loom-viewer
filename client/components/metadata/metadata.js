@@ -9,7 +9,7 @@ import {
 
 import { SortableTable } from '../sortabletable';
 import { Canvas } from '../canvas';
-import { sparkline } from '../sparkline/sparkline';
+import { sparkline } from '../../plotters/sparkline';
 
 import {
 	DebouncedFormcontrol,

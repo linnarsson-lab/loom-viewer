@@ -18,10 +18,15 @@ export function getPalette(colorMode) {
 			return [];
 	}
 }
+
 function blackColor() {
 	return 'black';
 }
-export function attrToColorFactory(colorAttr, colorMode) {
+
+const log2 = Math.log2;
+
+export function attrToColorFactory(colorAttr, colorMode, settings) {
+	settings = settings || {};
 	const palette = getPalette(colorMode);
 	switch (colorMode) {
 		case 'Categorical':
@@ -37,33 +42,89 @@ export function attrToColorFactory(colorAttr, colorMode) {
 		case 'Heatmap2':
 		case 'Flame':
 		case 'Flame2':
-			const { min, max } = colorAttr;
-			if (min === 0) { // zero-value is coloured differently
-				const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
-				return (
+			let { min, max } = colorAttr;
+			const delta = max - min;
+			const isZero = min === 0;
+
+			// boundaries for clipping, only applies to heatmap-like situations
+			// anything under lowerBound is "zero",
+			// anything above upperBound is "maxColor"
+			max = min + (settings.upperBound || 100) * delta / 100;
+			min = min + (settings.lowerBound || 0) * delta / 100;
+
+			// we don't use offset in the returned closure,  because I don't
+			// know if browsers will inline it, and this function will be called
+			// for each datapoint, so thousands of times inside an inner loop.
+			// So we manually inline with code duplication instead, to be sure.
+			const offset = settings.log2Color ?
+				(val) => { return log2(1 + val - min); } :
+				(val) => { return val - min; };
+
+			const maxColor = palette[palette.length - 1];
+			if (isZero) { // zero-value is coloured differently
+				const minColor = palette[0];
+				const colorIdxScale = (palette.length - 1) / (offset(max) || 1);
+				return settings.log2Color ? (
 					(val) => {
-						const cIdx = ((val - min) * colorIdxScale) | 0;
-						return palette[cIdx];
+						if (val >= max) {
+							return maxColor;
+						} else if (val < min) {
+							return minColor;
+						} else {
+							const cIdx = (log2(1 + val - min) * colorIdxScale) | 0;
+							return palette[cIdx];
+						}
 					}
-				);
+				) : (
+						(val) => {
+							if (val >= max) {
+								return maxColor;
+							} else if (val < min) {
+								return minColor;
+							} else {
+								const cIdx = ((val - min) * colorIdxScale) | 0;
+								return palette[cIdx];
+							}
+						}
+					);
 			} else {
 				// skip using special color for the zero-value for
 				// dataranges that have negative values and/or
 				// no zero value
-				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
-				return (
+				const minColor = palette[1];
+				const colorIdxScale = (palette.length - 2) / (offset(max) || 1);
+				return settings.log2Color ? (
 					(val) => {
-						const cIdx = 1 + (((val - min) * colorIdxScale) | 0);
-						return palette[cIdx];
+						if (val >= max) {
+							return maxColor;
+						} else if (val < min) {
+							return minColor;
+						} else {
+							const cIdx = 1 + (log2(1 + val - min) * colorIdxScale) | 0;
+							return palette[cIdx];
+						}
 					}
-				);
+				) : (
+						(val) => {
+							if (val >= max) {
+								return maxColor;
+							} else if (val < min) {
+								return minColor;
+							} else {
+								const cIdx = 1 + ((val - min) * colorIdxScale) | 0;
+								return palette[cIdx];
+							}
+						}
+					);
 			}
 		default:
 			return blackColor;
 	}
 }
 
-export function attrToColorIndexFactory(colorAttr, colorMode) {
+// Again, the returned function is called inside an inner loop, which
+// is why we have so much code duplication.
+export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 	switch (colorMode) {
 		case 'Categorical':
 		case 'Stacked':
@@ -73,29 +134,78 @@ export function attrToColorIndexFactory(colorAttr, colorMode) {
 					return mostFreq[val] | 0;
 				}
 			);
-
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
-			const palette = getPalette(colorMode);
-			const { min, max } = colorAttr;
-			if (min === 0) { // zero-value is coloured differently
-				const colorIdxScale = ((palette.length - 1) / (max - min) || 1);
-				return (
+			const paletteEnd = getPalette(colorMode).length - 1;
+
+			let { min, max } = colorAttr;
+			const delta = max - min;
+			const isZero = min === 0;
+
+			// boundaries for clipping, only applies to heatmap-like situations
+			// anything under lowerBound is "zero",
+			// anything above upperBound is "maxColor"
+			max = min + (settings.upperBound || 100) * delta / 100;
+			min = min + (settings.lowerBound || 0) * delta / 100;
+
+			// we don't use offset in the returned closure,  because I don't
+			// know if browsers will inline it, and this function will be called
+			// for each datapoint, so thousands of times inside an inner loop.
+			// So we manually inline with code duplication instead, to be sure.
+			const offset = settings.log2Color ?
+				(val) => { return log2(1 + val - min); } :
+				(val) => { return val - min; };
+
+			if (isZero) { // zero-value is coloured differently
+				const colorIdxScale = paletteEnd / (offset(max) || 1);
+				return settings.log2Color ? (
 					(val) => {
-						return ((val - min) * colorIdxScale) | 0;
+						if (val >= max) {
+							return paletteEnd;
+						} else if (val < min) {
+							return 0;
+						} else {
+							return (log2(1 + val - min) * colorIdxScale) | 0;
+						}
 					}
-				);
+				) : (
+						(val) => {
+							if (val >= max) {
+								return paletteEnd;
+							} else if (val < min) {
+								return 0;
+							} else {
+								return ((val - min) * colorIdxScale) | 0;
+							}
+						}
+					);
 			} else {
 				// skip using special color for the zero-value for
 				// dataranges that have negative values and/or
 				// no zero value
-				const colorIdxScale = ((palette.length - 2) / (max - min) || 1);
-				return (
+				const colorIdxScale = (paletteEnd - 1) / (offset(max) || 1);
+				return settings.log2Color ? (
 					(val) => {
-						return 1 + (((val - min) * colorIdxScale) | 0);
+						if (val >= max) {
+							return paletteEnd;
+						} else if (val < min) {
+							return 1;
+						} else {
+							return 1 + (log2(1 + val - min) * colorIdxScale) | 0;
+						}
 					}
-				);
+				) : (
+						(val) => {
+							if (val >= max) {
+								return paletteEnd;
+							} else if (val < min) {
+								return 1;
+							} else {
+								return 1 + ((val - min) * colorIdxScale) | 0;
+							}
+						}
+					);
 			}
 		default:
 			return blackColor;

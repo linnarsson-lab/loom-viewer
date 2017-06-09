@@ -1,12 +1,14 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { scatterplot } from './scatterplot';
+import { scatterplot } from '../../plotters/scatterplot';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
 import { RemountOnResize } from '../remount-on-resize';
+
+import { merge } from '../../js/util';
 
 class LandscapeMatrix extends PureComponent {
 	componentWillMount() {
@@ -98,31 +100,40 @@ class LandscapeMatrix extends PureComponent {
 			const {
 				colorAttr,
 				colorMode,
-				scaleFactor,
 				indices,
+				settings,
 			} = dataset.viewState.col;
 
 			const el = this.refs.landscapeContainer;
-			const containerWidth = el.clientWidth - 20;
-			const containerHeight = el.clientHeight - 20;
+			// Avoid triggering scrollbars
+			const containerW = el.clientWidth - 20;
+			const containerH = el.clientHeight - 20;
 
 			const { col } = dataset;
 			const color = col.attrs[colorAttr];
 			let matrix = [];
 			for (let j = 0; j < yAttrs.length; j++) {
-				const rowWidth = containerWidth;
-				const rowHeight = (((containerHeight * (j + 1) / yAttrs.length) | 0) - ((containerHeight * j / yAttrs.length) | 0) | 0);
+				const rowW = containerW;
+				const rowH = ((containerH * (j + 1) / yAttrs.length) | 0) -
+					((containerH * j / yAttrs.length) | 0);
 				let _row = [];
 				for (let i = 0; i < xAttrs.length; i++) {
-					const canvasWidth = (((containerWidth * (i + 1) / xAttrs.length) | 0) - ((containerWidth * i / xAttrs.length) | 0) | 0) - 2;
-					const canvasHeight = rowHeight - 2;
-					let paint;
+					const canvasW = ((containerW * (i + 1) / xAttrs.length) | 0) -
+						((containerW * i / xAttrs.length) | 0) - 2;
+					const canvasH = rowH - 2;
 					const xAttr = xAttrs[i], yAttr = yAttrs[j];
-					const logscale = { x: xAttr.logscale, y: yAttr.logscale };
-					const jitter = { x: xAttr.jitter, y: yAttr.jitter };
+					const logscale = {
+						x: xAttr.logscale,
+						y: yAttr.logscale,
+						color: settings.log2Color,
+					};
+					const jitter = {
+						x: xAttr.jitter,
+						y: yAttr.jitter,
+					};
 					const x = col.attrs[xAttr.attr];
 					const y = col.attrs[yAttr.attr];
-					paint = scatterplot(x, y, color, indices, colorMode, logscale, jitter, scaleFactor);
+					const _settings = merge(settings, {colorMode, logscale, jitter});
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -131,9 +142,9 @@ class LandscapeMatrix extends PureComponent {
 								flex: '0 0 auto',
 								margin: '1px',
 							}}
-							width={canvasWidth}
-							height={canvasHeight}
-							paint={paint}
+							width={canvasW}
+							height={canvasH}
+							paint={scatterplot(x, y, color, indices, _settings)}
 							redraw
 							clear
 						/>
@@ -146,10 +157,10 @@ class LandscapeMatrix extends PureComponent {
 						className={'view'}
 						style={{
 							flex: '0 0 auto',
-							minWidth: `${rowWidth}px`,
-							maxWidth: `${rowWidth}px`,
-							minHeight: `${rowHeight}px`,
-							maxHeight: `${rowHeight}px`,
+							minWidth: `${rowW}px`,
+							maxWidth: `${rowW}px`,
+							minHeight: `${rowH}px`,
+							maxHeight: `${rowH}px`,
 						}}>
 						{_row}
 					</div>
@@ -211,13 +222,21 @@ LandscapeComponent.propTypes = {
 };
 
 const initialState = { // Initialise landscapeState for this dataset
-	xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
-	yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
-	scaleFactor: 40,
-	lowerBound: 0,
-	upperBound: 100,
-	colorAttr: 'Clusters',
-	colorMode: 'Categorical',
+	landscapeInitialized: true,
+	col: {
+		xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
+		yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
+		colorAttr: 'Clusters',
+		colorMode: 'Categorical',
+		settings: {
+			scaleFactor: 40,
+			lowerBound: 0,
+			upperBound: 100,
+			log2Color: true,
+			clip: false,
+			normalise: false,
+		},
+	},
 };
 
 export class LandscapeViewInitialiser extends PureComponent {
@@ -225,7 +244,7 @@ export class LandscapeViewInitialiser extends PureComponent {
 		return (
 			<ViewInitialiser
 				View={LandscapeComponent}
-				stateName={'col'}
+				stateName={'landscapeInitialized'}
 				initialState={initialState}
 				dispatch={this.props.dispatch}
 				params={this.props.params}

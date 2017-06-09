@@ -112,6 +112,7 @@ export class FetchGeneComponent extends PureComponent {
 				</div>
 				<Button
 					bsStyle={'default'}
+					bsSize='small'
 					style={{ flex: 1 }}
 					onClick={this.applySelection} >
 					Apply
