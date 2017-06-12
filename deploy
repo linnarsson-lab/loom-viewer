@@ -1,20 +1,22 @@
 #! /bin/bash
 
 ./build prod
-
-cd python
-echo "Don't forget to update _version.py before deploying!'"
-echo "Submitting to PyPi"
-python setup.py sdist upload -r pypi
-cd ..
-echo ""
-echo "*** NOT upgrading the server. Please wait a few minutes (to ensure that"
-echo "    PyPi has serves the most recent loompy version), then upgrade"
-echo "    manually as follows:"
-#gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl stop all"  --zone "us-central1-a"
-#gcloud compute ssh ubuntu@loom --command "/home/ubuntu/anaconda2/bin/pip install -U loompy scipy==0.17.1"  --zone "us-central1-a"
-#gcloud compute ssh ubuntu@loom --command "sudo /home/ubuntu/anaconda2/bin/supervisorctl start all"  --zone "us-central1-a"
-echo ""
-echo "- SSH into the server:    gcloud compute ssh ubuntu@loom --zone \"us-central1-a\""
-echo "- Upgrade Loom:           upgrade_loom"
-echo ""
+build_status=$?
+if [ $build_status == 0 ]; then
+  cd python
+  echo "Don't forget to update _version.py before deploying!'"
+  echo "Submitting to PyPi"
+  python setup.py sdist upload -r pypi
+  cd ..
+  echo ""
+  echo "*** NOT upgrading the server. Please wait a few minutes (to ensure that"
+  echo "    PyPi has serves the most recent loompy version), then upgrade"
+  echo "    manually as follows:"
+  echo ""
+  echo "- SSH into the server:    gcloud compute ssh ubuntu@loom --zone \"us-central1-a\""
+  echo "- Upgrade Loom:           upgrade_loom"
+  echo ""
+else
+  echo "Build not finished properly, aborting upload to pypi"
+  return $build_status
+fi
