@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { Heatmap } from './heatmap';
@@ -14,8 +14,10 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import * as _ from 'lodash';
 
+import { merge } from '../../js/util';
+
 // Just the map+sparklines part
-class HeatmapMapComponent extends PureComponent {
+class HeatmapMapComponent extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
@@ -62,22 +64,34 @@ class HeatmapMapComponent extends PureComponent {
 			};
 			const { dataBounds } = hms;
 
-			const colAttr = col.attrs[hms.colAttr],
-				rowAttr = row.attrs[hms.rowAttr];
+			const colAttr = col.attrs[hms.colAttr];
+			const colLabel = colAttr ? colAttr.name : null;
+			const colSettings = merge(
+				vs.col.settings,
+				{
+					dataRange: [dataBounds[0], dataBounds[2]],
+					unfiltered: true,
+				}
+			);
+			const colSparkline = sparkline(colAttr, colIndices, hms.colMode, colSettings, colLabel);
 
+			const rowAttr = row.attrs[hms.rowAttr];
+			const rowLabel = rowAttr ? rowAttr.name : null;
+			const rowSettings = merge(
+				vs.row.settings,
+				{
+					dataRange: [dataBounds[1], dataBounds[3]],
+					unfiltered: true,
+					orientation: 'vertical',
+				}
+			);
+			const rowSparkline = sparkline(rowAttr, rowIndices, hms.rowMode, rowSettings, rowLabel);
 			return (
 				<div className='view-vertical' ref='heatmapContainer'>
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
-						paint={sparkline(
-							colAttr,
-							colIndices,
-							hms.colMode,
-							[dataBounds[0], dataBounds[2]],
-							colAttr ? colAttr.name : null,
-							null,
-							true)}
+						paint={colSparkline}
 						style={{ marginRight: (sparklineHeight + 'px') }}
 						redraw
 						clear
@@ -91,14 +105,7 @@ class HeatmapMapComponent extends PureComponent {
 						<Canvas
 							width={sparklineHeight}
 							height={heatmapHeight}
-							paint={sparkline(
-								row.attrs[hms.rowAttr],
-								rowIndices,
-								hms.rowMode,
-								[dataBounds[1], dataBounds[3]],
-								rowAttr ? rowAttr.name : null,
-								'vertical',
-								true)}
+							paint={rowSparkline}
 							redraw
 							clear
 						/>
@@ -120,27 +127,7 @@ HeatmapMapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-class HeatmapComponent extends PureComponent {
-
-	componentWillMount() {
-		this.setState({ heatmapState: this.props.dataset.viewState.heatmap });
-	}
-
-	componentWillReceiveProps(nextProps) {
-		this.setState({ heatmapState: nextProps.dataset.viewState.heatmap });
-	}
-
-	shouldComponentUpdate(nextProps, nextState) {
-		const hms = nextState.heatmapState;
-
-		const newAttr = this.props.dataset.col.attrs[hms.colAttr];
-		const oldAttr = nextProps.dataset.col.attrs[hms.colAttr];
-		// only update if heatmapstate updated, or if
-		// a gene that was selected has been fetched
-		return !_.isEqual(hms, this.state.heatmapState) ||
-			newAttr !== oldAttr;
-	}
-
+class HeatmapComponent extends Component {
 	render() {
 		const { dispatch, dataset } = this.props;
 		return (
@@ -178,6 +165,24 @@ const initialState = { // Initialise heatmap state for this dataset
 		colMode: 'Stacked',
 		rowAttr: '_Selected',
 		rowMode: 'Stacked',
+	},
+	col: {
+		settings: {
+			scaleFactor: 40,
+			lowerBound: 0,
+			upperBound: 100,
+			log2Color: true,
+			clip: false,
+		},
+	},
+	row: {
+		settings: {
+			scaleFactor: 40,
+			lowerBound: 0,
+			upperBound: 100,
+			log2Color: true,
+			clip: false,
+		},
 	},
 };
 

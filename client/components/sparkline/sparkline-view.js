@@ -97,7 +97,6 @@ const initialState = { // Initialise sparklineState for this dataset
 			upperBound: 100,
 			log2Color: true,
 			clip: false,
-			normalise: false,
 		},
 	},
 };

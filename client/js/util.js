@@ -49,9 +49,10 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 			// boundaries for clipping, only applies to heatmap-like situations
 			// anything under lowerBound is "zero",
 			// anything above upperBound is "maxColor"
-			max = min + (settings.upperBound || 100) * delta / 100;
-			min = min + (settings.lowerBound || 0) * delta / 100;
-
+			if (settings.clip) {
+				max = min + (settings.upperBound || 100) * delta / 100;
+				min = min + (settings.lowerBound || 0) * delta / 100;
+			}
 			// we don't use offset in the returned closure,  because I don't
 			// know if browsers will inline it, and this function will be called
 			// for each datapoint, so thousands of times inside an inner loop.
@@ -146,9 +147,10 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 			// boundaries for clipping, only applies to heatmap-like situations
 			// anything under lowerBound is "zero",
 			// anything above upperBound is "maxColor"
-			max = min + (settings.upperBound || 100) * delta / 100;
-			min = min + (settings.lowerBound || 0) * delta / 100;
-
+			if (settings.clip) {
+				max = min + (settings.upperBound || 100) * delta / 100;
+				min = min + (settings.lowerBound || 0) * delta / 100;
+			}
 			// we don't use offset in the returned closure,  because I don't
 			// know if browsers will inline it, and this function will be called
 			// for each datapoint, so thousands of times inside an inner loop.

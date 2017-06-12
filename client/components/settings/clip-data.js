@@ -80,9 +80,6 @@ export class ClipDataSettings extends Component {
 
 	render() {
 		const {
-			dataset,
-			dispatch,
-			axis,
 			settings,
 		} = this.props;
 
@@ -90,13 +87,11 @@ export class ClipDataSettings extends Component {
 			lowerBound,
 			upperBound,
 			log2Color,
-			normalise,
 			clip,
 		} = settings;
 
 		const { handleChangeFactory } = this.state;
 		const log2ColorHC = handleChangeFactory('log2Color', log2Color);
-		const normaliseHC = handleChangeFactory('normalise', normalise);
 		const clipHC = handleChangeFactory('clip', clip);
 		let clipRange;
 
@@ -132,17 +127,6 @@ export class ClipDataSettings extends Component {
 							style={{ flex: 1 }}
 							onClick={log2ColorHC}>
 							<Glyphicon glyph={log2Color ? 'check' : 'unchecked'} /> log
-						</Button>
-					</OverlayTooltip>
-					<OverlayTooltip
-						tooltip={'toggle normalisation (gradient scales only)'}
-						tooltipId={'log-color-tltp'}>
-						<Button
-							bsStyle='link'
-							bsSize='small'
-							style={{ flex: 1 }}
-							onClick={normaliseHC}>
-							<Glyphicon glyph={normalise ? 'check' : 'unchecked'} /> normalise
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip

@@ -234,7 +234,6 @@ const initialState = { // Initialise landscapeState for this dataset
 			upperBound: 100,
 			log2Color: true,
 			clip: false,
-			normalise: false,
 		},
 	},
 };

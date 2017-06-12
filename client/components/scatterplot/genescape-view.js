@@ -236,7 +236,6 @@ const initialState = {
 			upperBound: 100,
 			log2Color: true,
 			clip: false,
-			normalise: false,
 		},
 	},
 };

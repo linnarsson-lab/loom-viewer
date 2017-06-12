@@ -9,6 +9,7 @@ import {
 
 import {
 	AttrLegend,
+	ClipDataSettings,
 	CollapsibleSettings,
 	DropdownMenu,
 	//PrintSettings,
@@ -53,15 +54,19 @@ export class HeatmapSidepanel extends PureComponent {
 
 	shouldComponentUpdate(nextProps) {
 		const ds = this.props.dataset,
-			nextds = nextProps.dataset,
-			hms = ds.viewState.heatmap,
-			nextHMS = nextds.viewState.heatmap;
+			nds = nextProps.dataset,
+			vs = ds.viewState,
+			nvs = nds.viewState,
+			hms = vs.heatmap,
+			nextHMS = nvs.heatmap;
 		return hms.colAttr !== nextHMS.colAttr ||
 			hms.colMode !== nextHMS.colMode ||
 			hms.rowMode !== nextHMS.rowMode ||
 			hms.rowMode !== nextHMS.rowMode ||
-			ds.col.attrs[hms.colAttr] !== nextds.col.attrs[nextHMS.colAttr] ||
-			ds.row.attrs[hms.rowAttr] !== nextds.row.attrs[nextHMS.rowAttr];
+			vs.col.settings !== nvs.col.settings ||
+			vs.row.settings !== nvs.row.settings ||
+			ds.col.attrs[hms.colAttr] !== nds.col.attrs[nextHMS.colAttr] ||
+			ds.row.attrs[hms.rowAttr] !== nds.row.attrs[nextHMS.rowAttr];
 	}
 
 	componentWillUpdate(nextProps) {
@@ -81,12 +86,85 @@ export class HeatmapSidepanel extends PureComponent {
 
 	render() {
 		const { dispatch, dataset } = this.props;
-		const { col, row, path } = dataset;
-		const hms = dataset.viewState.heatmap;
+		const { col, row, path, viewState } = dataset;
+		const hms = viewState.heatmap;
 		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
 
 		const colAttr = col.attrs[hms.colAttr];
+		let colGradientSettings, colLegend;
+		if (colAttr) {
+			switch (hms.colMode) {
+				case 'Heatmap':
+				case 'Heatmap2':
+				case 'Flame':
+				case 'Flame2':
+					colGradientSettings = (
+						<ClipDataSettings
+							dispatch={dispatch}
+							dataset={dataset}
+							axis={'col'}
+							settings={viewState.col.settings}
+							time={200} />
+					);
+				default:
+			}
+			colLegend = (
+				<AttrLegend
+					mode={hms.colMode}
+					attr={colAttr}
+					filterFunc={(filterVal) => {
+						return () => {
+							dispatch({
+								type: SET_VIEW_PROPS,
+								path,
+								axis: 'col',
+								filterAttrName: hms.colAttr,
+								filterVal,
+							});
+						};
+					}}
+					filteredAttrs={viewState.col.filter}
+				/>
+			);
+		}
+
 		const rowAttr = row.attrs[hms.rowAttr];
+		let rowGradientSettings, rowLegend;
+		if (rowAttr) {
+			switch (hms.rowMode) {
+				case 'Heatmap':
+				case 'Heatmap2':
+				case 'Flame':
+				case 'Flame2':
+					rowGradientSettings = (
+						<ClipDataSettings
+							dispatch={dispatch}
+							dataset={dataset}
+							axis={'row'}
+							settings={viewState.row.settings}
+							time={200} />
+					);
+				default:
+			}
+			rowLegend = (
+				<AttrLegend
+					mode={hms.rowMode}
+					attr={rowAttr}
+					filterFunc={(filterVal) => {
+						return () => {
+							dispatch({
+								type: SET_VIEW_PROPS,
+								path,
+								axis: 'row',
+								filterAttrName: hms.rowAttr,
+								filterVal,
+							});
+						};
+					}}
+					filteredAttrs={viewState.row.filter}
+				/>
+			);
+		}
 		return (
 			<Panel
 				className='sidepanel'
@@ -112,25 +190,8 @@ export class HeatmapSidepanel extends PureComponent {
 								/>
 							</div>
 						</CollapsibleSettings>
-						{colAttr ? (
-							<AttrLegend
-								mode={hms.colMode}
-								attr={colAttr}
-								filterFunc={(filterVal) => {
-									return () => {
-										dispatch({
-											type: SET_VIEW_PROPS,
-											path,
-											axis: 'col',
-											filterAttrName: hms.colAttr,
-											filterVal,
-										});
-									};
-								}}
-								filteredAttrs={dataset.viewState.col.filter}
-							/>
-						) : null
-						}
+						{colGradientSettings}
+						{colLegend}
 					</ListGroupItem>
 					<ListGroupItem>
 						<CollapsibleSettings
@@ -150,26 +211,8 @@ export class HeatmapSidepanel extends PureComponent {
 								/>
 							</div>
 						</CollapsibleSettings>
-						{
-							rowAttr ? (
-								<AttrLegend
-									mode={hms.rowMode}
-									attr={rowAttr}
-									filterFunc={(filterVal) => {
-										return () => {
-											dispatch({
-												type: SET_VIEW_PROPS,
-												path,
-												axis: 'row',
-												filterAttrName: hms.rowAttr,
-												filterVal,
-											});
-										};
-									}}
-									filteredAttrs={dataset.viewState.row.filter}
-								/>
-							) : null
-						}
+						{rowGradientSettings}
+						{rowLegend}
 					</ListGroupItem>
 				</ListGroup>
 			</Panel>
