@@ -1,9 +1,11 @@
 import {
+	clipData,
 	getPalette,
 	attrToColorFactory,
 	attrToColorIndexFactory,
 	rndNorm,
 	arraySubset,
+	logProject,
 } from '../js/util';
 
 import {
@@ -143,48 +145,71 @@ export function scatterplot(x, y, color, indices, settings) {
 
 		// Color attribute name is places left of heatmap scale,
 		// so we need to calculate the position for both early
-		const cScaleSize = Math.min(
+		const cSize = Math.min(
 			256 * pixelRatio,
 			Math.max(16, shortEdge / 10)
 		) | 0;
-		const labelOffset = (labelSize * 3)|0;
-		const colorX0 = (width - cScaleSize - labelOffset)|0;
+		const labelOffset = (labelSize * 3) | 0;
+		const colorX0 = (width - cSize - labelOffset) | 0;
 
 
 		// Color attribute name
 		context.textAlign = 'end';
-		drawText(context, color.name, (colorX0 - labelOffset*2 - 5) | 0, labelY);
+		drawText(context, color.name, (colorX0 - labelOffset * 2 - 5) | 0, labelY);
 		context.textAlign = 'start';
 
 		// Heatmap scale, if necessary
 		if (colorMode === 'Heatmap' || colorMode === 'Heatmap2') {
-			const cMin = color.min;
-			const cMax = color.max;
-
 			// label for min value
-			const lblMin = cMin !== (cMin | 0) ? cMin.toExponential(2) : cMin | 0;
+			const lblMin = color.min !== (color.min | 0) ?
+				color.min.toExponential(2) : color.min | 0;
 			context.textAlign = 'end';
 			drawText(context, lblMin, (colorX0 - 5) | 0, labelY);
 
 			// label for max value
-			const lblMax = cMax !== (cMax | 0) ? cMax.toExponential(2) : cMax | 0;
+			const lblMax = color.max !== (color.max | 0) ?
+				color.max.toExponential(2) : color.max | 0;
 			context.textAlign = 'start';
-			drawText(context, lblMax, (colorX0 + cScaleSize + 5) | 0, labelY);
+			drawText(context, lblMax, (colorX0 + cSize + 5) | 0, labelY);
 
+			// border for colour gradient
 			const cY = (labelY - labelSize) | 0;
-			// colour gradient border
 			context.fillRect(
 				colorX0 - pixelRatio,
 				cY - pixelRatio,
-				cScaleSize + 2*pixelRatio,
-				labelSize * 1.25 + 2*pixelRatio
+				cSize + 2 * pixelRatio,
+				labelSize * 1.25 + 2 * pixelRatio
 			);
+
+			const c = clipData(color, settings);
+			const cDelta = color.max - color.min;
+			// draw clipping points, if required
+			if (c.min !== c.clipMin) {
+				const clipMin = settings.log2Color ? Math.pow(2, c.clipMin) : c.clipMin;
+				const clipMinX = ((clipMin - c.min) * cSize / cDelta) | 0;
+				context.fillRect(
+					colorX0 + clipMinX,
+					cY - pixelRatio * 3,
+					pixelRatio,
+					labelSize * 1.25 + 6 * pixelRatio
+				);
+			}
+			if (c.max !== c.clipMax) {
+				const clipMax = settings.log2Color ? Math.pow(2, c.clipMax) : c.clipMax;
+				const clipMaxX = ((clipMax - c.min) * cSize / cDelta) | 0;
+				context.fillRect(
+					colorX0 + clipMaxX,
+					cY - pixelRatio * 3,
+					pixelRatio,
+					labelSize * 1.25 + 6 * pixelRatio
+				);
+			}
 			// colour gradient
-			const cScaleFactor = (cMax - cMin) / cScaleSize;
+			const cScaleFactor = cDelta / cSize;
 			const valToColor = attrToColorFactory(color, colorMode, settings);
-			i = cScaleSize;
+			i = cSize;
 			while (i--) {
-				context.fillStyle = valToColor(cMin + i * cScaleFactor);
+				context.fillStyle = valToColor(color.min + i * cScaleFactor);
 				context.fillRect(colorX0 + i, cY, 1, labelSize * 1.25);
 			}
 		}
@@ -251,16 +276,16 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 		while (i--) {
 			xData[i] = xData[i] > 0 ? log2(1 + xData[i]) : -log2(1 - xData[i]);
 		}
-		xmin = xmin > 0 ? log2(1 + xmin) : -log2(1 - xmin);
-		xmax = xmax > 0 ? log2(1 + xmax) : -log2(1 - xmax);
+		xmin = logProject(xmin);
+		xmax = logProject(xmax);
 	}
 	if (logscale.y) {
 		i = l;
 		while (i--) {
 			yData[i] = yData[i] > 0 ? log2(1 + yData[i]) : -log2(1 - yData[i]);
 		}
-		ymin = ymin > 0 ? log2(1 + ymin) : -log2(1 - ymin);
-		ymax = ymax > 0 ? log2(1 + ymax) : -log2(1 - ymax);
+		ymin = logProject(ymin);
+		ymax = logProject(ymax);
 	}
 
 	// Scale to screen dimensions with margins

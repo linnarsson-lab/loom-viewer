@@ -25,6 +25,38 @@ function blackColor() {
 
 const log2 = Math.log2;
 
+export const logProject = (x) => {
+	return x >= 0 ? log2(1 + x) : -log2(1 - x);
+};
+
+export const clipData = (attr, settings) => {
+	let { min, max } = attr;
+	let { lowerBound, upperBound } = settings;
+	if (lowerBound === undefined){
+		lowerBound = 0;
+	}
+	if (upperBound === undefined){
+		upperBound = 100;
+	}
+
+	if (settings.log2Color) {
+		min = logProject(min);
+		max = logProject(max);
+	}
+
+	// boundaries for clipping, only applies to heatmap-like situations
+	// anything under lowerBound is "zero",
+	// anything above upperBound is "maxColor"
+	let clipMin = min;
+	let clipMax = max;
+	if (settings.clip) {
+		const delta = max - min;
+		clipMin = min + lowerBound * delta / 100;
+		clipMax = min + upperBound * delta / 100;
+	}
+	return { min, max, clipMin, clipMax };
+};
+
 export function attrToColorFactory(colorAttr, colorMode, settings) {
 	settings = settings || {};
 	const palette = getPalette(colorMode);
@@ -42,48 +74,44 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap2':
 		case 'Flame':
 		case 'Flame2':
-			let { min, max } = colorAttr;
-			const delta = max - min;
+			let { min, max, clipMin, clipMax } = clipData(colorAttr, settings);
 			const isZero = min === 0;
 
-			// boundaries for clipping, only applies to heatmap-like situations
-			// anything under lowerBound is "zero",
-			// anything above upperBound is "maxColor"
-			if (settings.clip) {
-				max = min + (settings.upperBound || 100) * delta / 100;
-				min = min + (settings.lowerBound || 0) * delta / 100;
+			if (min === max) {
+				if (isZero) {
+					const c = palette[0];
+					return () => { return c; };
+				} else {
+					const c = palette[1];
+					return () => { return c; };
+				}
 			}
-			// we don't use offset in the returned closure,  because I don't
-			// know if browsers will inline it, and this function will be called
-			// for each datapoint, so thousands of times inside an inner loop.
-			// So we manually inline with code duplication instead, to be sure.
-			const offset = settings.log2Color ?
-				(val) => { return log2(1 + val - min); } :
-				(val) => { return val - min; };
 
+			const clipDelta = (clipMax - clipMin) || 1;
 			const maxColor = palette[palette.length - 1];
 			if (isZero) { // zero-value is coloured differently
 				const minColor = palette[0];
-				const colorIdxScale = (palette.length - 1) / (offset(max) || 1);
+				const colorIdxScale = (palette.length - 1) / clipDelta;
 				return settings.log2Color ? (
 					(val) => {
-						if (val >= max) {
+						val = logProject(val);
+						if (val >= clipMax) {
 							return maxColor;
-						} else if (val < min) {
+						} else if (val <= clipMin) {
 							return minColor;
 						} else {
-							const cIdx = (log2(1 + val - min) * colorIdxScale) | 0;
+							const cIdx = ((val - clipMin) * colorIdxScale) | 0;
 							return palette[cIdx];
 						}
 					}
 				) : (
 						(val) => {
-							if (val >= max) {
+							if (val >= clipMax) {
 								return maxColor;
-							} else if (val < min) {
+							} else if (val <= clipMin) {
 								return minColor;
 							} else {
-								const cIdx = ((val - min) * colorIdxScale) | 0;
+								const cIdx = ((val - clipMin) * colorIdxScale) | 0;
 								return palette[cIdx];
 							}
 						}
@@ -93,26 +121,27 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 				// dataranges that have negative values and/or
 				// no zero value
 				const minColor = palette[1];
-				const colorIdxScale = (palette.length - 2) / (offset(max) || 1);
+				const colorIdxScale = (palette.length - 2) / clipDelta;
 				return settings.log2Color ? (
 					(val) => {
-						if (val >= max) {
+						val = logProject(val);
+						if (val >= clipMax) {
 							return maxColor;
-						} else if (val < min) {
+						} else if (val <= clipMin) {
 							return minColor;
 						} else {
-							const cIdx = 1 + (log2(1 + val - min) * colorIdxScale) | 0;
+							const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
 							return palette[cIdx];
 						}
 					}
 				) : (
 						(val) => {
-							if (val >= max) {
+							if (val >= clipMax) {
 								return maxColor;
-							} else if (val < min) {
+							} else if (val < clipMin) {
 								return minColor;
 							} else {
-								const cIdx = 1 + ((val - min) * colorIdxScale) | 0;
+								const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
 								return palette[cIdx];
 							}
 						}
@@ -138,47 +167,39 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
-			const paletteEnd = getPalette(colorMode).length - 1;
-
-			let { min, max } = colorAttr;
-			const delta = max - min;
+			let { min, max, clipMin, clipMax } = clipData(colorAttr, settings);
 			const isZero = min === 0;
-
-			// boundaries for clipping, only applies to heatmap-like situations
-			// anything under lowerBound is "zero",
-			// anything above upperBound is "maxColor"
-			if (settings.clip) {
-				max = min + (settings.upperBound || 100) * delta / 100;
-				min = min + (settings.lowerBound || 0) * delta / 100;
+			if (min === max) {
+				if (isZero) {
+					return () => { return 0; };
+				} else {
+					return () => { return 1; };
+				}
 			}
-			// we don't use offset in the returned closure,  because I don't
-			// know if browsers will inline it, and this function will be called
-			// for each datapoint, so thousands of times inside an inner loop.
-			// So we manually inline with code duplication instead, to be sure.
-			const offset = settings.log2Color ?
-				(val) => { return log2(1 + val - min); } :
-				(val) => { return val - min; };
 
+			const clipDelta = (clipMax - clipMin) || 1;
+			const paletteEnd = getPalette(colorMode).length - 1;
 			if (isZero) { // zero-value is coloured differently
-				const colorIdxScale = paletteEnd / (offset(max) || 1);
+				const colorIdxScale = paletteEnd / clipDelta;
 				return settings.log2Color ? (
 					(val) => {
-						if (val >= max) {
+						val = logProject(val);
+						if (val >= clipMax) {
 							return paletteEnd;
-						} else if (val < min) {
+						} else if (val <= clipMin) {
 							return 0;
 						} else {
-							return (log2(1 + val - min) * colorIdxScale) | 0;
+							return ((val - clipMin) * colorIdxScale) | 0;
 						}
 					}
 				) : (
 						(val) => {
-							if (val >= max) {
+							if (val >= clipMax) {
 								return paletteEnd;
-							} else if (val < min) {
+							} else if (val <= clipMin) {
 								return 0;
 							} else {
-								return ((val - min) * colorIdxScale) | 0;
+								return ((val - clipMin) * colorIdxScale) | 0;
 							}
 						}
 					);
@@ -186,25 +207,26 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 				// skip using special color for the zero-value for
 				// dataranges that have negative values and/or
 				// no zero value
-				const colorIdxScale = (paletteEnd - 1) / (offset(max) || 1);
+				const colorIdxScale = (paletteEnd - 1) / clipDelta;
 				return settings.log2Color ? (
 					(val) => {
-						if (val >= max) {
+						val = logProject(val);
+						if (val >= clipMax) {
 							return paletteEnd;
-						} else if (val < min) {
+						} else if (val <= clipMin) {
 							return 1;
 						} else {
-							return 1 + (log2(1 + val - min) * colorIdxScale) | 0;
+							return 1 + ((val - clipMin) * colorIdxScale) | 0;
 						}
 					}
 				) : (
 						(val) => {
-							if (val >= max) {
+							if (val >= clipMax) {
 								return paletteEnd;
-							} else if (val < min) {
+							} else if (val <= clipMin) {
 								return 1;
 							} else {
-								return 1 + ((val - min) * colorIdxScale) | 0;
+								return 1 + ((val - clipMin) * colorIdxScale) | 0;
 							}
 						}
 					);
