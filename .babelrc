@@ -8,7 +8,6 @@
 				"modules": false
 			}
 		],
-		"stage-0"
 	],
 	"plugins": [
 		"transform-react-constant-elements",
