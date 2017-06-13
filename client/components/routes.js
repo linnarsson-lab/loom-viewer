@@ -14,7 +14,7 @@ import { store } from '../store';
 
 // Components
 import { NavbarView } from './navbar';
-import { DataSetList } from './datasets/dataset-list';
+import { DataSetList } from './dataset-list/dataset-list';
 import { HeatmapView } from './heatmap/heatmap-view';
 import { SparklineView } from './sparkline/sparkline-view';
 import { LandscapeView } from './scatterplot/landscape-view';
