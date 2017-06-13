@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { FetchDatasetComponent } from './fetch-dataset';
 
 import { fetchProjects } from '../actions/fetch-projects';
+import { setViewProps } from '../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import { decompressFromEncodedURIComponent } from 'lz-string';
@@ -24,12 +25,12 @@ class ViewStateInitialiser extends Component {
 
 		// We dispatch even in case of existing state,
 		// to synchronise the view-settings URL
-		dispatch({
+		dispatch(setViewProps(dataset, {
 			type: SET_VIEW_PROPS,
 			viewState,
 			stateName,
 			path,
-		});
+		}));
 	}
 
 	render() {

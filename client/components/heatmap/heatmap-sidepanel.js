@@ -15,27 +15,24 @@ import {
 	//PrintSettings,
 } from '../settings/settings';
 
-import { fetchGene } from '../../actions/fetch-genes';
+import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class HeatmapSidepanel extends PureComponent {
 	constructor(props) {
 		super(props);
-		this.maybeFetch = this.maybeFetch.bind(this);
 	}
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		this.maybeFetch(dataset.viewState.heatmap.colAttr, dataset, dispatch);
 
 		const handleChangeFactory = (field) => {
 			return (value) => {
-				dispatch({
-					type: SET_VIEW_PROPS,
+				dispatch(setViewProps(dataset, {
 					stateName: 'heatmap',
 					path: dataset.path,
 					viewState: { heatmap: { [field]: value } },
-				});
+				}));
 			};
 		};
 
@@ -69,21 +66,6 @@ export class HeatmapSidepanel extends PureComponent {
 			ds.row.attrs[hms.rowAttr] !== nds.row.attrs[nextHMS.rowAttr];
 	}
 
-	componentWillUpdate(nextProps) {
-		const { dispatch, dataset } = nextProps;
-		const { colAttr } = dataset.viewState.heatmap;
-		this.maybeFetch(colAttr, dataset, dispatch);
-	}
-
-	maybeFetch(gene, dataset, dispatch) {
-		if (gene &&
-			dataset.col.geneToRow[gene] !== undefined &&
-			!dataset.fetchedGenes[gene] &&
-			!dataset.fetchingGenes[gene]) {
-			dispatch(fetchGene(dataset, [gene]));
-		}
-	}
-
 	render() {
 		const { dispatch, dataset } = this.props;
 		const { col, row, path, viewState } = dataset;
@@ -114,13 +96,12 @@ export class HeatmapSidepanel extends PureComponent {
 					attr={colAttr}
 					filterFunc={(filterVal) => {
 						return () => {
-							dispatch({
-								type: SET_VIEW_PROPS,
+							dispatch(setViewProps(dataset, {
 								path,
 								axis: 'col',
 								filterAttrName: hms.colAttr,
 								filterVal,
-							});
+							}));
 						};
 					}}
 					filteredAttrs={viewState.col.filter}

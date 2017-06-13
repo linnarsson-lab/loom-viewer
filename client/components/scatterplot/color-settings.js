@@ -16,6 +16,7 @@ import {
 	DropdownMenu,
 } from '../settings/settings';
 
+import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 function nullFunc() { }
@@ -25,12 +26,12 @@ export class ColorSettings extends PureComponent {
 		const { dispatch, dataset, axis } = this.props;
 
 		const colorAttrHC = (value) => {
-			dispatch({
+			dispatch(setViewProps(dataset, {
 				type: SET_VIEW_PROPS,
 				stateName: axis,
 				path: dataset.path,
 				viewState: { [axis]: { colorAttr: value } },
-			});
+			}));
 		};
 
 		const colorSettingsFactory = (colorMode) => {
@@ -98,13 +99,13 @@ export class ColorSettings extends PureComponent {
 				mode={colorMode}
 				filterFunc={(filterVal) => {
 					return () => {
-						dispatch({
+						dispatch(setViewProps(dataset, {
 							type: SET_VIEW_PROPS,
 							path: dataset.path,
 							axis,
 							filterAttrName: colorAttr,
 							filterVal,
-						});
+						}));
 					};
 				}}
 				filteredAttrs={dataset.viewState[axis].filter}

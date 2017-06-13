@@ -18,6 +18,7 @@ import { popoverTest } from './popover';
 
 import { merge } from '../../js/util';
 
+import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 function nullFunc() { }
@@ -37,104 +38,41 @@ export class CoordinateSettings extends PureComponent {
 		// function to generate functions used in buttons
 		const setCoordinateFactory = (label, xAttr, yAttr) => {
 			if (attrs[xAttr] && attrs[yAttr]) {
-				return (xAttrs, yAttrs) => {
-					const resetAttrs = {
-						type: SET_VIEW_PROPS,
-						stateName: axis,
-						path: dataset.path,
-						viewState: {
-							[axis]: {
-								xAttrs: [{
-									attr: xAttr,
-									jitter: false,
-									logscale: false,
-								}],
-								yAttrs: [{
-									attr: yAttr,
-									jitter: false,
-									logscale: false,
-								}],
-							},
+				const resetAttrs = {
+					type: SET_VIEW_PROPS,
+					stateName: axis,
+					path: dataset.path,
+					viewState: {
+						[axis]: {
+							xAttrs: [{
+								attr: xAttr,
+								jitter: false,
+								logscale: false,
+							}],
+							yAttrs: [{
+								attr: yAttr,
+								jitter: false,
+								logscale: false,
+							}],
 						},
-					};
-					const handleClick = () => {
-						dispatch(resetAttrs);
-					};
-
-					// default to previous jitter and logscale settings
-					// note that this will return `undefined` for empty
-					// attributes, which is equivalent to false, but
-					// we set it to false anyway for type consistency
-					let newXattrs = xAttrs.slice(0),
-						newYattrs = yAttrs.slice(0);
-					// check if xAtt is already selected,
-					// don't  append if it is.
-					let i = newXattrs.length;
-					while (i--) {
-						if (newXattrs[i].attr === xAttr) { break; }
-					}
-					if (i === -1) {
-						const xSettings = newXattrs[length - 1];
-						const xJitter = xSettings ? xSettings.jitter : false;
-						const xLogscale = xSettings ? xSettings.logscale : false;
-						newXattrs.push({
-							attr: xAttr,
-							jitter: xJitter,
-							logscale: xLogscale,
-						});
-					}
-					let j = newYattrs.length;
-					while (j--) {
-						if (newYattrs[j].attr === yAttr) { break; }
-					}
-					if (j === -1) {
-						const ySettings = newYattrs[length - 1];
-						const yJitter = ySettings ? ySettings.jitter : false;
-						const yLogscale = ySettings ? ySettings.logscale : false;
-						newYattrs.push({
-							attr: yAttr,
-							jitter: yJitter,
-							logscale: yLogscale,
-						});
-					}
-					let handleClickAppend;
-					if (i === -1 || j === -1) {
-						const newAttrs = {};
-						if (i === -1) {
-							newAttrs.xAttrs = newXattrs;
-						}
-						if (j === -1) {
-							newAttrs.yAttrs = newYattrs;
-						}
-						const appendAttrs = {
-							type: SET_VIEW_PROPS,
-							stateName: axis,
-							path: dataset.path,
-							viewState: { [axis]: newAttrs },
-						};
-						handleClickAppend = () => { dispatch(appendAttrs); };
-					}
-					return (
-						<ListGroupItem>
-							<OverlayTooltip
-								tooltip={`Set first attributes to ${xAttr} and ${yAttr} and unset the others`}
-								tooltipId={`set-${xAttr}_${yAttr}-tltp`}>
-								<Button bsStyle='link' onClick={handleClick}>
-									{label}
-								</Button>
-							</OverlayTooltip>
-							<OverlayTooltip
-								tooltip={'Append attributes after current selection'}
-								tooltipId={`appnd-${xAttr}_${yAttr}-tltp`}>
-								<Button bsStyle='link' onClick={handleClickAppend}>
-									<b>+</b>
-								</Button>
-							</OverlayTooltip>
-						</ListGroupItem>
-					);
+					},
 				};
+				const handleClick = () => {
+					dispatch(resetAttrs);
+				};
+				return (
+					<ListGroupItem>
+						<OverlayTooltip
+							tooltip={`Set first attributes to ${xAttr} and ${yAttr} and unset the others`}
+							tooltipId={`set-${xAttr}_${yAttr}-tltp`}>
+							<Button bsStyle='link' onClick={handleClick}>
+								{label}
+							</Button>
+						</OverlayTooltip>
+					</ListGroupItem>
+				);
 			} else {
-				return nullFunc;
+				return null;
 			}
 		};
 
@@ -149,28 +87,22 @@ export class CoordinateSettings extends PureComponent {
 			setPCA !== nullFunc ||
 			setSFDP !== nullFunc ||
 			setLog !== nullFunc
-		) ? (
-				(xAttrs, yAttrs) => {
-					return (
-						<CollapsibleSettings
-							label={'X/Y Quick Settings'}
-							tooltip={'Quickly set X and Y attributes to one of the listed default values'}
-							tooltipId={'quickstngs-tltp'}
-							popover={popoverTest}
-							popoverTitle={'Test'}
-							popoverId={'popoverId1'}
-							mountClosed>
-							<ListGroup>
-								{setXY(xAttrs, yAttrs)}
-								{setTSNE(xAttrs, yAttrs)}
-								{setPCA(xAttrs, yAttrs)}
-								{setSFDP(xAttrs, yAttrs)}
-								{setLog(xAttrs, yAttrs)}
-							</ListGroup>
-						</CollapsibleSettings>
-					);
-				}
-			) : nullFunc;
+		) ? (<CollapsibleSettings
+			label={'X/Y Quick Settings'}
+			tooltip={'Quickly set X and Y attributes to one of the listed default values'}
+			tooltipId={'quickstngs-tltp'}
+			popover={popoverTest}
+			popoverTitle={'Test'}
+			popoverId={'popoverId1'}
+			mountClosed>
+			<ListGroup>
+				{setXY}
+				{setTSNE}
+				{setPCA}
+				{setSFDP}
+				{setLog}
+			</ListGroup>
+		</CollapsibleSettings>) : null;
 
 		const attrSelectFactory = (attrName, attrs, idx) => {
 			let newAttrs = attrs.slice(0);
@@ -189,12 +121,12 @@ export class CoordinateSettings extends PureComponent {
 					}
 					newAttrs.pop();
 				}
-				dispatch({
+				dispatch(setViewProps(dataset, {
 					type: SET_VIEW_PROPS,
 					stateName: axis,
 					path: dataset.path,
 					viewState: { [axis]: { [attrName]: newAttrs } },
-				});
+				}));
 			};
 		};
 
@@ -249,7 +181,7 @@ export class CoordinateSettings extends PureComponent {
 
 
 		const {
-								quickSettings,
+			quickSettings,
 			attrSelectFactory,
 			attrJitterFactory,
 			attrLogscaleFactory,
@@ -380,7 +312,7 @@ export class CoordinateSettings extends PureComponent {
 		return (
 			<div>
 				<ListGroupItem>
-					{quickSettings(newXattrs, newYattrs)}
+					{quickSettings}
 				</ListGroupItem>
 				<ListGroupItem>
 					<CollapsibleSettings

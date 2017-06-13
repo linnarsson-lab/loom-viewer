@@ -5,6 +5,7 @@ import { DropdownMenu } from './dropdown';
 
 import { fetchGene } from '../../actions/fetch-genes';
 
+import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class SortAttributeComponent extends PureComponent {
@@ -21,13 +22,13 @@ export class SortAttributeComponent extends PureComponent {
 				dispatch(fetchGene(dataset, [value]));
 			}
 
-			dispatch({
+			dispatch(setViewProps(dataset, {
 				type: SET_VIEW_PROPS,
 				path,
 				axis,
 				sortAttrName: value,
 				stateName,
-			});
+			}));
 		};
 	}
 

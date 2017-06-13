@@ -11,27 +11,21 @@ import {
 	AttrLegend,
 } from '../settings/settings';
 
-import { fetchGene } from '../../actions/fetch-genes';
+import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 
 export class LegendSettings extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		const { geneToRow } = dataset.col;
 
 		const colAttrsHC = (val) => {
-			if (geneToRow[val] !== undefined &&
-				!dataset.fetchedGenes[val] &&
-				!dataset.fetchingGenes[val]) {
-				dispatch(fetchGene(dataset, [val]));
-			}
-			dispatch({
+			dispatch(setViewProps(dataset, {
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: { sparkline: { colAttr: val } },
-			});
+			}));
 		};
 
 		const colModeHC = (val) => {
