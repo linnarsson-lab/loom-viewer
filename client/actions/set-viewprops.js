@@ -5,6 +5,10 @@ import { SET_VIEW_PROPS } from './actionTypes';
 // and dispatch an action if that is the case.
 // (previously we had special code all over our components to do that, making
 // the whole thing quite brittle)
+// The `setViewProps` thunk is only required for SET_VIEW_PROPS actions that
+// might result in genes being fetched; if our action is guaranteed to not do
+// so (for example, `colorMode` settings), we can still use a direct
+// SET_VIEW_PROPS, since that has less overhead.
 export function setViewProps(dataset, action) {
 	const {
 		axis,
