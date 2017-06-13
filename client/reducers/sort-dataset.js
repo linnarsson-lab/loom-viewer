@@ -77,42 +77,25 @@ export function sortFilterIndices(axisData, order, indices) {
 	return indices;
 }
 
-export function maybeSortIndices(state, newState, action) {
-	const { path } = action;
-	const { row, col } = state.list[path];
-	const newDataset = newState.list[path];
-	const newRow = newDataset.row;
-	const newCol = newDataset.col;
-	const rowVS = newDataset.viewState.row;
-	const colVS = newDataset.viewState.col;
+export function maybeSortIndices(state, action) {
+	const { path, genes } = action;
+	const dataset = state.list[path];
+	const colVS = dataset.viewState.col;
 
-	let i = rowVS.order.length;
-	while (i--) {
-		const { key } = rowVS.order[i];
-		// If these differ, it's because it was a row
-		// that was fetched. In that case we need to update
-		// the sortFilterIndices
-		if (!row.attrs[key] && newRow.attrs[key]) {
-			const indices = updateFilteredIndices(rowVS.filter, rowVS.order, newDataset.row);
-			merge(newState, {
-				list: {
-					[path]: {
-						viewState: {
-							row: { indices },
-						},
-					},
-				},
-			});
-			break;
-		}
-	}
+	let attrs = [];
 
-	i = colVS.order.length;
+	let i = colVS.order.length;
+	while (i--) { attrs.push(colVS.order[i].key); }
+
+	i = colVS.filter.length;
+	while (i--) { attrs.push(colVS.filter[i].attr); }
+
+	i = genes.length;
 	while (i--) {
-		const { key } = colVS.order[i];
-		if (!col.attrs[key] && newCol.attrs[key]) {
-			const indices = updateFilteredIndices(colVS.filter, colVS.order, newDataset.col);
-			merge(newState, {
+		const attr = attrs[i];
+		if (genes.indexOf(attr) !== -1) {
+			const indices = updateFilteredIndices(colVS.filter, colVS.order, dataset.col);
+			return merge(state, {
 				list: {
 					[path]: {
 						viewState: {
@@ -121,9 +104,8 @@ export function maybeSortIndices(state, newState, action) {
 					},
 				},
 			});
-			break;
 		}
 	}
 
-	return newState;
+	return state;
 }

@@ -50,7 +50,7 @@ function datasets(state = {}, action) {
 
 		case RECEIVE_GENE:
 			newState = update(state, action);
-			return maybeSortIndices(state, newState, action);
+			return maybeSortIndices(newState, action);
 
 
 		//===VIEW ACTIONS===

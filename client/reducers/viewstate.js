@@ -5,8 +5,7 @@ import { updateSortOrder } from './sort-dataset';
 import { updateFilteredIndices } from './filter';
 
 
-// Merges new viewState, and updates sorting and filter data
-// if necessary.
+// Merges new viewState, and if necessary updates sorting and filtering
 export function updateViewState(state, action) {
 	let { path, axis } = action;
 	const dataset = state.list[path];

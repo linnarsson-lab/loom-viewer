@@ -34,7 +34,7 @@ export class FilteredValues extends PureComponent {
 				let filterAttrName = attrNames[i],
 					attr = attrs[filterAttrName],
 					label = `${attrNames[i]}: (${filteredVals[i].length})`;
-				const listGroupElements = filteredVals[i].map(
+				const listGroupElements = attr ? filteredVals[i].map(
 					(filterVal) => {
 						const onFilterClick = () => {
 							dispatch({
@@ -69,11 +69,11 @@ export class FilteredValues extends PureComponent {
 							</OverlayTooltip>
 						);
 					}
-				);
+				) : null;
 
 
 				filteredList[i] = (
-					<ListGroupItem key={i + attr}>
+					<ListGroupItem key={i + filterAttrName}>
 						<CollapsibleSettings
 							label={label}
 							mountClosed>

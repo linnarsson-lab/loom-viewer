@@ -141,6 +141,7 @@ function receiveGenes(attrs, genes, path) {
 		type: RECEIVE_GENE,
 		path,
 		receivedAt: Date.now(),
+		genes,
 		state: {
 			list: {
 				[path]: {
