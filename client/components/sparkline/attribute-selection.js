@@ -7,7 +7,7 @@ import {
 
 import {
 	CollapsibleSettings,
-	FetchGeneComponent,
+	SelectGeneComponent,
 } from '../settings/settings';
 
 import { setViewProps } from '../../actions/set-viewprops';
@@ -41,7 +41,7 @@ export class AttributeSelection extends PureComponent {
 					tooltip={'Select genes to display as sparkline or heatmap plots'}
 					tooltipId={'gene-tltp'}>
 					<div>
-						<FetchGeneComponent
+						<SelectGeneComponent
 							dataset={dataset}
 							dispatch={dispatch}
 							onChange={this.state.genesHC}

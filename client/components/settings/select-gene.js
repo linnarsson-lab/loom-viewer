@@ -13,8 +13,8 @@ import {
 	isEqual,
 } from 'lodash';
 
-// TODO: document how FetchGeneComponent works and what it expects
-export class FetchGeneComponent extends PureComponent {
+// TODO: document how SelectGeneComponent works and what it expects
+export class SelectGeneComponent extends PureComponent {
 
 	constructor(props) {
 		super(props);
@@ -128,7 +128,7 @@ export class FetchGeneComponent extends PureComponent {
 }
 
 
-FetchGeneComponent.propTypes = {
+SelectGeneComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	selectedGenes: PropTypes.arrayOf(PropTypes.string),

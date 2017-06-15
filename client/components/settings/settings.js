@@ -6,7 +6,7 @@ export {
 } from './collapsible';
 export { DebouncedFormcontrol } from './debounced-formcontrol';
 export { DropdownMenu } from './dropdown';
-export { FetchGeneComponent } from './fetch-gene';
+export { SelectGeneComponent } from './select-gene';
 export { FilteredValues } from './filtered';
 export { AttrLegend } from './legend';
 export { PrintSettings } from './print-settings';
