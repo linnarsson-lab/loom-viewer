@@ -53,7 +53,17 @@ export class SelectGeneComponent extends PureComponent {
 	}
 
 	handleTextAreaChange(event) {
-		this.setState({ selectedGenes: event.target.value });
+		let selectedGenes = event.target.value;
+		let { validGenes } = this.state;
+		switch(event.key){
+			case 'Enter':
+			case ' ':
+				validGenes = this.filterValidGenes(selectedGenes);
+				this.props.onChange(validGenes);
+				selectedGenes = validGenes.join(',\ ');
+			default:
+		}
+		this.setState({ selectedGenes });
 	}
 
 	addSelection(selectValue) {
@@ -74,7 +84,6 @@ export class SelectGeneComponent extends PureComponent {
 		}
 		const selectedGenes = validGenes.join(',\ ');
 		this.setState({ validGenes, selectedGenes });
-
 	}
 
 	filterValidGenes(selection) {
@@ -120,6 +129,7 @@ export class SelectGeneComponent extends PureComponent {
 					rows={8}
 					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
 					onChange={this.handleTextAreaChange}
+					onKeyPress={this.handleTextAreaChange}
 					value={this.state.selectedGenes} />
 
 			</div>
