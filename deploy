@@ -18,5 +18,5 @@ if [ $build_status == 0 ]; then
   echo ""
 else
   echo "Build not finished properly, aborting upload to pypi"
-  return $build_status
+  exit $build_status
 fi

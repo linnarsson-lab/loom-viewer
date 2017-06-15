@@ -49,5 +49,5 @@ if [ $build_status == 0 ]; then
   cd ..
 else
   echo "Minification not finished properly, aborting build"
-  return $build_status
+  exit $build_status
 fi
