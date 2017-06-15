@@ -1,9 +1,14 @@
 import { sortFilterIndices } from './sort-dataset';
 
 export function updateFilteredIndices(filter, order, data) {
-	let indices = new Array(data.length);
+	const { length } = data;
+	let i = length,
+		indices = new Array(i),
+		arrayType = i < (1 << 8) ? Uint8Array :
+			(i < (1 < 16) ? Uint16Array :
+				(i < (1 << 32) ? Uint32Array : Float64Array)
+			);
 
-	let i = data.length;
 	while (i - 16 > 0) {
 		indices[--i] = i;
 		indices[--i] = i;
@@ -53,10 +58,18 @@ export function updateFilteredIndices(filter, order, data) {
 		}
 	}
 
-	// convert to typed array
-	const arrayType = indices.length < 256 ? Uint8Array :
-			indices.length < 65535 ? Uint16Array : Uint32Array;
+	// Convert to typed array
 	indices = arrayType.from(indices);
 
-	return sortFilterIndices(data, order, indices);
+	// for scatterplots we sort by X and Y, so sorting
+	// by ascending is more apprioriate as it will be
+	// more cache friendly. Hence, we save a separate
+	// set of indices.
+	let ascendingIndices = indices.slice();
+	ascendingIndices.sort();
+
+	return {
+		indices: sortFilterIndices(data, order, indices),
+		ascendingIndices,
+	};
 }

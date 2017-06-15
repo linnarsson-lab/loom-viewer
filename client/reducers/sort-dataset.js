@@ -94,12 +94,12 @@ export function maybeSortIndices(state, action) {
 	while (i--) {
 		const attr = attrs[i];
 		if (genes.indexOf(attr) !== -1) {
-			const indices = updateFilteredIndices(colVS.filter, colVS.order, dataset.col);
+			const newIndices = updateFilteredIndices(colVS.filter, colVS.order, dataset.col);
 			return merge(state, {
 				list: {
 					[path]: {
 						viewState: {
-							col: { indices },
+							col: newIndices,
 						},
 					},
 				},

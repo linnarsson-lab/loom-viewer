@@ -6,7 +6,7 @@ import { LowerCaseSanitizer, PrefixIndexStrategy } from 'js-search';
 const indexStrategy = new PrefixIndexStrategy();
 const sanitizer = new LowerCaseSanitizer();
 
-import { convertJSONarray } from '../js/util';
+import { convertJSONarray, arrayConstr } from '../js/util';
 import { createViewStateConverter } from '../js/viewstateEncoder';
 
 import {
@@ -129,11 +129,13 @@ function receiveDataSet(data, path) {
 			order: prepRows.order,
 			filter: [],
 			indices: prepRows.indices,
+			ascendingIndices: prepRows.indices,
 		},
 		col: {
 			order: prepCols.order,
 			filter: [],
 			indices: prepCols.indices,
+			ascendingIndices: prepCols.indices,
 		},
 		heatmap: {
 			zoomRange: data.zoomRange,
@@ -204,8 +206,8 @@ function prepData(attrs) {
 }
 
 function originalOrderArray(length) {
-	let arrayType = length < 256 ? Uint8Array : (length < 65535 ? Uint16Array : Uint32Array);
-	let data = new arrayType(length);
+	let arrayType = length < (1<<8) ? 'uint8' : (length < (1<<16) ? 'uint16' : (length < (1<<32) ? 'uint32' : 'float64'));
+	let data = new (arrayConstr(arrayType))(length);
 	let i = length;
 	while (i--) {
 		data[i] = i;

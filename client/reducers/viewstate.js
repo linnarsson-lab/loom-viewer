@@ -73,10 +73,10 @@ function updateFilter(viewState, action, axis) {
 function updateIndices(dataset, viewState, axis) {
 	const { filter, order } = viewState[axis];
 	// note: updateFilteredIndices returns unsorted indices
-	const indices = updateFilteredIndices(filter, order, dataset[axis]);
+	const newIndices = updateFilteredIndices(filter, order, dataset[axis]);
 	// at this point, we know that both viewState and viewState[axis]
 	// are new objects, so we can use mergeInPlace
-	return mergeInPlace(viewState, { [axis]: { indices } });
+	return mergeInPlace(viewState, { [axis]: newIndices });
 }
 
 // used for writing view state to the browser URL
