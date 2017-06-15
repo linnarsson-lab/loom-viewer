@@ -100,7 +100,7 @@ class LandscapeMatrix extends PureComponent {
 			const {
 				colorAttr,
 				colorMode,
-				indices,
+				ascendingIndices,
 				settings,
 			} = dataset.viewState.col;
 
@@ -144,7 +144,7 @@ class LandscapeMatrix extends PureComponent {
 							}}
 							width={canvasW}
 							height={canvasH}
-							paint={scatterplot(x, y, color, indices, _settings)}
+							paint={scatterplot(x, y, color, ascendingIndices, _settings)}
 							redraw
 							clear
 						/>
