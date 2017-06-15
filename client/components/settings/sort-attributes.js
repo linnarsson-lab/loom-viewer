@@ -3,27 +3,16 @@ import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
-import { fetchGene } from '../../actions/fetch-genes';
-
 import { setViewProps } from '../../actions/set-viewprops';
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class SortAttributeComponent extends PureComponent {
 	constructor(props) {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;
 		const path = dataset.path;
-		const { geneToRow } = dataset[axis];
 
 		this.onChange = (value) => {
-			if (geneToRow[value] !== undefined &&
-			!dataset.fetchedGenes[value] &&
-			!dataset.fetchingGenes[value]) {
-				dispatch(fetchGene(dataset, [value]));
-			}
-
 			dispatch(setViewProps(dataset, {
-				type: SET_VIEW_PROPS,
 				path,
 				axis,
 				sortAttrName: value,

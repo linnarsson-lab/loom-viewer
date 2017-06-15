@@ -7,8 +7,6 @@ import {
 	Button,
 } from 'react-bootstrap';
 
-import { fetchGene } from '../../actions/fetch-genes';
-
 import {
 	uniq,
 	difference,
@@ -27,7 +25,7 @@ export class FetchGeneComponent extends PureComponent {
 	}
 
 	componentWillMount() {
-		let { selectedGenes, dispatch, dataset, onChange } = this.props;
+		let { selectedGenes, dataset, onChange } = this.props;
 		const { geneKeys } = dataset.col;
 
 		let i = geneKeys.length, selectOptions = new Array(i);
@@ -41,7 +39,6 @@ export class FetchGeneComponent extends PureComponent {
 		if (selectedGenes && selectedGenes.length) {
 			selectedGenes = selectedGenes.join(',\ ');
 			validGenes = this.filterValidGenes(selectedGenes);
-			dispatch(fetchGene(dataset, validGenes));
 			let diff = difference(selectedGenes, validGenes);
 			let diff2 = difference(validGenes, selectedGenes);
 			if (diff.length + diff2.length) {
@@ -66,11 +63,10 @@ export class FetchGeneComponent extends PureComponent {
 	}
 
 	applySelection() {
-		const { dataset, dispatch, onChange } = this.props;
+		const { onChange } = this.props;
 
 		let validGenes = this.filterValidGenes(this.state.selectedGenes);
 		if (!isEqual(validGenes, this.state.validGenes)) {
-			dispatch(fetchGene(dataset, validGenes));
 			// We also call onChange if there is no value,
 			// to handle "resetting" the view
 			onChange ? onChange(validGenes) : null;
