@@ -90,6 +90,7 @@ export function createViewStateConverter(dataset) {
 			genes: vectorOf([oneOfGeneKeys]),
 			geneMode: sparklineGeneModes,
 			showLabels: boolVal,
+			groupBy: boolVal,
 		},
 		cellMD: { searchVal: anyVal },
 		geneMD: { searchVal: anyVal },
