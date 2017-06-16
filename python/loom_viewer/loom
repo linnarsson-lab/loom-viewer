@@ -162,6 +162,28 @@ def expand_rows(ds, truncate=False):
 		save_compressed_json(row_file_name, row)
 		i += 1
 
+def expand_rows_fix(ds):
+
+	row_dir = '%s.rows' % ( ds.filename )
+
+	if os.path.isdir(row_dir):
+		# Fixing only makes sense if the rows were already expanded
+		logging.info("    Fixing expanded rows (stored in %s subfolder)" % row_dir)
+
+		total_rows = ds.shape[0]
+		remainder = total_rows % 64
+		for i in range(total_rows - remainder, total_rows):
+			row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
+			if os.path.isfile(row_file_name):
+				logging.info("    Replacing old %06d.json.gzip" % i)
+				os.remove(row_file_name)
+			# Fix new row
+			row = {'idx': i, 'data': JSON_array(ds[i,:])}
+			save_compressed_json(row_file_name, row)
+
+	else:
+		expand_rows(ds, False)
+
 
 def expand_columns(ds, truncate=False):
 
@@ -345,6 +367,24 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 					expand_rows(ds, truncate)
 				if cols:
 					expand_columns(ds, truncate)
+			except Exception as e:
+				logging.error(e)
+
+def fix_rows_command(dataset_path):
+	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	logging.info('Found %i projects' % len(projects))
+	for project in projects:
+		project_path = os.path.join(dataset_path, project)
+		logging.info('Entering project %s' % project_path)
+		project_files = os.listdir(project_path)
+		loom_files = [filename for filename in project_files if filename.endswith(".loom")]
+		logging.info('Found %i loom files' % len(loom_files))
+		for filename in loom_files:
+			try:
+				ds = connect_loom(project_path, filename)
+				if ds == None:
+					raise warnings.warn("Could not connect to %s" % filename)
+				expand_rows_fix(ds)
 			except Exception as e:
 				logging.error(e)
 
@@ -634,6 +674,8 @@ if __name__ == '__main__':
 		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
 		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
 
+		fix_rows_parser = subparsers.add_parser('fix-rows', help="Fix broken row expansion")
+
 		# loom stats
 		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
 		stats_parser.add_argument("file", help="Loom input file")
@@ -715,7 +757,9 @@ if __name__ == '__main__':
 		expand_project_command(args.dataset_path, args.project, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "expand-all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "backspin":
+	elif args.command == "fix-rows":
+		fix_rows_command(args.dataset_path)
+	elif args.command == "backspin:":
 		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from-loom":
 		fromloom_command(args.dataset_path, args.infile, args.outfile, args.project, args.dtype, args.chunks, args.chunk_cache, args.compression_opts, args.shuffle, args.fletcher32)
