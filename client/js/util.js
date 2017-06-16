@@ -678,8 +678,10 @@ export function disjointArrays(a, b) {
 			let bval = b[j];
 			if (aval === bval) {
 				overlap.push(aval);
-				a[i] = a[a.length - 1]; a.pop();
-				b[j] = b[b.length - 1]; b.pop();
+				a[i] = a[a.length - 1];
+				a.pop();
+				b[j] = b[b.length - 1];
+				b.pop();
 				break;
 			}
 		}

@@ -93,8 +93,8 @@ export class ClipDataSettings extends Component {
 		const { handleChangeFactory } = this.state;
 		const log2ColorHC = handleChangeFactory('log2Color', log2Color);
 		const clipHC = handleChangeFactory('clip', clip);
-		let clipRange;
 
+		let clipRange;
 		if (clip) {
 			const clipTltp = `Clip data between ${lowerBound}% to ${upperBound}% of min/max values`;
 			clipRange = (
@@ -115,6 +115,7 @@ export class ClipDataSettings extends Component {
 				</OverlayTooltip>
 			);
 		}
+
 		return (
 			<div className='view-vertical'>
 				<div className='view'>

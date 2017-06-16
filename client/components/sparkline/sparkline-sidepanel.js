@@ -13,8 +13,8 @@ import { ColorSettings } from './color-settings';
 
 import {
 	CollapsibleSettings,
-	SortAttributeComponent,
 	FilteredValues,
+	SortAttributeComponent,
 } from '../settings/settings';
 
 export const SparklineSidepanel = function (props) {
@@ -47,7 +47,8 @@ export const SparklineSidepanel = function (props) {
 					dataset={dataset}
 					dispatch={dispatch}
 					colAttr={sparkline.colAttr}
-					colMode={sparkline.colMode} />
+					colMode={sparkline.colMode}
+					groupBy={sparkline.groupBy} />
 				{
 					filter &&
 						filter.length ? (
@@ -60,10 +61,11 @@ export const SparklineSidepanel = function (props) {
 							</ListGroupItem>
 						) : null
 				}
+
 				<ListGroupItem>
 					<CollapsibleSettings
-						label={'Order'}
-						tooltip={'Keys to sort datapoints by (select same value twice to toggle ascending/descending)'}
+						label={'Column order'}
+						tooltip={'Sort datapoints by attributes, in this order (select same attribute twice to toggle ascending/descending)'}
 						tooltipId={'order-tltp'}
 						mountClosed>
 						<div>

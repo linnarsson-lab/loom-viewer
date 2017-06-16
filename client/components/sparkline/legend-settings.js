@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 
 import {
 	ListGroupItem,
+	Button,
+	Glyphicon,
 } from 'react-bootstrap';
 
 import {
@@ -11,7 +13,6 @@ import {
 	AttrLegend,
 } from '../settings/settings';
 
-import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 
@@ -19,13 +20,13 @@ export class LegendSettings extends PureComponent {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 
-		const colAttrsHC = (val) => {
-			dispatch(setViewProps(dataset, {
+		const colAttrHC = (val) => {
+			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: { sparkline: { colAttr: val } },
-			}));
+			});
 		};
 
 		const colModeHC = (val) => {
@@ -39,29 +40,49 @@ export class LegendSettings extends PureComponent {
 
 		const colModeOptions = ['Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 
-		this.setState({ colAttrsHC, colModeHC, colModeOptions });
+		this.setState({
+			colAttrHC,
+			colModeHC,
+			colModeOptions,
+		});
 	}
 
-	shouldComponentUpdate(nextProps) {
-		const ds = this.props.dataset, nds = nextProps.dataset,
-			nca = nextProps.colAttr, ca = this.props.colAttr,
-			vs = ds.viewState.col, nvs = nds.viewState.col;
+	shouldComponentUpdate(np) {
+		const p = this.props,
+			ds = p.dataset, nds = np.dataset,
+			ca = p.colAttr, nca = np.colAttr,
+			vs = ds.viewState, nvs = nds.viewState,
+			vsc = vs.col, nvsc = nvs.col;
 
 		return nca !== ca ||
-			nextProps.colMode !== this.props.colMode ||
-			nvs.filter !== vs.filter ||
-			nvs.lowerBound !== vs.lowerBound ||
-			nvs.upperBound !== vs.upperBound ||
-			nvs.log2Color !== vs.log2Color ||
+			np.colMode !== p.colMode ||
+			vs.sparkline.groupBy !== nvs.sparkline.groupBy ||
+			nvsc.filter !== vsc.filter ||
+			nvsc.lowerBound !== vsc.lowerBound ||
+			nvsc.upperBound !== vsc.upperBound ||
+			nvsc.log2Color !== vsc.log2Color ||
 			nds.col.attrs[nca] !== ds.col.attrs[ca];
 	}
 
 	render() {
-		const { colAttrsHC, colModeOptions, colModeHC } = this.state;
-		const { dispatch, dataset, colAttr, colMode } = this.props;
-		const { col } = dataset;
+		const {
+			dispatch,
+			dataset,
+			colAttr,
+			colMode,
+			groupBy,
+		} = this.props;
 
-		const { path } = dataset;
+		const {
+			colAttrHC,
+			colModeOptions,
+			colModeHC,
+		} = this.state;
+
+		const {
+			col,
+			path,
+		} = dataset;
 
 		const filterFunc = colAttr ? (val) => {
 			return () => {
@@ -93,6 +114,18 @@ export class LegendSettings extends PureComponent {
 			);
 		}
 
+		const groupByHC = () => {
+			dispatch({
+				type: SET_VIEW_PROPS,
+				stateName: 'sparkline',
+				path: dataset.path,
+				viewState: {
+					sparkline: {
+						groupBy: !groupBy,
+					},
+				},
+			});
+		};
 
 		return (
 			<ListGroupItem>
@@ -101,12 +134,23 @@ export class LegendSettings extends PureComponent {
 					tooltip={'Metadata attribute to identify the sparklines. Click a value to filter it out'}
 					tooltipId={'attrlgnd-tltp'}>
 					<div>
-						<DropdownMenu
-							value={colAttr}
-							options={col.keysNoUniques}
-							filterOptions={col.dropdownOptions.attrsNoUniques}
-							onChange={colAttrsHC}
-						/>
+						<div className={'view'}>
+							<div style={{ flex: 5 }}>
+								<DropdownMenu
+									value={colAttr}
+									options={col.keysNoUniques}
+									filterOptions={col.dropdownOptions.attrsNoUniques}
+									onChange={colAttrHC}
+								/>
+							</div>
+							<Button
+								bsStyle='link'
+								bsSize='small'
+								style={{ flex: 1 }}
+								onClick={groupByHC} >
+								<Glyphicon glyph={groupBy ? 'check' : 'unchecked'} /> group
+						</Button>
+						</div>
 						<DropdownMenu
 							value={colMode}
 							options={colModeOptions}
@@ -125,4 +169,5 @@ LegendSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
+	groupBy: PropTypes.bool,
 };

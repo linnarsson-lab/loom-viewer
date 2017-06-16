@@ -4,18 +4,17 @@ import { TypedArrayProp } from '../../js/proptypes-typedarray';
 
 import { Canvas } from '../canvas';
 
-import { sparkline } from '../../plotters/sparkline';
-
-import { isEqual } from 'lodash';
+import { groupedSparkline } from '../../plotters/grouped-sparkline';
 
 const sparklineHeight = 40;
 
-function nullfunc(){}
+function nullfunc() { }
 
 class Legend extends PureComponent {
 
 	shouldComponentUpdate(nextProps) {
 		return (
+			this.props.sparkline !== nextProps.sparkline ||
 			this.props.colAttr !== nextProps.colAttr ||
 			this.props.colMode !== nextProps.colMode ||
 			nextProps.indicesChanged
@@ -29,12 +28,12 @@ class Legend extends PureComponent {
 			col,
 			colAttr,
 			colMode,
-			indices,
+			sparkline,
 		} = this.props;
 		const data = col.attrs[colAttr];
 
 		const label = data ? data.name : null;
-		const painter = data ? sparkline(data, indices, colMode, null, label) : nullfunc;
+		const painter = data ? sparkline(data, colMode, null, label, true) : nullfunc;
 
 		return (
 			<div style={{
@@ -61,13 +60,13 @@ class Legend extends PureComponent {
 }
 
 Legend.propTypes = {
+	sparkline: PropTypes.func.isRequired,
 	height: PropTypes.number.isRequired,
 	width: PropTypes.number.isRequired,
 	col: PropTypes.object.isRequired,
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
 	path: PropTypes.string.isRequired,
-	indices: TypedArrayProp.any,
 	indicesChanged: PropTypes.bool.isRequired,
 };
 
@@ -77,13 +76,8 @@ Legend.propTypes = {
 export class Sparkline extends PureComponent {
 
 	shouldComponentUpdate(nextProps) {
-		// let gene = this.props.gene !== nextProps.gene,
-		// 	indices = this.props.order !== nextProps.order,
-		// 	mode = this.props.geneMode !== nextProps.geneMode,
-		// 	label = this.props.showLabels !== nextProps.showLabels,
-		// 	data = this.props.geneData === undefined && (this.props.geneData !== nextProps.geneData);
-
-		return this.props.gene !== nextProps.gene ||
+		return this.props.sparkline !== nextProps.sparkline ||
+			this.props.gene !== nextProps.gene ||
 			this.props.geneMode !== nextProps.geneMode ||
 			this.props.settings !== nextProps.settings ||
 			this.props.showLabels !== nextProps.showLabels ||
@@ -93,13 +87,23 @@ export class Sparkline extends PureComponent {
 	}
 
 	render() {
-		const { gene, geneData, indices, geneMode, settings, showLabels, style } = this.props;
+		const {
+			sparkline,
+			gene,
+			geneData,
+			geneMode,
+			settings,
+			showLabels,
+			style,
+		} = this.props;
+
 		const label = showLabels ? gene : null;
+
 		return (
 			<div style={style}>
 				<Canvas
 					height={sparklineHeight}
-					paint={sparkline(geneData, indices, geneMode, settings, label)}
+					paint={sparkline(geneData, geneMode, settings, label)}
 					redraw
 					clear
 				/>
@@ -109,6 +113,7 @@ export class Sparkline extends PureComponent {
 }
 
 Sparkline.propTypes = {
+	sparkline: PropTypes.func.isRequired,
 	gene: PropTypes.string,
 	geneData: PropTypes.object,
 	geneMode: PropTypes.string,
@@ -120,19 +125,21 @@ Sparkline.propTypes = {
 };
 
 export class Sparklines extends PureComponent {
+
+
 	shouldComponentUpdate(nextProps) {
-		// attrs object changes, so we check if
-		// the objects contained are different
-		return this.props.selection !== nextProps.selection ||
+		return this.props.sparkline !== nextProps.sparkline ||
+			this.props.selection !== nextProps.selection ||
 			this.props.geneMode !== nextProps.geneMode ||
 			this.props.showLabels !== nextProps.showLabels ||
 			this.props.settings !== nextProps.settings ||
 			nextProps.indicesChanged ||
-			!isEqual(this.props.attrs, nextProps.attrs);
+			this.props.attrs !== nextProps.attrs;
 	}
 
 	render() {
 		const {
+			sparkline,
 			attrs,
 			selection,
 			indices,
@@ -143,6 +150,8 @@ export class Sparklines extends PureComponent {
 			showLabels,
 		} = this.props;
 
+
+
 		let sparklines = [];
 		for (let i = 0; i < selection.length; i++) {
 			let gene = selection[i];
@@ -150,6 +159,7 @@ export class Sparklines extends PureComponent {
 			sparklines.push(
 				<Sparkline
 					key={gene}
+					sparkline={sparkline}
 					gene={gene}
 					geneData={geneData}
 					geneMode={geneMode}
@@ -158,7 +168,7 @@ export class Sparklines extends PureComponent {
 					settings={settings}
 					showLabels={showLabels}
 					style={{
-						background: ((i % 2 === 0) ? '#FFFFFF' : '#F8F8F8'),
+						background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
 						minHeight: `${sparklineHeight}px`,
 						maxHeight: `${sparklineHeight}px`,
 						minWidth: `${containerWidth - 20}px`,
@@ -188,6 +198,7 @@ export class Sparklines extends PureComponent {
 
 
 Sparklines.propTypes = {
+	sparkline: PropTypes.func.isRequired,
 	containerWidth: PropTypes.number.isRequired,
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
@@ -200,11 +211,26 @@ Sparklines.propTypes = {
 
 export class SparklineList extends PureComponent {
 	componentWillMount() {
-		this.setState({ mounted: false });
+		const { attrs, groupAttr, indices } = this.props;
+		const sparkline = groupedSparkline(indices, attrs[groupAttr]);
+		this.setState({
+			sparkline,
+			mounted: false,
+		});
 	}
 
 	componentDidMount() {
 		this.setState({ mounted: true });
+	}
+
+	componentWillUpdate(nextProps) {
+		const { indices, attrs, groupAttr } = nextProps;
+		if (groupAttr !== this.props.groupAttr ||
+			indices !== this.props.indices) {
+			this.setState({
+				sparkline: groupedSparkline(indices, attrs[groupAttr]),
+			});
+		}
 	}
 
 	render() {
@@ -223,6 +249,8 @@ export class SparklineList extends PureComponent {
 				settings,
 			} = this.props;
 
+			const { sparkline } = this.state;
+
 			const el = this.refs.sparklineContainer;
 			const containerWidth = el.clientWidth - 20;
 			const containerHeight = el.clientHeight - 20;
@@ -238,6 +266,7 @@ export class SparklineList extends PureComponent {
 					}}
 					ref='sparklineContainer'>
 					<Legend
+						sparkline={sparkline}
 						height={legendHeight}
 						width={containerWidth}
 						col={col}
@@ -260,6 +289,7 @@ export class SparklineList extends PureComponent {
 						}}>
 						<Sparklines
 							attrs={attrs}
+							sparkline={sparkline}
 							selection={selection}
 							indices={indices}
 							indicesChanged={indicesChanged}
@@ -285,6 +315,7 @@ export class SparklineList extends PureComponent {
 SparklineList.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
+	groupAttr: PropTypes.string,
 	indices: TypedArrayProp.any,
 	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,

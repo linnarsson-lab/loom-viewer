@@ -63,6 +63,7 @@ class SparklineViewComponent extends PureComponent {
 						attrs={dataset.col.attrs}
 						selection={sl.genes}
 						indicesChanged={indicesChanged}
+						groupAttr={sl.groupBy ? sl.colAttr : ''}
 						indices={indices}
 						geneMode={sl.geneMode}
 						col={col}
