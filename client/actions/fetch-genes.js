@@ -21,7 +21,7 @@ import { convertJSONarray } from '../js/util';
 export function fetchGene(dataset, genes) {
 	const { title, path, col, fetchedGenes, fetchingGenes } = dataset;
 	const { geneToRow, rowToGenes } = col;
-	if (geneToRow === undefined) {
+	if (geneToRow === undefined || genes === undefined) {
 		return () => { };
 	} else {
 		// `genes` can be either a string or an array of strings
@@ -73,15 +73,19 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 			.then((data) => {
 				// Genes are appended to the attrs object
 				let attrs = {};
-				let i = data.length;
-				while (i--) {
-					// we set data[i] to null as early as possible, so JS can
-					// GC the rows after converting them to TypedArrays.
-					// I actually had an allocation failure so this is a real risk when fetching large amounts of data.
-					let geneName = rowToGenes[data[i].idx],
-						geneData = data[i].data;
-					data[i] = null;
-					attrs[geneName] = convertJSONarray(geneData, geneName);
+				while (data.length) {
+					// We pop from data, so JS can GC the after converting
+					// to TypedArrays. I actually had an allocation failure
+					// so this is a real risk when fetching large amounts of data.
+					const gene = data.pop();
+					const geneName = rowToGenes[gene.idx];
+					if (geneName === undefined) {
+						console.log('Row index out of bounds error!');
+					} else {
+						const geneData = gene.data;
+						const convertedGene = convertJSONarray(geneData, geneName);
+						attrs[geneName] = convertedGene;
+					}
 				}
 				dispatch(receiveGenes(attrs, _fetchGeneNames, path));
 			})
