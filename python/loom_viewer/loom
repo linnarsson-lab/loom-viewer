@@ -157,7 +157,7 @@ def expand_rows(ds, truncate=False):
 			save_compressed_json(row_file_name, row)
 		i += 64
 	while i < total_rows:
-		row = {'idx': i+j, 'data': JSON_array(ds[i,:])}
+		row = {'idx': i, 'data': JSON_array(ds[i,:])}
 		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 		save_compressed_json(row_file_name, row)
 		i += 1

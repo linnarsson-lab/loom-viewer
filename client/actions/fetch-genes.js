@@ -80,10 +80,10 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 					const gene = data.pop();
 					const geneName = rowToGenes[gene.idx];
 					if (geneName === undefined) {
-						console.log('Row index out of bounds error!');
+						console.log('fetchGene: row index out of bounds error!');
+						console.log({ gene });
 					} else {
-						const geneData = gene.data;
-						const convertedGene = convertJSONarray(geneData, geneName);
+						const convertedGene = convertJSONarray(gene.data, geneName);
 						attrs[geneName] = convertedGene;
 					}
 				}
