@@ -16,7 +16,11 @@ export class ScaleFactorSettings extends PureComponent {
 				type: SET_VIEW_PROPS,
 				stateName: axis,
 				path: dataset.path,
-				viewState: { [axis]: { scaleFactor: value } },
+				viewState: {
+					[axis]: {
+						settings: { scaleFactor: value },
+					},
+				},
 			});
 		};
 
