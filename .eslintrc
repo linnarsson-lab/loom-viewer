@@ -49,7 +49,10 @@
             "error",
             "always-multiline"
         ],
-        "quotes": ["error", "single"],
+        "quotes": [
+            "error",
+            "single"
+        ],
         "jsx-quotes": [
             2,
             "prefer-single"
@@ -60,7 +63,9 @@
         "indent": [
             "error",
             "tab",
-            { "SwitchCase": 1 }
+            {
+                "SwitchCase": 1
+            }
         ],
         //Not so much errors as warnings that
         //it might be time to refactor the code
@@ -97,12 +102,26 @@
         "react/no-deprecated": 2,
         "react/prop-types": 2,
         "react/jsx-no-bind": 1, // refactoring to prototype functions is more efficient
-        "react/jsx-indent": [2, "tab"],
-        "react/jsx-indent-props": [2, "tab"],
-        "react/jsx-max-props-per-line": [2, { "maximum": 2 }],
-        "react/jsx-equals-spacing": [2, "never"],
-        "react/jsx-space-before-closing": 2,
-        "react/jsx-boolean-value": [2, "never"],
+        "react/jsx-indent": [
+            2,
+            "tab"
+        ],
+        "react/jsx-indent-props": [
+            2,
+            "tab"
+        ],
+        "react/jsx-max-props-per-line": [
+            2,
+            {
+                "maximum": 2
+            }
+        ],
+        "react/jsx-closing-tag-location": 2,
+        "react/jsx-tag-spacing": 2,
+        "react/jsx-boolean-value": [
+            2,
+            "never"
+        ],
         "react/jsx-no-comment-textnodes": 2
     }
 }
