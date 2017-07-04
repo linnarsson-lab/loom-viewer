@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import { FetchDatasetComponent } from './fetch-dataset';
@@ -7,10 +7,10 @@ import { fetchProjects } from '../actions/fetch-projects';
 import { setViewProps } from '../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
-import { decompressFromEncodedURIComponent } from 'lz-string';
+import { decompressFromEncodedURIComponent } from '../js/lz-string';
 import { merge } from '../js/util';
 
-class ViewStateInitialiser extends Component {
+class ViewStateInitialiser extends PureComponent {
 
 	componentWillMount() {
 		let { dispatch, dataset,
@@ -54,7 +54,7 @@ ViewStateInitialiser.propTypes = {
 	viewsettings: PropTypes.string,
 };
 
-export class ViewInitialiser extends Component {
+export class ViewInitialiser extends PureComponent {
 	componentWillMount() {
 		const {
 			dispatch,

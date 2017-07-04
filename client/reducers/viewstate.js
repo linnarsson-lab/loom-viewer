@@ -81,7 +81,7 @@ function updateIndices(dataset, viewState, axis) {
 
 // used for writing view state to the browser URL
 import { browserHistory } from 'react-router';
-import { compressToEncodedURIComponent } from 'lz-string';
+import { compressToEncodedURIComponent } from '../js/lz-string';
 
 export function setViewStateURL(state, action) {
 	let { stateName, path } = action;
