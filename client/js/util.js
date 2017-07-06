@@ -105,17 +105,17 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-						(val) => {
-							if (val >= clipMax) {
-								return maxColor;
-							} else if (val <= clipMin) {
-								return minColor;
-							} else {
-								const cIdx = ((val - clipMin) * colorIdxScale) | 0;
-								return palette[cIdx];
-							}
+					(val) => {
+						if (val >= clipMax) {
+							return maxColor;
+						} else if (val <= clipMin) {
+							return minColor;
+						} else {
+							const cIdx = ((val - clipMin) * colorIdxScale) | 0;
+							return palette[cIdx];
 						}
-					);
+					}
+				);
 			} else {
 				// skip using special color for the zero-value for
 				// dataranges that have negative values and/or
@@ -135,17 +135,17 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-						(val) => {
-							if (val >= clipMax) {
-								return maxColor;
-							} else if (val < clipMin) {
-								return minColor;
-							} else {
-								const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
-								return palette[cIdx];
-							}
+					(val) => {
+						if (val >= clipMax) {
+							return maxColor;
+						} else if (val < clipMin) {
+							return minColor;
+						} else {
+							const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
+							return palette[cIdx];
 						}
-					);
+					}
+				);
 			}
 		default:
 			return blackColor;
@@ -193,16 +193,16 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-						(val) => {
-							if (val >= clipMax) {
-								return paletteEnd;
-							} else if (val <= clipMin) {
-								return 0;
-							} else {
-								return ((val - clipMin) * colorIdxScale) | 0;
-							}
+					(val) => {
+						if (val >= clipMax) {
+							return paletteEnd;
+						} else if (val <= clipMin) {
+							return 0;
+						} else {
+							return ((val - clipMin) * colorIdxScale) | 0;
 						}
-					);
+					}
+				);
 			} else {
 				// skip using special color for the zero-value for
 				// dataranges that have negative values and/or
@@ -220,16 +220,16 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-						(val) => {
-							if (val >= clipMax) {
-								return paletteEnd;
-							} else if (val <= clipMin) {
-								return 1;
-							} else {
-								return 1 + ((val - clipMin) * colorIdxScale) | 0;
-							}
+					(val) => {
+						if (val >= clipMax) {
+							return paletteEnd;
+						} else if (val <= clipMin) {
+							return 1;
+						} else {
+							return 1 + ((val - clipMin) * colorIdxScale) | 0;
 						}
-					);
+					}
+				);
 			}
 		default:
 			return blackColor;
@@ -435,6 +435,20 @@ export function convertJSONarray(arr, name) {
 	return retArr;
 }
 
+/**
+ * Returns the first string in `keyList` that is a key
+ * in `obj`. Returns empty string if none are found.
+ * @param {object} obj
+ * @param {string[]} keyList
+ */
+export function firstMatch(obj, keyList){
+	for (let i = 0; i < keyList.length; i++){
+		if (obj[keyList[i]]) {
+			return keyList[i];
+		}
+	}
+	return '';
+}
 
 /**
  * - `array`: array to be sorted
