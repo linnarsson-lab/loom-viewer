@@ -62,9 +62,6 @@ export class ViewInitialiser extends PureComponent {
 		} = this.props;
 		if (!datasets) {
 			dispatch(fetchProjects());
-			return (
-				<div className='view centered' ><h1>Fetching projects list</h1></div>
-			);
 		}
 	}
 
