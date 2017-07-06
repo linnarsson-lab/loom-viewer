@@ -17,10 +17,10 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 		freshNode = true,
 		c = 0,
 		c0 = 1,
-		node = dictionary,
-		new_node = {},
-		enlargeIn = 2,
-		dictSize = 3,
+		new_node = { 0: 3 },
+		node = new_node,
+		enlargeIn = 1,
+		dictSize = 4,
 		numBits = 2,
 		data = [],
 		data_val = 0,
@@ -68,15 +68,7 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 		}
 
 		// Add charCode to the dictionary.
-		new_node = {};
-		new_node[0] = dictSize++;
-		node[c0] = new_node;
-		// start in this node
-		node = new_node;
-		// increase token bitlength if necessary
-		if (--enlargeIn === 0) {
-			enlargeIn = 1 << numBits++;
-		}
+		dictionary[c0] = new_node;
 
 		for (j = 1; j < uncompressed.length; j++) {
 			c = uncompressed.charCodeAt(j);
@@ -134,16 +126,14 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 							data_val = 0;
 						}
 					}
-					new_node = {};
-					new_node[0] = dictSize++;
+					new_node = { 0: dictSize++ };
 					dictionary[c0] = new_node;
 					// Note of that we already wrote
 					// the charCode token to the bitstream
 					freshNode = true;
 				}
 				// add node representing prefix + new charCode to trie
-				new_node = {};
-				new_node[0] = dictSize++;
+				new_node = { 0: dictSize++ };
 				node[c0] = new_node;
 				// increase token bitlength if necessary
 				if (--enlargeIn === 0) {
