@@ -9,6 +9,8 @@ import { RemountOnResize } from '../remount-on-resize';
 
 import { isEqual } from 'lodash';
 
+import { firstMatch } from '../../js/util';
+
 class SparklineViewComponent extends PureComponent {
 	componentWillMount() {
 		this.setState({
@@ -84,22 +86,25 @@ SparklineViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { // Initialise sparklineState for this dataset
-	sparkline: {
-		colAttr: 'Clusters',
-		colMode: 'Stacked',
-		geneMode: 'Bars',
-		genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
-		showLabels: true,
-	},
-	col: {
-		settings: {
-			lowerBound: 0,
-			upperBound: 100,
-			log2Color: true,
-			clip: false,
+const stateInitialiser = (dataset) => {
+	// Initialise sparklineState for this dataset
+	return {
+		sparkline: {
+			colAttr: firstMatch(dataset.col.attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+			colMode: 'Stacked',
+			geneMode: 'Bars',
+			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
+			showLabels: true,
 		},
-	},
+		col: {
+			settings: {
+				lowerBound: 0,
+				upperBound: 100,
+				log2Color: true,
+				clip: false,
+			},
+		},
+	};
 };
 
 export class SparklineViewInitialiser extends PureComponent {
@@ -108,7 +113,7 @@ export class SparklineViewInitialiser extends PureComponent {
 			<ViewInitialiser
 				View={SparklineViewComponent}
 				stateName={'sparkline'}
-				initialState={initialState}
+				stateInitialiser={stateInitialiser}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />

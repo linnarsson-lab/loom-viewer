@@ -8,7 +8,7 @@ import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
 import { RemountOnResize } from '../remount-on-resize';
 
-import { merge } from '../../js/util';
+import { merge, firstMatch } from '../../js/util';
 
 class LandscapeMatrix extends PureComponent {
 	componentWillMount() {
@@ -133,7 +133,7 @@ class LandscapeMatrix extends PureComponent {
 					};
 					const x = col.attrs[xAttr.attr];
 					const y = col.attrs[yAttr.attr];
-					const _settings = merge(settings, {colorMode, logscale, jitter});
+					const _settings = merge(settings, { colorMode, logscale, jitter });
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -221,21 +221,33 @@ LandscapeComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { // Initialise landscapeState for this dataset
-	landscapeInitialized: true,
-	col: {
-		xAttrs: [{ attr: '_X', jitter: false, logscale: false }],
-		yAttrs: [{ attr: '_Y', jitter: false, logscale: false }],
-		colorAttr: 'Clusters',
-		colorMode: 'Categorical',
-		settings: {
-			scaleFactor: 40,
-			lowerBound: 0,
-			upperBound: 100,
-			log2Color: true,
-			clip: false,
+const stateInitialiser = (dataset) => {
+	// Initialise landscapeState for this dataset
+	const attrs = dataset.col.attrs;
+	return {
+		landscapeInitialized: true,
+		col: {
+			xAttrs: [{
+				attr: firstMatch(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+				jitter: false,
+				logscale: false,
+			}],
+			yAttrs: [{
+				attr: firstMatch(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+				jitter: false,
+				logscale: false,
+			}],
+			colorAttr: firstMatch(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+			colorMode: 'Categorical',
+			settings: {
+				scaleFactor: 40,
+				lowerBound: 0,
+				upperBound: 100,
+				log2Color: true,
+				clip: false,
+			},
 		},
-	},
+	};
 };
 
 export class LandscapeViewInitialiser extends PureComponent {
@@ -244,7 +256,7 @@ export class LandscapeViewInitialiser extends PureComponent {
 			<ViewInitialiser
 				View={LandscapeComponent}
 				stateName={'landscapeInitialized'}
-				initialState={initialState}
+				stateInitialiser={stateInitialiser}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />

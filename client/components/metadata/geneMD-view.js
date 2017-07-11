@@ -30,10 +30,12 @@ GeneMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = {
-	geneMD: {
-		searchVal: '',
-	},
+const stateInitialiser = () => {
+	return {
+		geneMD: {
+			searchVal: '',
+		},
+	};
 };
 
 class GeneMetadataViewInitialiser extends PureComponent {
@@ -43,7 +45,7 @@ class GeneMetadataViewInitialiser extends PureComponent {
 			<ViewInitialiser
 				View={GeneMDComponent}
 				stateName={'geneMD'}
-				initialState={initialState}
+				stateInitialiser={stateInitialiser}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />

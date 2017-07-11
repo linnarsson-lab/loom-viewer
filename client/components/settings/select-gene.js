@@ -82,7 +82,7 @@ export class SelectGeneComponent extends PureComponent {
 			onChange ? onChange(validGenes) : null;
 
 		}
-		const selectedGenes = validGenes.join(',\ ');
+		const selectedGenes = validGenes.join(', ');
 		this.setState({ validGenes, selectedGenes });
 	}
 
@@ -121,16 +121,16 @@ export class SelectGeneComponent extends PureComponent {
 					style={{ flex: 1 }}
 					onClick={this.applySelection} >
 					Apply
-					</Button>
-			</div>
-				<FormControl
-					className='scroll'
-					componentClass={'textarea'}
-					rows={8}
-					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
-					onChange={this.handleTextAreaChange}
-					onKeyPress={this.handleTextAreaChange}
-					value={this.state.selectedGenes} />
+				</Button>
+        </div>
+			<FormControl
+				className='scroll'
+				componentClass={'textarea'}
+				rows={8}
+				placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about duplicate or incorrect entries, capitalization, commas, semicolons, or quotations. "Apply Selection" fixes and filters this)'}
+				onChange={this.handleTextAreaChange}
+				onKeyPress={this.handleTextAreaChange}
+				value={this.state.selectedGenes} />
 
 			</div>
 		);

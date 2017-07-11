@@ -8,7 +8,7 @@ import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
 import { RemountOnResize } from '../remount-on-resize';
 
-import { merge } from '../../js/util';
+import { merge, firstMatch } from '../../js/util';
 
 class GenescapeMatrix extends PureComponent {
 	componentWillMount() {
@@ -133,7 +133,7 @@ class GenescapeMatrix extends PureComponent {
 					};
 					const x = row.attrs[xAttr.attr];
 					const y = row.attrs[yAttr.attr];
-					const _settings = merge(settings, {colorMode, logscale, jitter});
+					const _settings = merge(settings, { colorMode, logscale, jitter });
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -222,22 +222,33 @@ GenescapeComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = {
-	genescapeInitialized: true,
-	row: {
-		// Initialise genescape state for this dataset
-		xAttrs: [{ attr: '_LogMean', jitter: false, logscale: false }],
-		yAttrs: [{ attr: '_LogCV', jitter: false, logscale: false }],
-		colorAttr: '_Selected',
-		colorMode: 'Categorical',
-		settings: {
-			scaleFactor: 40,
-			lowerBound: 0,
-			upperBound: 100,
-			log2Color: true,
-			clip: false,
+const stateInitialiser = (dataset) => {
+	const attrs = dataset.row.attrs;
+	return {
+		genescapeInitialized: true,
+		row: {
+			// Initialise genescape state for this dataset
+			xAttrs: [{
+				attr: firstMatch(attrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+				jitter: false,
+				logscale: false,
+			}],
+			yAttrs: [{
+				attr: firstMatch(attrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+				jitter: false,
+				logscale: false,
+			}],
+			colorAttr: firstMatch(attrs, ['_Selected', '_Excluded']),
+			colorMode: 'Categorical',
+			settings: {
+				scaleFactor: 40,
+				lowerBound: 0,
+				upperBound: 100,
+				log2Color: true,
+				clip: false,
+			},
 		},
-	},
+	};
 };
 
 export class GenescapeViewInitialiser extends PureComponent {
@@ -246,7 +257,7 @@ export class GenescapeViewInitialiser extends PureComponent {
 			<ViewInitialiser
 				View={GenescapeComponent}
 				stateName={'genescapeInitialized'}
-				initialState={initialState}
+				stateInitialiser={stateInitialiser}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />

@@ -30,10 +30,12 @@ CellMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = {
-	cellMD: {
-		searchVal: '',
-	},
+const stateInitialiser = () => {
+	return {
+		cellMD: {
+			searchVal: '',
+		},
+	};
 };
 
 class CellMetadataViewInitialiser extends PureComponent {
@@ -44,7 +46,7 @@ class CellMetadataViewInitialiser extends PureComponent {
 			<ViewInitialiser
 				View={CellMDComponent}
 				stateName={'cellMD'}
-				initialState={initialState}
+				stateInitialiser={stateInitialiser}
 				dispatch={this.props.dispatch}
 				params={this.props.params}
 				datasets={this.props.datasets} />

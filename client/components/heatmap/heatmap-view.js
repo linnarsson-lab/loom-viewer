@@ -14,7 +14,7 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import * as _ from 'lodash';
 
-import { merge } from '../../js/util';
+import { merge, firstMatch } from '../../js/util';
 
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
@@ -158,40 +158,42 @@ HeatmapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-const initialState = { // Initialise heatmap state for this dataset
-	heatmap: {
-		dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-		colAttr: 'Clusters',
-		colMode: 'Stacked',
-		rowAttr: '_Selected',
-		rowMode: 'Stacked',
-	},
-	col: {
-		settings: {
-			scaleFactor: 40,
-			lowerBound: 0,
-			upperBound: 100,
-			log2Color: true,
-			clip: false,
+function stateInitialiser(dataset) {
+	return { // Initialise heatmap state for this dataset
+		heatmap: {
+			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
+			colAttr: firstMatch(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10']),
+			colMode: 'Stacked',
+			rowAttr: firstMatch(dataset.row.attrs, ['_Selected', '_Excluded']),
+			rowMode: 'Stacked',
 		},
-	},
-	row: {
-		settings: {
-			scaleFactor: 40,
-			lowerBound: 0,
-			upperBound: 100,
-			log2Color: true,
-			clip: false,
+		col: {
+			settings: {
+				scaleFactor: 40,
+				lowerBound: 0,
+				upperBound: 100,
+				log2Color: true,
+				clip: false,
+			},
 		},
-	},
-};
+		row: {
+			settings: {
+				scaleFactor: 40,
+				lowerBound: 0,
+				upperBound: 100,
+				log2Color: true,
+				clip: false,
+			},
+		},
+	};
+}
 
 export const HeatmapViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={HeatmapComponent}
 			stateName={'heatmap'}
-			initialState={initialState}
+			stateInitialiser={stateInitialiser}
 			dispatch={props.dispatch}
 			params={props.params}
 			datasets={props.datasets} />

@@ -41,25 +41,25 @@ export function fetchDataSet(datasets, path) {
 		if (!datasets[path].col) {
 			return (
 				fetch(`/loom/${path}`)
-					.then((response) => {
-						// convert the JSON to a JS object, and
-						// do some prep-work
-						return response.json();
-					})
-					.then((data) => {
-						// This goes last, to ensure the above defaults
-						// are set when the views are rendered
-						dispatch(receiveDataSet(data, path));
-					})
-					.catch((err) => {
-						// Or, if fetch request failed, dispatch
-						// an action to set the error flag
-						console.log({ err }, err);
-						dispatch({
-							type: REQUEST_DATASET_FAILED,
-							datasetName: path,
-						});
-					})
+				.then((response) => {
+					// convert the JSON to a JS object, and
+					// do some prep-work
+					return response.json();
+				})
+				.then((data) => {
+					// This goes last, to ensure the above defaults
+					// are set when the views are rendered
+					dispatch(receiveDataSet(data, path));
+				})
+				.catch((err) => {
+					// Or, if fetch request failed, dispatch
+					// an action to set the error flag
+					console.log({ err }, err);
+					dispatch({
+						type: REQUEST_DATASET_FAILED,
+						datasetName: path,
+					});
+				})
 			);
 		}
 	};
@@ -206,7 +206,7 @@ function prepData(attrs) {
 }
 
 function originalOrderArray(length) {
-	let arrayType = length < (1<<8) ? 'uint8' : (length < (1<<16) ? 'uint16' : (length < (1<<32) ? 'uint32' : 'float64'));
+	let arrayType = length < (1 << 8) ? 'uint8' : (length < (1 << 16) ? 'uint16' : (length < (1 << 32) ? 'uint32' : 'float64'));
 	let data = new (arrayConstr(arrayType))(length);
 	let i = length;
 	while (i--) {

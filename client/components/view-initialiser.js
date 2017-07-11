@@ -1,9 +1,8 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { FetchDatasetComponent } from './fetch-dataset';
-
 import { fetchProjects } from '../actions/fetch-projects';
+import { fetchDataSet } from '../actions/fetch-dataset';
 import { setViewProps } from '../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -54,14 +53,92 @@ ViewStateInitialiser.propTypes = {
 	viewsettings: PropTypes.string,
 };
 
+const NO_DATASETS = 0;
+const NO_ATTRIBUTES = 1;
+const READY = 2;
+const MANGLED_PATH = -1;
+
 export class ViewInitialiser extends PureComponent {
 	componentWillMount() {
+		this.updateState = this.updateState.bind(this);
+
 		const {
-			dispatch,
 			datasets,
+			params,
 		} = this.props;
-		if (!datasets) {
-			dispatch(fetchProjects());
+
+		const {
+			project,
+			filename,
+		} = params;
+
+		const path = `${project}/${filename}`;
+
+		const fetchingProjects = (
+			<div className='view centered' >
+				<h1>Fetching projects list</h1>
+			</div>
+		);
+		const fetchingDatasets = (
+			<div className='view centered'>
+				<h1>Fetching dataset: {path}</h1>
+			</div>
+		);
+		const mangledPath = (
+			<div className='view centered' >
+				<h1>Error: <i>{path}</i> not found in list of datasets</h1>
+			</div>
+		);
+
+		let state = {
+			path,
+			fetchingProjects,
+			fetchingDatasets,
+			mangledPath,
+		};
+
+		let updatedState = this.updateState(datasets, path, MANGLED_PATH);
+		if (updatedState){
+			state = merge(state, updatedState);
+		}
+
+		this.setState(state);
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const { datasets } = nextProps;
+		const { path, initialisationState } = this.state;
+		const updatedState = this.updateState(datasets, path, initialisationState);
+		if (updatedState){
+			this.setState(updatedState);
+		}
+	}
+
+	updateState(datasets, path, prevInitialisationState) {
+		const { dispatch } = this.props;
+		const dataset = datasets ? datasets[path] : null;
+		let initialState;
+
+		const initialisationState = datasets ? (
+			dataset ? (
+				(dataset.col && dataset.row) ? READY : NO_ATTRIBUTES
+			) : MANGLED_PATH) : NO_DATASETS;
+
+		if (initialisationState !== prevInitialisationState) {
+			switch (initialisationState) {
+				case NO_DATASETS:
+					dispatch(fetchProjects());
+					break;
+				case NO_ATTRIBUTES:
+					dispatch(fetchDataSet(datasets, path));
+					break;
+				case READY:
+					initialState = this.props.stateInitialiser(dataset);
+			}
+			return {
+				initialisationState,
+				initialState,
+			};
 		}
 	}
 
@@ -69,48 +146,43 @@ export class ViewInitialiser extends PureComponent {
 		const {
 			View,
 			stateName,
-			initialState,
 			dispatch,
 			datasets,
 			params,
 		} = this.props;
 		const {
-			project,
-			filename,
 			viewsettings,
 		} = params;
 
-		const path = `${project}/${filename}`;
+		const {
+			path,
+			fetchingProjects,
+			fetchingDatasets,
+			mangledPath,
+			initialisationState,
+			initialState,
+		} = this.state;
 
-		if (!datasets) {
-			return (
-				<div className='view centered' ><h1>Fetching projects list</h1></div>
-			);
-		} else {
-			const dataset = datasets[path];
-			if (dataset) {
-				return (!(dataset.col && dataset.row) ?
-					<FetchDatasetComponent
-						dispatch={dispatch}
-						datasets={datasets}
-						path={path}
-					/>
-					:
+		switch (initialisationState) {
+			case NO_DATASETS:
+				return fetchingProjects;
+			case NO_ATTRIBUTES:
+				return fetchingDatasets;
+			case READY:
+				// datasets is guaranteed to be defined
+				// if initialisationState === READY
+				return (
 					<ViewStateInitialiser
 						View={View}
 						stateName={stateName}
 						initialState={initialState}
-						dataset={dataset}
+						dataset={datasets[path]}
 						path={path}
 						dispatch={dispatch}
 						viewsettings={viewsettings} />
 				);
-			} else {
-				// likely a mangled path URL
-				return (
-					<div className='view centered' ><h1>Error: <i>{path}</i> not found in datasets</h1></div>
-				);
-			}
+			case MANGLED_PATH:
+				return mangledPath;
 		}
 	}
 }
@@ -120,6 +192,6 @@ ViewInitialiser.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	View: PropTypes.func.isRequired,
 	stateName: PropTypes.string.isRequired,
-	initialState: PropTypes.object.isRequired,
+	stateInitialiser: PropTypes.func.isRequired,
 	datasets: PropTypes.object,
 };

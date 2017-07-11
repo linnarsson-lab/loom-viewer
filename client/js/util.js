@@ -239,7 +239,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 // === Maths helper functions ===
 
 /**
- * Crude normal curve approximation by taking the average of 4 random values.
+ * Crude visual approximation of a normal curve.
  * Returns random value between (-0.5, 0.5)
  */
 const { random } = Math;
@@ -283,8 +283,10 @@ export function countElements(array, start, end) {
 	// be at the front, so this can save a bit of time.
 	let val = sorted[i], sentinel = sorted[start], j = i, uniques = [];
 	while (val !== sentinel) {
+
 		// keep going until a different value is found
-		while (--j >= start && sorted[j] === val) { }
+		while (j > start && sorted[j] === val) { j--; }
+
 		uniques.push({ val, count: i - j });
 		i = j;
 		val = sorted[j];
@@ -302,8 +304,14 @@ export function findMostCommon(array, start, end) {
 		val = sorted[i], mv = val, mc = 1;
 	// linearly run through the array, count unique values
 	while (val !== null && val !== undefined) {
+
 		// keep going until a different value is found
-		while (sorted[++j] === val) { }
+		while (sorted[j+1024] === val) { j += 1024; }
+		while (sorted[j+256] === val) { j += 256; }
+		while (sorted[j+64] === val) { j += 64; }
+		while (sorted[j+8] === val) { j += 8; }
+		while (sorted[j] === val) { j++; }
+
 		if (j - i > mc) {
 			mv = val;
 			mc = j - i;
