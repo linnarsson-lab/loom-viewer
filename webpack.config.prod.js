@@ -6,6 +6,12 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 	filename: 'index.html',
 	inject: 'body',
 });
+const OfflineHTMLWebpackPluginConfig = new HtmlWebpackPlugin({
+	template: path.join(__dirname + '/client/offline.html'),
+	filename: 'offline.html',
+	inject: 'body',
+});
+const AppCachePlugin = require('appcache-webpack-plugin');
 
 const uglifySettings = {
 	mangle: {
@@ -69,5 +75,25 @@ module.exports = {
 		new webpack.optimize.ModuleConcatenationPlugin(),
 		new webpack.optimize.UglifyJsPlugin(uglifySettings),
 		HTMLWebpackPluginConfig,
+		OfflineHTMLWebpackPluginConfig,
+		new AppCachePlugin({
+			cache: [
+				'/',
+				'static/css/bundle.min.css',
+				'static/fonts/glyphicons-halflings-regular.eot',
+				'static/fonts/glyphicons-halflings-regular.svg',
+				'static/fonts/glyphicons-halflings-regular.ttf',
+				'static/fonts/glyphicons-halflings-regular.woff',
+				'static/fonts/glyphicons-halflings-regular.woff2',
+				'static/img/layers-2x.png',
+				'static/img/layers.png',
+				'static/img/marker-icon-2x.png',
+				'static/img/marker-icon.png',
+				'static/img/marker-shadow.png',
+			],
+			fallback: ['offline.html'],
+			exclude: ['index.html'],
+			output: 'static/manifest.appcache',
+		}),
 	],
 };

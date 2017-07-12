@@ -252,11 +252,17 @@ def send_css(path):
 def send_img(path):
 	return flask.send_from_directory('/img', path)
 
+@app.route('/fonts/<path:path>')
+@cache(expires=None)
+def send_fonts(path):
+	return flask.send_from_directory('/fonts', path)
+
 #
 # Catch-all for the react-router endpoints
 #
 
 @app.route('/')
+@app.route('/index.html')
 @app.route('/dataset/')
 @cache(expires=None)
 def send_indexjs():
@@ -265,6 +271,38 @@ def send_indexjs():
 @app.route('/dataset/<path:path>')
 @cache(expires=None)
 def catch_all(path):
+	return app.send_static_file('index.html')
+
+#
+# AppCache routes
+#
+
+# AppCache manifest
+@app.route('/manifest.appcache')
+@cache(expires=None)
+def send_manifest():
+	res = app.make_response(app.send_static_file("manifest.appcache"))
+	res.headers["Content-Type"] = "text/cache-manifest"
+	return res
+
+# AppCache iframe
+@app.route('/iframe-inject-appcache-manifest.html')
+@cache(expires=None)
+def send_appcache_iframe():
+	return app.send_static_file("iframe-inject-appcache-manifest.html")
+
+# AppCache fallback webpage
+@app.route('/offline')
+@app.route('/offline.html')
+@app.route('/offline/dataset')
+@cache(expires=None)
+def send_offline_fallback():
+	return app.send_static_file("offline.html")
+
+# Offline catch-all
+@app.route('/offline/dataset/<path:path>')
+@cache(expires=None)
+def catch_all_offline(path):
 	return app.send_static_file('index.html')
 
 #

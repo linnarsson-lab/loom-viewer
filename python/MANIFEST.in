@@ -1,2 +1,5 @@
 include loom_viewer/static/index.html
+include loom_viewer/static/offline.html
+include loom_viewer/static/iframe-inject-appcache-manifest.html
+include loom_viewer/static/manifest.appcache
 recursive-include loom_viewer/static *

@@ -36,11 +36,20 @@ build_status=$?
 if [ $build_status == 0 ]; then
 
   echo "Building static assets."
-  uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
-  # I can't figure out how to both generate correct paths in the HTML template
-  # of webpack, and have the resulting index.html be put in the right folders.
+  # I haven't figured out how to both generate correct paths in the webpack HTML
+  # template, and have the resulting index.html be put in the right folders.
   # Yes, it's an ugly hack, but it works - Job
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  # Offline fallback
+    mv ./python/loom_viewer/offline.html ./python/loom_viewer/static/offline.html
+
+  # (AppCache manifest is built by Webpack)
+  # Offline iframe for AppCache
+  cp ./client/iframe-inject-appcache-manifest.html ./python/loom_viewer/static/iframe-inject-appcache-manifest.html
+
+  # CSS
+  uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
+  # Fonts
   cp -R ./client/fonts ./python/loom_viewer/static/
 
   cd python
