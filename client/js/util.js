@@ -482,10 +482,11 @@ export function stableSortInPlace(array, comparator) {
 	return sortFromIndices(array, findIndices(array, comparator));
 }
 
-export function stableSortedCopy(array, comparator) {
+export function stableSortedCopy(array, comparator, arrayConstr) {
+	arrayConstr = arrayConstr || Array;
 	let indices = findIndices(array, comparator);
 	let i = array.length;
-	let sortedArray = new Array(i);
+	let sortedArray = new arrayConstr(i);
 	while (i--) {
 		sortedArray[i] = array[indices[i]];
 	}
@@ -517,10 +518,10 @@ export function stableSortedCopy(array, comparator) {
  */
 export function findIndices(array, comparator) {
 	// Assumes we don't have to worry about sorting more than
-	// 4 billion elements; replace it with a smaller typed array
+	// 4 billion elements; uses the smalled fitting typed array
 	// for smaller input sizes.
-	const arrayType = array.length < 256 ? Uint8Array : array.length < 65535 ? Uint16Array : Uint32Array;
-	let indices = new arrayType(array.length), i = array.length;
+	const indicesConstr = array.length < 256 ? Uint8Array : array.length < 65535 ? Uint16Array : Uint32Array;
+	let indices = new indicesConstr(array.length), i = array.length;
 	// unrolled 16-decrement loop was benchmarked as the fastest
 	while (i - 16 > 0) {
 		indices[--i] = i;
