@@ -14,71 +14,6 @@ import {
 // TODO: change the way sparkline plotters prepare and consume data
 // current version becomes memory-intensive for large arrays
 
-// Convert data to a data range ready for plotting.
-export function sparklineDataPrep(attr, dataRange, indices, unfiltered) {
-	let { data, arrayType, indexedVal } = attr;
-
-	// Since the following involves a lot of mathematical trickery,
-	// I figured I'd better document this inline in long-form.
-
-	// dataRange consists of two doubles that indicate which part
-	// of the data is displayed (using the bounds of the leaflet
-	// heatmap actually works out here, because it has has a
-	// one-to-one pixel width/height to column/row mapping.
-	// If this ever changes we need to change this code too).
-
-	// We're going to ignore the accumulated rounding errors in
-	// intermediate calculations, since doubles have so much
-	// precision that it's unlikely we'll ever be off by more
-	// than one pixel.
-
-	// The key insight is that the fractional part of these floats
-	// indicate that only a fraction of a datapoint is displayed.
-	// So for example:
-	//   dataRange = [ 1.4, 5.3 ]
-	// .. results in displaying datapoints 1 to 6, but datapoint 1
-	// will only be 0.6 times the width of the other datapoints,
-	// and point 6 will only be 0.3 times the width.
-
-	// If dataRange is undefined, use the whole (filtered) dataset.
-	const source = unfiltered ? data : arraySubset(data, arrayType, indices);
-	let range = {
-		left: (dataRange ? dataRange[0] : 0),
-		right: (dataRange ? dataRange[1] : source.length),
-	};
-
-
-	// While we return if our total data range is zero, it *is*
-	// allowed to be out of bounds for the dataset. For the
-	// "datapoints" out of the range we simply don't display anything.
-	// This allows us to zoom out!
-
-	range.total = Math.ceil(range.right) - Math.floor(range.left);
-	if (range.total <= 0) { return () => { }; }
-	// When dealing with out of bounds ranges we rely on JS returning
-	// "undefined" for empty indices, effectively padding the data
-	// with empty entries on either or both ends.
-	const iOffset = Math.floor(range.left);
-	let i = range.total;
-	// If we're not displaying text, then indexed string arrays
-	// should remain Uint8Arrays, as they are more efficient.
-	// Also note that we are basically guaranteed a typed array
-	// at this point in the code, so we cannot use push.
-	const arrConstr = indexedVal && arrayType === 'string' ? Uint8Array : arrayConstr(arrayType);
-	range.data = new arrConstr(i);
-	while (i--) {
-		range.data[i] = source[iOffset + i];
-	}
-	if (indexedVal) {
-		i = range.total;
-		range.indexedData = new Array(i);
-		while (i--) {
-			range.indexedData[i] = indexedVal[source[iOffset + i]];
-		}
-	}
-	return range;
-}
-
 function selectPlotter(mode) {
 	switch (mode) {
 		case 'Categorical':
@@ -140,11 +75,15 @@ export function sparkline(attr, indices, mode, settings, label) {
 	// If dataRange is undefined, use the whole (filtered) dataset.
 	const source = unfiltered ? data : arraySubset(data, arrayType, indices);
 	let range = {
-		left: (dataRange ? dataRange[0] : 0),
-		right: (dataRange ? dataRange[1] : source.length),
+		left: 0,
+		right: source.length,
 		min: attr.min,
 		max: attr.max,
 	};
+	if (dataRange) {
+		range.left = dataRange[0];
+		range.right = dataRange[1];
+	}
 
 	// While we return if our total data range is zero, it *is*
 	// allowed to be out of bounds for the dataset. For the
@@ -152,29 +91,41 @@ export function sparkline(attr, indices, mode, settings, label) {
 	// values we simply don't display anything.
 	// This allows us to zoom out!
 
-	range.total = Math.ceil(range.right) - Math.floor(range.left);
+	const i0 = Math.floor(range.left);
+	const i1 = Math.floor(range.right);
+	range.total = i1 - i0;
 	if (range.total <= 0) { return () => { }; }
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
 	// with empty entries on either or both ends.
-	const iOffset = Math.floor(range.left);
 	let i = range.total;
 	if (mode === 'Text' && indexedVal) {
 		range.data = new Array(i);
+		while (i - 16 > 0) {
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+			range.data[--i] = indexedVal[source[i0 + i]];
+		}
 		while (i--) {
-			range.data[i] = indexedVal[source[iOffset + i]];
+			range.data[i] = indexedVal[source[i0 + i]];
 		}
 	} else {
-		// If we're not displaying text, then indexed string arrays
-		// should remain Uint8Arrays, as they are more efficient.
-		// Also note that we are basically guaranteed a typed array
-		// at this point in the code, so we cannot use push.
-		const array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
-		range.data = new array(i);
-		while (i--) {
-			range.data[i] = source[iOffset + i];
-		}
+		range.data = source.slice(i0, i1);
 	}
+
 
 	const paint = selectPlotter(mode);
 
