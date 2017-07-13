@@ -9,6 +9,7 @@ import {
 	// REQUEST_DATASET,
 	// REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
+	LOAD_DATASET,
 	SEARCH_DATASETS,
 	SORT_DATASETS,
 	REQUEST_GENE_FETCH,
@@ -43,6 +44,7 @@ function datasets(state = {}, action) {
 	switch (action.type) {
 		case RECEIVE_PROJECTS:
 		case RECEIVE_DATASET:
+		case LOAD_DATASET:
 		case SEARCH_DATASETS:
 		case REQUEST_GENE_FETCH:
 		case REQUEST_GENE_FAILED:

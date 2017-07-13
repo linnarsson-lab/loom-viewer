@@ -424,22 +424,22 @@ export function convertJSONarray(arr, name) {
 		retArr.allUnique = true;
 	}
 
-	if (process.env.NODE_ENV !== 'production') {
-		// redux tools trips over gigantic typed arrays
-		const reduxJSON = {
-			name,
-			arrayType,
-			data: Array.from(data.slice(0, Math.min(3, data.length))),
-			data_length: `${data.length} items`,
-			indexedVal,
-			uniques: uniques.slice(0, Math.min(3, uniques.length)),
-			total_uniques: `${uniques.length} items`,
-			colorIndices,
-			min,
-			max,
-		};
-		retArr.toJSON = () => { return reduxJSON; };
-	}
+	// if (process.env.NODE_ENV !== 'production') {
+	// 	// redux tools trips over gigantic typed arrays
+	// 	const reduxJSON = {
+	// 		name,
+	// 		arrayType,
+	// 		data: Array.from(data.slice(0, Math.min(3, data.length))),
+	// 		data_length: `${data.length} items`,
+	// 		indexedVal,
+	// 		uniques: uniques.slice(0, Math.min(3, uniques.length)),
+	// 		total_uniques: `${uniques.length} items`,
+	// 		colorIndices,
+	// 		min,
+	// 		max,
+	// 	};
+	// 	retArr.toJSON = () => { return reduxJSON; };
+	// }
 	return retArr;
 }
 
