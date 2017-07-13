@@ -91,14 +91,16 @@ export function sparkline(attr, indices, mode, settings, label) {
 	// values we simply don't display anything.
 	// This allows us to zoom out!
 
-	const i0 = Math.floor(range.left);
-	const i1 = Math.floor(range.right);
-	range.total = i1 - i0;
-	if (range.total <= 0) { return () => { }; }
 	// When dealing with out of bounds ranges we rely on JS returning
 	// "undefined" for empty indices, effectively padding the data
 	// with empty entries on either or both ends.
-	let i = range.total;
+	const i0 = Math.floor(range.left);
+	const i1 = Math.floor(range.right);
+
+	let i = i1 - i0;
+	range.total = i;
+	if (range.total <= 0) { return () => { }; }
+
 	if (mode === 'Text' && indexedVal) {
 		range.data = new Array(i);
 		while (i - 16 > 0) {
@@ -123,7 +125,39 @@ export function sparkline(attr, indices, mode, settings, label) {
 			range.data[i] = indexedVal[source[i0 + i]];
 		}
 	} else {
-		range.data = source.slice(i0, i1);
+		if (i0 >= 0 && i0 < source.length && i1 >= 0 && i1 < source.length) {
+			// fastest way to copy data, but it only works if
+			// range falls inside of the array
+			range.data = source.slice(i0, i1);
+		} else {
+			// If we're not displaying text, then indexed string arrays
+			// should remain Uint8Arrays, as they are more efficient.
+			// Also note that we are basically guaranteed a typed array
+			// at this point in the code, so we cannot use push.
+			const array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
+			range.data = new array(i);
+			while (i-16 > 0) {
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+				range.data[--i] = source[i0 + i];
+			}
+			while (i--) {
+				range.data[i] = source[i0 + i];
+			}
+		}
 	}
 
 
