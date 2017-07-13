@@ -181,7 +181,7 @@ class DatasetList extends PureComponent {
 						style={{ padding: 0 }} >
 						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
 					</Button>
-					);
+				);
 				const urlButton = url === '' ? (
 					<Glyphicon
 						key={path + '_url'}
@@ -195,10 +195,10 @@ class DatasetList extends PureComponent {
 						href={url}
 						title={'External web page: ' + url}
 						style={{ padding: 0 }}
-						>
+					>
 						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
 					</Button>
-					);
+				);
 
 				tableData.push({
 					rowKey: path,
@@ -299,6 +299,7 @@ class SearchDataSetViewComponent extends PureComponent {
 			list,
 			order,
 			search,
+			fetchProjectsSucceeded,
 		} = this.props;
 
 		const searchAll = handleSearchChangeFactory('all', dispatch);
@@ -317,9 +318,10 @@ class SearchDataSetViewComponent extends PureComponent {
 			searchByDescription,
 		};
 
-		if (!list) {
-			dispatch(fetchProjects());
-		} else {
+		if (!list || !fetchProjectsSucceeded) {
+			dispatch(fetchProjects(list, fetchProjectsSucceeded));
+		}
+		if (list) {
 			let { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
 			let i = projectNames.length;
 			projectListsFiltered = new Array(i);
@@ -522,7 +524,8 @@ class SearchDataSetViewComponent extends PureComponent {
 				}}>
 				<Grid>
 					<Row>
-						<Col xs={12} md={12} lg={12}>
+						<Col xs={12} md={12}
+							lg={12}>
 							<div className='view-vertical'>
 								<h1>Data Sets</h1>
 								<h1><i>Search</i></h1>
@@ -534,7 +537,8 @@ class SearchDataSetViewComponent extends PureComponent {
 									onChange={searchAll}
 								/>
 								<Row>
-									<Col xs={3} md={3} lg={3}>
+									<Col xs={3} md={3}
+										lg={3}>
 										<SearchField
 											label={'Project'}
 											tooltip={'Filter by project (fuzzy substring match)'}
@@ -544,7 +548,8 @@ class SearchDataSetViewComponent extends PureComponent {
 											mountClosed
 										/>
 									</Col>
-									<Col xs={3} md={3} lg={3}>
+									<Col xs={3} md={3}
+										lg={3}>
 										<SearchField
 											label={'Title'}
 											tooltip={'Filter by title (fuzzy substring match)'}
@@ -554,7 +559,8 @@ class SearchDataSetViewComponent extends PureComponent {
 											mountClosed
 										/>
 									</Col>
-									<Col xs={3} md={3} lg={3}>
+									<Col xs={3} md={3}
+										lg={3}>
 										<SearchField
 											label={'Description'}
 											tooltip={'Filter by description (fuzzy substring match)'}
@@ -564,7 +570,8 @@ class SearchDataSetViewComponent extends PureComponent {
 											mountClosed
 										/>
 									</Col>
-									<Col xs={3} md={3} lg={3}>
+									<Col xs={3} md={3}
+										lg={3}>
 										<SearchField
 											label={'Date'}
 											tooltip={'Filter by date (exact substring match)'}
@@ -595,17 +602,29 @@ SearchDataSetViewComponent.propTypes = {
 		asc: PropTypes.bool,
 	}),
 	page: PropTypes.number,
+	fetchProjectsSucceeded: PropTypes.bool,
 };
 
 //connect SearchDataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	return state.datasets.list ? {
-		list: state.datasets.list,
-		page: state.datasets.page,
-		search: state.datasets.search,
-		order: state.datasets.order,
-	} : {};
+	if (state.datasets.list){
+		const {
+			list,
+			page,
+			search,
+			order,
+			fetchProjectsSucceeded,
+		} = state.datasets;
+		return {
+			list,
+			page,
+			search,
+			order,
+			fetchProjectsSucceeded,
+		};
+	}
+	return {};
 };
 export const DataSetList = connect(mapStateToProps)(SearchDataSetViewComponent);

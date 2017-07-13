@@ -6,6 +6,7 @@ import {
 	// REQUEST_PROJECTS,
 	// REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
+	LOAD_CACHED_PROJECTS,
 	// REQUEST_DATASET,
 	// REQUEST_DATASET_FAILED,
 	RECEIVE_DATASET,
@@ -43,6 +44,7 @@ function datasets(state = {}, action) {
 	let newState = null;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:
+		case LOAD_CACHED_PROJECTS:
 		case RECEIVE_DATASET:
 		case LOAD_DATASET:
 		case SEARCH_DATASETS:

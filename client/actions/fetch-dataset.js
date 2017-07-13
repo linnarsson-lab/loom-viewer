@@ -12,7 +12,7 @@ localforage.config({
 	storeName: 'datasets',
 });
 
-import { convertJSONarray, arrayConstr } from '../js/util';
+import { merge, convertJSONarray, arrayConstr } from '../js/util';
 import { createViewStateConverter } from '../js/viewstateEncoder';
 
 import {
@@ -62,7 +62,7 @@ export function fetchDataSet(datasets, path) {
 							return response.json();
 						})
 						.then((data) => {
-							dataset = convertToDataSet(data);
+							dataset = convertToDataSet(data, datasets[path]);
 							// Store dataset in localforage so we do not need to
 							// fetch it again later. This has to be done before
 							// adding functions to the dataset, since localforage
@@ -91,7 +91,7 @@ export function fetchDataSet(datasets, path) {
 	};
 }
 
-function convertToDataSet(data) {
+function convertToDataSet(data, dataset) {
 	// TODO: Re-order data preparation so that
 	// all non-functions are crated first, that
 	// intermediate stage is stored into localForage,
@@ -152,14 +152,13 @@ function convertToDataSet(data) {
 		},
 	};
 
-	let dataset = {
+	return merge(dataset, {
 		col: cols,
 		row: rows,
 		totalCols: cols.geneKeys.length,
 		totalRows: rows.cellKeys.length,
 		viewState,
-	};
-	return dataset;
+	});
 }
 
 function dataSetAction(type, path, dataset) {
@@ -174,7 +173,7 @@ function dataSetAction(type, path, dataset) {
 	};
 }
 
-function addFunctions(dataset) {
+export function addFunctions(dataset) {
 	const { row, col } = dataset;
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
@@ -208,7 +207,7 @@ function addFunctions(dataset) {
 
 }
 
-function reduxToJSON(attrs) {
+export function reduxToJSON(attrs) {
 	for (let i = 0; i < attrs.keys.length; i++) {
 		let key = attrs.keys[i], attr = attrs.attrs[key];
 		const {
