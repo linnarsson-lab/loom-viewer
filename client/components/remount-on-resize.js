@@ -16,7 +16,9 @@ export class RemountOnResize extends PureComponent {
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
 		// (unmount, resize, remount)-ing of the child nodes.
-		this.setResize = debounce(resize, 200);
+		// We default to 200 ms
+		let delay = props.delay !== undefined ? props.delay : 200;
+		this.setResize = debounce(resize, delay);
 	}
 
 	componentDidMount() {
@@ -52,4 +54,5 @@ RemountOnResize.propTypes = {
 	style: PropTypes.object,
 	children: PropTypes.node.isRequired,
 	watchedVal: PropTypes.any,
+	delay: PropTypes.number,
 };
