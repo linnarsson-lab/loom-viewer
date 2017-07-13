@@ -53,7 +53,7 @@ module.exports = {
 				'static/img/marker-icon.png',
 				'static/img/marker-shadow.png',
 			],
-			fallback: ['offline.html'],
+			fallback: ['/ offline.html', '/dataset/*/*/ offline.html'],
 			exclude: ['index.html'],
 			output: 'static/manifest.appcache',
 		}),
