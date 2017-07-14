@@ -40,10 +40,9 @@ if [ $build_status == 0 ]; then
   # template, and have the resulting index.html be put in the right folders.
   # Yes, it's an ugly hack, but it works - Job
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
-  # Offline fallback
-    mv ./python/loom_viewer/offline.html ./python/loom_viewer/static/offline.html
 
   # (AppCache manifest is built by Webpack)
+
   # Offline iframe for AppCache
   cp ./client/iframe-inject-appcache-manifest.html ./python/loom_viewer/static/iframe-inject-appcache-manifest.html
 

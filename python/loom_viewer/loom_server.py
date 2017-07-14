@@ -238,22 +238,22 @@ compress.init_app(app)
 #
 
 @app.route('/js/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def send_js(path):
 	return flask.send_from_directory('/js', path)
 
 @app.route('/css/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def send_css(path):
 	return flask.send_from_directory('/css', path)
 
 @app.route('/img/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def send_img(path):
 	return flask.send_from_directory('/img', path)
 
 @app.route('/fonts/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def send_fonts(path):
 	return flask.send_from_directory('/fonts', path)
 
@@ -264,12 +264,12 @@ def send_fonts(path):
 @app.route('/')
 @app.route('/index.html')
 @app.route('/dataset/')
-@cache(expires=None)
+@cache(expires=604800)
 def send_indexjs():
 	return app.send_static_file('index.html')
 
 @app.route('/dataset/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def catch_all(path):
 	return app.send_static_file('index.html')
 
@@ -291,17 +291,9 @@ def send_manifest():
 def send_appcache_iframe():
 	return app.send_static_file("iframe-inject-appcache-manifest.html")
 
-# AppCache fallback webpage
-@app.route('/offline')
-@app.route('/offline.html')
-@app.route('/offline/dataset')
-@cache(expires=None)
-def send_offline_fallback():
-	return app.send_static_file("offline.html")
-
 # Offline catch-all
 @app.route('/offline/dataset/<path:path>')
-@cache(expires=None)
+@cache(expires=604800)
 def catch_all_offline(path):
 	return app.send_static_file('index.html')
 

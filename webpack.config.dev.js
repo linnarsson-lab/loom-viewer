@@ -6,11 +6,6 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 	filename: 'index.html',
 	inject: 'body',
 });
-const OfflineHTMLWebpackPluginConfig = new HtmlWebpackPlugin({
-	template: path.join(__dirname + '/client/offline.html'),
-	filename: 'offline.html',
-	inject: 'body',
-});
 const AppCachePlugin = require('appcache-webpack-plugin');
 
 module.exports = {
@@ -37,7 +32,6 @@ module.exports = {
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
 		HTMLWebpackPluginConfig,
-		OfflineHTMLWebpackPluginConfig,
 		new AppCachePlugin({
 			cache: [
 				'/',
@@ -53,7 +47,7 @@ module.exports = {
 				'static/img/marker-icon.png',
 				'static/img/marker-shadow.png',
 			],
-			fallback: ['/ offline.html', '/dataset/*/*/ offline.html'],
+			fallback: ['/dataset/ /index.html'],
 			exclude: ['index.html'],
 			output: 'static/manifest.appcache',
 		}),
