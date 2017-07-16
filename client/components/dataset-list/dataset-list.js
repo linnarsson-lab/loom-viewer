@@ -17,7 +17,7 @@ import {
 } from '../settings/settings.js';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../../actions/actionTypes';
-import { fetchProjects } from '../../actions/fetch-projects';
+import { requestProjects } from '../../actions/request-projects';
 
 import Fuse from 'fuse.js';
 import { stableSortInPlace } from '../../js/util';
@@ -319,7 +319,7 @@ class SearchDataSetViewComponent extends PureComponent {
 		};
 
 		if (!list || !fetchProjectsSucceeded) {
-			dispatch(fetchProjects(list, fetchProjectsSucceeded));
+			dispatch(requestProjects(list, fetchProjectsSucceeded));
 		}
 		if (list) {
 			let { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);

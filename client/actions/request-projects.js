@@ -6,8 +6,6 @@ localforage.config({
 	storeName: 'datasets',
 });
 
-import { addFunctions, reduxToJSON } from './fetch-dataset';
-
 import {
 	//REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FETCH,
@@ -56,10 +54,6 @@ function loadOfflineProjects(list) {
 		type: LOAD_CACHED_PROJECTS,
 		state: {
 			list,
-			order: {
-				key: 'creationDate',
-				asc: false,
-			},
 			fetchProjectsSucceeded: false,
 		},
 	};
@@ -68,12 +62,6 @@ function loadOfflineProjects(list) {
 function receiveProjects(json, prevList) {
 
 	// convert json array to dictionary
-	let order = prevList ? prevList.order : (
-		{
-			key: 'creationDate',
-			asc: false,
-		}
-	);
 	let list = {};
 	let i = json.length;
 	while (i--) {
@@ -96,7 +84,6 @@ function receiveProjects(json, prevList) {
 		type: RECEIVE_PROJECTS,
 		state: {
 			list,
-			order,
 			fetchProjectsSucceeded: true,
 		},
 	};
@@ -104,9 +91,9 @@ function receiveProjects(json, prevList) {
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
 // Though its insides are different, you would use it just like any other action creator:
-// store.dispatch(fetchProjects(...))
+// store.dispatch(requestProjects(...))
 
-export function fetchProjects(list, fetchProjectsSucceeded) {
+export function requestProjects(list, fetchProjectsSucceeded) {
 	return (dispatch) => {
 		// Check if projects already exists in the store,
 		// and if we weren't offline last time we tried
@@ -116,40 +103,37 @@ export function fetchProjects(list, fetchProjectsSucceeded) {
 		} else { // Announce we are fetching from server
 			dispatch(requestProjectsFetch());
 			return (
-				fetch('/loom')
-				.then((response) => { return response.json(); })
-				.then((json) => {
+				fetch('/loom').then((response) => {
+					return response.json();
+				}).then((json) => {
 					dispatch(receiveProjects(json, list));
-				})
-				.catch((err) => {
+				}).catch((err) => {
 					console.log('fetching projects failed with following error:');
 					console.log(err);
 					// Try loading the offline datasets,
 					// if we have not done so before
 					if (!list) {
 						console.log('attempting to load cached datasets');
-						list = {};
-						localforage.iterate((dataset, path) => {
-							addFunctions(dataset);
-							list[path] = dataset;
-						})
-							.then(() => {
-								if (Object.keys(list).length) {
-									dispatch(loadOfflineProjects(list));
-								} else {
-								// if list is empty, we have no
-								// cached datasets and fetching
-								// effectively failed.
-									throw 'no cached datasets';
-								}
-							})
-							.catch((err) => {
-								console.log(err);
-								dispatch(requestProjectsFailed());
-							});
+						loadProjects(dispatch);
 					}
 				})
 			);
 		}
 	};
+}
+
+function loadProjects(dispatch) {
+	localforage.getItem('cachedDatasets').then((cachedDatasets) => {
+		if (cachedDatasets) {
+			dispatch(loadOfflineProjects(cachedDatasets));
+		} else {
+			// if list is empty, we have no
+			// cached datasets and fetching
+			// effectively failed.
+			throw 'no cached datasets';
+		}
+	}).catch((err) => {
+		console.log(err);
+		dispatch(requestProjectsFailed());
+	});
 }

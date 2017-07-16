@@ -40,7 +40,15 @@ function update(state, action) {
 
 // let filterCount =
 
-function datasets(state = {}, action) {
+const initialState = {
+	order: {
+		key: 'creationDate',
+		asc: false,
+	},
+	fetchProjectsSucceeded: false,
+};
+
+function datasets(state = initialState, action) {
 	let newState = null;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:

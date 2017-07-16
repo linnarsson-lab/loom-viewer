@@ -33,9 +33,9 @@ import {
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
 // Though its insides are different, you would use it just like any other action creator:
-// store.dispatch(fetchDataSet(...))
+// store.dispatch(requestDataset(...))
 
-export function fetchDataSet(datasets, path) {
+export function requestDataset(datasets, path) {
 	return (dispatch) => {
 		// Announce that the request has been started
 		dispatch({
@@ -54,41 +54,56 @@ export function fetchDataSet(datasets, path) {
 				} else {
 					// dataset does not exist in localforage,
 					// so we try to fetch it.
-					return (
-						fetch(`/loom/${path}`)
-						.then((response) => {
-							// convert the JSON to a JS object, and
-							// do some prep-work
-							return response.json();
-						})
-						.then((data) => {
-							dataset = convertToDataSet(data, datasets[path]);
-							// Store dataset in localforage so we do not need to
-							// fetch it again later. This has to be done before
-							// adding functions to the dataset, since localforage
-							// cannot store those.
-							return localforage.setItem(path, dataset);
-						})
-						.then((dataset) => {
-							addFunctions(dataset);
-							// This goes last, to ensure the above defaults
-							// are set when the views are rendered
-							dispatch(dataSetAction(RECEIVE_DATASET, path, dataset));
-						})
-						.catch((err) => {
-							// Or, if fetch request failed, dispatch
-							// an action to set the error flag
-							console.log({ err }, err);
-							dispatch({
-								type: REQUEST_DATASET_FAILED,
-								datasetName: path,
-							});
-						})
-					);
+					return fetchDataset(datasets, path, dispatch);
 				}
 			});
 		}
 	};
+}
+
+function fetchDataset(datasets, path, dispatch) {
+	return (
+		fetch(`/loom/${path}`).then((response) => {
+			// convert the JSON to a JS object, and
+			// do some prep-work
+			return response.json();
+		}).then((data) => {
+			let dataset = convertToDataSet(data, datasets[path]);
+			// Store dataset in localforage so we do not need to
+			// fetch it again later. This has to be done before
+			// adding functions to the dataset, since localforage
+			// cannot store those.
+			return localforage.setItem(path, dataset);
+		}).then((dataset) => {
+			addFunctions(dataset);
+			// This goes last, to ensure the above defaults
+			// are set when the views are rendered
+			dispatch(dataSetAction(RECEIVE_DATASET, path, dataset));
+			// We want to separate the list metadata from
+			// the full dataset attributes, to efficiently
+			// reload the page later (see request-projects)
+			return localforage.getItem('cachedDatasets');
+		}).then((list) => {
+			list = list || {};
+			// Because redux is immutable, we don't have to
+			// worry about the previous dispatch overwriting this.
+			// However, we do have to check if the dataset was
+			// already cached, because in that case dataset[path]
+			// will now include all attributes.
+			if (!list[path]) {
+				list[path] = datasets[path];
+				return localforage.setItem('cachedDatasets', list);
+			}
+		}).catch((err) => {
+			// Or, if fetch request failed, dispatch
+			// an action to set the error flag
+			console.log({ err }, err);
+			dispatch({
+				type: REQUEST_DATASET_FAILED,
+				datasetName: path,
+			});
+		})
+	);
 }
 
 function convertToDataSet(data, dataset) {

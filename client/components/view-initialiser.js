@@ -1,8 +1,8 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { fetchProjects } from '../actions/fetch-projects';
-import { fetchDataSet } from '../actions/fetch-dataset';
+import { requestProjects } from '../actions/request-projects';
+import { requestDataset } from '../actions/request-dataset';
 import { setViewProps } from '../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
@@ -127,10 +127,10 @@ export class ViewInitialiser extends PureComponent {
 		if (initialisationState !== prevInitialisationState) {
 			switch (initialisationState) {
 				case NO_DATASETS:
-					dispatch(fetchProjects());
+					dispatch(requestProjects());
 					break;
 				case NO_ATTRIBUTES:
-					dispatch(fetchDataSet(datasets, path));
+					dispatch(requestDataset(datasets, path));
 					break;
 				case READY:
 					initialState = this.props.stateInitialiser(dataset);
