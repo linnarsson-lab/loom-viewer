@@ -1,11 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
-	template: path.join(__dirname + '/client/index.html'),
-	filename: 'index.html',
-	inject: 'body',
-});
 const AppCachePlugin = require('appcache-webpack-plugin');
 
 module.exports = {
@@ -31,7 +26,11 @@ module.exports = {
 		new webpack.DefinePlugin({
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
-		HTMLWebpackPluginConfig,
+		new HtmlWebpackPlugin({
+			template: path.join(__dirname + '/client/index.html'),
+			filename: 'index.html',
+			inject: 'body',
+		}),
 		new AppCachePlugin({
 			cache: [
 				'/',

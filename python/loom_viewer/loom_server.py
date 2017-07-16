@@ -279,15 +279,18 @@ def catch_all(path):
 
 # AppCache manifest
 @app.route('/manifest.appcache')
-@cache(expires=None)
 def send_manifest():
 	res = app.make_response(app.send_static_file("manifest.appcache"))
 	res.headers["Content-Type"] = "text/cache-manifest"
+	res.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+	res.headers['Expires'] = '-1'
+	now = datetime.now()
+	res.headers['Last-Modified'] = format_date_time(time.mktime(now.timetuple()))
 	return res
 
 # AppCache iframe
 @app.route('/iframe-inject-appcache-manifest.html')
-@cache(expires=None)
+@cache(expires=604800)
 def send_appcache_iframe():
 	return app.send_static_file("iframe-inject-appcache-manifest.html")
 
