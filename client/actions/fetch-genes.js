@@ -6,8 +6,13 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { convertJSONarray } from '../js/util';
+import { convertJSONarray, mergeInPlace } from '../js/util';
 
+import localforage from 'localforage';
+localforage.config({
+	name: 'Loom',
+	storeName: 'datasets',
+});
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Fetch a row of values for a single gene for a dataset
@@ -21,6 +26,7 @@ import { convertJSONarray } from '../js/util';
 export function fetchGene(dataset, genes) {
 	const { title, path, col, fetchedGenes, fetchingGenes } = dataset;
 	const { geneToRow, rowToGenes } = col;
+
 	if (geneToRow === undefined || genes === undefined) {
 		return () => { };
 	} else {
@@ -87,6 +93,7 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 						attrs[geneName] = convertedGene;
 					}
 				}
+				cacheGenes(attrs, path);
 				dispatch(receiveGenes(attrs, _fetchGeneNames, path));
 			})
 			// Or, if it failed, dispatch an action to set the error flag
@@ -95,6 +102,13 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 				dispatch(requestGenesFailed(_fetchGeneNames, path, title));
 			});
 	}
+}
+
+function cacheGenes(genes, path){
+	const genePath = path + '/genes';
+	return localforage.getItem(genePath).then((cachedGenes) => {
+		return localforage.setItem(genePath, mergeInPlace(cachedGenes, genes));
+	});
 }
 
 function requestGenesFetch(genes, path) {

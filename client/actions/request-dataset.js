@@ -12,7 +12,7 @@ localforage.config({
 	storeName: 'datasets',
 });
 
-import { merge, convertJSONarray, arrayConstr } from '../js/util';
+import { merge, mergeInPlace, convertJSONarray, arrayConstr } from '../js/util';
 import { createViewStateConverter } from '../js/viewstateEncoder';
 
 import {
@@ -50,7 +50,18 @@ export function requestDataset(datasets, path) {
 			localforage.getItem(path).then((dataset) => {
 				if (dataset) {
 					console.log(`${path} loaded from localforage`);
-					dispatch(dataSetAction(LOAD_DATASET, path, dataset));
+					localforage.getItem(path + '/genes').then((genes) => {
+						if (genes) {
+							console.log('cached genes loaded from localforage');
+							let fetchedGenes = {};
+							let keys = Object.keys(genes), i = keys.length;
+							while (i--){
+								fetchedGenes[keys[i]] = true;
+							}
+							mergeInPlace(dataset, { fetchedGenes, col: { attrs: genes } });
+						}
+						dispatch(dataSetAction(LOAD_DATASET, path, dataset));
+					});
 				} else {
 					// dataset does not exist in localforage,
 					// so we try to fetch it.
@@ -97,7 +108,7 @@ function fetchDataset(datasets, path, dispatch) {
 		}).catch((err) => {
 			// Or, if fetch request failed, dispatch
 			// an action to set the error flag
-			console.log({ err }, err);
+			console.log(err);
 			dispatch({
 				type: REQUEST_DATASET_FAILED,
 				datasetName: path,
