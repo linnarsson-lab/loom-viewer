@@ -19,6 +19,8 @@ import {
 	SET_VIEW_PROPS,
 } from '../actions/actionTypes';
 
+import {	UNKNOWN } from '../actions/request-projects';
+
 import { updateDatasetSortOrder, maybeSortIndices } from './sort-dataset';
 import { setViewStateURL, updateViewState } from './viewstate';
 
@@ -45,7 +47,7 @@ const initialState = {
 		key: 'creationDate',
 		asc: false,
 	},
-	fetchProjectsSucceeded: false,
+	fetchProjectsStatus: UNKNOWN,
 };
 
 function datasets(state = initialState, action) {

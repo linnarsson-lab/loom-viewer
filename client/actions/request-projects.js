@@ -15,6 +15,10 @@ import {
 	LOAD_CACHED_PROJECTS,
 } from './actionTypes';
 
+export const OFFLINE = 0,
+	ONLINE = 1,
+	UNKNOWN = -1;
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Fetch the list of projects
@@ -44,7 +48,7 @@ function requestProjectsFailed() {
 	return {
 		type: REQUEST_PROJECTS_FAILED,
 		state: {
-			fetchProjectsSucceeded: false,
+			fetchProjectsStatus: OFFLINE,
 		},
 	};
 }
@@ -54,7 +58,7 @@ function loadOfflineProjects(list) {
 		type: LOAD_CACHED_PROJECTS,
 		state: {
 			list,
-			fetchProjectsSucceeded: false,
+			fetchProjectsStatus: OFFLINE,
 		},
 	};
 }
@@ -84,7 +88,7 @@ function receiveProjects(json, prevList) {
 		type: RECEIVE_PROJECTS,
 		state: {
 			list,
-			fetchProjectsSucceeded: true,
+			fetchProjectsStatus: ONLINE,
 		},
 	};
 }
@@ -93,12 +97,12 @@ function receiveProjects(json, prevList) {
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(requestProjects(...))
 
-export function requestProjects(list, fetchProjectsSucceeded) {
+export function requestProjects(list, fetchProjectsStatus) {
 	return (dispatch) => {
 		// Check if projects already exists in the store,
 		// and if we weren't offline last time we tried
 		// to fetch the projects
-		if (list && fetchProjectsSucceeded) { // we retrieve from store cache
+		if (list && fetchProjectsStatus) { // we retrieve from store cache
 			return;
 		} else { // Announce we are fetching from server
 			dispatch(requestProjectsFetch());

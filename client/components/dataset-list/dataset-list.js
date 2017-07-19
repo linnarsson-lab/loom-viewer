@@ -17,7 +17,11 @@ import {
 } from '../settings/settings.js';
 
 import { SEARCH_DATASETS, SORT_DATASETS } from '../../actions/actionTypes';
-import { requestProjects } from '../../actions/request-projects';
+import {
+	requestProjects,
+	OFFLINE,
+	UNKNOWN,
+} from '../../actions/request-projects';
 
 import Fuse from 'fuse.js';
 import { stableSortInPlace } from '../../js/util';
@@ -299,7 +303,7 @@ class SearchDataSetViewComponent extends PureComponent {
 			list,
 			order,
 			search,
-			fetchProjectsSucceeded,
+			fetchProjectsStatus,
 		} = this.props;
 
 		const searchAll = handleSearchChangeFactory('all', dispatch);
@@ -318,9 +322,7 @@ class SearchDataSetViewComponent extends PureComponent {
 			searchByDescription,
 		};
 
-		if (!list || !fetchProjectsSucceeded) {
-			dispatch(requestProjects(list, fetchProjectsSucceeded));
-		}
+		dispatch(requestProjects(list, fetchProjectsStatus));
 		if (list) {
 			let { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
 			let i = projectNames.length;
@@ -483,16 +485,17 @@ class SearchDataSetViewComponent extends PureComponent {
 			dispatch,
 			search,
 			order,
+			fetchProjectsStatus,
 		} = this.props;
 
 		search = search ? search : {};
 		let datasetList = null;
 		if (projectNames && projectNames.length) {
 			let i = projectNames.length;
-			datasetList = new Array(i);
+			let _datasetList = new Array(i);
 			while (i--) {
 				let project = projectNames[i];
-				datasetList[i] = (
+				_datasetList[i] = (
 					<DatasetList
 						key={project}
 						dispatch={dispatch}
@@ -504,12 +507,27 @@ class SearchDataSetViewComponent extends PureComponent {
 						mountClosed={i > 1} />
 				);
 			}
-		} else {
 			datasetList = (
+				<div>
+					{fetchProjectsStatus === OFFLINE ?
+						<h2>Currently offline, showing cached datasets</h2> : null}
+					{_datasetList}
+				</div>
+			);
+		} else {
+
+			datasetList = fetchProjectsStatus === UNKNOWN ? (
 				<div className='view centered'>
-					<h2>Downloading list of available datasets...</h2>
-					<br />
-					<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
+					<div>
+						<h2>Downloading list of available datasets...</h2>
+					</div>
+					<div>
+						<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
+					</div>
+				</div>
+			) : (
+				<div className='view centered'>
+					<h2>Fetch failed, checking IndexedDB cache</h2>
 				</div>
 			);
 		}
@@ -602,27 +620,27 @@ SearchDataSetViewComponent.propTypes = {
 		asc: PropTypes.bool,
 	}),
 	page: PropTypes.number,
-	fetchProjectsSucceeded: PropTypes.bool,
+	fetchProjectsStatus: PropTypes.number,
 };
 
 //connect SearchDataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {
-	if (state.datasets.list){
+	if (state.datasets.list) {
 		const {
 			list,
 			page,
 			search,
 			order,
-			fetchProjectsSucceeded,
+			fetchProjectsStatus,
 		} = state.datasets;
 		return {
 			list,
 			page,
 			search,
 			order,
-			fetchProjectsSucceeded,
+			fetchProjectsStatus,
 		};
 	}
 	return {};

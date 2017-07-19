@@ -247,6 +247,26 @@ export function rndNorm() {
 	return (random() + random() - random() - random()) * 0.25;
 }
 
+// https://blogs.msdn.microsoft.com/jeuge/2005/06/08/bit-fiddling-3/
+export function msb(u) {
+	if (u <0x100000000){
+		u |= u >> 1;
+		u |= u >> 2;
+		u |= u >> 4;
+		u |= u >> 8;
+		u |= u >> 16;
+		u = u - ((u >>> 1) & 0o33333333333) - ((u >>> 2) & 0o11111111111);
+		return ((u + (u >>> 3)) & 0o30707070707) % 63;
+	}
+	return 32 + msb((u / 0x100000000)|0);
+}
+
+export function bitCount(u){
+	if (u <0x100000000){
+		u = u - ((u >>> 1) & 0o33333333333) - ((u >>> 2) & 0o11111111111);
+		return ((u + (u >>> 3)) & 0o30707070707) % 63;
+	}
+	return bitCount(u&0xFFFFFFFF) + bitCount((u / 0x100000000)|0);}
 
 // expects two number arrays of [xmin, ymin, xmax, ymax].
 export function inBounds(r1, r2) {
