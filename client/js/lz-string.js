@@ -12,13 +12,15 @@ while (i--) {
 //compress into a string that is already URI encoded
 export const compressToEncodedURIComponent = (uncompressed) => {
 	if (uncompressed === null) { return ''; }
-	let i = 0, j = 0, value = 0,
-		dictionary = {},
+	let i = 0, j = 0, k = 0, value = 0,
+		node = [3], // first node will always be initialised like this.
+		// we should never output the root anyway,
+		// so we initiate with terminating token
+		// Also, dictionary[1] will be overwritten
+		// by the firs charCode
+		dictionary = [2, 2, node],
 		freshNode = true,
 		c = 0,
-		c0 = 1,
-		new_node = { 0: 3 },
-		node = new_node,
 		enlargeIn = 1,
 		dictSize = 4,
 		numBits = 2,
@@ -33,7 +35,6 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 		// initialize freshNode as true, and set it as the root node.
 
 		c = uncompressed.charCodeAt(0);
-		c0 = c + 1;
 
 		// === Write first charCode token to output ==
 
@@ -68,88 +69,32 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 		}
 
 		// Add charCode to the dictionary.
-		dictionary[c0] = new_node;
+		dictionary[1] = c;
 
+		nextchar:
 		for (j = 1; j < uncompressed.length; j++) {
+
 			c = uncompressed.charCodeAt(j);
-			c0 = c + 1;
 			// does the new charCode match an existing prefix?
-			new_node = node[c0];
-			if (new_node) {
-				// continue with next prefix
-				node = new_node;
-			} else {
-
-				// write out the current prefix token
-				if (freshNode) {
-					// character token already written to output
-					freshNode = false;
-				} else {
-					value = node[0];
-					for (i = 0; i < numBits; i++) {
-						// shifting has precedence over bitmasking
-						data_val = value >> i & 1 | data_val << 1;
-						if (++data_position === bitsPerChar) {
-							data_position = 0;
-							data.push(UriSafeCharArray[data_val]);
-							data_val = 0;
-						}
-					}
+			for (k = 1; k < node.length; k += 2) {
+				if (node[k] === c) {
+					node = node[k + 1];
+					continue nextchar;
 				}
-
-				// Is the new charCode a new character
-				// that needs to be stored at the root?
-				new_node = dictionary[c0];
-				if (new_node === undefined) {
-					// increase token bitlength if necessary
-					if (--enlargeIn === 0) {
-						enlargeIn = 1 << numBits++;
-					}
-
-					// insert "new 8/16 bit charCode" token,
-					// see comments above for explanation
-					value = c < 256 ? 0 : 1;
-					for (i = 0; i < numBits; i++) {
-						data_val = value >> i | data_val << 1;
-						if (++data_position === bitsPerChar) {
-							data_position = 0;
-							data.push(UriSafeCharArray[data_val]);
-							data_val = 0;
-						}
-					}
-					value = 8 + 8 * value;
-					for (i = 0; i < value; i++) {
-						data_val = c >> i & 1 | data_val << 1;
-						if (++data_position === bitsPerChar) {
-							data_position = 0;
-							data.push(UriSafeCharArray[data_val]);
-							data_val = 0;
-						}
-					}
-					new_node = { 0: dictSize++ };
-					dictionary[c0] = new_node;
-					// Note of that we already wrote
-					// the charCode token to the bitstream
-					freshNode = true;
-				}
-				// add node representing prefix + new charCode to trie
-				new_node = { 0: dictSize++ };
-				node[c0] = new_node;
-				// increase token bitlength if necessary
-				if (--enlargeIn === 0) {
-					enlargeIn = 1 << numBits++;
-				}
-				// set node to first charCode of new prefix
-				node = dictionary[c0];
 			}
-		}
+			// we only end up here if there is no matching char
+			// Prefix+charCode does not exist in trie yet.
+			// We write the prefix to the bitstream, and add
+			// the new charCode to the dictionary if it's new
+			// Then we set `node` to the root node matching
+			// the charCode.
 
-		if (node) { // Write last node to output
 			if (freshNode) {
-				// character token already written to output
+				// Prefix is a freshly added character token,
+				// which was already written to the bitstream
 				freshNode = false;
 			} else {
-				// write out the prefix token
+				// write out the current prefix token
 				value = node[0];
 				for (i = 0; i < numBits; i++) {
 					// shifting has precedence over bitmasking
@@ -162,13 +107,18 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 				}
 			}
 
-			// Is c a new character?
-			new_node = dictionary[c0];
-			if (new_node === undefined) {
+			// Is the new charCode a new character
+			// that needs to be stored at the root?
+			k = 1;
+			while (dictionary[k] !== c && k < dictionary.length) {
+				k += 2;
+			}
+			if (k === dictionary.length) {
 				// increase token bitlength if necessary
 				if (--enlargeIn === 0) {
 					enlargeIn = 1 << numBits++;
 				}
+
 				// insert "new 8/16 bit charCode" token,
 				// see comments above for explanation
 				value = c < 256 ? 0 : 1;
@@ -189,12 +139,79 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 						data_val = 0;
 					}
 				}
+				dictionary.push(c);
+				dictionary.push([dictSize++]);
+				// Note of that we already wrote
+				// the charCode token to the bitstream
+				freshNode = true;
 			}
+			// add node representing prefix + new charCode to trie
+			node.push(c);
+			node.push([dictSize++]);
 			// increase token bitlength if necessary
 			if (--enlargeIn === 0) {
 				enlargeIn = 1 << numBits++;
 			}
+			// set node to first charCode of new prefix
+			// k is guaranteed to be at the current charCode,
+			// since we either broke out of the while loop
+			// when it matched, or just added the new charCode
+			node = dictionary[k + 1];
 
+		}
+
+		// === Write last prefix to output ===
+		if (freshNode) {
+			// character token already written to output
+			freshNode = false;
+		} else {
+			// write out the prefix token
+			value = node[0];
+			for (i = 0; i < numBits; i++) {
+				// shifting has precedence over bitmasking
+				data_val = value >> i & 1 | data_val << 1;
+				if (++data_position === bitsPerChar) {
+					data_position = 0;
+					data.push(UriSafeCharArray[data_val]);
+					data_val = 0;
+				}
+			}
+		}
+
+		// Is c a new character?
+		k = 1;
+		while (dictionary[k] !== c && k < dictionary.length) {
+			k += 2;
+		}
+		if (k === dictionary.length) {
+			// increase token bitlength if necessary
+			if (--enlargeIn === 0) {
+				enlargeIn = 1 << numBits++;
+			}
+			// insert "new 8/16 bit charCode" token,
+			// see comments above for explanation
+			value = c < 256 ? 0 : 1;
+			for (i = 0; i < numBits; i++) {
+				data_val = value >> i | data_val << 1;
+				if (++data_position === bitsPerChar) {
+					data_position = 0;
+					data.push(UriSafeCharArray[data_val]);
+					data_val = 0;
+				}
+			}
+			value = 8 + 8 * value;
+			for (i = 0; i < value; i++) {
+				data_val = c >> i & 1 | data_val << 1;
+				if (++data_position === bitsPerChar) {
+					data_position = 0;
+					data.push(UriSafeCharArray[data_val]);
+					data_val = 0;
+				}
+			}
+		}
+		// increase token bitlength if necessary
+		if (--enlargeIn === 0) {
+			enlargeIn = 1 << numBits++;
 		}
 	}
 
