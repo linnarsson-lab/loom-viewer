@@ -6,9 +6,12 @@ import {
 	RECEIVE_GENE,
 } from './actionTypes';
 
-import { convertJSONarray, mergeInPlace } from '../js/util';
+import { disjointArrays, convertJSONarray } from '../js/util';
 
 import localforage from 'localforage';
+import 'localforage-getitems';
+import 'localforage-setitems';
+
 localforage.config({
 	name: 'Loom',
 	storeName: 'datasets',
@@ -26,39 +29,80 @@ localforage.config({
 export function fetchGene(dataset, genes) {
 	const { title, path, col, fetchedGenes, fetchingGenes } = dataset;
 	const { geneToRow, rowToGenes } = col;
-
 	if (geneToRow === undefined || genes === undefined) {
 		return () => { };
 	} else {
-		// `genes` can be either a string or an array of strings
-		genes = typeof genes === 'string' ? [genes] : genes;
-
-		// To avoid memory overhead issues (this has crashed
-		// the browser in testing), we shouldn't make the
-		// individual fetches *too* big. After a bit of testing
-		// I guesstimate that for 50k cells, we want to fetch
-		// at most 10 rows at once.
-		const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
-		let fetchGeneNames = [], fetchRows = [];
+		// filter out the genes already in the store;
+		let unfetched = [];
 		for (let i = 0; i < genes.length; i++) {
 			const gene = genes[i];
-			const row = geneToRow[gene];
-			// If gene is already cached, being fetched or
-			// not part of the dataset, skip fetching.
-			if (row !== undefined &&
-				!fetchedGenes[gene] &&
+			if (!fetchedGenes[gene] &&
 				!fetchingGenes[gene]) {
-				fetchGeneNames.push(gene);
-				fetchRows.push(row);
+				unfetched.push(gene);
 			}
 		}
-		if (fetchRows.length > 0) {
-			return (dispatch) => {
-				_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
+		return (dispatch) => {
+			// Announce gene request from cache/server,
+			// add genes to fetchingGenes to indicate
+			// they are being fetched
+			dispatch(requestGenesFetch(unfetched, path, title));
+
+			const dispatchCachedGenes = (retrievedGenes) => {
+				let cachedNames = [],
+					cachedGenes = {},
+					keys = Object.keys(retrievedGenes) ;
+				for (let i = 0; i < keys.length; i++) {
+					let gene = retrievedGenes[keys[i]];
+					// each key that is uncached returns as an
+					// undefined entry in this array
+					if (gene) {
+						cachedGenes[gene.name] = gene;
+						cachedNames.push(gene.name);
+					}
+				}
+				if (cachedNames.length) {
+					// the overlapping names are the cached names
+					cachedNames = disjointArrays(cachedNames, unfetched);
+					console.log('loaded cached genes: ', cachedNames);
+					dispatch(receiveGenes(cachedGenes, cachedNames, path));
+				}
+				return unfetched;
 			};
-		} else {
-			return () => { };
-		}
+
+			const fetchUncached = (genes) => {
+				// To avoid memory overhead issues (this has crashed
+				// the browser in testing), we shouldn't make the
+				// individual fetches *too* big. After a bit of testing
+				// I guesstimate that for 50k cells, we want to fetch
+				// at most 10 rows at once.
+				const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
+				let fetchGeneNames = [];
+				let fetchRows = [];
+				for (let i = 0; i < genes.length; i++) {
+					const gene = genes[i];
+					const row = geneToRow[gene];
+					// Only fetch genes that are part of the dataset
+					if (row !== undefined) {
+						fetchGeneNames.push(gene);
+						fetchRows.push(row);
+					}
+				}
+				if (fetchRows.length > 0) {
+					_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
+				}
+			};
+
+			let cacheKeys = new Array(unfetched.length);
+			for (let i = 0; i < unfetched.length; i++) {
+				cacheKeys[i] = path + '/' + unfetched[i];
+			}
+			// try loading from cache
+			localforage.getItems(cacheKeys)
+				// store all genes retrieved from cache
+				.then(dispatchCachedGenes)
+				// fetch remaining genes
+				.then(fetchUncached);
+		};
 	}
 }
 
@@ -67,10 +111,6 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 		let i1 = Math.min(i + rowsPerFetch, fetchGeneNames.length);
 		const _fetchGeneNames = fetchGeneNames.slice(i, i1),
 			_fetchRows = fetchRows.slice(i, i1);
-
-		// Announce gene request from server, add to geneKeys
-		// to indicate it is being fetched
-		dispatch(requestGenesFetch(_fetchGeneNames, path, title));
 		// Second, perform the request (async)
 		fetch(`/loom/${path}/row/${_fetchRows.join('+')}`)
 			// Third, once the response comes in,
@@ -93,8 +133,10 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 						attrs[geneName] = convertedGene;
 					}
 				}
-				cacheGenes(attrs, path);
-				dispatch(receiveGenes(attrs, _fetchGeneNames, path));
+				return cacheGenes(attrs, path)
+					.then(() => {
+						dispatch(receiveGenes(attrs, _fetchGeneNames, path));
+					});
 			})
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch((err) => {
@@ -104,11 +146,14 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 	}
 }
 
-function cacheGenes(genes, path){
-	const genePath = path + '/genes';
-	return localforage.getItem(genePath).then((cachedGenes) => {
-		return localforage.setItem(genePath, mergeInPlace(cachedGenes, genes));
-	});
+function cacheGenes(genes, path) {
+	let keys = Object.keys(genes), items = {};
+	for (let i = 0; i < keys.length; i++) {
+		let key = keys[i], gene = genes[key];
+		items[path + '/' + key] = gene;
+	}
+	console.log('caching genes: ', keys);
+	return localforage.setItems(items);
 }
 
 function requestGenesFetch(genes, path) {
