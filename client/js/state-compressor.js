@@ -8,8 +8,8 @@
  * the full gene names in the compressed viewState to be able to
  * recover them. This also applies to other aspects of the viewState
  * In other words: because we know the structure of the viewState
- * object, we can encode much of as a positional array, with object
- * key names replaced by position, and values by index nrs into
+ * object, we can encode much of it as a positional array, where
+ * keys are replaced by position, and values by index nrs into
  * arrays to recover the actual values.
  *
  * Boolean values can be replaced with 0 and 1.
@@ -31,9 +31,9 @@
  *	  or using some form of semver.
  *   (renaming should not be a major issue, relatively speaking)
  *
- * Semver would actually be fairly simple: we append the final
+ * Semver would actually be fairly simple: we append the final array
  * with a number, which we increase if a breaking change is made
- * to the schema. Since this is a floating point  value, we can use
+ * to the schema. Since this is a floating point value, we can use
  * point-increases to indicate non-breaking changes to the schema.
  *
  * The net result would be nested arrays of numbers, which are
@@ -94,21 +94,21 @@
  *		],
  *		[ // col
  *			[ // order
- *			  .., 1,
- *			  .., 1,
- *			  .., 1,
- *			  .., 1,
- *			  .., 1
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1
  *			],
  *			[] // filter
  *		],
  *		[ // row
  *			[ // order
- *			  .., 1,
- *			  .., 1,
- *			  .., 1,
- *			  .., 1,
- *			  .., 1
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1,
+ *			  #####, 1
  *			],
  *			[] // filter
  *		],
@@ -119,7 +119,7 @@
  *		[ // sparkline
  *			0, // colMode has preset choices, so can be indexed
  *			0, // same with geneMode
- *			[ .., .., .., .., .. ],
+ *			[ #####, #####, #####, #####, .. ],
  *			1, // "showLabels: true"
  *			.. // 'Class' is an attribute key
  *		],
@@ -128,10 +128,9 @@
  *		0, // first version of schema
  *	]
  *
- * Here '..' indicates an index to an attribute or row/col key.
- * If we give that a pessimistic estimate of five digits on average
- * (keeping in mind our upper limit of 30000 genes),
- * represented below by #####, then the saved space is as follows:
+ * Here ##### indicates an index to an attribute or row/col key, assuming
+ * a (pessimistic) estimate of five digits (our upper limit is 30000 genes).
+ * With that in mind, then the saved space after minification is as follows:
  *
  * {heatmap:{zoomRange:[8,13,21],fullZoomWidth:769280,fullZoomHeight:1279488,shape:[4998,3005]},col:{order:[{key:'Plp2',asc:true},{key:'Plp1',asc:true},{key:'Aplp2',asc:true},{key:'Aplp1',asc:true},{key:'Class',asc:true},],filter:[]},row:{order:[{key:'(originalorder)',asc:true},{key:'BackSPIN_level_0_group',asc:true},{key:'BackSPIN_level_1_group',asc:true},{key:'BackSPIN_level_2_group',asc:true},{key:'BackSPIN_level_3_group',asc:true}],filter:[]},cellMD:{searchVal:''},sparkline:{colMode:'Categorical',geneMode:'Bars',genes:['Tspan12','Gfap','Plp1','Plp2','Aplp1','Aplp2'],showLabels:true,colAttr:'Class'}}
  *
@@ -155,8 +154,9 @@ _anyVal.encoder = anyValConverter;
 _anyVal.decoder = anyValConverter;
 export const anyVal = _anyVal;
 
+// If a value is constant, we can
+// just store it in the decoder.
 export function constEncoder() { return 0; }
-
 export function constDecoder(val) {
 	return () => { return val; };
 }
@@ -202,9 +202,11 @@ export function keysOf(obj) {
 	return oneOf(keys);
 }
 
-// a vector (arrays will be assumed to be fixed size)
-// example: an array of variable size, but you know all values
-// will be between 0 and 255: `encodeArray([rangeVal(0, 256)])`
+// Arrays in the schema tree will be assumed to represent a
+// fixed size, for variable sizes we use vectorOf()
+// example: an array of variable size, where we know all values
+// will be between 0 and 255:
+//   vectorOf([rangeVal(0, 256)])
 export function vectorOf(patternArr){
 	let retVal = () => { };
 	retVal.encoder = encodeVector(patternArr);
@@ -213,7 +215,7 @@ export function vectorOf(patternArr){
 }
 
 // Arrays in the schema are assumed to be fixed size
-// For variable sized arrays following a pattern, use vectorOf()
+// For variable sized arrays, use vectorOf()
 export function encodeArray(patternArr) {
 	let l = patternArr.length, i = l, encoderArr = [];
 	while (i--) {
@@ -369,7 +371,7 @@ export function createEncoder(schema) {
 			case 'string':
 			case 'number':
 			case 'boolean':
-				// assumed to be constant (what are they doing in *state*?)
+				// assumed to be constant (what is a constant doing in *state*?)
 				console.log({
 					message: 'createEncoder: constant detected in schema',
 					schema,
@@ -420,4 +422,11 @@ export function createDecoder(schema) {
 	}
 	console.log('WARNING: no schema passed to createDecoder!');
 	return anyVal().decoder;
+}
+
+export function makeCompressor(schema){
+	return {
+		encode: createEncoder(schema),
+		decode: createDecoder(schema),
+	};
 }

@@ -6,12 +6,12 @@ import { LinkContainer } from 'react-router-bootstrap';
 import DocumentTitle from 'react-document-title';
 
 export const NavbarView = function (props) {
-	const { project, filename } = props.params;
+	const { project, filename, viewsettings } = props.params;
 	let viewLinks;
 	if (filename) {
 		viewLinks = ['heatmap', 'sparklines', 'cells', 'cellmetadata', 'genes', 'genemetadata'].map(
 			(view) => {
-				const link = `/dataset/${view}/${project}/${filename}`;
+				const link = `/dataset/${view}/${project}/${filename}/${viewsettings}`;
 				return (
 					<LinkContainer to={link} key={view}>
 						<NavItem eventKey={view}>
@@ -52,7 +52,7 @@ export const NavbarView = function (props) {
 };
 
 NavbarView.propTypes = {
-	// Passed down by react-router-redux
+	// Passed down by react-router
 	params: PropTypes.object.isRequired,
 	children: PropTypes.node,
 };

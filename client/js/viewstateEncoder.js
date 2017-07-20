@@ -3,8 +3,7 @@ import {
 	boolVal,
 	oneOf,
 	vectorOf,
-	createEncoder,
-	createDecoder,
+	makeCompressor,
 } from './state-compressor';
 
 const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Flame2']);
@@ -96,8 +95,5 @@ export function createViewStateConverter(dataset) {
 		geneMD: { searchVal: anyVal },
 	};
 
-	return {
-		encode: createEncoder(viewStateSchema),
-		decode: createDecoder(viewStateSchema),
-	};
+	return makeCompressor(viewStateSchema);
 }
