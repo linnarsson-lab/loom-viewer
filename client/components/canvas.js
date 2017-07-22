@@ -16,7 +16,7 @@ class CanvasComponent extends PureComponent {
 	// Does NOT scale; painter functions decide how to handle
 	// window.devicePixelRatio on a case-by-case basis
 	componentDidMount() {
-		const view = this.refs.view;
+		const view = this.view;
 		const ratio = window.devicePixelRatio || 1;
 		const width = (view.clientWidth * ratio) | 0;
 		const height = (view.clientHeight * ratio) | 0;
@@ -33,8 +33,8 @@ class CanvasComponent extends PureComponent {
 	// Relies on a ref to a DOM element, so only call
 	// when canvas element has been rendered!
 	draw() {
-		if (this.state && this.props.paint) {
-			const canvas = this.refs.canvas;
+		if (this.canvas && this.props.paint) {
+			const canvas = this.canvas;
 			let context = canvas.getContext('2d');
 			// store width, height and ratio in context for paint functions
 			context.width = this.state.width;
@@ -53,7 +53,7 @@ class CanvasComponent extends PureComponent {
 		// mounting, that is: after CSS layouting is done.
 		const canvas = this.state ? (
 			<canvas
-				ref='canvas'
+				ref={ (cv) => { this.canvas = cv; }}
 				width={this.state.width}
 				height={this.state.height}
 				style={{
@@ -64,7 +64,7 @@ class CanvasComponent extends PureComponent {
 
 		return (
 			<div
-				ref='view'
+				ref={ (view) => { this.view = view; } }
 				className={this.props.className ? this.props.className : 'view'}
 				style={this.props.style}>
 				{canvas}
