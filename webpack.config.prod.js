@@ -71,7 +71,6 @@ module.exports = {
 		}),
 		new AppCachePlugin({
 			cache: [
-				'/',
 				'static/css/bundle.min.css',
 				'static/fonts/glyphicons-halflings-regular.eot',
 				'static/fonts/glyphicons-halflings-regular.svg',
@@ -84,7 +83,7 @@ module.exports = {
 				'static/img/marker-icon.png',
 				'static/img/marker-shadow.png',
 			],
-			fallback: ['/dataset/ /index.html'],
+			fallback: ['. index.html'],
 			exclude: ['index.html'],
 			output: 'static/manifest.appcache',
 		}),

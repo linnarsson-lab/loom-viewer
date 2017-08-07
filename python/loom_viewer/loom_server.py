@@ -294,12 +294,6 @@ def send_manifest():
 def send_appcache_iframe():
 	return app.send_static_file("iframe-inject-appcache-manifest.html")
 
-# Offline catch-all
-@app.route('/offline/dataset/<path:path>')
-@cache(expires=604800)
-def catch_all_offline(path):
-	return app.send_static_file('index.html')
-
 #
 # API endpoints
 #
