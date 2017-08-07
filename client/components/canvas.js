@@ -6,22 +6,49 @@ import {
 } from './remount-on-resize';
 
 class CanvasComponent extends PureComponent {
+
+	draw() {
+		const { canvas, props, state } = this;
+		if (canvas && props.paint) {
+			let context = canvas.getContext('2d');
+			// store width, height and ratio in context for paint functions
+			context.width = state.width;
+			context.height = state.height;
+			context.pixelRatio = state.ratio;
+			context.pixelScale = state.pixelScale;
+			// should we clear the canvas every redraw?
+			if (props.clear) {
+				if (props.bgColor) {
+					context.fillStyle = props.bgColor;
+					context.fillRect(0, 0, context.width, context.height);
+				} else {
+					context.clearRect(0, 0, context.width, context.height);
+				}
+			}
+			props.paint(context);
+		}
+	}
+
 	constructor(props) {
 		super(props);
+		this.mountedView = this.mountedView.bind(this);
 		this.draw = this.draw.bind(this);
 	}
 
-	// Make sure we get a sharp canvas on Retina displays
-	// as well as adjust the canvas on zoomed browsers
-	// Does NOT scale; painter functions decide how to handle
-	// window.devicePixelRatio on a case-by-case basis
-	componentDidMount() {
-		const view = this.view;
-		const ratio = window.devicePixelRatio || 1;
-		const width = (view.clientWidth * ratio) | 0;
-		const height = (view.clientHeight * ratio) | 0;
-		this.setState({ width, height, ratio });
+	mountedView(view) {
+		// Scaling lets us adjust the painter function for
+		// high density displays and zoomed browsers.
+		// Painter functions decide how to use scaling
+		// on a case-by-case basis.
+		if (view) {
+			const pixelScale = this.props.pixelScale || 1;
+			const ratio = window.devicePixelRatio || 1;
+			const width = (view.clientWidth * ratio) | 0;
+			const height = (view.clientHeight * ratio) | 0;
+			this.setState({ view, width, height, ratio, pixelScale });
+		}
 	}
+
 
 	componentDidUpdate() {
 		if (this.props.redraw) {
@@ -29,44 +56,28 @@ class CanvasComponent extends PureComponent {
 		}
 	}
 
-
-	// Relies on a ref to a DOM element, so only call
-	// when canvas element has been rendered!
-	draw() {
-		if (this.canvas && this.props.paint) {
-			const canvas = this.canvas;
-			let context = canvas.getContext('2d');
-			// store width, height and ratio in context for paint functions
-			context.width = this.state.width;
-			context.height = this.state.height;
-			context.pixelRatio = this.state.ratio;
-			// should we clear the canvas every redraw?
-			if (this.props.clear) { context.clearRect(0, 0, canvas.width, canvas.height); }
-			this.props.paint(context);
-		}
-	}
-
 	render() {
 		// The way canvas interacts with CSS layouting is a bit buggy
 		// and inconsistent across browsers. To make it dependent on
 		// the layout of the parent container, we only render it after
-		// mounting, that is: after CSS layouting is done.
-		const canvas = this.state ? (
+		// mounting view, that is: after CSS layouting is done.
+		const canvas = this.state && this.state.view ? (
 			<canvas
-				ref={ (cv) => { this.canvas = cv; }}
+				ref={(cv) => { this.canvas = cv; }}
 				width={this.state.width}
 				height={this.state.height}
 				style={{
 					width: '100%',
 					height: '100%',
-				}} />
+				}}
+			/>
 		) : null;
 
 		return (
 			<div
-				ref={ (view) => { this.view = view; } }
-				className={this.props.className ? this.props.className : 'view'}
-				style={this.props.style}>
+				ref={this.mountedView}
+				style={this.props.style}
+			>
 				{canvas}
 			</div>
 		);
@@ -77,6 +88,7 @@ CanvasComponent.propTypes = {
 	paint: PropTypes.func.isRequired,
 	clear: PropTypes.bool,
 	redraw: PropTypes.bool,
+	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
@@ -95,8 +107,9 @@ export class Canvas extends PureComponent {
 		// If not given a width or height prop, make these fill their parent div
 		// This will implicitly set the size of the <Canvas> component, which
 		// will then call the passed paint function with the right dimensions.
-		let { width, height, style } = this.props;
-		style = style || {};
+		const { props } = this;
+		let style = Object.assign({}, props.style);
+		let { width, height } = props;
 		if (width) {
 			style['minWidth'] = (width | 0) + 'px';
 			style['maxWidth'] = (width | 0) + 'px';
@@ -107,14 +120,17 @@ export class Canvas extends PureComponent {
 		}
 		return (
 			<RemountOnResize
-			/* Since canvas interferes with CSS layouting,
-			we unmount and remount it on resize events */
+				/* Since canvas interferes with CSS layouting,
+				we unmount and remount it on resize events */
+				watchedVal={props.watchedVal}
 			>
 				<CanvasComponent
-					paint={this.props.paint}
-					clear={this.props.clear}
-					redraw={this.props.redraw}
-					className={this.props.className}
+					paint={props.paint}
+					clear={props.clear}
+					bgColor={props.bgColor}
+					pixelScale={props.pixelScale}
+					redraw={props.redraw}
+					className={props.className}
 					style={style}
 				/>
 			</RemountOnResize>
@@ -128,158 +144,8 @@ Canvas.propTypes = {
 	redraw: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,
+	pixelScale: PropTypes.number,
+	watchedVal: PropTypes.any,
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
-
-
-// // === Canvas Grid ===
-// /**
-//  * CanvasGrid is similar to Canvas, except that it Expects
-//  * an array of sketch objects instead of a paint function
-//  * Each sketch contains:
-//  * - a paint function
-//  * - an x and y position (if none given, zero is assumed)
-//  * - a width and a height field (if none given, context size is used)
-//  * Later we might expand this with other functions for
-//  * capturing mouse, touch and keyboard events.
-//  */
-
-//import { inBounds } from '../js/util';
-
-// class CanvasGridComponent extends PureComponent {
-// 	constructor(props) {
-// 		super(props);
-// 		this.draw = this.draw.bind(this);
-
-// 		enhanceCanvasRenderingContext2D();
-// 	}
-
-// 	componentDidMount() {
-// 		const view = this.refs.view;
-// 		const ratio = window.devicePixelRatio || 1;
-// 		const width = (view.clientWidth * ratio) | 0;
-// 		const height = (view.clientHeight * ratio) | 0;
-// 		this.setState({ x: 0, y: 0, width, height, ratio });
-// 	}
-
-
-// 	componentDidUpdate() {
-// 		if (this.props.redraw) {
-// 			this.draw();
-// 		}
-// 	}
-
-
-// 	// Relies on a ref to a DOM element, so only call
-// 	// when canvas element has been rendered!
-// 	draw() {
-// 		if (this.state) {
-// 			const { x, y, width, height, ratio } = this.state;
-// 			const canvas = this.refs.canvas;
-// 			let context = canvas.getContext('2d');
-// 			if (this.props.clear) { context.clearRect(0, 0, width, width); }
-
-// 			context.pixelRatio = ratio;
-// 			const bounds = [x, y, width, height];
-// 			const { sketches } = this.props;
-// 			for (let i = 0; i < sketches.length; i++) {
-// 				const sketch = sketches[i];
-// 				const sketchX = sketch.x ? sketch.x : 0;
-// 				const sketchY = sketch.y ? sketch.y : 0;
-// 				const sketchW = sketch.width ? sketch.width : width;
-// 				const sketchH = sketch.height ? sketch.height : height;
-// 				const sketchBounds = [sketchX, sketchY, sketchX + sketchW, sketchY + sketchH];
-// 				if (inBounds(bounds, sketchBounds)) {
-// 					// set (sketchX, sketchY) as origin
-// 					context.translate(sketchX, sketchY);
-// 					// store width, height and ratio in context for paint functions
-// 					context.width = sketchW;
-// 					context.height = sketchH;
-// 					// should we clear the canvas every redraw?
-// 					if (sketch.clear) { context.clearRect(0, 0, sketchW, sketchH); }
-// 					// draw sketch within given boundary
-// 					sketch.paint(context);
-// 					// undo (sketchX, sketchY) translation
-// 					context.translate(-sketchX, -sketchY);
-// 				}
-// 			}
-
-// 		}
-// 	}
-
-// 	render() {
-// 		// The way canvas interacts with CSS layouting is a bit buggy
-// 		// and inconsistent across browsers. To make it dependent on
-// 		// the layout of the parent container, we only render it after
-// 		// mounting, after CSS layouting is done.
-// 		const canvas = this.state ? (
-// 			<canvas
-// 				ref='canvas'
-// 				width={this.state.width}
-// 				height={this.state.height}
-// 				style={{
-// 					width: '100%',
-// 					height: '100%',
-// 				}} />
-// 		) : null;
-
-// 		return (
-// 			<div
-// 				ref='view'
-// 				className={this.props.className ? this.props.className : 'view'}
-// 				style={this.props.style} >
-// 				{canvas}
-// 			</div>
-// 		);
-// 	}
-// }
-
-// CanvasGridComponent.propTypes = {
-// 	sketches: PropTypes.arrayOf(PropTypes.object).isRequired,
-// 	clear: PropTypes.bool,
-// 	redraw: PropTypes.bool,
-// 	className: PropTypes.string,
-// 	style: PropTypes.object,
-// };
-
-// export function CanvasGrid(props) {
-// 	// If not given a width or height prop, make these fill their parent div
-// 	// This will implicitly set the size of the <Canvas> component, which
-// 	// will then call the passed paint function with the right dimensions.
-// 	let style = props.style ? props.style : {};
-// 	if (props.width) {
-// 		style['minWidth'] = (props.width | 0) + 'px';
-// 		style['maxWidth'] = (props.width | 0) + 'px';
-// 	}
-// 	if (props.height) {
-// 		style['minHeight'] = (props.height | 0) + 'px';
-// 		style['maxHeight'] = (props.height | 0) + 'px';
-// 	}
-// 	return (
-// 		<RemountOnResize
-// 			/* Since canvas interferes with CSS layouting,
-// 			we unmount and remount it on resize events */
-// 			>
-// 			<CanvasGridComponent
-// 				sketches={props.sketches}
-// 				bounds={props.bounds}
-// 				clear={props.clear}
-// 				redraw={props.redraw}
-// 				className={props.className}
-// 				style={style}
-// 				/>
-// 		</RemountOnResize>
-// 	);
-// }
-
-// CanvasGrid.propTypes = {
-// 	sketches: PropTypes.arrayOf(PropTypes.object).isRequired,
-// 	bounds: PropTypes.arrayOf(PropTypes.number).isRequired,
-// 	width: PropTypes.number,
-// 	height: PropTypes.number,
-// 	clear: PropTypes.bool,
-// 	redraw: PropTypes.bool,
-// 	className: PropTypes.string,
-// 	style: PropTypes.object,
-// };

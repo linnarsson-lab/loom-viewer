@@ -19,7 +19,7 @@ function selectPlotter(mode) {
 		case 'Categorical':
 			return categoriesPainter;
 		case 'Stacked':
-			return stackedCategoriesPainer;
+			return stackedCategoriesPainter;
 		case 'Bars':
 			return barPaint;
 		case 'Heatmap':
@@ -363,7 +363,7 @@ function categoriesPainter(context, range, dataToColor) {
 	}
 }
 
-function stackedCategoriesPainer(context, range, dataToColor) {
+function stackedCategoriesPainter(context, range, dataToColor) {
 	const { data, xOffset } = range;
 	// Support high-density displays. However, we cut it by half
 	// to increase details a little bit.
