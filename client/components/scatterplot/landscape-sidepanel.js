@@ -5,7 +5,7 @@ import { ScatterplotSidepanel } from './scatterplot-sidepanel';
 
 export class LandscapeSidepanel extends PureComponent {
 	render() {
-		const { dispatch, dataset } = this.props;
+		const { dispatch, dataset, className, style } = this.props;
 
 		return (
 			<ScatterplotSidepanel
@@ -13,6 +13,8 @@ export class LandscapeSidepanel extends PureComponent {
 				dataset={dataset}
 				axis={'col'}
 				viewState={dataset.viewState.col}
+				className={className}
+				style={style}
 			/>
 		);
 	}
@@ -21,4 +23,6 @@ export class LandscapeSidepanel extends PureComponent {
 LandscapeSidepanel.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	className: PropTypes.string,
+	style: PropTypes.object,
 };

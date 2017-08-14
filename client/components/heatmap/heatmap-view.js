@@ -5,7 +5,6 @@ import { Heatmap } from './heatmap';
 import { HeatmapSidepanel } from './heatmap-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
-import { RemountOnResize } from '../remount-on-resize';
 import { Canvas } from '../canvas';
 
 import { sparkline } from '../../plotters/sparkline';
@@ -21,6 +20,9 @@ class HeatmapMapComponent extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
+
+		this.heatmapContainer = this.heatmapContainer.bind(this);
+
 		const onViewChanged = _.debounce(
 			(val) => {
 				const { dataBounds, zoom, center } = val;
@@ -36,25 +38,13 @@ class HeatmapMapComponent extends Component {
 		this.setState({ onViewChanged });
 	}
 
-	componentDidMount() {
-		this.setState({ mounted: true });
-	}
-
-	render() {
-		const { dataset } = this.props;
-		const { col, row } = dataset;
-		const vs = dataset.viewState;
-		const hms = vs.heatmap;
-		const colIndices = vs.col.indices;
-		const rowIndices = vs.row.indices;
-		if (this.state.mounted) {
-			// Calculate the layout of everything, which we can only
-			// do after mounting because we rely on the parent node.
-			const el = this.refs.heatmapContainer;
+	heatmapContainer(heatmapContainer) {
+		const el = heatmapContainer;
+		if (heatmapContainer) {
 			const sparklineHeight = 80 / (window.devicePixelRatio || 1);
-			let heatmapWidth = el.clientWidth - sparklineHeight;
-			let heatmapHeight = el.clientHeight - sparklineHeight;
-			let heatmapSize = {
+			let heatmapWidth = el.clientWidth - sparklineHeight - 20;
+			let heatmapHeight = el.clientHeight - sparklineHeight - 20;
+			const heatmapStyle = {
 				display: 'flex',
 				flex: '0 0 auto',
 				minWidth: `${heatmapWidth}px`,
@@ -62,7 +52,33 @@ class HeatmapMapComponent extends Component {
 				minHeight: `${heatmapHeight}px`,
 				maxHeight: `${heatmapHeight}px`,
 			};
+			this.setState({
+				heatmapContainer,
+				sparklineHeight,
+				heatmapWidth,
+				heatmapHeight,
+				heatmapStyle,
+			});
+		}
+	}
+	render() {
+		const {
+			heatmapContainer,
+			sparklineHeight,
+			heatmapWidth,
+			heatmapHeight,
+			heatmapStyle,
+		} = this.state;
+
+		if (heatmapContainer) {
+			// Calculate the layout of everything, which we can only
+			// do after mounting because we rely on the parent node.
+			const { dataset } = this.props;
+			const { col, row } = dataset;
+			const vs = dataset.viewState;
+			const hms = vs.heatmap;
 			const { dataBounds } = hms;
+
 
 			const colAttr = col.attrs[hms.colAttr];
 			const colLabel = colAttr ? colAttr.name : null;
@@ -73,7 +89,8 @@ class HeatmapMapComponent extends Component {
 					unfiltered: true,
 				}
 			);
-			const colSparkline = sparkline(colAttr, colIndices, hms.colMode, colSettings, colLabel);
+
+			const colSparkline = sparkline(colAttr, vs.col.colIndices, hms.colMode, colSettings, colLabel);
 
 			const rowAttr = row.attrs[hms.rowAttr];
 			const rowLabel = rowAttr ? rowAttr.name : null;
@@ -85,9 +102,9 @@ class HeatmapMapComponent extends Component {
 					orientation: 'vertical',
 				}
 			);
-			const rowSparkline = sparkline(rowAttr, rowIndices, hms.rowMode, rowSettings, rowLabel);
+			const rowSparkline = sparkline(rowAttr, vs.row.indices, hms.rowMode, rowSettings, rowLabel);
 			return (
-				<div className='view-vertical' ref='heatmapContainer'>
+				<div className='view-vertical' ref={this.heatmapContainer}>
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
@@ -97,7 +114,7 @@ class HeatmapMapComponent extends Component {
 						clear
 					/>
 					<div className='view'>
-						<div style={heatmapSize}>
+						<div style={heatmapStyle}>
 							<Heatmap
 								dataset={dataset}
 								onViewChanged={this.state.onViewChanged} />
@@ -114,7 +131,7 @@ class HeatmapMapComponent extends Component {
 			);
 		} else {
 			return (
-				<div className='view-vertical' ref='heatmapContainer'>
+				<div className='view-vertical' ref={this.heatmapContainer}>
 					Initialising Heatmap Settings
 				</div>
 			);
@@ -131,24 +148,22 @@ class HeatmapComponent extends Component {
 	render() {
 		const { dispatch, dataset } = this.props;
 		return (
-			<RemountOnResize>
-				<div className='view'>
-					<div
-						style={{
-							width: '300px',
-							margin: '10px',
-							overflowY: 'scroll',
-						}}>
-						<HeatmapSidepanel
-							dataset={dataset}
-							dispatch={dispatch}
-						/>
-					</div>
-					<HeatmapMapComponent
-						dataset={dataset}
-						dispatch={dispatch} />
-				</div>
-			</RemountOnResize>
+			<div className='view'>
+				<HeatmapSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
+					style={{
+						overflowX: 'hidden',
+						overFlowY: 'hidden',
+						minHeight: 0,
+						width: '300px',
+						margin: '10px',
+					}}
+				/>
+				<HeatmapMapComponent
+					dataset={dataset}
+					dispatch={dispatch} />
+			</div>
 		);
 	}
 }

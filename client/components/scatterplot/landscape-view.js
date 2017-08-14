@@ -6,7 +6,6 @@ import { LandscapeSidepanel } from './landscape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
-import { RemountOnResize } from '../remount-on-resize';
 
 import { merge, firstMatch } from '../../js/util';
 
@@ -193,25 +192,23 @@ class LandscapeComponent extends PureComponent {
 		const { dispatch, dataset } = this.props;
 
 		return (
-			<RemountOnResize>
-				<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-					<div
-						style={{
-							width: '300px',
-							margin: '10px',
-							overflowY: 'scroll',
-						}}>
-						<LandscapeSidepanel
-							dataset={dataset}
-							dispatch={dispatch}
-						/>
-					</div>
-					<LandscapeMatrix
-						dataset={dataset}
-						dispatch={dispatch}
-					/>
-				</div>
-			</RemountOnResize>
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<LandscapeSidepanel
+					style={{
+						overflowX: 'hidden',
+						overFlowY: 'hidden',
+						minHeight: 0,
+						width: '300px',
+						margin: '10px',
+					}}
+					dataset={dataset}
+					dispatch={dispatch}
+				/>
+				<LandscapeMatrix
+					dataset={dataset}
+					dispatch={dispatch}
+				/>
+			</div>
 		);
 	}
 }

@@ -5,6 +5,8 @@ import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import DocumentTitle from 'react-document-title';
 
+import { RemountOnResize } from './remount-on-resize';
+
 export class NavbarView extends PureComponent {
 	render() {
 		const { project, filename, viewsettings } = this.props.params;
@@ -49,9 +51,9 @@ export class NavbarView extends PureComponent {
 					<div>
 						{navbarInstance}
 					</div>
-					<div className='view'>
+					<RemountOnResize>
 						{this.props.children}
-					</div>
+					</RemountOnResize>
 				</div>
 			</DocumentTitle>
 		);

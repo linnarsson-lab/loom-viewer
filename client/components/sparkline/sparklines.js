@@ -180,16 +180,17 @@ Sparklines.propTypes = {
 
 export class SparklineList extends PureComponent {
 	componentWillMount() {
+		this.sparklineContainer = this.sparklineContainer.bind(this);
 		const { attrs, groupAttr, indices } = this.props;
 		const sparkline = groupedSparkline(indices, attrs[groupAttr]);
 		this.setState({
 			sparkline,
-			mounted: false,
 		});
 	}
 
-	componentDidMount() {
-		this.setState({ mounted: true });
+
+	sparklineContainer(div){
+		this.setState({ sparklineContainer: div });
 	}
 
 	componentWillUpdate(nextProps) {
@@ -203,7 +204,8 @@ export class SparklineList extends PureComponent {
 	}
 
 	render() {
-		if (this.state.mounted) {
+		const el = this.state.sparklineContainer;
+		if (el) {
 			const {
 				col,
 				colAttr,
@@ -220,7 +222,6 @@ export class SparklineList extends PureComponent {
 
 			const { sparkline } = this.state;
 
-			const el = this.refs.sparklineContainer;
 			const containerWidth = el.clientWidth - 20;
 			const containerHeight = el.clientHeight - 20;
 			const legendHeight = 60;
@@ -233,7 +234,7 @@ export class SparklineList extends PureComponent {
 						overFloxY: 'hidden',
 						minHeight: 0,
 					}}
-					ref='sparklineContainer'>
+					ref={this.sparklineContainer}>
 					<Legend
 						sparkline={sparkline}
 						height={legendHeight}
@@ -273,7 +274,7 @@ export class SparklineList extends PureComponent {
 		}
 		else {
 			return (
-				<div className='view centered' ref='sparklineContainer'>
+				<div className='view centered' ref={this.sparklineContainer}>
 					Initialising sparklines
 				</div>
 			);

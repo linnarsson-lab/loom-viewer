@@ -5,7 +5,6 @@ import { SparklineSidepanel } from './sparkline-sidepanel';
 import { SparklineList } from './sparklines';
 
 import { ViewInitialiser } from '../view-initialiser';
-import { RemountOnResize } from '../remount-on-resize';
 
 import { isEqual } from 'lodash';
 
@@ -48,34 +47,32 @@ class SparklineViewComponent extends PureComponent {
 		const { indicesChanged } = this.state;
 
 		return (
-			<RemountOnResize>
-				<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-					<div
-						style={{
-							width: '300px',
-							margin: '10px',
-							overflowY: 'scroll',
-						}}>
-						<SparklineSidepanel
-							dispatch={dispatch}
-							dataset={dataset}
-						/>
-					</div>
-					<SparklineList
-						attrs={dataset.col.attrs}
-						selection={sl.genes}
-						indicesChanged={indicesChanged}
-						groupAttr={sl.groupBy ? sl.colAttr : ''}
-						indices={indices}
-						geneMode={sl.geneMode}
-						col={col}
-						colAttr={sl.colAttr}
-						colMode={sl.colMode}
-						path={dataset.path}
-						settings={settings}
-						showLabels={sl.showLabels} />
-				</div>
-			</RemountOnResize>
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<SparklineSidepanel
+					dispatch={dispatch}
+					dataset={dataset}
+					style={{
+						overflowX: 'hidden',
+						overFlowY: 'hidden',
+						minHeight: 0,
+						width: '300px',
+						margin: '10px',
+					}}
+				/>
+				<SparklineList
+					attrs={dataset.col.attrs}
+					selection={sl.genes}
+					indicesChanged={indicesChanged}
+					groupAttr={sl.groupBy ? sl.colAttr : ''}
+					indices={indices}
+					geneMode={sl.geneMode}
+					col={col}
+					colAttr={sl.colAttr}
+					colMode={sl.colMode}
+					path={dataset.path}
+					settings={settings}
+					showLabels={sl.showLabels} />
+			</div>
 		);
 	}
 }

@@ -7,6 +7,8 @@ import {
 	ListGroupItem,
 } from 'react-bootstrap';
 
+import { FlexboxContainer } from '../flexbox-container.js';
+
 import {
 	AttrLegend,
 	ClipDataSettings,
@@ -67,7 +69,12 @@ export class HeatmapSidepanel extends Component {
 	}
 
 	render() {
-		const { dispatch, dataset } = this.props;
+		const {
+			dispatch,
+			dataset,
+			className,
+			style,
+		} = this.props;
 		const { col, row, path, viewState } = dataset;
 		const hms = viewState.heatmap;
 		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
@@ -147,56 +154,60 @@ export class HeatmapSidepanel extends Component {
 			);
 		}
 		return (
-			<Panel
-				className='sidepanel'
-				key='heatmap-settings'
-				header='Settings'
-				bsStyle='default'>
-				<ListGroup fill>
-					<ListGroupItem>
-						<CollapsibleSettings
-							label={'Cell attribute or Gene to show'}>
-							<div>
-								<DropdownMenu
-									value={hms.colAttr}
-									options={col.allKeysNoUniques}
-									filterOptions={col.dropdownOptions.allNoUniques}
-									onChange={colAttrHC}
-								/>
-								<label>Show as</label>
-								<DropdownMenu
-									value={hms.colMode}
-									options={modeNames}
-									onChange={colModeHC}
-								/>
-							</div>
-						</CollapsibleSettings>
-						{colGradientSettings}
-						{colLegend}
-					</ListGroupItem>
-					<ListGroupItem>
-						<CollapsibleSettings
-							label={'Gene attribute to show'}>
-							<div>
-								<DropdownMenu
-									value={hms.rowAttr}
-									options={row.allKeysNoUniques}
-									filterOptions={row.dropdownOptions.allNoUniques}
-									onChange={rowAttrHC}
-								/>
-								<label>Show as</label>
-								<DropdownMenu
-									value={hms.rowMode}
-									options={modeNames}
-									onChange={rowModeHC}
-								/>
-							</div>
-						</CollapsibleSettings>
-						{rowGradientSettings}
-						{rowLegend}
-					</ListGroupItem>
-				</ListGroup>
-			</Panel>
+			<FlexboxContainer
+				className={className}
+				style={style} >
+				<Panel
+					className='sidepanel'
+					key='heatmap-settings'
+					header='Settings'
+					bsStyle='default'>
+					<ListGroup fill>
+						<ListGroupItem>
+							<CollapsibleSettings
+								label={'Cell attribute or Gene to show'}>
+								<div>
+									<DropdownMenu
+										value={hms.colAttr}
+										options={col.allKeysNoUniques}
+										filterOptions={col.dropdownOptions.allNoUniques}
+										onChange={colAttrHC}
+									/>
+									<label>Show as</label>
+									<DropdownMenu
+										value={hms.colMode}
+										options={modeNames}
+										onChange={colModeHC}
+									/>
+								</div>
+							</CollapsibleSettings>
+							{colGradientSettings}
+							{colLegend}
+						</ListGroupItem>
+						<ListGroupItem>
+							<CollapsibleSettings
+								label={'Gene attribute to show'}>
+								<div>
+									<DropdownMenu
+										value={hms.rowAttr}
+										options={row.allKeysNoUniques}
+										filterOptions={row.dropdownOptions.allNoUniques}
+										onChange={rowAttrHC}
+									/>
+									<label>Show as</label>
+									<DropdownMenu
+										value={hms.rowMode}
+										options={modeNames}
+										onChange={rowModeHC}
+									/>
+								</div>
+							</CollapsibleSettings>
+							{rowGradientSettings}
+							{rowLegend}
+						</ListGroupItem>
+					</ListGroup>
+				</Panel>
+			</FlexboxContainer>
 		);
 	}
 }
@@ -204,4 +215,6 @@ export class HeatmapSidepanel extends Component {
 HeatmapSidepanel.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	className: PropTypes.string,
+	style: PropTypes.object,
 };

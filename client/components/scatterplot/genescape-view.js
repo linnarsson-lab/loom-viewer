@@ -6,7 +6,6 @@ import { GenescapeSidepanel } from './genescape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
-import { RemountOnResize } from '../remount-on-resize';
 
 import { merge, firstMatch } from '../../js/util';
 
@@ -193,25 +192,23 @@ class GenescapeComponent extends PureComponent {
 		const { dispatch, dataset } = this.props;
 
 		return (
-			<RemountOnResize>
-				<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-					<div
-						style={{
-							width: '300px',
-							margin: '10px',
-							overflowY: 'scroll',
-						}}>
-						<GenescapeSidepanel
-							dataset={dataset}
-							dispatch={dispatch}
-						/>
-					</div>
-					<GenescapeMatrix
-						dataset={dataset}
-						dispatch={dispatch}
-					/>
-				</div>
-			</RemountOnResize>
+			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+				<GenescapeSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
+					style={{
+						overflowX: 'hidden',
+						overFlowY: 'hidden',
+						minHeight: 0,
+						width: '300px',
+						margin: '10px',
+					}}
+				/>
+				<GenescapeMatrix
+					dataset={dataset}
+					dispatch={dispatch}
+				/>
+			</div>
 		);
 	}
 }
