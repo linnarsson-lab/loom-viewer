@@ -12,15 +12,6 @@ function nullfunc() { }
 
 class Legend extends PureComponent {
 
-	shouldComponentUpdate(nextProps) {
-		return (
-			this.props.sparkline !== nextProps.sparkline ||
-			this.props.colAttr !== nextProps.colAttr ||
-			this.props.colMode !== nextProps.colMode ||
-			nextProps.indicesChanged
-		);
-	}
-
 	render() {
 		const {
 			width,
@@ -75,17 +66,6 @@ Legend.propTypes = {
 
 export class Sparkline extends PureComponent {
 
-	shouldComponentUpdate(nextProps) {
-		return this.props.sparkline !== nextProps.sparkline ||
-			this.props.gene !== nextProps.gene ||
-			this.props.geneMode !== nextProps.geneMode ||
-			this.props.settings !== nextProps.settings ||
-			this.props.showLabels !== nextProps.showLabels ||
-			nextProps.indicesChanged ||
-			(this.props.geneData === undefined &&
-				nextProps.geneData !== undefined);
-	}
-
 	render() {
 		const {
 			sparkline,
@@ -125,17 +105,6 @@ Sparkline.propTypes = {
 };
 
 export class Sparklines extends PureComponent {
-
-
-	shouldComponentUpdate(nextProps) {
-		return this.props.sparkline !== nextProps.sparkline ||
-			this.props.selection !== nextProps.selection ||
-			this.props.geneMode !== nextProps.geneMode ||
-			this.props.showLabels !== nextProps.showLabels ||
-			this.props.settings !== nextProps.settings ||
-			nextProps.indicesChanged ||
-			this.props.attrs !== nextProps.attrs;
-	}
 
 	render() {
 		const {
