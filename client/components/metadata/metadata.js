@@ -346,7 +346,7 @@ export class MetadataComponent extends PureComponent {
 		}
 
 		return (
-			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden', overflowY: 'scroll' }}>
+			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden' }}>
 				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataTable
 					attributes={attributes}
