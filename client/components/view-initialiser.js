@@ -10,6 +10,10 @@ import { decompressFromEncodedURIComponent } from '../js/lz-string';
 import { merge } from '../js/util';
 
 class ViewStateInitialiser extends PureComponent {
+	constructor(props){
+		super(props);
+		this.state = { finishedDispatch: false };
+	}
 
 	componentWillMount() {
 		let { dispatch, dataset,
@@ -32,9 +36,15 @@ class ViewStateInitialiser extends PureComponent {
 		}));
 	}
 
+	componentWillReceiveProps(){
+		if (!this.state.finishedDispatch){
+			this.setState({finishedDispatch: true});
+		}
+	}
+
 	render() {
 		const { dispatch, dataset, View, stateName } = this.props;
-		return dataset.viewState[stateName] ? (
+		return this.state.finishedDispatch ? (
 			<View
 				dispatch={dispatch}
 				dataset={dataset}
