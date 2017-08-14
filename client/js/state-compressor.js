@@ -148,11 +148,17 @@ import { isArray } from '../js/util';
 
 // value that can be anything, so passes through unchanged
 // (example: input field, which can have any string value)
-const anyValConverter = (val) => { return val; };
+const anyValConverter = (val) => {return val;};
 const _anyVal = () => {};
 _anyVal.encoder = anyValConverter;
 _anyVal.decoder = anyValConverter;
 export const anyVal = _anyVal;
+
+const intValConverter = (num) => { return num|0;};
+const _intVal = () => {};
+_intVal.encoder = intValConverter;
+_intVal.decoder = intValConverter;
+export const intVal = _intVal;
 
 // If a value is constant, we can
 // just store it in the decoder.
