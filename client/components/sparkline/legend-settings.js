@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -16,7 +16,7 @@ import {
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 
-export class LegendSettings extends PureComponent {
+export class LegendSettings extends Component {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 
@@ -149,7 +149,7 @@ export class LegendSettings extends PureComponent {
 								style={{ flex: 1 }}
 								onClick={groupByHC} >
 								<Glyphicon glyph={groupBy ? 'check' : 'unchecked'} /> group
-						</Button>
+							</Button>
 						</div>
 						<DropdownMenu
 							value={colMode}

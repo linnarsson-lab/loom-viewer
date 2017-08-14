@@ -26,21 +26,20 @@ export class ScaleFactorSettings extends PureComponent {
 
 		this.setState({
 			scaleFactorHC,
-			scaleFactorDebounced: debounce(scaleFactorHC, this.props.time || 0),
+			scaleFactorDebounced: this.props.time ? debounce(scaleFactorHC, this.props.time) : scaleFactorHC,
 		});
 	}
 
 	componentWillReceiveProps(nextProps) {
 		const newDebounce = this.state.time !== nextProps.time;
 
-		const scaleFactorDebounced = newDebounce ?
-			debounce(this.state.scaleFactorHC, nextProps.time || 0)
-			:
-			this.state.scaleFactorDebounced;
-
-		this.setState({
-			scaleFactorDebounced,
-		});
+		if (newDebounce) {
+			const scaleFactorDebounced = nextProps.time ?
+				debounce(this.state.scaleFactorHC, nextProps.time) : newDebounce;
+			this.setState({
+				scaleFactorDebounced,
+			});
+		}
 	}
 
 	render() {

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -15,7 +15,7 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class ColorSettings extends PureComponent {
+export class ColorSettings extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
@@ -92,7 +92,7 @@ export class ColorSettings extends PureComponent {
 								style={{ flex: 1 }}
 								onClick={() => { showLabelsHC(!showLabels); }} >
 								<Glyphicon glyph={showLabels ? 'check' : 'unchecked'} /> labels
-						</Button>
+							</Button>
 						</div>
 						{gradientSettings}
 					</div>

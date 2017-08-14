@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -18,7 +18,7 @@ import {
 import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class HeatmapSidepanel extends PureComponent {
+export class HeatmapSidepanel extends Component {
 	constructor(props) {
 		super(props);
 	}

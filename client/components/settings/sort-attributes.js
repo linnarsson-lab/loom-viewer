@@ -1,11 +1,11 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
 import { setViewProps } from '../../actions/set-viewprops';
 
-export class SortAttributeComponent extends PureComponent {
+export class SortAttributeComponent extends Component {
 	constructor(props) {
 		super(props);
 		const { dispatch, dataset, stateName, axis } = props;

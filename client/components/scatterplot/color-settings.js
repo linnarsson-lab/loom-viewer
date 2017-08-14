@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -21,7 +21,7 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 function nullFunc() { }
 
-export class ColorSettings extends PureComponent {
+export class ColorSettings extends Component {
 	componentWillMount() {
 		const { dispatch, dataset, axis } = this.props;
 
@@ -147,21 +147,21 @@ export class ColorSettings extends PureComponent {
 									bsStyle={colorMode === 'Heatmap' ? 'primary' : 'default'}
 									onClick={colorMode === 'Heatmap' ? nullFunc : heatmapHC}>
 									Heatmap
-							</Button>
+								</Button>
 							</ButtonGroup>
 							<ButtonGroup>
 								<Button
 									bsStyle={colorMode === 'Heatmap2' ? 'primary' : 'default'}
 									onClick={colorMode === 'Heatmap2' ? nullFunc : heatmap2HC}>
 									Heatmap2
-							</Button>
+								</Button>
 							</ButtonGroup>
 							<ButtonGroup>
 								<Button
 									bsStyle={colorMode === 'Categorical' ? 'primary' : 'default'}
 									onClick={colorMode === 'Categorical' ? nullFunc : categoricalHC}>
 									Categorical
-							</Button>
+								</Button>
 							</ButtonGroup>
 						</ButtonGroup>
 						{heatmapSettings}

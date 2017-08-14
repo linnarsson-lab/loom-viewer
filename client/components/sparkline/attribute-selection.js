@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -13,7 +13,7 @@ import {
 import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class AttributeSelection extends PureComponent {
+export class AttributeSelection extends Component {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 		const genesHC = (val) => {

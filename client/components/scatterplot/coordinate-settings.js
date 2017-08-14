@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -23,7 +23,7 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 function nullFunc() { }
 
-export class CoordinateSettings extends PureComponent {
+export class CoordinateSettings extends Component {
 	componentWillMount() {
 		const {
 			dispatch,
@@ -88,21 +88,21 @@ export class CoordinateSettings extends PureComponent {
 			setSFDP !== nullFunc ||
 			setLog !== nullFunc
 		) ? (<CollapsibleSettings
-			label={'X/Y Quick Settings'}
-			tooltip={'Quickly set X and Y attributes to one of the listed default values'}
-			tooltipId={'quickstngs-tltp'}
-			popover={popoverTest}
-			popoverTitle={'Test'}
-			popoverId={'popoverId1'}
-			mountClosed>
-			<ListGroup>
-				{setXY}
-				{setTSNE}
-				{setPCA}
-				{setSFDP}
-				{setLog}
-			</ListGroup>
-		</CollapsibleSettings>) : null;
+				label={'X/Y Quick Settings'}
+				tooltip={'Quickly set X and Y attributes to one of the listed default values'}
+				tooltipId={'quickstngs-tltp'}
+				popover={popoverTest}
+				popoverTitle={'Test'}
+				popoverId={'popoverId1'}
+				mountClosed>
+				<ListGroup>
+					{setXY}
+					{setTSNE}
+					{setPCA}
+					{setSFDP}
+					{setLog}
+				</ListGroup>
+			</CollapsibleSettings>) : null;
 
 		const attrSelectFactory = (attrName, attrs, idx) => {
 			let newAttrs = attrs.slice(0);
@@ -293,7 +293,7 @@ export class CoordinateSettings extends PureComponent {
 							style={{ flex: 1 }}
 							onClick={yLogscaleHC}>
 							<Glyphicon glyph={attrData.logscale ? 'check' : 'unchecked'} /> log
-					</Button>
+						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip
 						tooltip={`toggle jitter for attribute ${i + 1}`}
@@ -304,7 +304,7 @@ export class CoordinateSettings extends PureComponent {
 							style={{ flex: 1 }}
 							onClick={yJitterHC}>
 							<Glyphicon glyph={attrData.jitter ? 'check' : 'unchecked'} /> jitter
-					</Button>
+						</Button>
 					</OverlayTooltip>
 				</div>);
 		}
