@@ -38,7 +38,7 @@ export class Heatmap extends PureComponent {
 		const center = hms.center ? hms.center :
 			L.latLng((southWest.lat + northEast.lat) * 0.5,
 				(southWest.lng + northEast.lng) * 0.5);
-		const zoom = hms.zoom ? hms.zoom : 8;
+		const zoom = hms.zoom ? hms.zoom | 0 : 8;
 		map.setView(center, zoom);
 
 		const handleViewChanged = () => {

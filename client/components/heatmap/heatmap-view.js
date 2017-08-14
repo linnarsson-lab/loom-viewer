@@ -166,6 +166,7 @@ function stateInitialiser(dataset) {
 			colMode: 'Stacked',
 			rowAttr: firstMatch(dataset.row.attrs, ['_Selected', '_Excluded']),
 			rowMode: 'Stacked',
+			zoom: 8,
 		},
 		col: {
 			settings: {
