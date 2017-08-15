@@ -38,8 +38,9 @@ if [ $build_status == 0 ]; then
   echo "Building static assets."
   # I haven't figured out how to both generate correct paths in the webpack HTML
   # template, and have the resulting index.html be put in the right folders.
-  # Yes, it's an ugly hack, but it works - Job
+  # Yes, this is an ugly hack around my incompetence, but it works - Job
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  cp ./client/iframe-inject-appcache-manifest.html ./python/loom_viewer/static/iframe-inject-appcache-manifest.html
 
   # CSS
   uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
