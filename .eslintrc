@@ -67,24 +67,6 @@
                 "SwitchCase": 1
             }
         ],
-        //Not so much errors as warnings that
-        //it might be time to refactor the code
-        "max-params": [
-            1,
-            {
-                "max": 4
-            }
-        ], // too many function parameters
-        "max-nested-callbacks": [
-            1,
-            3
-        ], // callback nesting gets too deep
-        "max-depth": [
-            1,
-            {
-                "max": 4
-            }
-        ], // max depth of nesting in general
         // React rules
         "react/jsx-uses-react": 2,
         "react/react-in-jsx-scope": 2,
