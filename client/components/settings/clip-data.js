@@ -86,36 +86,13 @@ export class ClipDataSettings extends Component {
 		const {
 			lowerBound,
 			upperBound,
-			log2Color,
+			logScale,
 			clip,
 		} = settings;
 
 		const { handleChangeFactory } = this.state;
-		const log2ColorHC = handleChangeFactory('log2Color', log2Color);
+		const logScaleHC = handleChangeFactory('logScale', logScale);
 		const clipHC = handleChangeFactory('clip', clip);
-
-		let clipRange;
-		if (clip) {
-			const clipTltp = `Clip data between ${lowerBound}% to ${upperBound}% of min/max values`;
-			clipRange = (
-				<OverlayTooltip
-					tooltip={clipTltp}
-					tooltipId={'clip-range-tltp'} >
-					<div style={{ height: '50px', padding: '10px' }}>
-						<Range
-							marks={{ 0: '0%', 20: '20%', 40: '40%', 60: '60%', 80: '80%', 100: '100%' }}
-							min={0}
-							max={100}
-							pushable={0}
-							count={2}
-							defaultValue={[lowerBound, upperBound]}
-							onChange={this.state.clampRangeDebounced}
-							onAfterChange={this.state.clampRangeDebounced} />
-					</div>
-				</OverlayTooltip>
-			);
-		}
-
 		return (
 			<div className='view-vertical'>
 				<div className='view'>
@@ -126,8 +103,8 @@ export class ClipDataSettings extends Component {
 							bsStyle='link'
 							bsSize='small'
 							style={{ flex: 1 }}
-							onClick={log2ColorHC}>
-							<Glyphicon glyph={log2Color ? 'check' : 'unchecked'} /> log
+							onClick={logScaleHC}>
+							<Glyphicon glyph={logScale ? 'check' : 'unchecked'} /> log
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip
@@ -142,7 +119,25 @@ export class ClipDataSettings extends Component {
 						</Button>
 					</OverlayTooltip>
 				</div>
-				{clipRange}
+				{
+					clip ? (
+						<OverlayTooltip
+							tooltip={`Clip data between ${lowerBound}% to ${upperBound}% of min/max values`}
+							tooltipId={'clip-range-tltp'} >
+							<div style={{ height: '50px', padding: '10px' }}>
+								<Range
+									marks={{ 0: '0%', 20: '20%', 40: '40%', 60: '60%', 80: '80%', 100: '100%' }}
+									min={0}
+									max={100}
+									pushable={0}
+									count={2}
+									defaultValue={[lowerBound, upperBound]}
+									onChange={this.state.clampRangeDebounced}
+									onAfterChange={this.state.clampRangeDebounced} />
+							</div>
+						</OverlayTooltip>
+					) : null
+				}
 			</div>
 		);
 	}

@@ -31,6 +31,8 @@ export function updateFilteredIndices(filter, order, data) {
 		indices[i] = i;
 	}
 
+	const originalIndices = indices.slice(0);
+
 	i = filter.length;
 	while (i--) {
 		let filterEntry = filter[i];
@@ -71,5 +73,6 @@ export function updateFilteredIndices(filter, order, data) {
 	return {
 		indices: sortFilterIndices(data, order, indices),
 		ascendingIndices,
+		originalIndices,
 	};
 }

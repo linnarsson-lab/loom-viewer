@@ -11,7 +11,6 @@ const sparklineHeight = 40;
 function nullfunc() { }
 
 class Legend extends PureComponent {
-
 	render() {
 		const {
 			width,

@@ -86,11 +86,10 @@ class HeatmapMapComponent extends Component {
 				vs.col.settings,
 				{
 					dataRange: [dataBounds[0], dataBounds[2]],
-					unfiltered: true,
 				}
 			);
 
-			const colSparkline = sparkline(colAttr, vs.col.colIndices, hms.colMode, colSettings, colLabel);
+			const colSparkline = sparkline(colAttr, vs.col.originalIndices, hms.colMode, colSettings, colLabel);
 
 			const rowAttr = row.attrs[hms.rowAttr];
 			const rowLabel = rowAttr ? rowAttr.name : null;
@@ -98,11 +97,10 @@ class HeatmapMapComponent extends Component {
 				vs.row.settings,
 				{
 					dataRange: [dataBounds[1], dataBounds[3]],
-					unfiltered: true,
 					orientation: 'vertical',
 				}
 			);
-			const rowSparkline = sparkline(rowAttr, vs.row.indices, hms.rowMode, rowSettings, rowLabel);
+			const rowSparkline = sparkline(rowAttr, vs.row.originalIndices, hms.rowMode, rowSettings, rowLabel);
 			return (
 				<div className='view-vertical' ref={this.heatmapContainer}>
 					<Canvas
@@ -188,7 +186,7 @@ function stateInitialiser(dataset) {
 				scaleFactor: 40,
 				lowerBound: 0,
 				upperBound: 100,
-				log2Color: true,
+				logScale: true,
 				clip: false,
 			},
 		},
@@ -197,7 +195,7 @@ function stateInitialiser(dataset) {
 				scaleFactor: 40,
 				lowerBound: 0,
 				upperBound: 100,
-				log2Color: true,
+				logScale: true,
 				clip: false,
 			},
 		},

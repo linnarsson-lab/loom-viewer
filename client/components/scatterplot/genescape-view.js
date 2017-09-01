@@ -124,7 +124,7 @@ class GenescapeMatrix extends PureComponent {
 					const logscale = {
 						x: xAttr.logscale,
 						y: yAttr.logscale,
-						color: settings.log2Color,
+						color: settings.logScale,
 					};
 					const jitter = {
 						x: xAttr.jitter,
@@ -241,7 +241,7 @@ const stateInitialiser = (dataset) => {
 				scaleFactor: 40,
 				lowerBound: 0,
 				upperBound: 100,
-				log2Color: true,
+				logScale: true,
 				clip: false,
 			},
 		},

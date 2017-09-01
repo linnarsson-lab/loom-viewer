@@ -98,7 +98,7 @@ const stateInitialiser = (dataset) => {
 				scaleFactor: 40,
 				lowerBound: 0,
 				upperBound: 100,
-				log2Color: true,
+				logScale: true,
 				clip: false,
 			},
 		},

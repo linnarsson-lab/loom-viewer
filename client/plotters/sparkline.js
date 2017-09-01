@@ -7,12 +7,44 @@ import {
 import {
 	attrToColorFactory,
 	findMostCommon,
-	arrayConstr,
-	arraySubset,
+	groupAttr,
+	attrIndexedSubset,
+	attrSubset,
+	logProject,
 } from '../js/util';
 
 // TODO: change the way sparkline plotters prepare and consume data
 // current version becomes memory-intensive for large arrays
+const noop = () => { };
+
+const categoriesPainter = {
+	directly: categoriesDirectly,
+	grouped: categoriesGrouped,
+};
+
+const stackedCategoriesPainter = {
+	directly: categoriesDirectly,
+	grouped: stackedCategoriesGrouped,
+};
+const barPaint = {
+	directly: barPaintDirectly,
+	grouped: barPaintGrouped,
+};
+
+const heatMapPainter = {
+	directly: heatMapDirectly,
+	grouped: heatMapGrouped,
+};
+const flameMapPainter = {
+	directly: heatMapDirectly,
+	grouped: flameMapGrouped,
+};
+
+const textPaint = {
+	directly: textPaintDirectly,
+	grouped: noop,
+};
+
 
 function selectPlotter(mode) {
 	switch (mode) {
@@ -24,38 +56,28 @@ function selectPlotter(mode) {
 			return barPaint;
 		case 'Heatmap':
 		case 'Heatmap2':
-			return heatmapPainter;
+			return heatMapPainter;
 		case 'Flame':
 		case 'Flame2':
-			return flamemapPainter;
+			return flameMapPainter;
 		default:
 			return textPaint;
 	}
 }
 
-export function sparkline(attr, indices, mode, settings, label) {
-	if (!attr) {
-		return () => { };
-	}
-
+function prepRange(indices, mode, settings) {
 	settings = settings || {};
 	const {
 		dataRange,
-		orientation,
-		unfiltered,
 	} = settings;
 
-	// =====================
-	// Prep data for plotter
-	// =====================
-	let { data, arrayType, indexedVal } = attr;
 
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
 
 	// dataRange consists of two doubles that indicate which part
 	// of the data is displayed (using the bounds of the leaflet
-	// heatmap actually works out here, because it has has a
+	// heatMap actually works out here, because it has has a
 	// one-to-one pixel width/height to column/row mapping.
 	// If this ever changes we need to change this code too).
 
@@ -65,245 +87,164 @@ export function sparkline(attr, indices, mode, settings, label) {
 	// than one pixel.
 
 	// The key insight is that the fractional part of these floats
-	// indicate that only a fraction of a datapoint is displayed.
-	// So for example:
-	//   dataRange = [ 1.4, 5.3 ]
-	// .. results in displaying datapoints 1 to 6, but datapoint 1
-	// will only be 0.6 times the width of the other datapoints,
-	// and point 6 will only be 0.3 times the width.
+	// indicate that only a fraction of a data point is displayed.
+	// For example: `dataRange = [ 1.4, 5.3 ]` shows data values
+	// 1 to 6, but value 1 will only be 0.6x the width of the
+	// other value, and value 6 will only be 0.3x the width.
+
+	// While we return if our total data range is zero,
+	// the range is allowed to be of the data bounds.
+	// For the "data points" out of the range we simply
+	// don't display anything.
 
 	// If dataRange is undefined, use the whole (filtered) dataset.
-	const source = unfiltered ? data : arraySubset(data, arrayType, indices);
-	let range = {
-		left: 0,
-		right: source.length,
-		min: attr.min,
-		max: attr.max,
-	};
+	// If mode is 'Text' and we have indexed values, convert to string array
+
+	const length = indices.length;
+
+	let left = 0,
+		leftRounded = 0,
+		// using indices, since that actually tells us
+		// how much data we're using (if data is filtered out)
+		right = length,
+		rightRounded = length;
+
 	if (dataRange) {
-		range.left = dataRange[0];
-		range.right = dataRange[1];
+		left = dataRange[0];
+		right = dataRange[1];
+		leftRounded = Math.floor(left);
+		rightRounded = Math.ceil(right);
 	}
+	let unrounded = right - left,
+		total = rightRounded - leftRounded;
 
-	// While we return if our total data range is zero, it *is*
-	// allowed to be out of bounds for the dataset. For the
-	// "datapoints" out of the range (or any other `undefined`
-	// values we simply don't display anything.
-	// This allows us to zoom out!
+	return {
+		visible: (
+			total > 0 &&
+			rightRounded >= 0 &&
+			leftRounded < length
+		),
+		left,
+		right,
+		total,
+		leftRounded,
+		rightRounded,
+		unrounded,
+	};
+}
 
-	// When dealing with out of bounds ranges we rely on JS returning
-	// "undefined" for empty indices, effectively padding the data
-	// with empty entries on either or both ends.
-	const i0 = Math.floor(range.left);
-	const i1 = Math.floor(range.right);
+export function sparkline(attr, indices, mode, settings, label) {
+	if (attr) { // attr may be undefined if it is an unfetched gene
+		settings = settings || {};
+		let range = prepRange(indices, mode, settings);
+		const plot = selectPlotter(mode);
+		const dataToColor = attrToColorFactory(attr, mode, settings);
+		return sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label);
+	}
+	return noop;
+}
 
-	let i = i1 - i0;
-	range.total = i;
-	if (range.total <= 0) { return () => { }; }
+function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label) {
+	// note that this will be called after rotation, so we don't have to
+	// worry about duplicating the logic for vertical sparklines.
+	const sparkline = (context) => {
+		if (range.visible) {
+			const ratio = context.pixelRatio * 0.5 > 1 ? context.pixelRatio * 0.5 : 1;
+			const {
+				unrounded,
+				left,
+				leftRounded,
+				rightRounded,
+			} = range;
+			// We need to find the effective number of pixels
+			// covered by the whole range; left and right
+			// fractions are rounded in such a way that partial
+			// coverage equals full coverage. Because range.left,
+			// range.right and range.total are already rounded to
+			// reflect this, the following equation is true:
+			//   "range width"/context.width = range.total/range.unrounded
+			// where range width is the covered nr of pixels.
 
-	if (mode === 'Text' && indexedVal) {
-		range.data = new Array(i);
-		while (i - 16 > 0) {
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
-			range.data[--i] = indexedVal[source[i0 + i]];
+			// Therefore, the columns should have a width of:
+			//   barWidth = ratio * range.width / range.total
+			//            = ratio * context.width / range.unrounded
+			const barWidth = ratio * context.width / unrounded;
+			const groupSize = ratio * unrounded / context.width;
+
+			// If barWidth is < 1, we have multiple data points per pixel.
+			// Otherwise, we have one (or less) data points per pixel.
+			// We use separate plotters for both, to keep the functions simple
+			// and hopefully easier to optimise for the JIT compiler.
+			if (groupSize > 1) {
+				// more data than pixels, so we group the data
+				// as an array of left-padded groups, one per column
+				// Then we can plot the groups to columns directly.
+				const data = groupAttr(attr, indices, range, mode, groupSize);
+				plot.grouped(context, attr, data, range, ratio, dataToColor, settings);
+			} else {
+				// data is an unpadded selection of the visible data
+				// We also include an xOffset (negative) and a barWidth
+				// xOffset is the total pixels by which the first bar
+				// is outside the canvas.
+				// If left = [0, data.length), then this is the fraction
+				// part of it times barWidth
+				// If left < 0, it is -left * barWidth
+				const leftFrac = left < 0 ? -left : leftRounded - left;
+				const xOffset = (leftFrac * barWidth) | 0;
+				// copy relevant subset of data
+				const i0 = leftRounded < 0 ? 0 : leftRounded;
+				const i1 = rightRounded > attr.data.length ? attr.data.length : rightRounded;
+				const indexedText = mode === 'Text' && attr.indexedVal !== undefined;
+				const data = indexedText ? attrIndexedSubset(attr, indices, i0, i1) : attrSubset(attr, indices, i0, i1);
+
+				// xOffset is the lef-padding in pixels, after which we can
+				// simply draw the passed data from left to right, with barWidth
+				// sized columns
+				plot.directly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings);
+			}
 		}
-		while (i--) {
-			range.data[i] = indexedVal[source[i0 + i]];
-		}
+		if (label) { labelPainter(context, label); }
+	};
+
+
+	if (settings.orientation !== 'vertical') {
+		return sparkline;
 	} else {
-		if (i0 >= 0 && i0 < source.length && i1 >= 0 && i1 < source.length) {
-			// fastest way to copy data, but it only works if
-			// range falls inside of the array
-			range.data = source.slice(i0, i1);
-		} else {
-			// If we're not displaying text, then indexed string arrays
-			// should remain Uint8Arrays, as they are more efficient.
-			// Also note that we are basically guaranteed a typed array
-			// at this point in the code, so we cannot use push.
-			const array = (indexedVal && arrayType === 'string' && mode !== 'Text') ? Uint8Array : arrayConstr(arrayType);
-			range.data = new array(i);
-			while (i-16 > 0) {
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-				range.data[--i] = source[i0 + i];
-			}
-			while (i--) {
-				range.data[i] = source[i0 + i];
-			}
-		}
-	}
-
-
-	const paint = selectPlotter(mode);
-
-	const dataToColor = attrToColorFactory(attr, mode, settings);
-
-	return (context) => {
-		// All of our plotting functions draw horizontaly
-		// To get a vertical plot, we simply rotate the canvas
-		// before invoking them. To not mess up the context
-		// settings, we save before and restore at the end
-		if (orientation === 'vertical') {
+		return (context) => {
+			// All of our plotting functions draw horizontally
+			// To get a vertical plot, we simply rotate the canvas
+			// before invoking them. To not mess up the context
+			// settings, we save before and restore at the end
 			context.save();
 			context.translate(context.width, 0);
 			context.rotate(90 * Math.PI / 180);
 			let t = context.width;
 			context.width = context.height;
 			context.height = t;
-		}
 
-		// draw sparkline + label
-		sparklinePainter(context, paint, dataToColor, range);
-		if (label) { labelPainter(context, label); }
+			// draw sparkline
+			sparkline(context);
 
-		// Make sure our rotation from before is undone
-		if (orientation === 'vertical') {
 			context.restore();
-			let t = context.width;
+			t = context.width;
 			context.width = context.height;
 			context.height = t;
-		}
-	};
-}
-
-function sparklinePainter(context, paint, dataToColor, range) {
-	range.unrounded = range.right - range.left;
-	// We need to find the effective rangeWidth spanned by all bars.
-	// Mathematically speaking the following equation is true:
-	//   rangeWidth/context.width = totalRange/unroundedRange
-	// Therefore:
-	range.width = (context.width * range.total / range.unrounded) | 0;
-
-	// Note that the bars should have a width of:
-	//   barWidth = range.width / range.total
-	//            = context.width / range.unrounded;
-	// Total pixels by which the first bar is outside the canvas:
-	//   xOffset = range.leftFrac * barWidth
-	// Which is equal to:
-	range.leftFrac = Math.floor(range.left) - range.left;
-	range.xOffset = (range.leftFrac * context.width / range.unrounded) | 0;
-	range.ratio = context.pixelRatio;
-	paint(context, range, dataToColor);
+		};
+	}
 }
 
 // Helper functions
 
-const abs = Math.abs;
-
-function calcMeans(range) {
-	const { data } = range;
-	// Support high-density displays.
-	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio > 1 ? range.ratio * 0.5 : 1;
-	const width = range.width / ratio;
-	// determine real start and end of range,
-	// skipping undefined padding if present.
-	let start = 0;
-	let end = data.length;
-	while (data[start] === undefined && start < end) { start++; }
-	while (data[end] === undefined && end > start) { end--; }
-
-	let barWidth = 0;
-	// outlier = visually most relevant datapoint
-	let means, minima, maxima, outliers;
-	if (data.length <= width) {
-		// more pixels than data
-		barWidth = range.width / data.length;
-		means = data;
-		minima = data;
-		maxima = data;
-		outliers = data;
-	} else {
-		// more data than pixels
-		barWidth = ratio;
-
-		// calculate means, find minima and maxima
-		means = [];
-		minima = [];
-		maxima = [];
-		for (let i = 0; i < width; i++) {
-			let i0 = (i * data.length / width) | 0;
-			let i1 = (((i + 1) * data.length / width) | 0);
-			// skip the zero-padding on both sides
-			if (i0 < start || i0 >= end) {
-				means[i] = 0;
-				continue;
-			}
-			i1 = i1 < end ? i1 : end;
-			let sum = 0;
-			minima[i] = data[i0];
-			maxima[i] = data[i0];
-			for (let j = i0; j < i1; j++) {
-				let val = data[j];
-				sum += val;
-				minima[i] = val < minima[i] ? val : minima[i];
-				maxima[i] = val > maxima[i] ? val : maxima[i];
-			}
-			const mean = (i1 - i0) !== 0 ? sum / (i1 - i0) : sum;
-			means[i] = mean;
-		}
-
-		// Largest Triangle Three Buckets algorithm by Sven Steinnarson.
-		// Essentially: divide in buckets, calculate mean value per
-		// bucket, then from left to right select the value that has
-		// the biggest difference with the average of the selected value
-		// of the previous bucket, and the mean of the next bucket.
-		outliers = [];
-		let prevMax = 0;
-		for (let i = 0; i < width; i++) {
-			let i0 = (i * data.length / width) | 0;
-			let i1 = (((i + 1) * data.length / width) | 0);
-			if (i0 < start || i0 >= end) {
-				// skip zero-padding
-				outliers[i] = 0;
-				continue;
-			}
-			i1 = i1 < end ? i1 : end;
-
-			const meanNext = means[i + 1] | 0;
-			let mean = (prevMax + meanNext) * 0.5;
-
-			let max = data[i0];
-			let absDiff = abs(max - mean);
-			for (let j = i0 + 1; j < i1; j++) {
-				let newAbsDiff = abs(data[j] - mean);
-				if (newAbsDiff > absDiff) {
-					absDiff = newAbsDiff;
-					max = data[j];
-				}
-			}
-			outliers[i] = max;
-			prevMax = max;
+/** mutates `data`, clipping it to new values */
+function clip(data, clipMin, clipMax) {
+	for (let i = 0; i < data.length; i++) {
+		const v = data[i];
+		if (v < clipMin) {
+			data[i] = clipMin;
+		} else if (v > clipMax) {
+			data[i] = clipMax;
 		}
 	}
-	return { means, minima, maxima, outliers, barWidth };
 }
 
 // Plotting functions. The plotters assume a horizontal plot.
@@ -313,183 +254,124 @@ function calcMeans(range) {
 // Depending on the dataset size, we either have:
 //  - one or more pixels/lines available per data point
 //  - multiple data points per available pixel/line
-// In the former case, the painter functions will widen the bars
+// In the former case, the painter functions will widen the columns
 // or spread the strings across the space
-// To accomodate for the latter case, we calculate the means of
-// the data at that pixel.
-// If we have strings for data, we concatenate them.
+// To accommodate for the latter case, we group the data at that
+// pixel, and decide how to handle that on a case-by-case basis
 
 
-function categoriesPainter(context, range, dataToColor) {
-	const { data, width, xOffset } = range;
+
+function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
 	context.fillStyle = 'white';
-	if (data.length <= width) {
-		// more pixels than data
-		const barWidth = width / data.length;
-		let i = 0;
-		while (i < data.length) {
-			let val = data[i];
-			let j = i, nextVal;
-			// advance while value doesn't change
-			do {
-				j++;
-				nextVal = data[j];
-			} while (val === nextVal && j < data.length);
-			context.fillStyle = dataToColor(val || 0);
-			// force to pixel grid
-			const x = (xOffset + i * barWidth) | 0;
-			const roundedWidth = ((xOffset + j * barWidth) | 0) - x;
-			context.fillRect(x, 0, roundedWidth, context.height);
-			i = j;
-		}
-	} else {
-		// more data than pixels
-		let i = 0;
-		while (i < width) {
-			const i0 = (i * data.length / width) | 0;
-			const i1 = ((i + 1) * data.length / width) | 0;
-			const mostCommonValue = findMostCommon(data, i0, i1) || 0;
-			let j = i, nextCommonValue;
-			do {
-				j++;
-				const j0 = (j * data.length / width) | 0;
-				const j1 = ((j + 1) * data.length / width) | 0;
-				nextCommonValue = findMostCommon(data, j0, j1) || 0;
-			} while (mostCommonValue === nextCommonValue && j < width);
-			context.fillStyle = dataToColor(mostCommonValue);
-			context.fillRect(xOffset + i, 0, (j - i), context.height);
-			i = j;
-		}
-	}
-}
-
-function stackedCategoriesPainter(context, range, dataToColor) {
-	const { data, xOffset } = range;
-	// Support high-density displays. However, we cut it by half
-	// to increase details a little bit.
-	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
-	// Important: we MUST round this number, or the plotter
-	// crashes the browser for results that are not
-	// powers of two.
-	const width = (range.width / ratio) | 0;
-	const { height } = context;
-	context.fillStyle = 'white';
-	if (data.length <= width) {
-		// more pixels than data
-		const barWidth = width / data.length;
-		let i = 0;
-		while (i < data.length) {
-			let val = data[i];
-			let j = i, nextVal;
-			// advance while value doesn't change
-			do {
-				j++;
-				nextVal = data[j];
-			} while (val === nextVal && j < data.length);
-			context.fillStyle = dataToColor(val || 0);
-			// force to pixel grid
-			const x = (xOffset + i * barWidth) | 0;
-			const roundedWidth = ((xOffset + j * barWidth) | 0) - x;
-			context.fillRect(x, 0, roundedWidth, context.height);
-			i = j;
-		}
-	} else {
-		// more data than pixels
-		const barWidth = ratio;
-
-		let barSlices = {}, i = width;
-		while (i--) {
-			const x = (xOffset + i * barWidth) | 0;
-			const x1 = (xOffset + (i + 1) * barWidth) | 0;
-			const roundedWidth = x1 - x;
-
-			let i0 = i - 1 < 0 ? 0 : i - 1;
-			let i1 = i + 2 > width ? width : i + 2;
-			i0 = (i0 * data.length / width) | 0;
-			i1 = (i1 * data.length / width) | 0;
-
-			/**
-			 * Old way. Don't do this! Creates too many throwaway arrays,
-			 * leads to high GC churn, and sometimes allocation errors
-			 * can crash the tab! Only kept as a reminder why we should
-			 *  not "simplify" this code later
-			 */
-			// let barSlice = data.slice(i0, i1);
-			// barSlice.sort();
-
-			const l = i1 - i0;
-			let barSlice = barSlices[l];
-			if (barSlice) {
-				while (i1 - 16 > i0) {
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-					barSlice[--i1 - i0] = data[i1];
-				}
-				while (i1-- > i0) {
-					barSlice[i1 - i0] = data[i1];
-				}
-			} else {
-				// Cach the barSlice to avoid allocating thousands of
-				// tiny typed arrays and immediately throwing them away.
-				// Realistically we only have to cache a few options
-				// due to possible rounding error.
-				barSlice = data.slice(i0, i1);
-				barSlices[l] = barSlice;
-			}
-			barSlice.sort();
-			let j = 0, k = 0;
-			while (j < l) {
-				const val = barSlice[j];
-				do {
-					k++;
-				} while (k < l && val === barSlice[k]);
-				const y = (height * j / l) | 0;
-				const y1 = (height * k / l) | 0;
-				const roundedHeight = y1 - y;
-				context.fillStyle = dataToColor(val || 0);
-				context.fillRect(x, y, roundedWidth, roundedHeight);
-				j = k;
-			}
-		}
-	}
-}
-
-function barPaint(context, range) {
-	const { means, outliers, barWidth } = calcMeans(range);
-	const min = range.min || 0;
-	const max = range.max || 0;
-	// factor to multiply the bar values by, to calculate bar height
-	// Scaled down a tiny bit to keep vertical space between sparklines
-	const barScale = context.height / (max * 1.1);
-	let i = 0, x = range.xOffset;
-
-	// draw bars (outliers)
-	context.fillStyle = '#000000';
-	while (i < outliers.length) {
-
-		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		const barHeight = (outliers[i] * barScale) | 0;
-
-		// advance while height doesn't change
-		let j = i, nextHeight;
+	let i = 0, j = i;
+	while (i <= data.length) {
+		let val = data[i], nextVal = val;
+		// advance while value doesn't change
 		do {
 			j++;
-			nextHeight = (outliers[j] * barScale) | 0;
-		} while (barHeight === nextHeight && i + j < outliers.length);
+			nextVal = data[j];
+		} while (val === nextVal && j <= data.length);
+		context.fillStyle = dataToColor(val || 0);
+		// force to pixel grid
+		const x = ratio * (xOffset + i * barWidth) | 0;
+		const roundedWidth = (ratio * (xOffset + j * barWidth) | 0) - x;
+		context.fillRect(x, 0, roundedWidth, context.height);
+		i = j;
+	}
+}
+
+function categoriesGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+	let i = 0;
+	// skip left-padding
+	while (!data[i]) { i++; }
+	while (data[i]) {
+		const mostCommonValue = findMostCommon(data[i]) || 0;
+		let j = i, nextCommonValue = mostCommonValue;
+		while (mostCommonValue === nextCommonValue && data[j]) {
+			j++;
+			nextCommonValue = data[j] ? findMostCommon(data[j]) : 0;
+		}
+		context.fillStyle = dataToColor(mostCommonValue);
+		const x = i * ratio | 0;
+		const roundedWidth = (j * ratio | 0) - (i * ratio | 0);
+		context.fillRect(x, 0, roundedWidth, context.height);
+		i = j;
+	}
+}
+
+// Note: stackedCategoriesDirectly is functionally equivalent to categories
+
+function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+	const { height } = context;
+	const barWidth = ratio;
+	let i = 0;
+	// skip left-padding
+	while (!data[i]) { i++; }
+	while (data[i]) {
+		let barSlice = data[i++],
+			l = barSlice.length;
+		barSlice.sort();
+
+		const x = (i * barWidth) | 0;
+		const x1 = ((i + 1) * barWidth) | 0;
+		const roundedWidth = x1 - x;
+
+		let j = 0, k = 0;
+		while (j < l) {
+			const val = barSlice[j];
+			do {
+				k++;
+			} while (k < l && val === barSlice[k]);
+			const y = (height * j / l) | 0;
+			const y1 = (height * k / l) | 0;
+			const roundedHeight = y1 - y;
+			context.fillStyle = dataToColor(val || 0);
+			context.fillRect(x, y, roundedWidth, roundedHeight);
+			j = k;
+		}
+	}
+}
+
+function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
+	const { min, max } = attr;
+	let clipMin = min;
+	let clipMax = max;
+	if (settings.clip) {
+		const delta = max - min;
+		if (settings.lowerBound > 0) {
+			clipMin = min + settings.lowerBound * delta / 100;
+		}
+		if (settings.upperBound < 100) {
+			clipMax = min + settings.upperBound * delta / 100;
+		}
+		if (clipMin !== min || clipMax !== max) {
+			clip(data, clipMin, clipMax);
+		}
+	}
+
+	if (settings.logScale) {
+		barPaintDirectlyLog(context, data, xOffset, barWidth, clipMin, clipMax);
+	} else {
+		barPaintDirectlyLinear(context, data, xOffset, barWidth, clipMin, clipMax);
+	}
+
+	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+}
+
+function barPaintDirectlyLinear(context, data, xOffset, barWidth, clipMin, clipMax) {
+	const barScale = context.height * 0.9375 / (clipMax - clipMin) || 0;
+	context.fillStyle = '#000000';
+	let i = 0, x = xOffset;
+	while (i < data.length) {
+
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		const barHeight = ((data[i] - clipMin) * barScale) | 0;
+
+		// advance while height doesn't change
+		let j = i, nextHeight = barHeight;
+		while (barHeight === nextHeight && j++ < data.length - 1) {
+			nextHeight = ((data[j] - clipMin) * barScale) | 0;
+		}
 
 		const w = (j - i) * barWidth;
 
@@ -506,181 +388,321 @@ function barPaint(context, range) {
 		}
 		i = j; x += w;
 	}
+}
 
-	// draw mean values
-	context.fillStyle = '#888888';
-	i = 0;
-	x = range.xOffset;
-	while (i < means.length) {
-		const meanHeight = (means[i] * barScale) | 0;
-		let j = i, nextHeight;
-		do {
-			j++;
-			nextHeight = (means[j] * barScale) | 0;
-		} while (meanHeight === nextHeight && i + j < means.length);
+function barPaintDirectlyLog(context, data, xOffset, barWidth, clipMin, clipMax) {
+	const barScale = context.height * 0.9375 / logProject(clipMax - clipMin) || 0;
+	context.fillStyle = '#000000';
+	let i = 0, x = xOffset;
+	while (i < data.length) {
+
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		const barHeight = (logProject(data[i] - clipMin) * barScale) | 0;
+
+		// advance while height doesn't change
+		let j = i, nextHeight = barHeight;
+		while (barHeight === nextHeight && j++ < data.length - 1) {
+			nextHeight = (logProject(data[j] - clipMin) * barScale) | 0;
+		}
 
 		const w = (j - i) * barWidth;
 
-		if (meanHeight) {
-			let y = context.height - meanHeight - 1;
-			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), 3);
+		// zero values are an extremely common case,
+		// so skip those pointless draw calls
+		if (barHeight) {
+			// canvas defaults to positive y going *down*, so to
+			// draw from bottom to top we start at context height and
+			// subtract the bar height.
+			let y = context.height - barHeight | 0;
+
+			// force to pixel grid
+			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
 		}
 		i = j; x += w;
 	}
+}
 
-	const ratio = context.pixelRatio;
-	textStyle(context);
-	if (ratio > 0.5) {
-		const minmaxSize = 8 * ratio;
-		textSize(context, minmaxSize);
-		drawText(context, min.toPrecision(3), 4 * ratio, context.height - 2);
-		drawText(context, max.toPrecision(3), 4 * ratio, 2 + minmaxSize);
+function barPaintGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+	const { min, max } = attr;
+	let clipMin = min;
+	let clipMax = max;
+	if (settings.clip) {
+		const delta = max - min;
+		if (settings.lowerBound > 0) {
+			clipMin = min + settings.lowerBound * delta / 100;
+		}
+		if (settings.upperBound < 100) {
+			clipMax = min + settings.upperBound * delta / 100;
+		}
+		if (clipMin !== min || clipMax !== max) {
+			for (let i = 0; i < data.length; i++) {
+				clip(data[i], clipMin, clipMax);
+			}
+		}
+	}
+
+	if (settings.logScale) {
+		barPaintGroupedLog(context, data, clipMin, clipMax);
+	} else {
+		barPaintGroupedLinear(context, data, clipMin, clipMax);
+	}
+
+	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+}
+
+function barPaintGroupedLinear(context, data, clipMin, clipMax) {
+	context.fillStyle = '#000000';
+	const barScale = context.height * 0.9375 / (clipMax - clipMin) || 0;
+
+	let i = 0;
+	while (!data[i]) { i++; }
+
+	let x = i;
+
+	while (data[i]) {
+		let dataGroup = data[i];
+		let sum = 0;
+		for (let j = 0; j < dataGroup.length; j++) {
+			sum += dataGroup[j];
+		}
+		let mean = sum / dataGroup.length;
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		const barHeight = ((mean - clipMin) * barScale) | 0;
+
+		// advance while height doesn't change
+		let j = i, nextHeight = barHeight;
+		while (barHeight === nextHeight && j++ < data.length - 1) {
+			dataGroup = data[j];
+			sum = 0;
+			for (let k = 0; k < dataGroup.length; k++) {
+				sum += dataGroup[k];
+			}
+			mean = sum / dataGroup.length;
+			nextHeight = (mean - clipMin) * barScale | 0;
+		}
+
+		const w = (j - i);
+
+		// zero values are an extremely common case,
+		// so skip those pointless draw calls
+		if (barHeight) {
+			// canvas defaults to positive y going *down*, so to
+			// draw from bottom to top we start at context height and
+			// subtract the bar height.
+			let y = context.height - barHeight | 0;
+
+			// force to pixel grid
+			context.fillRect(x | 0, y, w, barHeight);
+		}
+		i = j; x += w;
 	}
 }
 
-function heatmapPainter(context, range, dataToColor) {
-	const { means, outliers, barWidth } = calcMeans(range);
-	let i = 0, x = range.xOffset;
-	while (i < outliers.length) {
+function barPaintGroupedLog(context, data, clipMin, clipMax) {
+
+	context.fillStyle = '#000000';
+	const barScale = context.height * 0.9375 / logProject(clipMax - clipMin) || 0;
+
+	let i = 0;
+	while (!data[i]) { i++; }
+
+	let x = i;
+
+	while (data[i]) {
+		let dataGroup = data[i];
+		let sum = 0;
+		for (let j = 0; j < dataGroup.length; j++) {
+			sum += dataGroup[j];
+		}
+		let mean = sum / dataGroup.length;
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		let color = dataToColor((outliers[i] + means[i]) * 0.5 || 0);
+		const barHeight = logProject(mean - clipMin) * barScale | 0;
+
+		// advance while height doesn't change
+		let j = i, nextHeight = barHeight;
+		while (barHeight === nextHeight && j++ < data.length - 1) {
+			dataGroup = data[j];
+			sum = 0;
+			for (let k = 0; k < dataGroup.length; k++) {
+				sum += dataGroup[k];
+			}
+			mean = sum / dataGroup.length;
+			nextHeight = logProject(mean - clipMin) * barScale | 0;
+		}
+
+		const w = (j - i);
+
+		// zero values are an extremely common case,
+		// so skip those pointless draw calls
+		if (barHeight) {
+			// canvas defaults to positive y going *down*, so to
+			// draw from bottom to top we start at context height and
+			// subtract the bar height.
+			let y = context.height - barHeight | 0;
+
+			// force to pixel grid
+			context.fillRect(x | 0, y, w, barHeight);
+		}
+		i = j; x += w;
+	}
+}
+
+function barPaintLabel(context, ratio, min, max, clipMin, clipMax) {
+	if (ratio > 0.5) {
+		const minmaxSize = 10 * ratio;
+		let minText = (min || 0).toPrecision(3);
+		let maxText = (max || 0).toPrecision(3);
+		if (clipMin !== min) {
+			minText = (clipMin || 0).toPrecision(3) + ' (min: ' + minText + ')';
+		}
+		if (clipMax !== max) {
+			maxText = (clipMax || 0).toPrecision(3) + ' (max: ' + maxText + ')';
+		}
+		textStyle(context);
+		textSize(context, minmaxSize);
+		drawText(context, minText, 8 * ratio, context.height - 2);
+		drawText(context, maxText, 8 * ratio, 2 + minmaxSize);
+	}
+}
+
+function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
+	const { min, max } = attr;
+	let clipMin = min;
+	let clipMax = max;
+	if (settings.clip) {
+		const delta = max - min;
+		if (settings.lowerBound > 0) {
+			clipMin = min + settings.lowerBound * delta / 100;
+		}
+		if (settings.upperBound < 100) {
+			clipMax = min + settings.upperBound * delta / 100;
+		}
+	}
+
+	let i = 0, x = xOffset;
+	while (i < data.length) {
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		let color = dataToColor(data[i] || 0);
 		context.fillStyle = color;
-		let j = i, nextColor;
+		let j = i, nextColor = color;
 		// advance while colour value doesn't change
-		do {
-			j++;
-			nextColor = dataToColor((outliers[j] + means[j]) * 0.5 || 0);
-		} while (color === nextColor && i + j < outliers.length);
+		while (color === nextColor && j++ < data.length - 1) {
+			nextColor = dataToColor(data[j] || 0);
+		}
 		const w = (j - i) * barWidth;
 		// force to pixel grid
 		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
 		i = j; x += w;
 	}
+
+	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
 }
 
-function flamemapPainter(context, range, dataToColor) {
-	const { data, xOffset } = range;
-	// Support high-density displays. However, we cut it by half
-	// to increase details a little bit.
-	// Downside: using browser-zoom scales up plots as well
-	const ratio = range.ratio * 0.5 > 1 ? range.ratio * 0.5 : 1;
-	// Important: we MUST round this number, or the plotter
-	// crashes the browser for results that are not
-	// powers of two.
-	const width = (range.width / ratio) | 0;
-
-	if (data.length < width) {
-		// more pixels than data
-		const barWidth = width / data.length;
-		const barHeight = context.height;
-
-		let i = 0, x = xOffset;
-		while (i < data.length) {
-			// Even if outliers[i] is not a number, OR-masking forces it to 0
-			let color = dataToColor(data[i] || 0);
-			context.fillStyle = color;
-			let j = i, nextColor;
-			// advance while colour value doesn't change
-			do {
-				j++;
-				nextColor = dataToColor(data[j] || 0);
-			} while (color === nextColor && i + j < data.length);
-			// force to pixel grid
-			const w = (j - i) * barWidth;
-			const roundedWidth = ((x + w) | 0) - (x | 0);
-			context.fillRect(x | 0, 0, roundedWidth, barHeight);
-			i = j; x += w;
+function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+	const { min, max } = attr;
+	let clipMin = min;
+	let clipMax = max;
+	if (settings.clip) {
+		const delta = max - min;
+		if (settings.lowerBound > 0) {
+			clipMin = min + settings.lowerBound * delta / 100;
 		}
-	} else {
-		// more data than pixels
-
-		const barWidth = ratio;
-
-		// Because of rounding, our bins can come in two sizes.
-		// For small datasets this is a problem, because plotting
-		// a gradient for two or three cells gives a very result.
-		// to fix this, we always make the gradient as large as
-		// the largest bin size.
-		// If necessary, we'll pad it with a zero value.
-		const binSize = Math.ceil(data.length / width) | 0;
-
-		const flameHeight = context.height * 0.875;
-		// the thin heatmap strip
-		const heatmapHeight = context.height - (flameHeight | 0) - ratio;
-
-		context.fillStyle = '#e8e8e8';
-		context.fillRect(0, 0, context.width, context.height);
-
-		let flameSlices = {}, i = width;
-		while (i--) {
-			const x = (xOffset + i * barWidth) | 0;
-			const x1 = (xOffset + (i + 1) * barWidth) | 0;
-			const roundedWidth = x1 - x;
-
-			let i0 = (i * data.length / width) | 0;
-			let i1 = ((i + 1) * data.length / width) | 0;
-			const l = i1 - i0;
-			let flameSlice = flameSlices[l];
-			if (flameSlice) {
-				while (i1 - 16 > i0) {
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-					flameSlice[--i1 - i0] = data[i1];
-				}
-				while (i1-- > i0) {
-					flameSlice[i1 - i0] = data[i1];
-				}
-			} else {
-				// Cach the flameSlice to avoid allocating thousands of
-				// tiny typed arrays and immediately throwing them away.
-				// Realistically we only have to cache a few options
-				// due to possible rounding error.
-				flameSlice = data.slice(i0, i1);
-				flameSlices[l] = flameSlice;
-			}
-			flameSlice.sort();
-			const yOffset = binSize - flameSlice.length;
-			let j = 0, k = 0;
-			while (j < l) {
-				const val = flameSlice[j];
-				do {
-					k++;
-				} while (k < l && val === flameSlice[k]);
-				const y = (flameHeight * (j + yOffset) / binSize) | 0;
-				const y1 = (flameHeight * (k + yOffset) / binSize) | 0;
-				const roundedHeight = y1 - y;
-				const col = dataToColor(val || 0);
-				context.fillStyle = col;
-				context.fillRect(x, y, roundedWidth, roundedHeight);
-				j = k;
-			}
-			// draw strip to highlight max value, so dataset with
-			// sparse gene expression are more visible
-			context.fillRect(x, flameHeight, roundedWidth, heatmapHeight);
+		if (settings.upperBound < 100) {
+			clipMax = min + settings.upperBound * delta / 100;
 		}
-		// slightly separate the heatmap from the flame-map with a faded strip
-		context.fillStyle = 'grey';
-		context.globalAlpha = 0.25;
-		context.fillRect(0, flameHeight, context.width, ratio);
-		context.globalAlpha = 1.0;
 	}
+
+	let i = 0;
+	while (!data[i]) { i++; }
+	let x = i * ratio;
+	while (i < data.length) {
+		let dataGroup = data[i],
+			sum = 0;
+		for (let j = 0; j < dataGroup.length; j++) {
+			sum += dataGroup[j];
+		}
+		let mean = sum / dataGroup.length;
+		// Even if outliers[i] is not a number, OR-masking forces it to 0
+		let color = dataToColor(mean || 0);
+		context.fillStyle = color;
+		let j = i, nextColor = color;
+		// advance while colour value doesn't change
+		while (color === nextColor && j++ < data.length - 1) {
+			dataGroup = data[j];
+			sum = 0;
+			for (let k = 0; k < dataGroup.length; k++) {
+				sum += dataGroup[k];
+			}
+			mean = sum / dataGroup.length;
+			nextColor = dataToColor(mean || 0);
+		}
+		const w = (j - i) * ratio;
+		// force to pixel grid
+		context.fillRect(x | 0, 0, ((x + w) | 0) - (x | 0), context.height);
+		i = j; x += w;
+	}
+
+	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
 }
 
 
-function textPaint(context, range) {
+// Note: flameMapDirectly is just heatMapDirectly
+
+function flameMapGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+	// Because of rounding, our bins can come in two sizes.
+	// For small data sets this is a problem, because plotting
+	// a gradient for two or three cells gives a very result.
+	// to fix this, we always make the gradient as large as
+	// the largest bin size.
+	// If necessary, we'll pad it with a zero value.
+	let binSize = 0;
+	let i = data.length;
+	while (data[--i]){
+		if (binSize < data[i].length){
+			binSize = data[i].length;
+		}
+	}
+
+	const barWidth = ratio;
+	const flameHeight = context.height * 0.875;
+	// the thin heatMap strip
+	const heatMapHeight = context.height - (flameHeight | 0) - ratio;
+
+	while(data[++i]){
+		const x = i * barWidth | 0;
+		const x1 = (i + 1) * barWidth | 0;
+		const roundedWidth = x1 - x;
+		let dataGroup = data[i];
+		dataGroup.sort();
+		const l = dataGroup.length;
+		const yOffset = binSize - l;
+		let j = 0, k = 0;
+		while (j < l) {
+			const val = dataGroup[j];
+			do {
+				k++;
+			} while (k < l && val === dataGroup[k]);
+			const y = (flameHeight * (j + yOffset) / binSize) | 0;
+			const y1 = (flameHeight * (k + yOffset) / binSize) | 0;
+			const roundedHeight = y1 - y;
+			const col = dataToColor(val || 0);
+			context.fillStyle = col;
+			context.fillRect(x, y, roundedWidth, roundedHeight);
+			j = k;
+		}
+		// draw strip to highlight max value, so dataset with
+		// sparse gene expression are more visible
+		context.fillRect(x, flameHeight, roundedWidth, heatMapHeight);
+	}
+	// slightly separate the heatMap from the flame-map with a faded strip
+	context.fillStyle = 'grey';
+	context.globalAlpha = 0.25;
+	context.fillRect(0, flameHeight, context.width, ratio);
+	context.globalAlpha = 1.0;
+
+}
+
+function textPaintDirectly(context, range) {
 	const lineSize = (range.width / range.data.length) | 0;
 	// only draw if we have six pixels height per word, meaning
 	// ten pixels per line
@@ -708,6 +730,7 @@ function textPaint(context, range) {
 			context.translate(0, lineSize);
 		});
 		// undo all rotations/translations
+		context.shadowBlur = 0;
 		context.restore();
 	}
 }
@@ -717,4 +740,5 @@ function labelPainter(context, label) {
 	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
 	textSize(context, labelSize);
 	drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
+	context.shadowBlur = 0;
 }

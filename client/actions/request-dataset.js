@@ -162,12 +162,14 @@ function convertToDataSet(data, dataset) {
 			order: prepRows.order,
 			filter: [],
 			indices: prepRows.indices,
+			originalIndices: prepRows.originalIndices,
 			ascendingIndices: prepRows.indices,
 		},
 		col: {
 			order: prepCols.order,
 			filter: [],
 			indices: prepCols.indices,
+			originalIndices: prepCols.originalIndices,
 			ascendingIndices: prepCols.indices,
 		},
 		heatmap: {
@@ -298,6 +300,7 @@ function prepData(attrs) {
 	keysNoUniques.sort();
 
 	const indices = originalOrder.data.slice();
+	const originalIndices = originalOrder.data.slice();
 
 	return {
 		data: {
@@ -308,6 +311,7 @@ function prepData(attrs) {
 		},
 		order,
 		indices,
+		originalIndices,
 	};
 }
 

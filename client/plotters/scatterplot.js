@@ -1,9 +1,10 @@
 import {
-	clipData,
+	clipRange,
 	getPalette,
 	attrToColorFactory,
 	attrToColorIndexFactory,
 	rndNorm,
+	attrSubset,
 	arraySubset,
 	logProject,
 } from '../js/util';
@@ -17,9 +18,9 @@ import {
 // "global" array of sprite canvases.
 // Dots will be drawed in later (depends on colour settings)
 // Multiple radiuses; no need to draw a 128x128 image for a 8x8 dot
-const { sprites, contexts } = (() => {
+const { allSprites, contexts } = (() => {
 	let i = 257, j = 7;
-	const sprites = new Array(j), contexts = new Array(i);
+	const allSprites = new Array(j), contexts = new Array(i);
 	while (j--) {
 		i = 257;
 		const _sprites = new Array(i);
@@ -29,9 +30,9 @@ const { sprites, contexts } = (() => {
 			_sprites[i].width = 4 << j;
 			_sprites[i].height = 4 << j;
 		}
-		sprites[j] = _sprites;
+		allSprites[j] = _sprites;
 	}
-	return { sprites, contexts };
+	return { allSprites, contexts };
 })();
 
 export function scatterplot(x, y, color, indices, settings) {
@@ -65,8 +66,8 @@ export function scatterplot(x, y, color, indices, settings) {
 		// - smaller canvas size -> smaller points
 		const shortEdge = Math.min(width, height);
 		const radius = Math.min(63, (Math.max(1, shortEdge / 200)) * scaleFactor / 50);
-		const spriteIdx = Math.min(sprites.length - 1, Math.log2(radius + 1) | 0), spriteRadius = 2 << spriteIdx;
-		const _sprites = sprites[spriteIdx];
+		const spriteIdx = Math.min(allSprites.length - 1, Math.log2(radius + 1) | 0), spriteRadius = 2 << spriteIdx;
+		const sprites = allSprites[spriteIdx];
 
 
 		let labelSize = (Math.max(12, Math.min(64, Math.sqrt(shortEdge))) * pixelRatio * 0.75) | 0;
@@ -78,7 +79,7 @@ export function scatterplot(x, y, color, indices, settings) {
 		// ===============================
 		// == Prepare Palette & Sprites ==
 		// ===============================
-		prepareSprites(colorMode, width, height, radius, _sprites);
+		prepareSprites(colorMode, width, height, radius, sprites);
 
 		// =================================
 		// == Prepare x, y and color data ==
@@ -101,50 +102,17 @@ export function scatterplot(x, y, color, indices, settings) {
 		// Sort so that we render zero values first, and then from back-to-front.
 		// This has to be done after jittering to maintain the tiling behaviour
 		// that is desired.
-		const sorted = sortByAxes(xy, cIdx, _sprites);
-		let { cSprites, zeros } = sorted;
-		xy = sorted.xy;
-
+		const sorted = sortByAxes(xy, cIdx, sprites);
 
 		// ==================
 		// == blit sprites ==
 		// ==================
-		let i = cSprites.length, zeroSprite = _sprites[0], _xy = 0, _x = 0, _y = 0;
-		// draw zero values first
-		while (i-- && zeros--) {
-			_xy = xy[i];
-			_x = ((_xy - spriteRadius) & 0xFFFF) + labelMargin;
-			_y = (height - (_xy >>> 16) - spriteRadius) | 0;
-			context.drawImage(zeroSprite, _x, _y);
-		}
-		if (i >= 0) {
-			while (i--) {
-				_xy = xy[i];
-				_x = ((_xy - spriteRadius) & 0xFFFF) + labelMargin;
-				_y = (height - (_xy >>> 16) - spriteRadius) | 0;
-				context.drawImage(cSprites[i], _x, _y);
-			}
-		}
+		blitSprites(context, sprites, spriteRadius, sorted, height, labelMargin);
 
 		// =================
 		// == draw labels ==
 		// =================
-		textStyle(context);
-		textSize(context, labelSize);
 		const labelY = (context.height - labelMargin * 0.5) | 0;
-
-		// X attribute name
-		drawText(context, x.name, 1.5 * labelMargin, labelY);
-
-		// Y attribute name
-		context.translate(0, context.height);
-		context.rotate(-Math.PI / 2);
-		drawText(context, y.name, 1.5 * labelMargin, ((labelMargin - labelSize) * 0.5 + labelSize) | 0);
-		context.rotate(Math.PI / 2);
-		context.translate(0, -context.height);
-
-		// Color attribute name is places left of heatmap scale,
-		// so we need to calculate the position for both early
 		const cSize = Math.min(
 			256 * pixelRatio,
 			Math.max(16, shortEdge / 10)
@@ -152,66 +120,10 @@ export function scatterplot(x, y, color, indices, settings) {
 		const labelOffset = (labelSize * 3) | 0;
 		const colorX0 = (width - cSize - labelOffset) | 0;
 
-
-		// Color attribute name
-		context.textAlign = 'end';
-		drawText(context, color.name, (colorX0 - labelOffset * 2 - 5) | 0, labelY);
-		context.textAlign = 'start';
-
+		drawLabels(context, x, y, color, width, cSize, labelSize, labelMargin, labelY);
 		// Heatmap scale, if necessary
 		if (colorMode === 'Heatmap' || colorMode === 'Heatmap2') {
-			// label for min value
-			const lblMin = color.min !== (color.min | 0) ?
-				color.min.toExponential(2) : color.min | 0;
-			context.textAlign = 'end';
-			drawText(context, lblMin, (colorX0 - 5) | 0, labelY);
-
-			// label for max value
-			const lblMax = color.max !== (color.max | 0) ?
-				color.max.toExponential(2) : color.max | 0;
-			context.textAlign = 'start';
-			drawText(context, lblMax, (colorX0 + cSize + 5) | 0, labelY);
-
-			// border for colour gradient
-			const cY = (labelY - labelSize) | 0;
-			context.fillRect(
-				colorX0 - pixelRatio,
-				cY - pixelRatio,
-				cSize + 2 * pixelRatio,
-				labelSize * 1.25 + 2 * pixelRatio
-			);
-
-			const c = clipData(color, settings);
-			const cDelta = color.max - color.min;
-			// draw clipping points, if required
-			if (c.min !== c.clipMin) {
-				const clipMin = settings.log2Color ? Math.pow(2, c.clipMin) : c.clipMin;
-				const clipMinX = ((clipMin - c.min) * cSize / cDelta) | 0;
-				context.fillRect(
-					colorX0 + clipMinX,
-					cY - pixelRatio * 3,
-					pixelRatio,
-					labelSize * 1.25 + 6 * pixelRatio
-				);
-			}
-			if (c.max !== c.clipMax) {
-				const clipMax = settings.log2Color ? Math.pow(2, c.clipMax) : c.clipMax;
-				const clipMaxX = ((clipMax - c.min) * cSize / cDelta) | 0;
-				context.fillRect(
-					colorX0 + clipMaxX,
-					cY - pixelRatio * 3,
-					pixelRatio,
-					labelSize * 1.25 + 6 * pixelRatio
-				);
-			}
-			// colour gradient
-			const cScaleFactor = cDelta / cSize;
-			const valToColor = attrToColorFactory(color, colorMode, settings);
-			i = cSize;
-			while (i--) {
-				context.fillStyle = valToColor(color.min + i * cScaleFactor);
-				context.fillRect(colorX0 + i, cY, 1, labelSize * 1.25);
-			}
+			drawHeatmapScale(context, color, colorMode, settings, colorX0, cSize, pixelRatio, labelSize, labelY);
 		}
 
 		context.restore();
@@ -219,19 +131,11 @@ export function scatterplot(x, y, color, indices, settings) {
 }
 
 function convertCoordinates(x, y, indices, width, height, radius, jitter, logscale) {
-	const { PI, random, sin, cos, log2 } = Math;
 
-	let xmin = x.min,
-		xmax = x.max,
-		xDelta = xmax - xmin,
-		xOrder = Math.round(Math.log10(xDelta)) | 0,
+	let xDelta = x.max - x.min,
 		xJitter = 1,
-		ymin = y.min,
-		ymax = y.max,
-		yDelta = ymax - ymin,
-		yOrder = Math.round(Math.log10(yData)) | 0,
+		yDelta = y.max - y.min,
 		yJitter = 1;
-
 
 
 	// For small value ranges (happens with PCA a lot),
@@ -244,13 +148,42 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 	}
 
 	// If we have an unindexed string array, convert it
-	// to numbers as a form of categorisation
-	let xData = maybeStringArray(x, indices);
-	let yData = maybeStringArray(y, indices);
+	// to numbers as a form of categorisation.
+	// Also, we convert our data to float32 here
+	// because we might want to jitter it later.
+	let xData = maybeStringArray(x, indices, jitter.x || jitter.y);
+	let yData = maybeStringArray(y, indices, jitter.x || jitter.y);
+
 
 	// Jitter if requested
-	const l = xData.length;
-	let i = l;
+	maybeJitterData(xData, yData, jitter, xJitter, yJitter);
+
+	// Log transform if requested.
+	// Because this might change the min/max values, it returns
+	// these as an object.
+	const { xmin, xmax, ymin, ymax } = maybeLogScale(xData, yData, x.min, x.max, y.min, y.max, logscale);
+	// Scale to screen dimensions with margins
+	return scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius);
+}
+
+function maybeStringArray(attr, indices, jitter) {
+	// realistically, this only happens if all strings are unique,
+	// so it's kind of pointless
+	if (attr.arrayType === 'string' && !attr.indexedVal) {
+		let i = indices.length;
+		let retVal = new Float32Array(i);
+		while (i--) {
+			retVal[i] = indices[i] + 1;
+		}
+		return retVal;
+	}
+	// If we jitter later, we need to return a float32
+	return arraySubset(attr.data, jitter ? 'float32' : attr.arrayType, indices);
+}
+
+function maybeJitterData(xData, yData, jitter, xJitter, yJitter) {
+	const { PI, random, sin, cos } = Math;
+	let i = xData.length;
 	if (jitter.x && jitter.y) {
 		// if jittering both axes, do so in a
 		// circle around the data
@@ -269,10 +202,12 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 			yData[i] += yJitter * rndNorm();
 		}
 	}
+}
 
-	// Log transform if requested
+function maybeLogScale(xData, yData, xmin, xmax, ymin, ymax, logscale) {
+	const { log2 } = Math;
+	let i = xData.length;
 	if (logscale.x) {
-		i = l;
 		while (i--) {
 			xData[i] = xData[i] > 0 ? log2(1 + xData[i]) : -log2(1 - xData[i]);
 		}
@@ -280,30 +215,13 @@ function convertCoordinates(x, y, indices, width, height, radius, jitter, logsca
 		xmax = logProject(xmax);
 	}
 	if (logscale.y) {
-		i = l;
 		while (i--) {
 			yData[i] = yData[i] > 0 ? log2(1 + yData[i]) : -log2(1 - yData[i]);
 		}
 		ymin = logProject(ymin);
 		ymax = logProject(ymax);
 	}
-
-	// Scale to screen dimensions with margins
-	return scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, radius);
-}
-
-function maybeStringArray(attr, indices) {
-	// realistically, this only happens if all strings are unique,
-	// so it's kind of pointless
-	if (attr.arrayType === 'string' && !attr.indexedVal) {
-		let i = indices.length;
-		let retVal = new Float32Array(i);
-		while (i--) {
-			retVal[i] = indices[i] + 1;
-		}
-		return retVal;
-	}
-	return arraySubset(attr.data, 'float32', indices);
+	return { xmin, xmax, ymin, ymax };
 }
 
 // returns an uint32 array `xy` that contains y and x bitpacked into it,
@@ -334,7 +252,7 @@ function scaleToContext(xData, yData, xmin, xmax, ymin, ymax, width, height, rad
 }
 
 function convertColordata(colorAttr, indices, dataToIdx) {
-	const colData = arraySubset(colorAttr.data, colorAttr.arrayType, indices);
+	const colData = attrSubset(colorAttr, indices);
 	// Largest palettes are 256 entries in size,
 	// so we can safely Uint8Array for cIdx
 	let cIdx = new Uint16Array(colData.length);
@@ -386,7 +304,7 @@ function sortByAxes(xy, cIdx, sprites) {
 	// automatically sorts by Y first, X second
 	// However, we want to draw the zero-values underneath the
 	// non-zero values, so we make a copy of this array
-	// with 0xFFFFFFFF if cIdx is zero, and sort by that copy.
+	// with 0x7FFFFFFF if cIdx is zero, and sort by that copy.
 	// (we want zero values at the end because we use while(i--)
 	// instead of for loops as a micro-optimisation)
 	const l = cIdx.length;
@@ -399,7 +317,7 @@ function sortByAxes(xy, cIdx, sprites) {
 		if (cIdx[i]) {
 			compVal[i] = xy[i];
 		} else {
-			compVal[i] = 0xFFFFFFFF;
+			compVal[i] = 0x7FFFFFFF;
 			zeros++;
 		}
 	}
@@ -463,4 +381,102 @@ function sortByAxes(xy, cIdx, sprites) {
 	}
 
 	return { xy, cSprites, zeros };
+}
+
+function blitSprites(context, sprites, spriteRadius, sorted, height, labelMargin) {
+	labelMargin = labelMargin | 0;
+	let { cSprites, zeros, xy } = sorted;
+	let i = cSprites.length, zeroSprite = sprites[0], _xy = 0, _x = 0, _y = 0;
+	// draw zero values first
+	while (i-- && zeros--) {
+		_xy = xy[i];
+		_x = ((_xy - spriteRadius) + labelMargin) & 0xFFFF;
+		_y = (height - (_xy >>> 16) - spriteRadius) | 0;
+		context.drawImage(zeroSprite, _x, _y);
+	}
+	while (i) {
+		_xy = xy[--i];
+		_x = ((_xy - spriteRadius) + labelMargin) & 0xFFFF;
+		_y = (height - (_xy >>> 16) - spriteRadius) | 0;
+		context.drawImage(cSprites[i], _x, _y);
+	}
+}
+
+function drawLabels(context, x, y, color, width, cSize, labelSize, labelMargin, labelY) {
+	textStyle(context);
+	textSize(context, labelSize);
+
+	// X attribute name
+	drawText(context, x.name, 1.5 * labelMargin, labelY);
+
+	// Y attribute name
+	context.translate(0, context.height);
+	context.rotate(-Math.PI / 2);
+	drawText(context, y.name, 1.5 * labelMargin, ((labelMargin - labelSize) * 0.5 + labelSize) | 0);
+	context.rotate(Math.PI / 2);
+	context.translate(0, -context.height);
+
+
+	// Color attribute name
+	const labelOffset = (labelSize * 3) | 0;
+	const colorX0 = (width - cSize - labelOffset) | 0;
+	context.textAlign = 'end';
+	drawText(context, color.name, (colorX0 - labelOffset * 2 - 5) | 0, labelY);
+	context.textAlign = 'start';
+	context.shadowBlur = 0;
+}
+
+function drawHeatmapScale(context, color, colorMode, settings, colorX0, cSize, pixelRatio, labelSize, labelY) {
+	// label for min value
+	const lblMin = color.min !== (color.min | 0) ?
+		color.min.toExponential(2) : color.min | 0;
+	context.textAlign = 'end';
+	drawText(context, lblMin, (colorX0 - 5) | 0, labelY);
+
+	// label for max value
+	const lblMax = color.max !== (color.max | 0) ?
+		color.max.toExponential(2) : color.max | 0;
+	context.textAlign = 'start';
+	drawText(context, lblMax, (colorX0 + cSize + 5) | 0, labelY);
+
+	// border for colour gradient
+	const cY = (labelY - labelSize) | 0;
+	context.fillRect(
+		colorX0 - pixelRatio,
+		cY - pixelRatio,
+		cSize + 2 * pixelRatio,
+		labelSize * 1.25 + 2 * pixelRatio
+	);
+
+	const range = clipRange(color, settings);
+	const cDelta = color.max - color.min;
+	// draw clipping points, if required
+	if (range.min !== range.clipMin) {
+		const clipMin = settings.logScale ? Math.pow(2, range.clipMin) : range.clipMin;
+		const clipMinX = ((clipMin - range.min) * cSize / cDelta) | 0;
+		context.fillRect(
+			colorX0 + clipMinX,
+			cY - pixelRatio * 3,
+			pixelRatio,
+			labelSize * 1.25 + 6 * pixelRatio
+		);
+	}
+	if (range.max !== range.clipMax) {
+		const clipMax = settings.logScale ? Math.pow(2, range.clipMax) : range.clipMax;
+		const clipMaxX = ((clipMax - range.min) * cSize / cDelta) | 0;
+		context.fillRect(
+			colorX0 + clipMaxX,
+			cY - pixelRatio * 3,
+			pixelRatio,
+			labelSize * 1.25 + 6 * pixelRatio
+		);
+	}
+	// colour gradient
+	const cScaleFactor = cDelta / cSize;
+	const valToColor = attrToColorFactory(color, colorMode, settings);
+	let i = cSize;
+	while (i--) {
+		context.fillStyle = valToColor(color.min + i * cScaleFactor);
+		context.fillRect(colorX0 + i, cY, 1, labelSize * 1.25);
+	}
 }

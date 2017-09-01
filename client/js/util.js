@@ -29,17 +29,17 @@ export const logProject = (x) => {
 	return x >= 0 ? log2(1 + x) : -log2(1 - x);
 };
 
-export const clipData = (attr, settings) => {
+export const clipRange = (attr, settings) => {
 	let { min, max } = attr;
 	let { lowerBound, upperBound } = settings;
-	if (lowerBound === undefined){
+	if (lowerBound === undefined) {
 		lowerBound = 0;
 	}
-	if (upperBound === undefined){
+	if (upperBound === undefined) {
 		upperBound = 100;
 	}
 
-	if (settings.log2Color) {
+	if (settings.logScale) {
 		min = logProject(min);
 		max = logProject(max);
 	}
@@ -74,7 +74,7 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap2':
 		case 'Flame':
 		case 'Flame2':
-			let { min, max, clipMin, clipMax } = clipData(colorAttr, settings);
+			let { min, max, clipMin, clipMax } = clipRange(colorAttr, settings);
 			const isZero = min === 0;
 
 			if (min === max) {
@@ -92,7 +92,7 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 			if (isZero) { // zero-value is coloured differently
 				const minColor = palette[0];
 				const colorIdxScale = (palette.length - 1) / clipDelta;
-				return settings.log2Color ? (
+				return settings.logScale ? (
 					(val) => {
 						val = logProject(val);
 						if (val >= clipMax) {
@@ -122,7 +122,7 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 				// no zero value
 				const minColor = palette[1];
 				const colorIdxScale = (palette.length - 2) / clipDelta;
-				return settings.log2Color ? (
+				return settings.logScale ? (
 					(val) => {
 						val = logProject(val);
 						if (val >= clipMax) {
@@ -167,7 +167,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
-			let { min, max, clipMin, clipMax } = clipData(colorAttr, settings);
+			let { min, max, clipMin, clipMax } = clipRange(colorAttr, settings);
 			const isZero = min === 0;
 			if (min === max) {
 				if (isZero) {
@@ -181,7 +181,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 			const paletteEnd = getPalette(colorMode).length - 1;
 			if (isZero) { // zero-value is coloured differently
 				const colorIdxScale = paletteEnd / clipDelta;
-				return settings.log2Color ? (
+				return settings.logScale ? (
 					(val) => {
 						val = logProject(val);
 						if (val >= clipMax) {
@@ -208,7 +208,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 				// dataranges that have negative values and/or
 				// no zero value
 				const colorIdxScale = (paletteEnd - 1) / clipDelta;
-				return settings.log2Color ? (
+				return settings.logScale ? (
 					(val) => {
 						val = logProject(val);
 						if (val >= clipMax) {
@@ -249,7 +249,7 @@ export function rndNorm() {
 
 // https://blogs.msdn.microsoft.com/jeuge/2005/06/08/bit-fiddling-3/
 export function msb(u) {
-	if (u <0x100000000){
+	if (u < 0x100000000) {
 		u |= u >> 1;
 		u |= u >> 2;
 		u |= u >> 4;
@@ -258,15 +258,16 @@ export function msb(u) {
 		u = u - ((u >>> 1) & 0o33333333333) - ((u >>> 2) & 0o11111111111);
 		return ((u + (u >>> 3)) & 0o30707070707) % 63;
 	}
-	return 32 + msb((u / 0x100000000)|0);
+	return 32 + msb((u / 0x100000000) | 0);
 }
 
-export function bitCount(u){
-	if (u <0x100000000){
+export function bitCount(u) {
+	if (u < 0x100000000) {
 		u = u - ((u >>> 1) & 0o33333333333) - ((u >>> 2) & 0o11111111111);
 		return ((u + (u >>> 3)) & 0o30707070707) % 63;
 	}
-	return bitCount(u&0xFFFFFFFF) + bitCount((u / 0x100000000)|0);}
+	return bitCount(u & 0xFFFFFFFF) + bitCount((u / 0x100000000) | 0);
+}
 
 // expects two number arrays of [xmin, ymin, xmax, ymax].
 export function inBounds(r1, r2) {
@@ -326,10 +327,10 @@ export function findMostCommon(array, start, end) {
 	while (val !== null && val !== undefined) {
 
 		// keep going until a different value is found
-		while (sorted[j+1024] === val) { j += 1024; }
-		while (sorted[j+256] === val) { j += 256; }
-		while (sorted[j+64] === val) { j += 64; }
-		while (sorted[j+8] === val) { j += 8; }
+		while (sorted[j + 1024] === val) { j += 1024; }
+		while (sorted[j + 256] === val) { j += 256; }
+		while (sorted[j + 64] === val) { j += 64; }
+		while (sorted[j + 8] === val) { j += 8; }
 		while (sorted[j] === val) { j++; }
 
 		if (j - i > mc) {
@@ -469,8 +470,8 @@ export function convertJSONarray(arr, name) {
  * @param {object} obj
  * @param {string[]} keyList
  */
-export function firstMatch(obj, keyList){
-	for (let i = 0; i < keyList.length; i++){
+export function firstMatch(obj, keyList) {
+	for (let i = 0; i < keyList.length; i++) {
 		if (obj[keyList[i]]) {
 			return keyList[i];
 		}
@@ -619,11 +620,110 @@ export function sortFromIndices(array, indices) {
 	return array;
 }
 
-export function arraySubset(data, arrayType, indices) {
-	let selection = new (arrayConstr(arrayType))(indices.length),
-		i = indices.length;
-	while (i--) {
-		selection[i] = data[indices[i]];
+// To group the data, we need to find the ranges [i0,i1) such that
+//   i0*barWidth = first data point in one column, and
+//   i1*barWidth = first data point of the next column
+// We then group data in an array of arrays, each with group
+// containing the data points in their range
+export function groupAttr(attr, indices, range, mode, groupSize) {
+	const {
+		left,
+		right,
+	} = range;
+	const dataLength = attr.data.length < right ? attr.data.length : right;
+
+	// Our data range might include indices outside of
+	// the real data range. These are empty groups.
+	// We make sure it's the same typed array type
+	// as the real data, since the JIT compiler might
+	// optimise for that (emphasis might, this is
+	// untested and probably changes over time
+	// anyway. But type-stable arrays are a good
+	// principle to live by I think.
+	let i1 = left + groupSize, leftPad = 0;
+	while (i1 <= 0) {
+		i1 += groupSize;
+		leftPad++;
+	}
+	let data = new Array(leftPad);
+	// Copy actual groups
+	let i0 = (i1 - groupSize) < 0 ? 0 : i1 - groupSize;
+
+	// If we're using Text mode, the data being grouped cannot be a typed
+	// array. We also have to check if the text is indexed or not.
+	const subset = (mode === 'Text' && attr.indexedVal !== undefined) ? attrIndexedSubset : attrSubset;
+
+	// For some modes, we want to smooth the groups
+	const smoothing = mode === 'Stacked';
+
+	if (smoothing) {
+		// smoothing is done by including the surrounding
+		// two columns in the group, creating overlapping groups.
+
+		// First two slices of data, ensured to not start at < 0
+		i1 += groupSize;
+		data.push(subset(attr, indices, i0 | 0, i1 | 0));
+		i1 += groupSize;
+		data.push(subset(attr, indices, i0 | 0, i1 | 0));
+
+		while (i1 + groupSize <= dataLength) {
+			i1 += groupSize;
+			data.push(subset(attr, indices, i0 | 0, i1 | 0));
+			i0 += groupSize;
+		}
+		// Last slices of data, ensure that it ends at dataLength|0
+		while (i0 < dataLength) {
+			data.push(subset(attr, indices, i0 | 0, dataLength | 0));
+			i0 += groupSize;
+		}
+	} else {
+		// First slice of data, ensured to not start at < 0
+		data.push(subset(attr, indices, i0 | 0, i1 | 0));
+		while (i1 + groupSize <= dataLength) {
+			i0 = i1;
+			i1 += groupSize;
+			data.push(subset(attr, indices, i0 | 0, i1 | 0));
+		}
+		i0 = i1;
+		while (i0 < dataLength) {
+			// Last slice of data, ensure that it ends at dataLength|0
+			data.push(subset(attr, indices, i0 | 0, dataLength | 0));
+			i0 += groupSize;
+		}
+	}
+
+	// we don't actually have to pad the right side,
+	// we'll simply stop plotting once we run out of groups.
+	return data;
+}
+
+
+export function attrSubset(attr, indices, i0, i1) {
+	return arraySubset(attr.data, attr.arrayType, indices, i0, i1);
+}
+
+export function attrIndexedSubset(attr, indices, i0, i1) {
+	return indexedSubset(attr.data, indices, i0, i1, attr.indexedVal);
+}
+
+export function arraySubset(data, arrayType, indices, i0, i1) {
+	i0 = i0 || 0;
+	i1 = i1 === undefined ? indices.length : i1;
+	let selection = new (arrayConstr(arrayType))(i1 - i0), i = i0;
+	while (i < i1) {
+		selection[i - i0] = data[indices[i]];
+		i++;
+	}
+	return selection;
+}
+
+export function indexedSubset(data, indices, i0, i1, indexedVal) {
+	i0 = i0 || 0;
+	i1 = i1 === undefined ? indices.length : i1;
+	let selection = new Array(i1 - i0), i = i0;
+	while (i < i1) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+		i++;
 	}
 	return selection;
 }

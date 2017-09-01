@@ -44,7 +44,7 @@ export function createViewStateConverter(dataset) {
 			}]),
 			settings: {
 				scaleFactor: intVal,
-				log2Color: boolVal,
+				logScale: boolVal,
 				clip: boolVal,
 				lowerBound: intVal,
 				upperBound: intVal,
@@ -68,7 +68,7 @@ export function createViewStateConverter(dataset) {
 			}]),
 			settings: {
 				scaleFactor: intVal,
-				log2Color: boolVal,
+				logScale: boolVal,
 				clip: boolVal,
 				lowerBound: intVal,
 				upperBound: intVal,

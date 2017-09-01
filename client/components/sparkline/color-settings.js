@@ -63,14 +63,6 @@ export class ColorSettings extends Component {
 			settings,
 		} = this.props;
 
-		const gradientSettings = geneMode !== 'Bars' ? (
-			<ClipDataSettings
-				dispatch={dispatch}
-				dataset={dataset}
-				axis={'col'}
-				settings={settings}
-				time={200} />
-		) : null;
 		return (
 			<ListGroupItem>
 				<CollapsibleSettings
@@ -94,7 +86,12 @@ export class ColorSettings extends Component {
 								<Glyphicon glyph={showLabels ? 'check' : 'unchecked'} /> labels
 							</Button>
 						</div>
-						{gradientSettings}
+						<ClipDataSettings
+							dispatch={dispatch}
+							dataset={dataset}
+							axis={'col'}
+							settings={settings}
+							time={200} />
 					</div>
 				</CollapsibleSettings>
 			</ListGroupItem>

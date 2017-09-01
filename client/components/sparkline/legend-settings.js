@@ -60,7 +60,7 @@ export class LegendSettings extends Component {
 			nvsc.filter !== vsc.filter ||
 			nvsc.lowerBound !== vsc.lowerBound ||
 			nvsc.upperBound !== vsc.upperBound ||
-			nvsc.log2Color !== vsc.log2Color ||
+			nvsc.logScale !== vsc.logScale ||
 			nds.col.attrs[nca] !== ds.col.attrs[ca];
 	}
 
