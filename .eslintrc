@@ -67,6 +67,7 @@
                 "SwitchCase": 1
             }
         ],
+        "no-case-declarations": 0,
         // React rules
         "react/jsx-uses-react": 2,
         "react/react-in-jsx-scope": 2,
