@@ -1,7 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const AppCachePlugin = require('appcache-webpack-plugin');
+const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 
 const uglifySettings = {
 	mangle: {
@@ -69,23 +69,22 @@ module.exports = {
 			filename: 'index.html',
 			inject: 'body',
 		}),
-		new AppCachePlugin({
-			cache: [
-				'static/css/bundle.min.css',
-				'static/fonts/glyphicons-halflings-regular.eot',
-				'static/fonts/glyphicons-halflings-regular.svg',
-				'static/fonts/glyphicons-halflings-regular.ttf',
-				'static/fonts/glyphicons-halflings-regular.woff',
-				'static/fonts/glyphicons-halflings-regular.woff2',
-				'static/img/layers-2x.png',
-				'static/img/layers.png',
-				'static/img/marker-icon-2x.png',
-				'static/img/marker-icon.png',
-				'static/img/marker-shadow.png',
-			],
-			fallback: ['. index.html'],
-			exclude: ['index.html'],
-			output: 'static/manifest.appcache',
-		}),
+		new SWPrecacheWebpackPlugin(
+			{
+				cacheId: 'loom-offline-cache',
+				dontCacheBustUrlsMatching: /\.\w{8}\./,
+				staticFileGlobsIgnorePatterns: [/\.map$/, /asset-manifest\.json$/],
+				staticFileGlobs: [
+					'./python/loom_viewer/static/**/*.*',
+				],
+				maximumFileSizeToCacheInBytes: 8<<20,
+				stripPrefix: './python/loom_viewer', // stripPrefixMulti is also supported
+				mergeStaticsConfig: true, // if you don't set this to true, you won't see any webpack-emitted assets in your serviceworker config
+				filename: 'service-worker.js',
+				navigateFallback: 'index.html',
+				navigateFallbackWhitelist: [ '/', /^\/dataset\//],
+				minify: true,
+			}
+		),
 	],
 };

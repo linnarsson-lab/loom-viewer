@@ -10,19 +10,14 @@
 	<title>Loom</title>
 	<link href="/static/css/bundle.min.css" rel="stylesheet">
 	<script type="text/javascript">
-		window.addEventListener('load', function (e) {
-			window.applicationCache.addEventListener('updateready', function (e) {
-				if (window.applicationCache.status == window.applicationCache.UPDATEREADY) {
-					if (confirm('A new version of Loom was downloaded to AppCache. Please refresh to open it.')) {
-						window.location.reload();
-					}
-				} else {
-				}
-			}, false);
-		}, false);
+		(function () {
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('/service-worker.js');
+			}
+		})();
 	</script>
 </head>
-<iframe src="/iframe-inject-appcache-manifest.html" style="display: none"></iframe>
+
 <body>
 	<div id="react-root" class="view" style="width:100vw; height:100vh"></div>
 </body>

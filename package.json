@@ -62,8 +62,10 @@
     "babel-preset-stage-0": "^6.24.1",
     "babelify": "^7.3.0",
     "html-webpack-plugin": "^2.30.1",
+    "optimize-js-plugin": "0.0.4",
     "prepack": "^0.2.6",
     "prepack-webpack-plugin": "^1.1.0",
+    "sw-precache-webpack-plugin": "^0.11.4",
     "uglify-js": "^3.0.28",
     "uglifycss": "^0.0.27",
     "webpack": "^3.5.5"

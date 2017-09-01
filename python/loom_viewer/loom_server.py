@@ -236,6 +236,11 @@ compress.init_app(app)
 #
 # Static assets
 #
+@app.route('/service-worker.js')
+@cache(expires=None)
+def send_service_worker():
+	return app.send_static_file('service-worker.js')
+
 
 @app.route('/js/<path:path>')
 @cache(expires=604800)
@@ -272,27 +277,6 @@ def send_indexjs():
 @cache(expires=604800)
 def catch_all(path):
 	return app.send_static_file('index.html')
-
-#
-# AppCache routes
-#
-
-# AppCache manifest
-@app.route('/manifest.appcache')
-def send_manifest():
-	res = app.make_response(app.send_static_file("manifest.appcache"))
-	res.headers["Content-Type"] = "text/cache-manifest"
-	res.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-	res.headers['Expires'] = '-1'
-	now = datetime.now()
-	res.headers['Last-Modified'] = format_date_time(time.mktime(now.timetuple()))
-	return res
-
-# AppCache iframe
-@app.route('/iframe-inject-appcache-manifest.html')
-@cache(expires=604800)
-def send_appcache_iframe():
-	return app.send_static_file("iframe-inject-appcache-manifest.html")
 
 #
 # API endpoints
