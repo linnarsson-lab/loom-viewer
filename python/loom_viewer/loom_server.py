@@ -236,11 +236,11 @@ compress.init_app(app)
 #
 # Static assets
 #
+
 @app.route('/service-worker.js')
 @cache(expires=None)
 def send_service_worker():
 	return app.send_static_file('service-worker.js')
-
 
 @app.route('/js/<path:path>')
 @cache(expires=604800)

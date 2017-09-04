@@ -30,7 +30,7 @@ export class ColorSettings extends Component {
 			};
 		};
 
-		const geneModeOptions = ['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
+		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 		const geneModeHC = handleChangeFactory('geneMode');
 		const showLabelsHC = handleChangeFactory('showLabels');
 		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });

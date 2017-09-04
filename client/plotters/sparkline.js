@@ -5,16 +5,15 @@ import {
 } from './canvas';
 
 import {
-	attrToColorFactory,
 	findMostCommon,
 	groupAttr,
+	arrayConstr,
 	attrIndexedSubset,
 	attrSubset,
+	attrToColorFactory,
 	logProject,
 } from '../js/util';
 
-// TODO: change the way sparkline plotters prepare and consume data
-// current version becomes memory-intensive for large arrays
 const noop = () => { };
 
 const categoriesPainter = {
@@ -26,9 +25,15 @@ const stackedCategoriesPainter = {
 	directly: categoriesDirectly,
 	grouped: stackedCategoriesGrouped,
 };
+
 const barPaint = {
 	directly: barPaintDirectly,
 	grouped: barPaintGrouped,
+};
+
+const boxPaint = {
+	directly: barPaintDirectly,
+	grouped: barPaintBoxPlot,
 };
 
 const heatMapPainter = {
@@ -54,6 +59,8 @@ function selectPlotter(mode) {
 			return stackedCategoriesPainter;
 		case 'Bars':
 			return barPaint;
+		case 'Box':
+			return boxPaint;
 		case 'Heatmap':
 		case 'Heatmap2':
 			return heatMapPainter;
@@ -66,12 +73,6 @@ function selectPlotter(mode) {
 }
 
 function prepRange(indices, mode, settings) {
-	settings = settings || {};
-	const {
-		dataRange,
-	} = settings;
-
-
 	// Since the following involves a lot of mathematical trickery,
 	// I figured I'd better document this inline in long-form.
 
@@ -80,6 +81,10 @@ function prepRange(indices, mode, settings) {
 	// heatMap actually works out here, because it has has a
 	// one-to-one pixel width/height to column/row mapping.
 	// If this ever changes we need to change this code too).
+	settings = settings || {};
+	const {
+		dataRange,
+	} = settings;
 
 	// We're going to ignore the accumulated rounding errors in
 	// intermediate calculations, since doubles have so much
@@ -149,7 +154,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 	// worry about duplicating the logic for vertical sparklines.
 	const sparkline = (context) => {
 		if (range.visible) {
-			const ratio = context.pixelRatio * 0.5 > 1 ? context.pixelRatio * 0.5 : 1;
+
 			const {
 				unrounded,
 				left,
@@ -165,10 +170,11 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 			//   "range width"/context.width = range.total/range.unrounded
 			// where range width is the covered nr of pixels.
 
+			const ratio = (context.pixelRatio > 1 ? context.pixelRatio | 0 : 1);
+
 			// Therefore, the columns should have a width of:
 			//   barWidth = ratio * range.width / range.total
 			//            = ratio * context.width / range.unrounded
-			const barWidth = ratio * context.width / unrounded;
 			const groupSize = ratio * unrounded / context.width;
 
 			// If barWidth is < 1, we have multiple data points per pixel.
@@ -180,7 +186,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// as an array of left-padded groups, one per column
 				// Then we can plot the groups to columns directly.
 				const data = groupAttr(attr, indices, range, mode, groupSize);
-				plot.grouped(context, attr, data, range, ratio, dataToColor, settings);
+				plot.grouped(context, attr, data, range, ratio, dataToColor, settings, label);
 			} else {
 				// data is an unpadded selection of the visible data
 				// We also include an xOffset (negative) and a barWidth
@@ -190,6 +196,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// part of it times barWidth
 				// If left < 0, it is -left * barWidth
 				const leftFrac = left < 0 ? -left : leftRounded - left;
+				const barWidth = ratio * context.width / unrounded;
 				const xOffset = (leftFrac * barWidth) | 0;
 				// copy relevant subset of data
 				const i0 = leftRounded < 0 ? 0 : leftRounded;
@@ -200,10 +207,10 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// xOffset is the lef-padding in pixels, after which we can
 				// simply draw the passed data from left to right, with barWidth
 				// sized columns
-				plot.directly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings);
+				plot.directly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label);
 			}
 		}
-		if (label) { labelPainter(context, label); }
+		if (label) { nameLabelPainter(context, label); }
 	};
 
 
@@ -261,7 +268,7 @@ function clip(data, clipMin, clipMax) {
 
 
 
-function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
+function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
 	context.fillStyle = 'white';
 	let i = 0, j = i;
 	while (i <= data.length) {
@@ -280,7 +287,7 @@ function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth
 	}
 }
 
-function categoriesGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+function categoriesGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 	let i = 0;
 	// skip left-padding
 	while (!data[i]) { i++; }
@@ -301,9 +308,9 @@ function categoriesGrouped(context, attr, data, range, ratio, dataToColor, setti
 
 // Note: stackedCategoriesDirectly is functionally equivalent to categories
 
-function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const barWidth = ratio;
+	//const barWidth = ratio;
 	let i = 0;
 	// skip left-padding
 	while (!data[i]) { i++; }
@@ -312,8 +319,8 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 			l = barSlice.length;
 		barSlice.sort();
 
-		const x = (i * barWidth) | 0;
-		const x1 = ((i + 1) * barWidth) | 0;
+		const x = (i * ratio) | 0;
+		const x1 = ((i + 1) * ratio) | 0;
 		const roundedWidth = x1 - x;
 
 		let j = 0, k = 0;
@@ -332,7 +339,8 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 	}
 }
 
-function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
+function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
+	const { logScale } = settings;
 	const { min, max } = attr;
 	let clipMin = min;
 	let clipMax = max;
@@ -348,32 +356,31 @@ function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, 
 			clip(data, clipMin, clipMax);
 		}
 	}
-
-	if (settings.logScale) {
-		barPaintDirectlyLog(context, data, xOffset, barWidth, clipMin, clipMax);
-	} else {
-		barPaintDirectlyLinear(context, data, xOffset, barWidth, clipMin, clipMax);
-	}
-
-	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
-}
-
-function barPaintDirectlyLinear(context, data, xOffset, barWidth, clipMin, clipMax) {
-	const barScale = context.height * 0.9375 / (clipMax - clipMin) || 0;
+	const delta = logScale ?
+		logProject(clipMax - clipMin) : clipMax - clipMin;
+	const barScale = context.height * 0.9375 / delta || 0;
 	context.fillStyle = '#000000';
-	let i = 0, x = xOffset;
+	let i = 0, x = xOffset | 0;
 	while (i < data.length) {
 
 		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		const barHeight = ((data[i] - clipMin) * barScale) | 0;
+		let dataDelta = data[i] - clipMin;
+		if (logScale) {
+			dataDelta = logProject(dataDelta);
+		}
+		const barHeight = (dataDelta * barScale) | 0;
 
 		// advance while height doesn't change
 		let j = i, nextHeight = barHeight;
 		while (barHeight === nextHeight && j++ < data.length - 1) {
-			nextHeight = ((data[j] - clipMin) * barScale) | 0;
+			dataDelta = data[j] - clipMin;
+			if (logScale) {
+				dataDelta = logProject(dataDelta);
+			}
+			nextHeight = (dataDelta * barScale) | 0;
 		}
-
-		const w = (j - i) * barWidth;
+		const xNext = (xOffset + j * barWidth) | 0;
+		const w = xNext - x;
 
 		// zero values are an extremely common case,
 		// so skip those pointless draw calls
@@ -384,166 +391,425 @@ function barPaintDirectlyLinear(context, data, xOffset, barWidth, clipMin, clipM
 			let y = context.height - barHeight | 0;
 
 			// force to pixel grid
-			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
+			context.fillRect(x, y, w, barHeight);
 		}
-		i = j; x += w;
+		i = j;
+		x = xNext;
+	}
+
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
 	}
 }
 
-function barPaintDirectlyLog(context, data, xOffset, barWidth, clipMin, clipMax) {
-	const barScale = context.height * 0.9375 / logProject(clipMax - clipMin) || 0;
-	context.fillStyle = '#000000';
-	let i = 0, x = xOffset;
-	while (i < data.length) {
+function barGroupedDataPrep(attr, data, min, max, settings) {
+	const array = arrayConstr(attr.arrayType);
+	let avg = new Float32Array(data.length),
+		thirdQ = new array(data.length);
 
-		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		const barHeight = (logProject(data[i] - clipMin) * barScale) | 0;
-
-		// advance while height doesn't change
-		let j = i, nextHeight = barHeight;
-		while (barHeight === nextHeight && j++ < data.length - 1) {
-			nextHeight = (logProject(data[j] - clipMin) * barScale) | 0;
-		}
-
-		const w = (j - i) * barWidth;
-
-		// zero values are an extremely common case,
-		// so skip those pointless draw calls
-		if (barHeight) {
-			// canvas defaults to positive y going *down*, so to
-			// draw from bottom to top we start at context height and
-			// subtract the bar height.
-			let y = context.height - barHeight | 0;
-
-			// force to pixel grid
-			context.fillRect(x | 0, y, ((x + w) | 0) - (x | 0), barHeight);
-		}
-		i = j; x += w;
+	const { logScale, lowerBound, upperBound } = settings;
+	let delta = max - min,
+		clipMin = min,
+		clipMax = max;
+	if (settings.clip && lowerBound > 0) {
+		clipMin = min + lowerBound * delta / 100;
 	}
+
+	// remember that data might be left-padded with
+	// empty values. So we find the first
+	// index where data[iStart] returns grouped data
+	let iStart = data.length;
+	while (data[iStart - 1]) { data[--iStart].sort(); }
+
+	// go through all columns, find
+	// average, first quartile and third quartile
+	for (let i = iStart; i < data.length; i++) {
+		const _data = data[i];
+		let sum = 0;
+		for (let j = 0; j < _data.length; j++) {
+			sum += _data[j];
+		}
+		avg[i] = sum / _data.length;
+		// note that we already sorted _data, so this
+		// should give us the first and third quartile.
+		thirdQ[i] = _data[_data.length * 0.75 | 0];
+	}
+
+	if (settings.clip || !logScale) {
+		if (upperBound < 100) {
+			clipMax = min + upperBound * delta / 100;
+		}
+		// If linear plot, automatically clip to biggest
+		// third quartile in all the bins, if this
+		// value is smaller than clipMax
+		if (!logScale) {
+			let tQmax = clipMin;
+			for (let i = iStart; i < data.length; i++) {
+				if (thirdQ[i] > tQmax) {
+					tQmax = thirdQ[i];
+				}
+			}
+			// In very sparse data sets, tQmax tends to be zero,
+			// so if the max value is non-zero, we set it to 1.
+			if (tQmax === 0 && max > 0) {
+				tQmax = 1;
+			}
+
+			// Of course, it only makes sense to clip to
+			// tQmax if it is less than the manual clipMax setting
+			if (tQmax < clipMax) {
+				clipMax = tQmax;
+			}
+		}
+	}
+
+
+	if (clipMin !== min || clipMax !== max) {
+		clip(avg, clipMin, clipMax);
+		clip(thirdQ, clipMin, clipMax);
+	}
+
+	return { iStart, min, max, clipMin, clipMax, avg };
 }
 
-function barPaintGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+function barPaintGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 	const { min, max } = attr;
-	let clipMin = min;
-	let clipMax = max;
-	if (settings.clip) {
-		const delta = max - min;
-		if (settings.lowerBound > 0) {
-			clipMin = min + settings.lowerBound * delta / 100;
-		}
-		if (settings.upperBound < 100) {
-			clipMax = min + settings.upperBound * delta / 100;
-		}
-		if (clipMin !== min || clipMax !== max) {
-			for (let i = 0; i < data.length; i++) {
-				clip(data[i], clipMin, clipMax);
-			}
-		}
-	}
-
-	if (settings.logScale) {
-		barPaintGroupedLog(context, data, clipMin, clipMax);
+	let preppedData = barGroupedDataPrep(attr, data, min, max, settings);
+	if (settings.logScale){
+		barPaintGroupedLogProjected(context, preppedData, range, ratio, dataToColor, settings, label);
 	} else {
-		barPaintGroupedLinear(context, data, clipMin, clipMax);
-	}
-
-	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
-}
-
-function barPaintGroupedLinear(context, data, clipMin, clipMax) {
-	context.fillStyle = '#000000';
-	const barScale = context.height * 0.9375 / (clipMax - clipMin) || 0;
-
-	let i = 0;
-	while (!data[i]) { i++; }
-
-	let x = i;
-
-	while (data[i]) {
-		let dataGroup = data[i];
-		let sum = 0;
-		for (let j = 0; j < dataGroup.length; j++) {
-			sum += dataGroup[j];
-		}
-		let mean = sum / dataGroup.length;
-		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		const barHeight = ((mean - clipMin) * barScale) | 0;
-
-		// advance while height doesn't change
-		let j = i, nextHeight = barHeight;
-		while (barHeight === nextHeight && j++ < data.length - 1) {
-			dataGroup = data[j];
-			sum = 0;
-			for (let k = 0; k < dataGroup.length; k++) {
-				sum += dataGroup[k];
-			}
-			mean = sum / dataGroup.length;
-			nextHeight = (mean - clipMin) * barScale | 0;
-		}
-
-		const w = (j - i);
-
-		// zero values are an extremely common case,
-		// so skip those pointless draw calls
-		if (barHeight) {
-			// canvas defaults to positive y going *down*, so to
-			// draw from bottom to top we start at context height and
-			// subtract the bar height.
-			let y = context.height - barHeight | 0;
-
-			// force to pixel grid
-			context.fillRect(x | 0, y, w, barHeight);
-		}
-		i = j; x += w;
+		barPaintGroupedLinear(context, preppedData, range, ratio, dataToColor, settings, label);
 	}
 }
 
-function barPaintGroupedLog(context, data, clipMin, clipMax) {
+function barPaintGroupedLogProjected(context, preppedData, range, ratio, dataToColor, settings, label) {
+	const { height } = context;
+	const { iStart, min, max, clipMin, clipMax, avg } = preppedData;
 
-	context.fillStyle = '#000000';
-	const barScale = context.height * 0.9375 / logProject(clipMax - clipMin) || 0;
+	const delta = logProject(clipMax - clipMin);
+	const barScale = height * 0.9375 / delta || 0;
 
-	let i = 0;
-	while (!data[i]) { i++; }
+	// because of our sorting earlier, i is guaranteed
+	// to be the first element in data that is a column
+	let i = iStart, x = i * ratio | 0;
 
-	let x = i;
-
-	while (data[i]) {
-		let dataGroup = data[i];
-		let sum = 0;
-		for (let j = 0; j < dataGroup.length; j++) {
-			sum += dataGroup[j];
-		}
-		let mean = sum / dataGroup.length;
-		// Even if outliers[i] is not a number, OR-masking forces it to 0
-		const barHeight = logProject(mean - clipMin) * barScale | 0;
-
+	while (i < avg.length) {
+		const barHeight = logProject(avg[i]) * barScale | 0;
 		// advance while height doesn't change
 		let j = i, nextHeight = barHeight;
-		while (barHeight === nextHeight && j++ < data.length - 1) {
-			dataGroup = data[j];
-			sum = 0;
-			for (let k = 0; k < dataGroup.length; k++) {
-				sum += dataGroup[k];
-			}
-			mean = sum / dataGroup.length;
-			nextHeight = logProject(mean - clipMin) * barScale | 0;
+		while (barHeight - nextHeight === 0 && ++j < avg.length) {
+			nextHeight = logProject(avg[j]) * barScale | 0;
 		}
-
-		const w = (j - i);
-
+		// We advanced j-i steps
+		const xNext = j * ratio | 0;
+		const w = xNext - x | 0;
 		// zero values are an extremely common case,
 		// so skip those pointless draw calls
 		if (barHeight) {
-			// canvas defaults to positive y going *down*, so to
-			// draw from bottom to top we start at context height and
-			// subtract the bar height.
-			let y = context.height - barHeight | 0;
-
-			// force to pixel grid
-			context.fillRect(x | 0, y, w, barHeight);
+			context.fillStyle = '#000000';
+			context.fillRect(x, height - barHeight | 0, w, barHeight);
 		}
-		i = j; x += w;
+		i = j; x = xNext;
+	}
+
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
+}
+
+function barPaintGroupedLinear(context, preppedData, range, ratio, dataToColor, settings, label) {
+	const { height } = context;
+	const { iStart, min, max, clipMin, clipMax, avg } = preppedData;
+
+	const delta = clipMax - clipMin;
+	const barScale = height * 0.9375 / delta || 0;
+
+	// because of our sorting earlier, i is guaranteed
+	// to be the first element in data that is a column
+	let i = iStart, x = i * ratio | 0;
+
+	while (i < avg.length) {
+		const barHeight = avg[i] * barScale | 0;
+		// advance while height doesn't change
+		let j = i, nextHeight = barHeight;
+		while (barHeight - nextHeight === 0 && ++j < avg.length) {
+			nextHeight = avg[j] * barScale | 0;
+		}
+		// We advanced j-i steps
+		const xNext = j * ratio | 0;
+		const w = xNext - x | 0;
+		// zero values are an extremely common case,
+		// so skip those pointless draw calls
+		if (barHeight) {
+			context.fillStyle = '#000000';
+			context.fillRect(x, height - barHeight | 0, w, barHeight);
+		}
+		i = j; x = xNext;
+	}
+
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
+}
+
+function barGroupedBoxDataPrep(attr, data, min, max, settings) {
+	const array = arrayConstr(attr.arrayType);
+	let avg = new Float32Array(data.length),
+		minValues = new array(data.length),
+		maxValues = new array(data.length),
+		firstQ = new array(data.length),
+		thirdQ = new array(data.length);
+
+	const { logScale, lowerBound, upperBound } = settings;
+	let delta = max - min,
+		clipMin = min,
+		clipMax = max;
+	if (settings.clip && lowerBound > 0) {
+		clipMin = min + lowerBound * delta / 100;
+	}
+
+	// remember that data might be left-padded with
+	// empty values. So we find the first
+	// index where data[iStart] returns grouped data
+	let iStart = data.length;
+	while (data[iStart - 1]) { data[--iStart].sort(); }
+
+	// go through all columns, find
+	// average, first quartile and third quartile
+	for (let i = iStart; i < data.length; i++) {
+		const _data = data[i];
+		let sum = 0;
+		for (let j = 0; j < _data.length; j++) {
+			sum += _data[j];
+		}
+		avg[i] = sum / _data.length;
+		// note that we already sorted _data, so this
+		// should give us the first and third quartile.
+		minValues[i] = _data[0];
+		firstQ[i] = _data[_data.length * 0.25 | 0];
+		thirdQ[i] = _data[_data.length * 0.75 | 0];
+		maxValues[i] = _data[_data.length-1];
+	}
+
+	if (settings.clip || !logScale) {
+		if (upperBound < 100) {
+			clipMax = min + upperBound * delta / 100;
+		}
+		// If linear plot, automatically clip to biggest
+		// third quartile in all the bins, if this
+		// value is smaller than clipMax
+		if (!logScale) {
+			let tQmax = clipMin;
+			for (let i = iStart; i < data.length; i++) {
+				if (thirdQ[i] > tQmax) {
+					tQmax = thirdQ[i];
+				}
+			}
+			// In very sparse data sets, tQmax tends to be zero,
+			// so if the max value is non-zero, we set it to 1.
+			if (tQmax === 0 && max > 0) {
+				tQmax = 1;
+			}
+
+			// Of course, it only makes sense to clip to
+			// tQmax if it is less than the manual clipMax setting
+			if (tQmax < clipMax) {
+				clipMax = tQmax;
+			}
+		}
+	}
+
+
+	if (clipMin !== min || clipMax !== max) {
+		clip(avg, clipMin, clipMax);
+		clip(minValues, clipMin, clipMax);
+		clip(maxValues, clipMin, clipMax);
+		clip(firstQ, clipMin, clipMax);
+		clip(thirdQ, clipMin, clipMax);
+	}
+
+	return { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues };
+}
+
+
+// While not drawn as a standard box-plot, we _do_ plot
+// all the features of a box plot. They are displayed as layers:
+// - min (light grey blue)
+// - first quartile (blue)
+// - average (black)
+// - third quartile (red)
+// - max (very light grey red)
+function barPaintBoxPlot(context, attr, data, range, ratio, dataToColor, settings, label) {
+	const { min, max } = attr;
+	let preppedData = barGroupedBoxDataPrep(attr, data, min, max, settings);
+	if (settings.logScale) {
+		barPaintBoxPlotLogProjected(context, preppedData, range, ratio, dataToColor, settings, label);
+	} else {
+		barPaintBoxPlotLinear(context, preppedData, range, ratio, dataToColor, settings, label);
+	}
+}
+
+function barPaintBoxPlotLogProjected(context, preppedData, range, ratio, dataToColor, settings, label) {
+	const { height } = context;
+	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = preppedData;
+
+	const delta = logProject(clipMax - clipMin);
+
+	const barScale = height * 0.9375 / delta || 0;
+
+	// because of our sorting earlier, i is guaranteed
+	// to be the first element in data that is a column
+	let i = iStart, x = i * ratio | 0;
+
+	// calculate heights for avg, min, max,
+	// first quartile and third quartile
+
+	let barHeight = logProject(avg[i]) * barScale | 0,
+		minHeight = logProject(minValues[i]) * barScale | 0,
+		maxHeight = logProject(maxValues[i]) * barScale | 0,
+		firstQHeight = logProject(firstQ[i]) * barScale | 0,
+		thirdQHeight = logProject(thirdQ[i]) * barScale | 0,
+		nextHeight = barHeight,
+		nextMin = minHeight,
+		nextMax = maxHeight,
+		nextFQ = firstQHeight,
+		nextTQ = thirdQHeight,
+		difference = 0;
+	while (i < avg.length) {
+		// advance while height doesn't change
+		let j = i;
+		while (difference === 0 && ++j < avg.length) {
+			nextHeight = logProject(avg[j]) * barScale | 0;
+			nextMin = logProject(minValues[j]) * barScale | 0;
+			nextMax = logProject(maxValues[j]) * barScale | 0;
+			nextFQ = logProject(firstQ[j]) * barScale | 0;
+			nextTQ = logProject(thirdQ[j]) * barScale | 0;
+
+			// if any of these values are different, difference is non-zero
+			// subtraction + OR masking is probably faster
+			// than a bunch of equality tests.
+			difference = (barHeight - nextHeight) |
+				(minHeight - nextMin) |
+				(maxHeight - nextMax) |
+				(firstQHeight - nextFQ) |
+				(thirdQHeight - nextTQ);
+		}
+
+		// We advanced j-i steps, so next x is at:
+		const xNext = j * ratio | 0;
+		// .. meaning width equals:
+		const width = xNext - x | 0;
+
+		drawBoxPlot(context, x, width, height, maxHeight, thirdQHeight, barHeight, firstQHeight, minHeight);
+
+		i = j;
+		x = xNext;
+		barHeight = nextHeight;
+		minHeight = nextMin;
+		maxHeight = nextMax;
+		firstQHeight = nextFQ;
+		thirdQHeight = nextTQ;
+		difference = 0;
+	}
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
+}
+
+function barPaintBoxPlotLinear(context, preppedData, range, ratio, dataToColor, settings, label) {
+	const { height } = context;
+	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = preppedData;
+
+	const delta = clipMax - clipMin;
+
+	const barScale = height * 0.9375 / delta || 0;
+
+	// because of our sorting earlier, i is guaranteed
+	// to be the first element in data that is a column
+	let i = iStart, x = i * ratio | 0;
+
+	// calculate heights for avg, min, max,
+	// first quartile and third quartile
+
+	let barHeight = avg[i] * barScale | 0,
+		minHeight = minValues[i] * barScale | 0,
+		maxHeight = maxValues[i] * barScale | 0,
+		firstQHeight = firstQ[i] * barScale | 0,
+		thirdQHeight = thirdQ[i] * barScale | 0,
+		nextHeight = barHeight,
+		nextMin = minHeight,
+		nextMax = maxHeight,
+		nextFQ = firstQHeight,
+		nextTQ = thirdQHeight,
+		difference = 0;
+	while (i < avg.length) {
+		// advance while height doesn't change
+		let j = i;
+		while (difference === 0 && ++j < avg.length) {
+			nextHeight = avg[j] * barScale | 0;
+			nextMin = minValues[j] * barScale | 0;
+			nextMax = maxValues[j] * barScale | 0;
+			nextFQ = firstQ[j] * barScale | 0;
+			nextTQ = thirdQ[j] * barScale | 0;
+
+			// if any of these values are different, difference is non-zero
+			// subtraction + OR masking is probably faster
+			// than a bunch of equality tests.
+			difference = (barHeight - nextHeight) |
+				(minHeight - nextMin) |
+				(maxHeight - nextMax) |
+				(firstQHeight - nextFQ) |
+				(thirdQHeight - nextTQ);
+		}
+
+		// We advanced j-i steps, so next x is at:
+		const xNext = j * ratio | 0;
+		// .. meaning width equals:
+		const width = xNext - x | 0;
+
+		drawBoxPlot(context, x, width, height, maxHeight, thirdQHeight, barHeight, firstQHeight, minHeight);
+
+		i = j;
+		x = xNext;
+		barHeight = nextHeight;
+		minHeight = nextMin;
+		maxHeight = nextMax;
+		firstQHeight = nextFQ;
+		thirdQHeight = nextTQ;
+		difference = 0;
+	}
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
+}
+
+
+function drawBoxPlot(context, x, width, height, maxHeight, thirdQHeight, barHeight, firstQHeight, minHeight) {
+	// Since we draw the layers on top of each other,
+	// it only makes sense to draw them if they actually
+	// are visible
+	if (maxHeight > thirdQHeight) {
+		// canvas defaults to positive y going *down*, so to
+		// draw from bottom to top we start at context height and
+		// subtract the bar height.
+		context.fillStyle = '#EECCCC';
+		context.fillRect(x, height - maxHeight | 0, width, maxHeight - thirdQHeight);
+	}
+	if (thirdQHeight > barHeight) {
+		context.fillStyle = '#EE6644';
+		context.fillRect(x, height - thirdQHeight | 0, width, thirdQHeight - barHeight);
+	}
+	if (barHeight > firstQHeight) {
+		context.fillStyle = '#000000';
+		context.fillRect(x, height - barHeight | 0, width, barHeight - firstQHeight);
+	}
+	if (firstQHeight > minHeight) {
+		context.fillStyle = '#4444AA';
+		context.fillRect(x, height - firstQHeight | 0, width, firstQHeight - minHeight);
+	}
+	if (minHeight) {
+		context.fillStyle = '#666688';
+		context.fillRect(x, height - minHeight | 0, width, minHeight);
 	}
 }
 
@@ -565,7 +831,7 @@ function barPaintLabel(context, ratio, min, max, clipMin, clipMax) {
 	}
 }
 
-function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings) {
+function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
 	const { min, max } = attr;
 	let clipMin = min;
 	let clipMax = max;
@@ -595,10 +861,12 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 		i = j; x += w;
 	}
 
-	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
 }
 
-function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 	const { min, max } = attr;
 	let clipMin = min;
 	let clipMax = max;
@@ -642,13 +910,15 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 		i = j; x += w;
 	}
 
-	barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	if (label) {
+		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+	}
 }
 
 
 // Note: flameMapDirectly is just heatMapDirectly
 
-function flameMapGrouped(context, attr, data, range, ratio, dataToColor, settings) {
+function flameMapGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 	// Because of rounding, our bins can come in two sizes.
 	// For small data sets this is a problem, because plotting
 	// a gradient for two or three cells gives a very result.
@@ -657,20 +927,21 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 	// If necessary, we'll pad it with a zero value.
 	let binSize = 0;
 	let i = data.length;
-	while (data[--i]){
-		if (binSize < data[i].length){
+	while (data[--i]) {
+		if (binSize < data[i].length) {
 			binSize = data[i].length;
 		}
 	}
-
-	const barWidth = ratio;
-	const flameHeight = context.height * 0.875;
+	// 1 - 0.0625 - 0.03125
+	// 0.9375 - 0.03125
+	// 0.90625
+	const flameHeight = context.height * 0.90625 | 0;
 	// the thin heatMap strip
-	const heatMapHeight = context.height - (flameHeight | 0) - ratio;
+	const heatMapHeight = context.height - flameHeight;
 
-	while(data[++i]){
-		const x = i * barWidth | 0;
-		const x1 = (i + 1) * barWidth | 0;
+	while (data[++i]) {
+		const x = i * ratio | 0;
+		const x1 = (i + 1) * ratio | 0;
 		const roundedWidth = x1 - x;
 		let dataGroup = data[i];
 		dataGroup.sort();
@@ -695,11 +966,8 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 		context.fillRect(x, flameHeight, roundedWidth, heatMapHeight);
 	}
 	// slightly separate the heatMap from the flame-map with a faded strip
-	context.fillStyle = 'grey';
-	context.globalAlpha = 0.25;
-	context.fillRect(0, flameHeight, context.width, ratio);
-	context.globalAlpha = 1.0;
-
+	context.fillStyle = 'white';
+	context.fillRect(0, flameHeight + 1, context.width, ratio | 0);
 }
 
 function textPaintDirectly(context, range) {
@@ -735,7 +1003,7 @@ function textPaintDirectly(context, range) {
 	}
 }
 
-function labelPainter(context, label) {
+function nameLabelPainter(context, label) {
 	textStyle(context);
 	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
 	textSize(context, labelSize);

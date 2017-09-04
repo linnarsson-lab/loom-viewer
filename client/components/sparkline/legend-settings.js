@@ -38,7 +38,7 @@ export class LegendSettings extends Component {
 			});
 		};
 
-		const colModeOptions = ['Bars', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
+		const colModeOptions = ['Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
 
 		this.setState({
 			colAttrHC,
