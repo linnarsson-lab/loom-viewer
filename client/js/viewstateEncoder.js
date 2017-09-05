@@ -7,6 +7,8 @@ import {
 	makeCompressor,
 } from './state-compressor';
 
+// NOTE: When adding a new mode, append it at the end
+// of the array to maintain backwards compatibility!
 const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Flame2', 'Box']);
 const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Flame2', 'Box']);
 const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2', 'Box']);
