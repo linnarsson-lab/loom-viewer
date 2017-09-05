@@ -15,6 +15,38 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
+const boxLegend = (
+	<table>
+		<tbody>
+			<tr>
+				<td>
+					<span style={{ color: '#EECCCC' }}>██</span> <i>max column value</i>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<span style={{ color: '#EE6644' }}>██</span> <i>third quartile</i>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<span style={{ color: '#000000' }}>██</span> <i>average column value</i>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<span style={{ color: '#4444AA' }}>██</span> <i>first quartile</i>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<span style={{ color: '#666688' }}>██</span> <i>min column value</i>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+);
+
 export class ColorSettings extends Component {
 
 	componentWillMount() {
@@ -63,6 +95,8 @@ export class ColorSettings extends Component {
 			settings,
 		} = this.props;
 
+
+
 		return (
 			<ListGroupItem>
 				<CollapsibleSettings
@@ -92,6 +126,7 @@ export class ColorSettings extends Component {
 							axis={'col'}
 							settings={settings}
 							time={200} />
+						{geneMode === 'Box' ? boxLegend : null}
 					</div>
 				</CollapsibleSettings>
 			</ListGroupItem>
