@@ -403,7 +403,6 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 			nextHeight = logProject(data[j]) * barScale | 0;
 		}
 		const xNext = (xOffset + j * barWidth) | 0;
-		const w = xNext - x;
 
 		// zero values are an extremely common case,
 		// and calls to context.fillRect are the
@@ -414,9 +413,7 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 			// draw from bottom to top we start at context height and
 			// subtract the bar height.
 			let y = context.height - barHeight | 0;
-
-			// force to pixel grid
-			context.fillRect(x, y, w, barHeight);
+			context.fillRect(x, y, xNext - x, barHeight);
 		}
 		i = j;
 		barHeight = nextHeight;
@@ -424,45 +421,26 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 	}
 }
 
-function barPaintDirectlyLinear(context, preppedData, range, ratio, dataToColor, settings, label) {
-	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg } = preppedData;
-
-	const barScale = height * 0.9375 / clipMax - clipMin;
-	if (barScale) {
-
-		let i = iStart,
-			j = i,
-			barHeight = avg[i] * barScale | 0,
-			nextHeight = barHeight,
-			x = i * ratio | 0;
-
-		while (i < avg.length) {
-
-			// advance while height doesn't change
-			while (barHeight - nextHeight === 0 && ++j < avg.length) {
-				nextHeight = avg[j] * barScale | 0;
-			}
-
-			// We advanced j-i steps
-			const xNext = j * ratio | 0;
-			const w = xNext - x | 0;
-
-			// zero values are an extremely common case,
-			// so skip those pointless draw calls
-			if (barHeight) {
-				context.fillStyle = '#000000';
-				context.fillRect(x, height - barHeight | 0, w, barHeight);
-			}
-
-			i = j;
-			barHeight = nextHeight;
-			x = xNext;
+function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
+	context.fillStyle = '#000000';
+	let i = 0,
+		x = xOffset | 0,
+		barHeight = data[i] * barScale | 0,
+		j = i,
+		nextHeight = barHeight;
+	while (i < data.length) {
+		while (barHeight === nextHeight && ++j < data.length) {
+			nextHeight = data[j] * barScale | 0;
 		}
-	}
+		const xNext = (xOffset + j * barWidth) | 0;
 
-	if (label) {
-		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+		if (barHeight) {
+			let y = context.height - barHeight | 0;
+			context.fillRect(x, y, xNext - x, barHeight);
+		}
+		i = j;
+		barHeight = nextHeight;
+		x = xNext;
 	}
 }
 
