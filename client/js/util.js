@@ -9,7 +9,7 @@ export function getPalette(colorMode) {
 		case 'Flame':
 			return solar256;
 		case 'Heatmap2':
-		case 'Flame2':
+		case 'Icicle':
 			return YlGnBu256;
 		case 'Categorical':
 		case 'Stacked':
@@ -73,7 +73,7 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
-		case 'Flame2':
+		case 'Icicle':
 			let { min, max, clipMin, clipMax } = clipRange(colorAttr, settings);
 			const isZero = min === 0;
 

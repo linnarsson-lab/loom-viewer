@@ -63,7 +63,7 @@ export class ColorSettings extends Component {
 			};
 		};
 
-		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
+		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
 		const geneModeHC = handleChangeFactory('geneMode');
 		const showLabelsHC = handleChangeFactory('showLabels');
 		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
@@ -96,7 +96,7 @@ export class ColorSettings extends Component {
 			settings,
 		} = this.props;
 		let emphasizeNonZeroComponent;
-		if (geneMode.startsWith('Flame')) {
+		if (geneMode === 'Flame' || geneMode === 'Icicle') {
 			const { emphasizeNonZero } = settings;
 			const emphasizeNZhc = () => {
 				dispatch({

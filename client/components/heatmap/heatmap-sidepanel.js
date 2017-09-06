@@ -42,7 +42,7 @@ export class HeatmapSidepanel extends Component {
 		const colModeHC = handleChangeFactory('colMode');
 		const rowAttrHC = handleChangeFactory('rowAttr');
 		const rowModeHC = handleChangeFactory('rowMode');
-		const modeNames = ['Text', 'Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Flame2'];
+		const modeNames = ['Text', 'Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
 
 		this.setState({
 			colAttrHC, colModeHC,
@@ -86,7 +86,7 @@ export class HeatmapSidepanel extends Component {
 				case 'Heatmap':
 				case 'Heatmap2':
 				case 'Flame':
-				case 'Flame2':
+				case 'Icicle':
 					colGradientSettings = (
 						<ClipDataSettings
 							dispatch={dispatch}
@@ -95,6 +95,7 @@ export class HeatmapSidepanel extends Component {
 							settings={viewState.col.settings}
 							time={200} />
 					);
+					break;
 				default:
 			}
 			colLegend = (
@@ -123,7 +124,7 @@ export class HeatmapSidepanel extends Component {
 				case 'Heatmap':
 				case 'Heatmap2':
 				case 'Flame':
-				case 'Flame2':
+				case 'Icicle':
 					rowGradientSettings = (
 						<ClipDataSettings
 							dispatch={dispatch}
@@ -132,6 +133,7 @@ export class HeatmapSidepanel extends Component {
 							settings={viewState.row.settings}
 							time={200} />
 					);
+					break;
 				default:
 			}
 			rowLegend = (

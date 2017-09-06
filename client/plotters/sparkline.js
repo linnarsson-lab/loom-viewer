@@ -39,9 +39,15 @@ const heatMapPainter = {
 	directly: heatMapDirectly,
 	grouped: heatMapGrouped,
 };
+
 const flameMapPainter = {
 	directly: heatMapDirectly,
 	grouped: flameMapGrouped,
+};
+
+const icicleMapPainter = {
+	directly: heatMapDirectly,
+	grouped: icicleMapGrouped,
 };
 
 const textPaint = {
@@ -64,8 +70,9 @@ function selectPlotter(mode) {
 		case 'Heatmap2':
 			return heatMapPainter;
 		case 'Flame':
-		case 'Flame2':
 			return flameMapPainter;
+		case 'Icicle':
+			return icicleMapPainter;
 		default:
 			return textPaint;
 	}
@@ -209,7 +216,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				plot.directly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label);
 			}
 		}
-		if (label) { nameLabelPainter(context, label); }
+		if (label) { nameLabelPainter(context, mode, label); }
 	};
 
 
@@ -957,9 +964,13 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 function flameMapGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
 
 	const { emphasizeNonZero } = settings;
-	const flameHeight = emphasizeNonZero ? context.height * 0.90625 | 0 : context.height;
-	// the thin heatMap strip
-	const heatMapHeight = emphasizeNonZero ? context.height - flameHeight : 0;
+	// make sure the background is grey, to show missing values.
+	context.fillStyle = '#E8E8E8';
+	context.fillRect(0, 0, context.width, context.height);
+
+	const flameHeight = (emphasizeNonZero ? 29/32 : 1) * context.height | 0;
+	// the thin max value strip
+	const maxColumnValueHeight = emphasizeNonZero ? context.height - flameHeight : 0;
 
 	// Because of rounding, our bins can come in two sizes.
 	// For small data sets this is a problem, because plotting
@@ -985,7 +996,7 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 		if (emphasizeNonZero) {
 			// draw strip to highlight max value, so dataset with
 			// sparse gene expression are more visible
-			context.fillRect(x, flameHeight, width, heatMapHeight);
+			context.fillRect(x, flameHeight, width, maxColumnValueHeight);
 		}
 	}
 
@@ -999,20 +1010,92 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToColor) {
 	dataGroup.sort();
 	const l = dataGroup.length;
-	const yOffset = binSize - l;
+	const spareTile = binSize - l;
 	let j = 0,
 		k = j,
 		val = dataGroup[j],
 		nextVal = val,
-		y = (height * (j + yOffset) / binSize) | 0,
+		y = (height * (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
 		while (val === nextVal && ++k < l) {
 			nextVal = dataGroup[k];
 		}
-		yNext = (height * (k + yOffset) / binSize) | 0;
+		yNext = (height * (k + spareTile) / binSize) | 0;
 		context.fillStyle = dataToColor(val || 0);
 		context.fillRect(x, y, width, yNext - y);
+		j = k;
+		val = nextVal;
+		y = yNext;
+	}
+}
+
+
+
+// Note: icicleMapDirectly is just heatMapDirectly
+
+function icicleMapGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
+	const { emphasizeNonZero } = settings;
+	// make sure the background is grey, to show missing values.
+	context.fillStyle = '#E8E8E8';
+	context.fillRect(0, 0, context.width, context.height);
+
+	const flameHeight = (emphasizeNonZero ? 29/32 : 1) * context.height | 0;
+	// the thin max value strip
+	const maxColumnValueHeight = emphasizeNonZero ? context.height - flameHeight : 0;
+
+	// Because of rounding, our bins can come in two sizes.
+	// For small data sets this is a problem, because plotting
+	// a gradient for two or three cells gives a very result.
+	// to fix this, we always make the gradient as large as
+	// the largest bin size.
+	// If necessary, we'll pad it with a zero value.
+	let binSize = 0;
+	let i = data.length;
+	while (data[--i]) {
+		let l = data[i].length;
+		if (l > binSize) {
+			binSize = l;
+		}
+	}
+
+	while (data[++i]) {
+		const x = i * ratio | 0;
+		const x1 = (i + 1) * ratio | 0;
+		const width = x1 - x;
+		drawIcicleColumn(context, x, width, flameHeight, maxColumnValueHeight, data[i], binSize, dataToColor);
+		if (emphasizeNonZero) {
+			// draw strip to highlight max value, so dataset with
+			// sparse gene expression are more visible
+			context.fillRect(x, 0, width, maxColumnValueHeight);
+		}
+	}
+
+	if (emphasizeNonZero) {
+		// slightly separate the heatMap from the flame-map with a faded strip
+		context.fillStyle = 'white';
+		context.fillRect(0, maxColumnValueHeight - ratio, context.width, ratio | 0);
+	}
+}
+
+// same as flame, except we move in the other direction
+function drawIcicleColumn(context, x, width, height, yOffset, dataGroup, binSize, dataToColor) {
+	dataGroup.sort();
+	const l = dataGroup.length;
+	const spareTile = binSize - l;
+	let j = 0,
+		k = j,
+		val = dataGroup[j],
+		nextVal = val,
+		y = height * (1 - (j + spareTile) / binSize) | 0,
+		yNext = y;
+	while (j < l) {
+		while (val === nextVal && ++k < l) {
+			nextVal = dataGroup[k];
+		}
+		yNext = height * (1 - (k + spareTile) / binSize) | 0;
+		context.fillStyle = dataToColor(val || 0);
+		context.fillRect(x, yNext + yOffset, width, y - yNext);
 		j = k;
 		val = nextVal;
 		y = yNext;
@@ -1051,11 +1134,18 @@ function textPaintDirectly(context, range) {
 	}
 }
 
-function nameLabelPainter(context, label) {
+function nameLabelPainter(context, mode, label) {
 	textStyle(context);
 	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
 	textSize(context, labelSize);
-	drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
+	const x = 6 * ratio;
+	let y = (context.height + labelSize) * 0.5;
+	if (mode === 'Flame' || mode === 'Heatmap'){
+		y += context.height * 0.1875;
+	} else if (mode === 'Icicle'){
+		y -= context.height * 0.25;
+	}
+	drawText(context, label, x, y);
 }
 
 // To group the data, we need to find the ranges [i0,i1) such that
