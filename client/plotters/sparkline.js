@@ -6,7 +6,6 @@ import {
 
 import {
 	findMostCommon,
-	groupAttr,
 	arrayConstr,
 	attrIndexedSubset,
 	attrSubset,
@@ -91,7 +90,7 @@ function prepRange(indices, mode, settings) {
 	// precision that it's unlikely we'll ever be off by more
 	// than one pixel.
 
-	// The key insight is that the fractional part of these floats
+	// The key insight is that the fractional part of these numbers
 	// indicate that only a fraction of a data point is displayed.
 	// For example: `dataRange = [ 1.4, 5.3 ]` shows data values
 	// 1 to 6, but value 1 will only be 0.6x the width of the
@@ -139,8 +138,8 @@ function prepRange(indices, mode, settings) {
 }
 
 export function sparkline(attr, indices, mode, settings, label) {
+	settings = settings || {};
 	if (attr) { // attr may be undefined if it is an unfetched gene
-		settings = settings || {};
 		let range = prepRange(indices, mode, settings);
 		const plot = selectPlotter(mode);
 		const dataToColor = attrToColorFactory(attr, mode, settings);
@@ -185,7 +184,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// more data than pixels, so we group the data
 				// as an array of left-padded groups, one per column
 				// Then we can plot the groups to columns directly.
-				const data = groupAttr(attr, indices, range, mode, groupSize);
+				const data = groupAttr(attr, indices, range, mode, ratio * unrounded, context.width);
 				plot.grouped(context, attr, data, range, ratio, dataToColor, settings, label);
 			} else {
 				// data is an unpadded selection of the visible data
@@ -243,8 +242,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 // Helper functions
 
 /** mutates `data`, clipping it to new values */
-function clip(data, clipMin, clipMax, offset) {
-	offset = offset || 0;
+function clip(data, clipMin, clipMax, offset = 0) {
 	clipMin -= offset;
 	clipMax -= offset;
 	for (let i = 0; i < data.length; i++) {
@@ -406,7 +404,7 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 
 		// zero values are an extremely common case,
 		// and calls to context.fillRect are the
-		// bigges bottleneck, so skipping pointless
+		// biggest bottleneck, so skipping pointless
 		// draw calls has a real effect on performance
 		if (barHeight) {
 			// canvas defaults to positive y going *down*, so to
@@ -1049,7 +1047,6 @@ function textPaintDirectly(context, range) {
 			context.translate(0, lineSize);
 		});
 		// undo all rotations/translations
-		context.shadowBlur = 0;
 		context.restore();
 	}
 }
@@ -1059,5 +1056,92 @@ function nameLabelPainter(context, label) {
 	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
 	textSize(context, labelSize);
 	drawText(context, label, 6 * ratio, (context.height + labelSize) * 0.5);
-	context.shadowBlur = 0;
+}
+
+// To group the data, we need to find the ranges [i0,i1) such that
+//   i0*barWidth = first data point in one column, and
+//   i1*barWidth = first data point of the next column
+// We then group data in an array of arrays, each with group
+// containing the data points in their range
+function groupAttr(attr, indices, range, mode, groupNum, groupDen) {
+	const {
+		left,
+		right,
+	} = range;
+	const dataLength = attr.data.length < right ? attr.data.length : right;
+
+	// Our data range might include indices outside of
+	// the real data range. These are empty groups.
+	// We make sure it's the same typed array type
+	// as the real data, since the JIT compiler might
+	// optimise for that (emphasis might, this is
+	// untested and probably changes over time
+	// anyway. But type-stable arrays are a good
+	// principle to live by I think.
+	let i = 0;
+	if (left < 0) {
+		i = -left * groupDen / groupNum | 0;
+	}
+	let data = new Array(i);
+
+	// Copy actual groups
+
+	// If we're using Text mode, the data being grouped cannot be a typed
+	// array. We also have to check if the text is indexed or not.
+	const subset = (mode === 'Text' && attr.indexedVal !== undefined) ? attrIndexedSubset : attrSubset;
+
+	// For some modes, we want to smooth the groups
+	const smoothing = mode === 'Stacked';
+
+	let i1 = left + i * groupNum / groupDen | 0;
+	if (smoothing) {
+		// smoothing is done by including the surrounding
+		// two columns in the group, creating overlapping groups.
+
+		// First two slices of data, ensured to not start at < 0
+
+		i++;
+		i1 = i * groupNum / groupDen + left | 0;
+		data.push(subset(attr, indices, 0, i1));
+
+		i++;
+		i1 = i * groupNum / groupDen + left | 0;
+		data.push(subset(attr, indices, 0, i1));
+
+		i++;
+		i1 = i * groupNum / groupDen + left | 0;
+		let i0 = (i - 3) * groupNum / groupDen + left | 0;
+
+		while (i1 <= dataLength) {
+			data.push(subset(attr, indices, i0, i1));
+			i++;
+			i1 = i * groupNum / groupDen + left | 0;
+			i0 = (i - 3) * groupNum / groupDen + left | 0;
+		}
+		// Last slice of data, covering the last two columns
+		data.push(subset(attr, indices, i0, dataLength | 0));
+	} else {
+		// First slice of data, ensured to not start at < 0
+		data.push(subset(attr, indices, 0, i1));
+		i++;
+		i1 = i * groupNum / groupDen + left | 0;
+		let i0 = (i - 1) * groupNum / groupDen + left | 0;
+
+		while (i1 <= dataLength) {
+			data.push(subset(attr, indices, i0, i1));
+			i++;
+			i1 = i * groupNum / groupDen + left | 0;
+			i0 = (i - 1) * groupNum / groupDen + left | 0;
+		}
+		while (i0 < dataLength) {
+			// Last slice of data, ensure that it ends at dataLength|0
+			data.push(subset(attr, indices, i0, dataLength));
+			i0 = i * groupNum / groupDen + left | 0;
+			i++;
+		}
+	}
+
+	// we don't actually have to pad the right side,
+	// we'll simply stop plotting once we run out of groups.
+	return data;
 }
