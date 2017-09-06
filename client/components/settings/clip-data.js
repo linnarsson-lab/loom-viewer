@@ -97,7 +97,7 @@ export class ClipDataSettings extends Component {
 			<div className='view-vertical'>
 				<div className='view'>
 					<OverlayTooltip
-						tooltip={'toggle log2-projection (gradient scales only)'}
+						tooltip={'toggle log2-projection'}
 						tooltipId={'log-color-tltp'}>
 						<Button
 							bsStyle='link'
@@ -108,7 +108,7 @@ export class ClipDataSettings extends Component {
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip
-						tooltip={'toggle clip (gradient scales only)'}
+						tooltip={'toggle clip'}
 						tooltipId={'clip-color-tltp'}>
 						<Button
 							bsStyle='link'

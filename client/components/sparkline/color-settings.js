@@ -11,6 +11,7 @@ import {
 	ClipDataSettings,
 	CollapsibleSettings,
 	DropdownMenu,
+	OverlayTooltip,
 } from '../settings/settings';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
@@ -94,8 +95,39 @@ export class ColorSettings extends Component {
 			geneMode,
 			settings,
 		} = this.props;
-
-
+		let emphasizeNonZeroComponent;
+		if (geneMode.startsWith('Flame')) {
+			const { emphasizeNonZero } = settings;
+			const emphasizeNZhc = () => {
+				dispatch({
+					type: SET_VIEW_PROPS,
+					stateName: 'col',
+					path: dataset.path,
+					viewState: {
+						col: {
+							settings: {
+								emphasizeNonZero: !emphasizeNonZero,
+							},
+						},
+					},
+				});
+			};
+			emphasizeNonZeroComponent = (
+				<div className='view'>
+					<OverlayTooltip
+						tooltip={'Toggle max value strip for Flame/Icicle maps'}
+						tooltipId={'emphasize-nz-tltp'}>
+						<Button
+							bsStyle='link'
+							bsSize='small'
+							style={{ flex: 1 }}
+							onClick={emphasizeNZhc}>
+							<Glyphicon glyph={emphasizeNonZero ? 'check' : 'unchecked'} /> emphasize max column values
+						</Button>
+					</OverlayTooltip >
+				</div>
+			);
+		}
 
 		return (
 			<ListGroupItem>
@@ -127,6 +159,7 @@ export class ColorSettings extends Component {
 							settings={settings}
 							time={200} />
 						{geneMode === 'Box' ? boxLegend : null}
+						{emphasizeNonZeroComponent}
 					</div>
 				</CollapsibleSettings>
 			</ListGroupItem>

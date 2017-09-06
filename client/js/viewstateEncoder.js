@@ -74,6 +74,7 @@ export function createViewStateConverter(dataset) {
 				clip: boolVal,
 				lowerBound: intVal,
 				upperBound: intVal,
+				emphasizeNonZero: boolVal,
 			},
 			colorAttr: oneOfColAllKeys,
 			colorMode: scatterplotModes,
