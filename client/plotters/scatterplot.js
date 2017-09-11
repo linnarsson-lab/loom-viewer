@@ -43,7 +43,7 @@ function constrain(x, a, b) {
 			x;
 }
 
-export function scatterPlot(xAttr, yAttr, colorAttr, indices, settings) {
+export function scatterPlot(xAttr, yAttr, colorAttr, indices, settings, scatterPlotSettings) {
 	// only render if all required data is supplied
 	if (!(xAttr && yAttr && colorAttr && indices && settings)) {
 		return () => { };
@@ -51,12 +51,11 @@ export function scatterPlot(xAttr, yAttr, colorAttr, indices, settings) {
 
 	let {
 		colorMode,
-	} = settings;
+	} = scatterPlotSettings;
 	const dataToIdx = attrToColorIndexFactory(colorAttr, colorMode, settings);
 
 	return (context) => {
 		context.save();
-
 
 		// Erase previous paint
 		context.clearRect(0, 0, context.width, context.height);
@@ -80,7 +79,7 @@ export function scatterPlot(xAttr, yAttr, colorAttr, indices, settings) {
 		// numerical arrays representing the twenty most
 		// common strings as categories, plus one "other"
 		// for all remaining values
-		let xy = convertCoordinates(xAttr, yAttr, indices, spriteLayout, settings);
+		let xy = convertCoordinates(xAttr, yAttr, indices, spriteLayout, scatterPlotSettings);
 		// ======================================================
 		// == Convert color data to lookup indices for sprites ==
 		// ======================================================
@@ -185,7 +184,7 @@ function calcLayout(context, settings) {
 	};
 }
 
-function convertCoordinates(xAttr, yAttr, indices, spriteLayout, settings) {
+function convertCoordinates(xAttr, yAttr, indices, spriteLayout, scatterPlotSettings) {
 	// For small value ranges (happens with PCA a lot),
 	// jittering needs to be scaled down
 	let xDelta = xAttr.max - xAttr.min,
@@ -205,15 +204,16 @@ function convertCoordinates(xAttr, yAttr, indices, spriteLayout, settings) {
 	// Similarly, if we need to jitter the data
 	// we must ensure the data array is a floating
 	// point typed array, not an integer array.
-	let xData = convertAttr(xAttr, indices, settings);
-	let yData = convertAttr(yAttr, indices, settings);
+	const { jitter } = scatterPlotSettings;
+	let xData = convertAttr(xAttr, indices, jitter);
+	let yData = convertAttr(yAttr, indices, jitter);
 	// Jitter if requested
-	maybeJitterData(xData, yData, settings);
+	maybeJitterData(xData, yData, jitter, xJitter, yJitter);
 	// Scale to screen dimensions with margins
-	return scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings);
+	return scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, scatterPlotSettings);
 }
 
-function convertAttr(attr, indices, settings) {
+function convertAttr(attr, indices, jitter) {
 	// In practice, having text data that is not indexed
 	// only happens if all strings are unique,
 	// so it's kind of pointless
@@ -228,15 +228,14 @@ function convertAttr(attr, indices, settings) {
 	// If we jitter later, we need to return a float32,
 	// Otherwise we can keep the more compact typed arrays
 	// if our data is integers
-	const convertedType = settings.jitter.x || settings.jitter.y ? 'float32' : attr.arrayType;
+	const convertedType = jitter.x || jitter.y ? 'float32' : attr.arrayType;
 	return arraySubset(attr.data, convertedType, indices);
 }
 
-function maybeJitterData(xData, yData, settings, xJitter, yJitter) {
+function maybeJitterData(xData, yData, jitter, xJitter, yJitter) {
 	const { PI, random, sin, cos } = Math;
 	const TAU = 2 * PI;
 	let i = xData.length;
-	const { jitter } = settings;
 	if (jitter.x && jitter.y) {
 		// if jittering both axes, do so in a
 		// circle around the data
@@ -260,18 +259,18 @@ function maybeJitterData(xData, yData, settings, xJitter, yJitter) {
 // returns a uint32 array `xy` that contains y and x bitpacked into it,
 // as `((y & 0xFFFF)<<16) + (x & 0xFFFF)`. Supposedly faster than using
 // separate uint16 arrays. Also sorts a bit quicker.
-function scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings) {
+function scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, scatterPlotSettings) {
 	let xMin = xAttr.min,
 		xMax = xAttr.max,
 		yMin = yAttr.min,
 		yMax = yAttr.max;
 
-	if (settings.logX) {
+	if (scatterPlotSettings.logX) {
 		logProjectArray(xData);
 		xMin = logProject(xMin);
 		xMax = logProject(xMax);
 	}
-	if (settings.logY) {
+	if (scatterPlotSettings.logY) {
 		logProjectArray(yData);
 		yMin = logProject(yMin);
 		yMax = logProject(yMax);
@@ -444,7 +443,7 @@ function blitSprites(context, spriteLayout, sorted) {
 		i = cSprites.length - zeros;
 	// draw zero values first
 	while (zeros--) {
-		_xy = xy[i];
+		_xy = xy[i + zeros];
 		_x = x + (_xy & 0xFFFF) - spriteRadius | 0;
 		_y = y + (height - (_xy >>> 16)) - spriteRadius | 0;
 		context.drawImage(zeroSprite, _x, _y);
