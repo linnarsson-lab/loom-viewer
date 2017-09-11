@@ -129,11 +129,11 @@ function calcLayout(context, settings) {
 	// Suitable radius of the markers
 	// - smaller canvas size -> smaller points
 	let radius = log2(shortEdge) * scaleFactor / 50 * pixelRatio | 0;
-	radius = constrain(radius, 1, 256);
+	radius = constrain(radius, 1, 254);
 
 	let spriteIdx = 0,
 		spriteRadius = 2;
-	while (spriteRadius < radius) {
+	while (spriteRadius < radius+1) {
 		spriteIdx++;
 		spriteRadius = 2 << spriteIdx;
 	}

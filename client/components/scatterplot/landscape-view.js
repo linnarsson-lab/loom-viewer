@@ -240,7 +240,7 @@ const stateInitialiser = (dataset) => {
 			colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
 			colorMode: 'Categorical',
 			settings: {
-				scaleFactor: 40,
+				scaleFactor: 20,
 				lowerBound: 0,
 				upperBound: 100,
 				logScale: true,

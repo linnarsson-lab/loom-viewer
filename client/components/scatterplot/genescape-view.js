@@ -238,7 +238,7 @@ const stateInitialiser = (dataset) => {
 			colorAttr: firstMatchingKey(attrs, ['_Selected', '_Excluded']),
 			colorMode: 'Categorical',
 			settings: {
-				scaleFactor: 40,
+				scaleFactor: 20,
 				lowerBound: 0,
 				upperBound: 100,
 				logScale: true,
