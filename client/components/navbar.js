@@ -25,31 +25,42 @@ export class NavbarView extends PureComponent {
 				}
 			);
 		}
-		const title = project && filename ?
-			`Loom - /${project}/${filename}` : 'Loom';
+		const title = project && filename ? `/${project}/${filename}` : 'Data Sets';
 
 		const navbarInstance = (
-			<Navbar staticTop collapseOnSelect>
+			<Navbar fixedTop collapseOnSelect>
 				<Navbar.Header>
 					<LinkContainer to='/'>
-						<Navbar.Brand>
-							{title}
+						<Navbar.Brand style={{ cursor: 'pointer' }}>
+							Loom
 						</Navbar.Brand>
 					</LinkContainer>
 					<Navbar.Toggle />
 				</Navbar.Header>
 				<Navbar.Collapse>
 					<Nav>
+						<NavItem disabled eventKey={title}>
+							{title}
+						</NavItem>
 						{viewLinks}
 					</Nav>
 				</Navbar.Collapse>
 			</Navbar>
 		);
+		// the dummy Navbar is to ensure the views
+		// are displayed below the real Navbar.
 		return (
 			<DocumentTitle title={title}>
 				<div className='view-vertical'>
 					<div>
 						{navbarInstance}
+						<Navbar staticTop>
+							<Navbar.Header>
+								<Navbar.Brand>
+									dummy
+								</Navbar.Brand>
+							</Navbar.Header>
+						</Navbar>
 					</div>
 					<RemountOnResize>
 						{this.props.children}
