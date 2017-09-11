@@ -517,7 +517,7 @@ class SearchDataSetViewComponent extends PureComponent {
 		} else {
 
 			datasetList = fetchProjectsStatus === UNKNOWN ? (
-				<div className='view centered'>
+				<div className='view centred'>
 					<div>
 						<h2>Downloading list of available datasets...</h2>
 					</div>
@@ -526,7 +526,7 @@ class SearchDataSetViewComponent extends PureComponent {
 					</div>
 				</div>
 			) : (
-				<div className='view centered'>
+				<div className='view centred'>
 					<h2>Fetch failed, checking IndexedDB cache</h2>
 				</div>
 			);

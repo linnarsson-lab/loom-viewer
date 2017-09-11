@@ -37,12 +37,12 @@ export function createViewStateConverter(dataset) {
 			xAttrs: vectorOf([{
 				attr: oneOfRowAllKeys,
 				jitter: boolVal,
-				logscale: boolVal,
+				logScale: boolVal,
 			}]),
 			yAttrs: vectorOf([{
 				attr: oneOfRowAllKeys,
 				jitter: boolVal,
-				logscale: boolVal,
+				logScale: boolVal,
 			}]),
 			settings: {
 				scaleFactor: intVal,
@@ -61,12 +61,12 @@ export function createViewStateConverter(dataset) {
 			xAttrs: vectorOf([{
 				attr: oneOfColAllKeys,
 				jitter: boolVal,
-				logscale: boolVal,
+				logScale: boolVal,
 			}]),
 			yAttrs: vectorOf([{
 				attr: oneOfColAllKeys,
 				jitter: boolVal,
-				logscale: boolVal,
+				logScale: boolVal,
 			}]),
 			settings: {
 				scaleFactor: intVal,

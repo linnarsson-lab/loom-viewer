@@ -1,13 +1,13 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { scatterplot } from '../../plotters/scatterplot';
+import { scatterPlot } from '../../plotters/scatterplot';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
 
-import { merge, firstMatch } from '../../js/util';
+import { firstMatchingKey } from '../../js/util';
 
 class LandscapeMatrix extends PureComponent {
 	componentWillMount() {
@@ -111,28 +111,31 @@ class LandscapeMatrix extends PureComponent {
 			const { col } = dataset;
 			const color = col.attrs[colorAttr];
 			let matrix = [];
-			for (let j = 0; j < yAttrs.length; j++) {
+			const xLength = xAttrs.length,
+				yLength = yAttrs.length;
+			for (let j = 0; j < yLength; j++) {
 				const rowW = containerW;
-				const rowH = ((containerH * (j + 1) / yAttrs.length) | 0) -
-					((containerH * j / yAttrs.length) | 0);
+				const rowH = ((containerH * (j + 1) / yLength) | 0) -
+					((containerH * j / yLength) | 0);
 				let _row = [];
-				for (let i = 0; i < xAttrs.length; i++) {
-					const canvasW = ((containerW * (i + 1) / xAttrs.length) | 0) -
-						((containerW * i / xAttrs.length) | 0) - 2;
+				for (let i = 0; i < xLength; i++) {
+					const canvasW = ((containerW * (i + 1) / xLength) | 0) -
+						((containerW * i / xLength) | 0) - 2;
 					const canvasH = rowH - 2;
-					const xAttr = xAttrs[i], yAttr = yAttrs[j];
-					const logscale = {
-						x: xAttr.logscale,
-						y: yAttr.logscale,
-						color: settings.logScale,
-					};
-					const jitter = {
-						x: xAttr.jitter,
-						y: yAttr.jitter,
-					};
-					const x = col.attrs[xAttr.attr];
-					const y = col.attrs[yAttr.attr];
-					const _settings = merge(settings, { colorMode, logscale, jitter });
+					const xAttr =
+						xAttrs[i],
+						yAttr = yAttrs[j],
+						x = col.attrs[xAttr.attr],
+						y = col.attrs[yAttr.attr],
+						scatterPlotSettings = {
+							colorMode,
+							logX: xAttr.logScale,
+							logY: yAttr.logScale,
+							jitter: {
+								x: xAttr.jitter,
+								y: yAttr.jitter,
+							},
+						};
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -143,7 +146,7 @@ class LandscapeMatrix extends PureComponent {
 							}}
 							width={canvasW}
 							height={canvasH}
-							paint={scatterplot(x, y, color, ascendingIndices, _settings)}
+							paint={scatterPlot(x, y, color, ascendingIndices, settings, scatterPlotSettings)}
 							redraw
 							clear
 						/>
@@ -173,7 +176,7 @@ class LandscapeMatrix extends PureComponent {
 			);
 		} else {
 			return (
-				<div className='view centered' ref='landscapeContainer'>
+				<div className='view centred' ref='landscapeContainer'>
 					Initialising Landscape
 				</div>
 			);
@@ -225,16 +228,16 @@ const stateInitialiser = (dataset) => {
 		landscapeInitialized: true,
 		col: {
 			xAttrs: [{
-				attr: firstMatch(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+				attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
 				jitter: false,
-				logscale: false,
+				logScale: false,
 			}],
 			yAttrs: [{
-				attr: firstMatch(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+				attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
 				jitter: false,
-				logscale: false,
+				logScale: false,
 			}],
-			colorAttr: firstMatch(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+			colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
 			colorMode: 'Categorical',
 			settings: {
 				scaleFactor: 40,

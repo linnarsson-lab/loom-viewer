@@ -49,7 +49,7 @@ class ViewStateInitialiser extends PureComponent {
 				dispatch={dispatch}
 				dataset={dataset}
 			/>
-		) : <div className='view centered'><h1>Initialising View Settings - {stateName}</h1></div>;
+		) : <div className='view centred'><h1>Initialising View Settings - {stateName}</h1></div>;
 	}
 }
 
@@ -85,17 +85,17 @@ export class ViewInitialiser extends PureComponent {
 		const path = `${project}/${filename}`;
 
 		const fetchingProjects = (
-			<div className='view centered' >
+			<div className='view centred' >
 				<h1>Fetching projects list</h1>
 			</div>
 		);
 		const fetchingDatasets = (
-			<div className='view centered'>
+			<div className='view centred'>
 				<h1>Fetching dataset: {path}</h1>
 			</div>
 		);
 		const mangledPath = (
-			<div className='view centered' >
+			<div className='view centred' >
 				<h1>Error: <i>{path}</i> not found in list of datasets</h1>
 			</div>
 		);

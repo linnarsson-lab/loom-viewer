@@ -45,7 +45,7 @@ body {
   flex: 1 1 auto;
 }
 
-.view.centered {
+.view.centred {
   justify-content: center;
   align-items: center;
 }
@@ -57,7 +57,7 @@ body {
   flex: 1 1 auto;
 }
 
-.view-vertical.centered {
+.view-vertical.centred {
   justify-content: center;
   align-items: center;
 }

@@ -47,12 +47,12 @@ export class CoordinateSettings extends Component {
 							xAttrs: [{
 								attr: xAttr,
 								jitter: false,
-								logscale: false,
+								logScale: false,
 							}],
 							yAttrs: [{
 								attr: yAttr,
 								jitter: false,
-								logscale: false,
+								logScale: false,
 							}],
 						},
 					},
@@ -88,21 +88,21 @@ export class CoordinateSettings extends Component {
 			setSFDP !== nullFunc ||
 			setLog !== nullFunc
 		) ? (<CollapsibleSettings
-				label={'X/Y Quick Settings'}
-				tooltip={'Quickly set X and Y attributes to one of the listed default values'}
-				tooltipId={'quickstngs-tltp'}
-				popover={popoverTest}
-				popoverTitle={'Test'}
-				popoverId={'popoverId1'}
-				mountClosed>
-				<ListGroup>
+			label={'X/Y Quick Settings'}
+			tooltip={'Quickly set X and Y attributes to one of the listed default values'}
+			tooltipId={'quickstngs-tltp'}
+			popover={popoverTest}
+			popoverTitle={'Test'}
+			popoverId={'popoverId1'}
+			mountClosed>
+			<ListGroup>
 					{setXY}
 					{setTSNE}
 					{setPCA}
 					{setSFDP}
 					{setLog}
 				</ListGroup>
-			</CollapsibleSettings>) : null;
+		</CollapsibleSettings>) : null;
 
 		const attrSelectFactory = (attrName, attrs, idx) => {
 			let newAttrs = attrs.slice(0);
@@ -112,7 +112,7 @@ export class CoordinateSettings extends Component {
 						newVal = {
 							attr: value,
 							jitter: oldVal.jitter,
-							logscale: oldVal.logscale,
+							logScale: oldVal.logScale,
 						};
 					newAttrs[idx] = newVal;
 				} else if (idx < newAttrs.length && newAttrs.length > 1) {
@@ -147,8 +147,8 @@ export class CoordinateSettings extends Component {
 
 		const attrLogscaleFactory = (attrName, attrs, idx) => {
 			let newAttrs = attrs.slice(0),
-				logscale = !newAttrs[idx].logscale;
-			newAttrs[idx] = merge(newAttrs[idx], { logscale });
+				logScale = !newAttrs[idx].logScale;
+			newAttrs[idx] = merge(newAttrs[idx], { logScale });
 			const newState = {
 				type: SET_VIEW_PROPS,
 				stateName: axis,
@@ -230,7 +230,7 @@ export class CoordinateSettings extends Component {
 							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={xLogscaleHC}>
-							<Glyphicon glyph={attrData.logscale ? 'check' : 'unchecked'} /> log
+							<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip
@@ -292,7 +292,7 @@ export class CoordinateSettings extends Component {
 							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={yLogscaleHC}>
-							<Glyphicon glyph={attrData.logscale ? 'check' : 'unchecked'} /> log
+							<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip

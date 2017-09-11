@@ -1,13 +1,13 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { scatterplot } from '../../plotters/scatterplot';
+import { scatterPlot } from '../../plotters/scatterplot';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
 import { Canvas } from '../canvas';
 
-import { merge, firstMatch } from '../../js/util';
+import {  firstMatchingKey } from '../../js/util';
 
 class GenescapeMatrix extends PureComponent {
 	componentWillMount() {
@@ -120,19 +120,19 @@ class GenescapeMatrix extends PureComponent {
 					const canvasW = ((containerW * (i + 1) / xAttrs.length) | 0) -
 						((containerW * i / xAttrs.length) | 0) - 2;
 					const canvasH = rowH - 2;
-					const xAttr = xAttrs[i], yAttr = yAttrs[j];
-					const logscale = {
-						x: xAttr.logscale,
-						y: yAttr.logscale,
-						color: settings.logScale,
-					};
-					const jitter = {
-						x: xAttr.jitter,
-						y: yAttr.jitter,
-					};
-					const x = row.attrs[xAttr.attr];
-					const y = row.attrs[yAttr.attr];
-					const _settings = merge(settings, { colorMode, logscale, jitter });
+					const xAttr = xAttrs[i],
+						yAttr = yAttrs[j],
+						x = row.attrs[xAttr.attr],
+						y = row.attrs[yAttr.attr],
+						scatterPlotSettings = {
+							colorMode,
+							logX: xAttr.logScale,
+							logY: yAttr.logScale,
+							jitter: {
+								x: xAttr.jitter,
+								y: yAttr.jitter,
+							},
+						};
 					_row.push(
 						<Canvas
 							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
@@ -143,7 +143,7 @@ class GenescapeMatrix extends PureComponent {
 							}}
 							width={canvasW}
 							height={canvasH}
-							paint={scatterplot(x, y, color, ascendingIndices, _settings)}
+							paint={scatterPlot(x, y, color, ascendingIndices, settings, scatterPlotSettings)}
 							redraw
 							clear
 						/>
@@ -173,7 +173,7 @@ class GenescapeMatrix extends PureComponent {
 			);
 		} else {
 			return (
-				<div className='view centered' ref='genescapeContainer'>
+				<div className='view centred' ref='genescapeContainer'>
 					Initialising Genescape
 				</div>
 			);
@@ -226,16 +226,16 @@ const stateInitialiser = (dataset) => {
 		row: {
 			// Initialise genescape state for this dataset
 			xAttrs: [{
-				attr: firstMatch(attrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+				attr: firstMatchingKey(attrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
 				jitter: false,
-				logscale: false,
+				logScale: false,
 			}],
 			yAttrs: [{
-				attr: firstMatch(attrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+				attr: firstMatchingKey(attrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
 				jitter: false,
-				logscale: false,
+				logScale: false,
 			}],
-			colorAttr: firstMatch(attrs, ['_Selected', '_Excluded']),
+			colorAttr: firstMatchingKey(attrs, ['_Selected', '_Excluded']),
 			colorMode: 'Categorical',
 			settings: {
 				scaleFactor: 40,

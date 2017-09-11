@@ -23,13 +23,25 @@ function blackColor() {
 	return 'black';
 }
 
-const log2 = Math.log2;
+export const log2 = Math.log2 || (
+	function (x) {
+		return Math.log(x) * Math.LOG2E;
+	}
+);
 
-export const logProject = (x) => {
+export function logProject(x) {
 	return x >= 0 ? log2(1 + x) : -log2(1 - x);
-};
+}
 
-export const clipRange = (attr, settings) => {
+export function logProjectArray(data) {
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return data;
+}
+
+export function clipRange(attr, settings) {
 	let { min, max } = attr;
 	let { lowerBound, upperBound } = settings;
 	if (lowerBound === undefined) {
@@ -55,7 +67,7 @@ export const clipRange = (attr, settings) => {
 		clipMax = min + upperBound * delta / 100;
 	}
 	return { min, max, clipMin, clipMax };
-};
+}
 
 export function attrToColorFactory(colorAttr, colorMode, settings) {
 	settings = settings || {};
@@ -118,7 +130,7 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 				);
 			} else {
 				// skip using special color for the zero-value for
-				// dataranges that have negative values and/or
+				// data ranges that have negative values and/or
 				// no zero value
 				const minColor = palette[1];
 				const colorIdxScale = (palette.length - 2) / clipDelta;
@@ -205,7 +217,7 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 				);
 			} else {
 				// skip using special color for the zero-value for
-				// dataranges that have negative values and/or
+				// data ranges that have negative values and/or
 				// no zero value
 				const colorIdxScale = (paletteEnd - 1) / clipDelta;
 				return settings.logScale ? (
@@ -269,13 +281,13 @@ export function bitCount(u) {
 	return bitCount(u & 0xFFFFFFFF) + bitCount((u / 0x100000000) | 0);
 }
 
-// expects two number arrays of [xmin, ymin, xmax, ymax].
+// expects two number arrays of [xMin, yMin, xMax, yMax].
 export function inBounds(r1, r2) {
 	return (
-		r1[0] < r2[2] && // r1.xmin < r2.xmax
-		r2[2] < r1[2] && // r2.xmin < r1.xmax
-		r1[1] < r2[3] && // r1.ymin < r2.ymax
-		r2[1] < r1[3]    // r2.ymin < r1.ymax
+		r1[0] < r2[2] && // r1.xMin < r2.xMax
+		r2[2] < r1[2] && // r2.xMin < r1.xMax
+		r1[1] < r2[3] && // r1.yMin < r2.yMax
+		r2[1] < r1[3]    // r2.yMin < r1.yMax
 	);
 }
 
@@ -470,7 +482,7 @@ export function convertJSONarray(arr, name) {
  * @param {object} obj
  * @param {string[]} keyList
  */
-export function firstMatch(obj, keyList) {
+export function firstMatchingKey(obj, keyList) {
 	for (let i = 0; i < keyList.length; i++) {
 		if (obj[keyList[i]]) {
 			return keyList[i];
@@ -539,7 +551,7 @@ export function stableSortedCopy(array, comparator, arrayConstr) {
  */
 export function findIndices(array, comparator) {
 	// Assumes we don't have to worry about sorting more than
-	// 4 billion elements; uses the smalled fitting typed array
+	// 4 billion elements; uses the smallest fitting typed array
 	// for smaller input sizes.
 	const indicesConstr = array.length < 256 ? Uint8Array : array.length < 65535 ? Uint16Array : Uint32Array;
 	let indices = new indicesConstr(array.length), i = array.length;
@@ -736,12 +748,12 @@ export function disjointArrays(a, b) {
 	}
 	let overlap = [], i = a.length;
 	while (i--) {
-		let aval = a[i];
+		let aVal = a[i];
 		let j = b.length;
 		while (j--) {
-			let bval = b[j];
-			if (aval === bval) {
-				overlap.push(aval);
+			let bVal = b[j];
+			if (aVal === bVal) {
+				overlap.push(aVal);
 				a[i] = a[a.length - 1];
 				a.pop();
 				b[j] = b[b.length - 1];
@@ -846,9 +858,9 @@ function isCyclic(obj) {
 		if (typeof obj != 'object') { return; }
 
 		if (stackSet.has(obj)) { // it's cyclic! Print the object and its locations.
-			var oldindex = stack.indexOf(obj);
+			var oldIndex = stack.indexOf(obj);
 			var l1 = keys.join('.') + '.' + key;
-			var l2 = keys.slice(0, oldindex + 1).join('.');
+			var l2 = keys.slice(0, oldIndex + 1).join('.');
 			console.log('CIRCULAR: ' + l1 + ' = ' + l2 + ' = ' + obj);
 			console.log({obj});
 			detected = true;

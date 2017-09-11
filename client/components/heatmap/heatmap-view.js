@@ -13,7 +13,7 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import * as _ from 'lodash';
 
-import { merge, firstMatch } from '../../js/util';
+import { merge, firstMatchingKey } from '../../js/util';
 
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
@@ -175,9 +175,9 @@ function stateInitialiser(dataset) {
 	return { // Initialise heatmap state for this dataset
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-			colAttr: firstMatch(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10']),
+			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10']),
 			colMode: 'Stacked',
-			rowAttr: firstMatch(dataset.row.attrs, ['_Selected', '_Excluded']),
+			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded']),
 			rowMode: 'Stacked',
 			zoom: 8,
 		},

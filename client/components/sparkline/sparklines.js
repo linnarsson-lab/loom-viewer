@@ -155,7 +155,7 @@ export class Sparklines extends PureComponent {
 					height: `${Math.max(200, selection.length * sparklineHeight)}px`,
 				}}>
 				{sparklines.length ? sparklines : (
-					<div className='view centered'>
+					<div className='view centred'>
 						<span>Select genes to display sparklines</span>
 					</div>
 				)}
@@ -273,7 +273,7 @@ export class SparklineList extends PureComponent {
 		}
 		else {
 			return (
-				<div className='view centered' ref={this.sparklineContainer}>
+				<div className='view centred' ref={this.sparklineContainer}>
 					Initialising sparklines
 				</div>
 			);

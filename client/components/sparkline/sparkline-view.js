@@ -8,7 +8,7 @@ import { ViewInitialiser } from '../view-initialiser';
 
 import { isEqual } from 'lodash';
 
-import { firstMatch } from '../../js/util';
+import { firstMatchingKey } from '../../js/util';
 
 class SparklineViewComponent extends PureComponent {
 	componentWillMount() {
@@ -87,7 +87,7 @@ const stateInitialiser = (dataset) => {
 	// Initialise sparklineState for this dataset
 	return {
 		sparkline: {
-			colAttr: firstMatch(dataset.col.attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
 			colMode: 'Stacked',
 			geneMode: 'Bars',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],

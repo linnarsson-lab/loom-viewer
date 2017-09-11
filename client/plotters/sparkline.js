@@ -449,7 +449,7 @@ function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
 	}
 }
 
-function barGroupedDataPrep(attr, data, min, max, settings) {
+function barConvertGroupedData(attr, data, min, max, settings) {
 	let avg = new Float32Array(data.length);
 
 	const { lowerBound, upperBound } = settings;
@@ -516,20 +516,20 @@ function barPaintGrouped(context, attr, data, range, ratio, dataToColor, setting
 	const { min, max } = attr;
 	// no need to waste time drawing empty arrays
 	if (max !== min) {
-		let preppedData = barGroupedDataPrep(attr, data, min, max, settings);
+		let convertedData = barConvertGroupedData(attr, data, min, max, settings);
 		if (settings.logScale) {
-			barPaintGroupedLogProjected(context, preppedData, range, ratio, dataToColor, settings, label);
+			barPaintGroupedLogProjected(context, convertedData, range, ratio, dataToColor, settings, label);
 		} else {
-			barPaintGroupedLinear(context, preppedData, range, ratio, dataToColor, settings, label);
+			barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor, settings, label);
 		}
 	} else if (label) {
 		barPaintLabel(context, ratio, min, max, min, max);
 	}
 }
 
-function barPaintGroupedLogProjected(context, preppedData, range, ratio, dataToColor, settings, label) {
+function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg } = preppedData;
+	const { iStart, min, max, clipMin, clipMax, avg } = convertedData;
 
 	const barScale = height * 0.9375 / logProject(clipMax - clipMin);
 	if (barScale) {
@@ -569,9 +569,9 @@ function barPaintGroupedLogProjected(context, preppedData, range, ratio, dataToC
 	}
 }
 
-function barPaintGroupedLinear(context, preppedData, range, ratio, dataToColor, settings, label) {
+function barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg } = preppedData;
+	const { iStart, min, max, clipMin, clipMax, avg } = convertedData;
 
 	const delta = clipMax - clipMin;
 	const barScale = height * 0.9375 / delta || 0;
@@ -683,17 +683,17 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 // - max (very light grey red)
 function barPaintBoxPlot(context, attr, data, range, ratio, dataToColor, settings, label) {
 	const { min, max } = attr;
-	let preppedData = barGroupedBoxDataPrep(attr, data, min, max, settings);
+	let convertedData = barGroupedBoxDataPrep(attr, data, min, max, settings);
 	if (settings.logScale) {
-		barPaintBoxPlotLogProjected(context, preppedData, range, ratio, dataToColor, settings, label);
+		barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataToColor, settings, label);
 	} else {
-		barPaintBoxPlotLinear(context, preppedData, range, ratio, dataToColor, settings, label);
+		barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor, settings, label);
 	}
 }
 
-function barPaintBoxPlotLogProjected(context, preppedData, range, ratio, dataToColor, settings, label) {
+function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = preppedData;
+	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = convertedData;
 
 	const delta = logProject(clipMax - clipMin);
 
@@ -758,9 +758,9 @@ function barPaintBoxPlotLogProjected(context, preppedData, range, ratio, dataToC
 	}
 }
 
-function barPaintBoxPlotLinear(context, preppedData, range, ratio, dataToColor, settings, label) {
+function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = preppedData;
+	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = convertedData;
 
 	const delta = clipMax - clipMin;
 
@@ -906,7 +906,7 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 	}
 
 	if (label) {
-		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+		heatmapLabel(context, ratio, min, max, clipMin, clipMax);
 	}
 }
 
@@ -954,10 +954,25 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 	}
 
 	if (label) {
-		barPaintLabel(context, ratio, min, max, clipMin, clipMax);
+		// width of the gradient, does not include text before and after
+		const width = 20 * ratio | 0;
+		// height of the whole, textSize is smaller
+		const height = 12 * ratio | 0;
+		const x = 6 * ratio | 0;
+		let y = context.height * 0.25 + height * 0.5 | 0;
+		heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
 	}
 }
 
+function heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings) {
+	// label for min and max values,
+	// avoid trailing zeros on integer values
+	const lblMin = min !== (min | 0) ?
+		min.toExponential(2) : min | 0;
+	const lblMax = max !== (max | 0) ?
+		max.toExponential(2) : max | 0;
+
+}
 
 // Note: flameMapDirectly is just heatMapDirectly
 
@@ -968,7 +983,7 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 	context.fillStyle = '#E8E8E8';
 	context.fillRect(0, 0, context.width, context.height);
 
-	const flameHeight = (emphasizeNonZero ? 29/32 : 1) * context.height | 0;
+	const flameHeight = (emphasizeNonZero ? 29 / 32 : 1) * context.height | 0;
 	// the thin max value strip
 	const maxColumnValueHeight = emphasizeNonZero ? context.height - flameHeight : 0;
 
@@ -1040,7 +1055,7 @@ function icicleMapGrouped(context, attr, data, range, ratio, dataToColor, settin
 	context.fillStyle = '#E8E8E8';
 	context.fillRect(0, 0, context.width, context.height);
 
-	const flameHeight = (emphasizeNonZero ? 29/32 : 1) * context.height | 0;
+	const flameHeight = (emphasizeNonZero ? 29 / 32 : 1) * context.height | 0;
 	// the thin max value strip
 	const maxColumnValueHeight = emphasizeNonZero ? context.height - flameHeight : 0;
 
@@ -1140,9 +1155,9 @@ function nameLabelPainter(context, mode, label) {
 	textSize(context, labelSize);
 	const x = 6 * ratio;
 	let y = (context.height + labelSize) * 0.5;
-	if (mode === 'Flame' || mode === 'Heatmap'){
+	if (mode === 'Flame' || mode === 'Heatmap') {
 		y += context.height * 0.1875;
-	} else if (mode === 'Icicle'){
+	} else if (mode === 'Icicle') {
 		y -= context.height * 0.25;
 	}
 	drawText(context, label, x, y);
