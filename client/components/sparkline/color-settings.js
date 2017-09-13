@@ -16,6 +16,9 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
+import { merge } from '../../js/util';
+
+
 const boxLegend = (
 	<table>
 		<tbody>
@@ -48,24 +51,25 @@ const boxLegend = (
 	</table>
 );
 
+function handleChangeFactory(dispatch, dataset, field) {
+	return (val) => {
+		dispatch({
+			type: SET_VIEW_PROPS,
+			stateName: 'sparkline',
+			path: dataset.path,
+			viewState: { sparkline: { [field]: val } },
+		});
+	};
+}
+
 export class ColorSettings extends Component {
 
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
-		const handleChangeFactory = (field) => {
-			return (val) => {
-				dispatch({
-					type: SET_VIEW_PROPS,
-					stateName: 'sparkline',
-					path: dataset.path,
-					viewState: { sparkline: { [field]: val } },
-				});
-			};
-		};
 
 		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
-		const geneModeHC = handleChangeFactory('geneMode');
-		const showLabelsHC = handleChangeFactory('showLabels');
+		const geneModeHC = handleChangeFactory(dispatch, dataset, 'geneMode');
+		const showLabelsHC = handleChangeFactory(dispatch, dataset, 'showLabels');
 		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
 	}
 
@@ -93,11 +97,17 @@ export class ColorSettings extends Component {
 			dataset,
 			showLabels,
 			geneMode,
-			settings,
 		} = this.props;
+
+		const { plots, selected } = dataset.viewState.col.scatterPlots;
+		const selectedPlot = plots[selected];
+
 		let emphasizeNonZeroComponent;
 		if (geneMode === 'Flame' || geneMode === 'Icicle') {
-			const { emphasizeNonZero } = settings;
+			const { emphasizeNonZero } = selectedPlot;
+
+			let newPlots = plots.slice(0);
+			newPlots[selected] = merge(selectedPlot, { emphasizeNonZero: !emphasizeNonZero });
 			const emphasizeNZhc = () => {
 				dispatch({
 					type: SET_VIEW_PROPS,
@@ -105,8 +115,8 @@ export class ColorSettings extends Component {
 					path: dataset.path,
 					viewState: {
 						col: {
-							settings: {
-								emphasizeNonZero: !emphasizeNonZero,
+							scatterPlots: {
+								plots: newPlots,
 							},
 						},
 					},
@@ -156,7 +166,8 @@ export class ColorSettings extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'col'}
-							settings={settings}
+							plots={plots}
+							plotNr={selected}
 							time={200} />
 						{geneMode === 'Box' ? boxLegend : null}
 						{emphasizeNonZeroComponent}
@@ -172,5 +183,4 @@ ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	geneMode: PropTypes.string.isRequired,
 	showLabels: PropTypes.bool.isRequired,
-	settings: PropTypes.object.isRequired,
 };

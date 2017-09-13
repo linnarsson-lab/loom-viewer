@@ -42,7 +42,7 @@ export function setViewProps(dataset, action) {
 		if (viewState) {
 			const { col, heatmap, sparkline } = viewState;
 			if (col) {
-				const { order, filter, xAttrs, yAttrs, colorAttr } = col;
+				const { order, filter, scatterPlots } = col;
 				if (order) {
 					for (let i = 0; i < order.length; i++) {
 						appendIfUnfetchedGene(order[i].key);
@@ -53,17 +53,14 @@ export function setViewProps(dataset, action) {
 						appendIfUnfetchedGene(filter[i].attr);
 					}
 				}
-				if (xAttrs) {
-					for (let i = 0; i < xAttrs.length; i++) {
-						appendIfUnfetchedGene(xAttrs[i].attr);
+				if (scatterPlots && scatterPlots.plots) {
+					for (let i = 0; i < scatterPlots.plots.length; i++) {
+						const plot = scatterPlots.plots[i];
+						appendIfUnfetchedGene(plot.x.attr);
+						appendIfUnfetchedGene(plot.y.attr);
+						appendIfUnfetchedGene(plot.colorAttr);
 					}
 				}
-				if (yAttrs) {
-					for (let i = 0; i < yAttrs.length; i++) {
-						appendIfUnfetchedGene(yAttrs[i].attr);
-					}
-				}
-				appendIfUnfetchedGene(colorAttr);
 			}
 			if (heatmap) {
 				appendIfUnfetchedGene(heatmap.colAttr);

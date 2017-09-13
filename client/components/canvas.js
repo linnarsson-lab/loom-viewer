@@ -75,9 +75,10 @@ class CanvasComponent extends PureComponent {
 
 		return (
 			<div
-				ref={this.mountedView}
+				className={this.props.className}
 				style={this.props.style}
-			>
+				ref={this.mountedView}
+				OnClick={this.props.OnClick} >
 				{canvas}
 			</div>
 		);
@@ -91,6 +92,7 @@ CanvasComponent.propTypes = {
 	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
+	OnClick: PropTypes.func,
 };
 
 

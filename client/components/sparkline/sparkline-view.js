@@ -8,7 +8,7 @@ import { ViewInitialiser } from '../view-initialiser';
 
 import { isEqual } from 'lodash';
 
-import { firstMatchingKey } from '../../js/util';
+import { firstMatchingKey, merge } from '../../js/util';
 
 class SparklineViewComponent extends PureComponent {
 	componentWillMount() {
@@ -36,6 +36,7 @@ class SparklineViewComponent extends PureComponent {
 		const {
 			indices,
 			settings,
+			scatterPlots,
 		} = dataset.viewState.col;
 		// The old column attribute values that we displayed in the "legend"
 		let legendData = col.attrs[sl.colAttr];
@@ -46,6 +47,7 @@ class SparklineViewComponent extends PureComponent {
 		}
 		const { indicesChanged } = this.state;
 
+		const scatterPlotSettings = merge(settings, scatterPlots.plots[0]);
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
 				<SparklineSidepanel
@@ -70,7 +72,7 @@ class SparklineViewComponent extends PureComponent {
 					colAttr={sl.colAttr}
 					colMode={sl.colMode}
 					path={dataset.path}
-					settings={settings}
+					settings={scatterPlotSettings}
 					showLabels={sl.showLabels} />
 			</div>
 		);
@@ -85,6 +87,7 @@ SparklineViewComponent.propTypes = {
 
 const stateInitialiser = (dataset) => {
 	// Initialise sparklineState for this dataset
+	const attrs = dataset.col.attrs;
 	return {
 		sparkline: {
 			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
@@ -94,12 +97,28 @@ const stateInitialiser = (dataset) => {
 			showLabels: true,
 		},
 		col: {
+			scatterPlots: {
+				selected: 0,
+				plots: [{
+					x: {
+						attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+						jitter: false,
+						logScale: false,
+					},
+					y: {
+						attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+						jitter: false,
+						logScale: false,
+					},
+					logScale: true,
+					clip: false,
+					lowerBound: 0,
+					upperBound: 100,
+					emphasizeNonZero: false,
+				}],
+			},
 			settings: {
-				scaleFactor: 40,
-				lowerBound: 0,
-				upperBound: 100,
-				logScale: true,
-				clip: false,
+				scaleFactor: 20,
 			},
 		},
 	};

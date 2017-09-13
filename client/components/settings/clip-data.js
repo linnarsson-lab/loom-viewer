@@ -7,6 +7,8 @@ import {
 } from 'react-bootstrap';
 import { Range } from 'rc-slider';
 
+import { merge } from '../../js/util';
+
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import {
@@ -15,84 +17,91 @@ import {
 
 import { debounce } from 'lodash';
 
-export class ClipDataSettings extends Component {
-	componentWillMount() {
-		const {
-			dataset,
-			dispatch,
-			axis,
-		} = this.props;
+function clampRangeHandleChangeFactory(props){
+	const {
+		axis,
+		dataset,
+		dispatch,
+		plotNr,
+		plots,
+		time,
+	} = props;
 
-		const clampRangeHC = (values) => {
-			dispatch({
-				type: SET_VIEW_PROPS,
-				stateName: axis,
-				path: dataset.path,
-				viewState: {
-					[axis]: {
-						settings: {
-							lowerBound: values[0],
-							upperBound: values[1],
-						},
+	let newPlots = plots.slice(0);
+
+	const handleChange = (values) => {
+		newPlots[plotNr] = merge(plots[plotNr], {
+			lowerBound: values[0],
+			upperBound: values[1],
+		});
+		dispatch({
+			type: SET_VIEW_PROPS,
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: {
+						plots: newPlots,
 					},
 				},
-			});
-		};
+			},
+		});
+	};
 
-		const handleChangeFactory = (name, value) => {
-			return () => {
-				dispatch({
-					type: SET_VIEW_PROPS,
-					stateName: axis,
-					path: dataset.path,
-					viewState: {
-						[axis]: {
-							settings: {
-								[name]: !value,
-							},
-						},
+	return time ? debounce(handleChange, time) : handleChange;
+}
+
+function handleChangeFactory(props, key, value){
+	const {
+		axis,
+		dataset,
+		dispatch,
+		plotNr,
+		plots,
+	} = props;
+
+	let newPlots = plots.slice(0);
+	const plot = plots[plotNr];
+
+	return () => {
+		newPlots[plotNr] = merge(plot, {
+			[key]: value,
+		});
+		dispatch({
+			type: SET_VIEW_PROPS,
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: {
+						plots: newPlots,
 					},
-				});
-			};
-		};
-		const clampRangeDebounced = this.props.time ?
-			debounce(clampRangeHC, this.props.time) : clampRangeHC;
-
-		this.setState({
-			clampRangeHC,
-			clampRangeDebounced,
-			handleChangeFactory,
+				},
+			},
 		});
-	}
+	};
+}
 
-	componentWillReceiveProps(nextProps) {
-		const newDebounce = this.state.time !== nextProps.time;
-
-		const clampRangeDebounced = newDebounce ?
-			(nextProps.time ? debounce(this.state.clampRangeHC, nextProps.time) : this.state.clampRangeHC)
-			:
-			this.state.clampRangeDebounced;
-
-		this.setState({
-			clampRangeDebounced,
-		});
-	}
+export class ClipDataSettings extends Component {
 
 	render() {
-		const {
-			settings,
-		} = this.props;
+		const { props } = this;
 
 		const {
+			plotNr,
+			plots,
+		} = props;
+
+		const {
+			clip,
+			logScale,
 			lowerBound,
 			upperBound,
-			logScale,
-			clip,
-		} = settings;
+		} = plots[plotNr];
 
-		const { handleChangeFactory } = this.state;
-		const logScaleHC = handleChangeFactory('logScale', logScale);
-		const clipHC = handleChangeFactory('clip', clip);
+		const clampRangeHC = clampRangeHandleChangeFactory(props);
+		const logScaleHC = handleChangeFactory(props, 'logScale', !logScale);
+		const clipHC = handleChangeFactory(props, 'clip', !clip);
 		return (
 			<div className='view-vertical'>
 				<div className='view'>
@@ -132,8 +141,8 @@ export class ClipDataSettings extends Component {
 									pushable={0}
 									count={2}
 									defaultValue={[lowerBound, upperBound]}
-									onChange={this.state.clampRangeDebounced}
-									onAfterChange={this.state.clampRangeDebounced} />
+									onChange={clampRangeHC}
+									onAfterChange={clampRangeHC} />
 							</div>
 						</OverlayTooltip>
 					) : null
@@ -147,6 +156,7 @@ ClipDataSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	settings: PropTypes.object.isRequired,
+	plotNr: PropTypes.number.isRequired,
+	plots: PropTypes.array.isRequired,
 	time: PropTypes.number,
 };

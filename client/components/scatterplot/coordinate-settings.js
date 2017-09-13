@@ -19,296 +19,235 @@ import { popoverTest } from './popover';
 import { merge } from '../../js/util';
 
 import { setViewProps } from '../../actions/set-viewprops';
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-function nullFunc() { }
+// Factory to generate functions used in quick-set buttons
+function quickSettingsFactory(props, settingsList) {
+	const {
+		dispatch,
+		dataset,
+		axis,
+		plots,
+		plotNr,
+	} = props;
 
-export class CoordinateSettings extends Component {
-	componentWillMount() {
+	const {
+		attrs,
+	} = dataset[axis];
+
+	const plot = plots[plotNr];
+
+	let quickSettingsList = [];
+
+	for (let i = 0; i < settingsList.length; i++) {
 		const {
-			dispatch,
-			dataset,
-			axis,
-		} = this.props;
+			label,
+			xAttr,
+			yAttr,
+		} = settingsList[i];
+		if (attrs[xAttr] && attrs[yAttr]) {
 
-		const {
-			attrs,
-		} = dataset[axis];
-
-		// function to generate functions used in buttons
-		const setCoordinateFactory = (label, xAttr, yAttr) => {
-			if (attrs[xAttr] && attrs[yAttr]) {
-				const resetAttrs = {
-					type: SET_VIEW_PROPS,
-					stateName: axis,
-					path: dataset.path,
-					viewState: {
-						[axis]: {
-							xAttrs: [{
-								attr: xAttr,
-								jitter: false,
-								logScale: false,
-							}],
-							yAttrs: [{
-								attr: yAttr,
-								jitter: false,
-								logScale: false,
-							}],
+			let handleClick = nullFunc;
+			if (plot.x.attr !== xAttr || plot.y.attr !== yAttr) {
+				const newPlots = plots.slice(0);
+				newPlots[plotNr] = merge(plot, {
+					x: { attr: xAttr },
+					y: { attr: yAttr },
+				});
+				handleClick = () => {
+					return dispatch(setViewProps(dataset, {
+						stateName: axis,
+						path: dataset.path,
+						viewState: {
+							[axis]: {
+								scatterPlots: {
+									plots: newPlots,
+								},
+							},
 						},
-					},
+					}));
 				};
-				const handleClick = () => {
-					dispatch(resetAttrs);
-				};
-				return (
-					<ListGroupItem>
-						<OverlayTooltip
-							tooltip={`Set first attributes to ${xAttr} and ${yAttr} and unset the others`}
-							tooltipId={`set-${xAttr}_${yAttr}-tltp`}>
-							<Button bsStyle='link' onClick={handleClick}>
-								{label}
-							</Button>
-						</OverlayTooltip>
-					</ListGroupItem>
-				);
-			} else {
-				return null;
 			}
-		};
 
-		const setXY = setCoordinateFactory('default X / Y', '_X', '_Y');
-		const setTSNE = setCoordinateFactory('tSNE1 / tSNE2', '_tSNE1', '_tSNE2');
-		const setPCA = setCoordinateFactory('PCA 1 / PCA 2', '_PC1', '_PC2');
-		const setSFDP = setCoordinateFactory('SFDP X / SFDP Y', 'SFDP_X', 'SFDP_Y');
-		const setLog = setCoordinateFactory('LogMean / LogCV', '_LogMean', '_LogCV');
+			quickSettingsList.push(
+				<ListGroupItem key={`${plotNr + 1}-set-${xAttr}_${yAttr}`}>
+					<OverlayTooltip
+						tooltip={`Set attributes to ${xAttr} and ${yAttr}`}
+						tooltipId={`${plotNr + 1}-set-${xAttr}_${yAttr}-tltp`}>
+						<Button
+							bsStyle='link'
+							onClick={handleClick}
+							disabled={handleClick === nullFunc}>
+							{label}
+						</Button>
+					</OverlayTooltip>
+				</ListGroupItem>
+			);
+		}
+	}
 
-		const quickSettings = (
-			setTSNE !== nullFunc ||
-			setPCA !== nullFunc ||
-			setSFDP !== nullFunc ||
-			setLog !== nullFunc
-		) ? (<CollapsibleSettings
+	return quickSettingsList.length ? (
+		<CollapsibleSettings
 			label={'X/Y Quick Settings'}
 			tooltip={'Quickly set X and Y attributes to one of the listed default values'}
 			tooltipId={'quickstngs-tltp'}
 			popover={popoverTest}
 			popoverTitle={'Test'}
 			popoverId={'popoverId1'}
-			mountClosed>
+			mountClosed >
 			<ListGroup>
-					{setXY}
-					{setTSNE}
-					{setPCA}
-					{setSFDP}
-					{setLog}
-				</ListGroup>
-		</CollapsibleSettings>) : null;
+				{quickSettingsList}
+			</ListGroup>
+		</CollapsibleSettings>
+	) : null;
+}
 
-		const attrSelectFactory = (attrName, attrs, idx) => {
-			let newAttrs = attrs.slice(0);
-			return (value) => {
-				if (value) {
-					let oldVal = (idx === newAttrs.length) ? newAttrs[newAttrs.length - 1] : newAttrs[idx],
-						newVal = {
-							attr: value,
-							jitter: oldVal.jitter,
-							logScale: oldVal.logScale,
-						};
-					newAttrs[idx] = newVal;
-				} else if (idx < newAttrs.length && newAttrs.length > 1) {
-					for (let i = idx; i < newAttrs.length - 1; i++) {
-						newAttrs[i] = newAttrs[i + 1];
-					}
-					newAttrs.pop();
-				}
-				dispatch(setViewProps(dataset, {
-					type: SET_VIEW_PROPS,
-					stateName: axis,
-					path: dataset.path,
-					viewState: { [axis]: { [attrName]: newAttrs } },
-				}));
-			};
-		};
+quickSettingsFactory.propTypes = {
+	dispatch: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	axis: PropTypes.string.isRequired,
+	plots: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
+};
 
-		const attrJitterFactory = (attrName, attrs, idx) => {
-			let newAttrs = attrs.slice(0),
-				jitter = !newAttrs[idx].jitter;
-			newAttrs[idx] = merge(newAttrs[idx], { jitter });
-			const newState = {
-				type: SET_VIEW_PROPS,
-				stateName: axis,
-				path: dataset.path,
-				viewState: { [axis]: { [attrName]: newAttrs } },
-			};
-			return () => {
-				dispatch(newState);
-			};
-		};
+function nullFunc() { }
 
-		const attrLogscaleFactory = (attrName, attrs, idx) => {
-			let newAttrs = attrs.slice(0),
-				logScale = !newAttrs[idx].logScale;
-			newAttrs[idx] = merge(newAttrs[idx], { logScale });
-			const newState = {
-				type: SET_VIEW_PROPS,
-				stateName: axis,
-				path: dataset.path,
-				viewState: { [axis]: { [attrName]: newAttrs } },
-			};
-			return () => {
-				dispatch(newState);
-			};
-		};
-		this.setState({
-			quickSettings,
-			attrSelectFactory,
-			attrJitterFactory,
-			attrLogscaleFactory,
+const settingsList = [
+	{
+		label: 'default X / Y',
+		xAttr: '_X',
+		yAttr: '_Y',
+	},
+	{
+		label: 'tSNE1 / tSNE2',
+		xAttr: '_tSNE1',
+		yAttr: '_tSNE2',
+	},
+	{
+		label: 'PCA 1 / PCA 2',
+		xAttr: '_PC1',
+		yAttr: '_PC2',
+	},
+	{
+		label: 'SFDP X / SFDP Y',
+		xAttr: 'SFDP_X',
+		yAttr: 'SFDP_Y',
+	},
+	{
+		label: 'Logmean / LogCV',
+		xAttr: '_LogMean',
+		yAttr: '_LogCV',
+	},
+];
+
+function attrSettingHandleChangeFactory(props, attrAxis, key) {
+	const {
+		dispatch,
+		dataset,
+		axis,
+		plots,
+		plotNr,
+	} = props;
+
+	const value = !plots[plotNr][attrAxis][key];
+	const newPlots = plots.slice(0);
+
+	return () => {
+		newPlots[plotNr] = merge(newPlots[plotNr], {
+			[attrAxis]: { [key]: value },
 		});
-	}
+		return dispatch(setViewProps(dataset, {
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: {
+						plots: newPlots,
+					},
+				},
+			},
+		}));
+	};
+}
+
+function attrSettingsFactory(props, attrAxis) {
+	const {
+		dataset,
+		axis,
+		plots,
+		plotNr,
+	} = props;
+
+	const attrData = plots[plotNr][attrAxis];
+
+	const { allKeysNoUniques, dropdownOptions } = dataset[axis];
+	const filterOptions = dropdownOptions.allNoUniques;
+
+	const attrHC = attrSettingHandleChangeFactory(props, attrAxis, 'attr'),
+		logScaleHC = attrSettingHandleChangeFactory(props, attrAxis, 'logScale'),
+		jitterHC = attrSettingHandleChangeFactory(props, attrAxis, 'jitter');
+
+	return (
+		<div className={'view'} key={`${attrAxis}-${plotNr + 1}-attr`}>
+			<OverlayTooltip
+				tooltip={`select attribute for ${attrAxis}-axis`}
+				tooltipId={`${attrAxis}-${plotNr + 1}-attr-tltp`}>
+				<div style={{ flex: 8 }}>
+					<DropdownMenu
+						key={plotNr}
+						value={attrData.attr}
+						options={allKeysNoUniques}
+						filterOptions={filterOptions}
+						onChange={attrHC}
+					/>
+				</div>
+			</OverlayTooltip>
+			<OverlayTooltip
+				tooltip={`toggle log2-scaling for ${attrAxis}-axis`}
+				tooltipId={`${attrAxis}-${plotNr + 1}-log-tltp`}>
+				<Button
+					bsStyle='link'
+					bsSize='small'
+					style={{ flex: 1 }}
+					onClick={logScaleHC}>
+					<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
+				</Button>
+			</OverlayTooltip>
+			<OverlayTooltip
+				tooltip={`toggle jitter for ${attrAxis}-axis`}
+				tooltipId={`${attrAxis}-${plotNr + 1}-jitter-tltp`}>
+				<Button
+					bsStyle='link'
+					bsSize='small'
+					style={{ flex: 1 }}
+					onClick={jitterHC}>
+					<Glyphicon glyph={attrData.jitter ? 'check' : 'unchecked'} /> jitter
+				</Button>
+			</OverlayTooltip>
+		</div >
+	);
+}
+
+attrSettingsFactory.propTypes = {
+	dispatch: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	axis: PropTypes.string.isRequired,
+	plots: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
+};
+
+
+export class CoordinateSettings extends Component {
 
 	shouldComponentUpdate(nextProps) {
-		return nextProps.xAttrs !== this.props.xAttrs ||
-			nextProps.yAttrs !== this.props.yAttrs;
+		const { props } = this;
+		return nextProps.plots !== props.plots;
 	}
 
 	render() {
-		const { dataset, axis,
-			xAttrs, yAttrs } = this.props;
-
-		const { allKeysNoUniques, dropdownOptions } = dataset[axis];
-		const filterOptions = dropdownOptions.allNoUniques;
-
-
-		const {
-			quickSettings,
-			attrSelectFactory,
-			attrJitterFactory,
-			attrLogscaleFactory,
-		} = this.state;
-
-		// filter out undefined attributes;
-		let newXattrs = [];
-		for (let i = 0; i < xAttrs.length; i++) {
-			let attr = xAttrs[i];
-			if (attr) {
-				newXattrs.push(attr);
-			}
-		}
-
-		// generate dropdowns for x attribute
-		let i = newXattrs.length,
-			attrName = 'xAttrs',
-			xAttrDropdowns = new Array(i);
-
-		// set attribute values
-		while (i--) {
-			const attrData = newXattrs[i],
-				xAttrHC = attrSelectFactory(attrName, newXattrs, i);
-			const xJitterHC = attrJitterFactory(attrName, newXattrs, i),
-				xLogscaleHC = attrLogscaleFactory(attrName, newXattrs, i);
-			xAttrDropdowns[i] = (
-				<div className={'view'} key={attrData.attr + '_x_' + i}>
-					<OverlayTooltip
-						tooltip={`select attribute ${i + 1}`}
-						tooltipId={`xattr-${i}-tltp`}>
-						<div style={{ flex: 8 }}>
-							<DropdownMenu
-								key={i}
-								value={attrData.attr}
-								options={allKeysNoUniques}
-								filterOptions={filterOptions}
-								onChange={xAttrHC}
-							/>
-						</div>
-					</OverlayTooltip>
-					<OverlayTooltip
-						tooltip={`toggle log2-scaling for attribute ${i + 1}`}
-						tooltipId={`xattr-log-${i}-tltp`}>
-						<Button
-							bsStyle='link'
-							bsSize='small'
-							style={{ flex: 1 }}
-							onClick={xLogscaleHC}>
-							<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
-						</Button>
-					</OverlayTooltip>
-					<OverlayTooltip
-						tooltip={`toggle jitter for attribute ${i + 1}`}
-						tooltipId={`xattr-jitter-${i}-tltp`}>
-						<Button
-							bsStyle='link'
-							bsSize='small'
-							style={{ flex: 1 }}
-							onClick={xJitterHC}>
-							<Glyphicon glyph={attrData.jitter ? 'check' : 'unchecked'} /> jitter
-						</Button>
-					</OverlayTooltip>
-				</div >
-			);
-		}
-
-		let newYattrs = [];
-		for (i = 0; i < yAttrs.length; i++) {
-			let attr = yAttrs[i];
-			if (attr) {
-				newYattrs.push(attr);
-			}
-		}
-		// newYattrs.push({
-		// 	attr: '<select attribute>',
-		// 	jitter: newYattrs[i - 1] ? newYattrs[i - 1].jitter : false,
-		// 	log: newYattrs[i - 1] ? newYattrs[i - 1].log : false,
-		// });
-
-		i = newYattrs.length;
-		attrName = 'yAttrs';
-		let yAttrDropdowns = new Array(i);
-		while (i--) {
-			const attrData = newYattrs[i],
-				yAttrHC = attrSelectFactory(attrName, newYattrs, i);
-			const yJitterHC = attrJitterFactory(attrName, newYattrs, i),
-				yLogscaleHC = attrLogscaleFactory(attrName, newYattrs, i);
-			yAttrDropdowns[i] = (
-				<div className={'view'} key={attrData.attr + '_y_' + i}>
-					<OverlayTooltip
-						tooltip={`select attribute ${i + 1}`}
-						tooltipId={`yattr-${i}-tltp`}>
-						<div style={{ flex: 8 }}>
-							<DropdownMenu
-								key={i}
-								value={attrData.attr}
-								options={allKeysNoUniques}
-								filterOptions={filterOptions}
-								onChange={yAttrHC}
-							/>
-						</div>
-					</OverlayTooltip>
-					<OverlayTooltip
-						tooltip={`toggle log2-scaling for attribute ${i + 1}`}
-						tooltipId={`yattr-log-${i}-tltp`}>
-						<Button
-							bsStyle='link'
-							bsSize='small'
-							style={{ flex: 1 }}
-							onClick={yLogscaleHC}>
-							<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
-						</Button>
-					</OverlayTooltip>
-					<OverlayTooltip
-						tooltip={`toggle jitter for attribute ${i + 1}`}
-						tooltipId={`yattr-jitter-${i}-tltp`}>
-						<Button
-							bsStyle='link'
-							bsSize='small'
-							style={{ flex: 1 }}
-							onClick={yJitterHC}>
-							<Glyphicon glyph={attrData.jitter ? 'check' : 'unchecked'} /> jitter
-						</Button>
-					</OverlayTooltip>
-				</div>);
-		}
-
+		const { props } = this;
+		const quickSettings = quickSettingsFactory(props, settingsList);
+		const xAttrSettings = attrSettingsFactory(props, 'x');
+		const yAttrSettings = attrSettingsFactory(props, 'y');
 		return (
 			<div>
 				<ListGroupItem>
@@ -316,29 +255,16 @@ export class CoordinateSettings extends Component {
 				</ListGroupItem>
 				<ListGroupItem>
 					<CollapsibleSettings
-						label={'X attributes'}
-						tooltip={'Select attributes for the X axis, with optional logaritmic scaling and jittering'}
-						tooltipId={'xattrs-tltp'}
+						label={'X/Y attribute'}
+						tooltip={'Select attribute for the X- and Y-axis, with optional logarithmic scaling and jittering'}
+						tooltipId={'xyAttrs-tltp'}
 						popover={popoverTest}
 						popoverTitle={'Test'}
-						popoverId={'popoverId2'}
+						popoverId={`popover-xy-${props.plotNr}`}
 					>
 						<div>
-							{xAttrDropdowns}
-						</div>
-					</CollapsibleSettings>
-				</ListGroupItem>
-				<ListGroupItem>
-					<CollapsibleSettings
-						label={'Y attributes'}
-						tooltip={'Select attributes for the Y axis, with optional logaritmic scaling and jittering'}
-						tooltipId={'yattrs-tltp'}
-						popover={popoverTest}
-						popoverTitle={'Test'}
-						popoverId={'popoverId3'}
-					>
-						<div>
-							{yAttrDropdowns}
+							{xAttrSettings}
+							{yAttrSettings}
 						</div>
 					</CollapsibleSettings>
 				</ListGroupItem>
@@ -351,6 +277,6 @@ CoordinateSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	xAttrs: PropTypes.array.isRequired,
-	yAttrs: PropTypes.array.isRequired,
+	plots: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
 };

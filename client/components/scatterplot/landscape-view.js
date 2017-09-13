@@ -1,194 +1,12 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { scatterPlot } from '../../plotters/scatterplot';
+import { ScatterPlotMatrix } from './scatterplot-matrix';
 import { LandscapeSidepanel } from './landscape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
-import { Canvas } from '../canvas';
 
 import { firstMatchingKey } from '../../js/util';
-
-class LandscapeMatrix extends PureComponent {
-	componentWillMount() {
-		const { xAttrs, yAttrs } = this.props.dataset.viewState.col;
-		// filter out undefined attributes;
-		let newXattrs = [];
-		for (let i = 0; i < xAttrs.length; i++) {
-			let attr = xAttrs[i];
-			if (attr) {
-				newXattrs.push(attr);
-			}
-		}
-		let newYattrs = [];
-		for (let i = 0; i < yAttrs.length; i++) {
-			let attr = yAttrs[i];
-			if (attr) {
-				newYattrs.push(attr);
-			}
-		}
-
-		let matrixChangedArr = [];
-		for (let i = 0; i < xAttrs.length; i++) {
-			matrixChangedArr.push(xAttrs[i].attr);
-		}
-		for (let i = 0; i < yAttrs.length; i++) {
-			matrixChangedArr.push(yAttrs[i].attr);
-		}
-		const matrixChanged = matrixChangedArr.join('');
-
-		this.setState({
-			mounted: false,
-			xAttrs: newXattrs,
-			yAttrs: newYattrs,
-			matrixChanged,
-		});
-	}
-
-	componentDidMount() {
-		this.setState({ mounted: true });
-	}
-
-	componentWillReceiveProps(nextProps) {
-		const { xAttrs, yAttrs } = nextProps.dataset.viewState.col;
-		// filter out undefined attributes;
-		let newXattrs = [];
-		for (let i = 0; i < xAttrs.length; i++) {
-			let attr = xAttrs[i];
-			if (attr) {
-				newXattrs.push(attr);
-			}
-		}
-		let newYattrs = [];
-		for (let i = 0; i < yAttrs.length; i++) {
-			let attr = yAttrs[i];
-			if (attr) {
-				newYattrs.push(attr);
-			}
-		}
-
-		let matrixChangedArr = [];
-		for (let i = 0; i < xAttrs.length; i++) {
-			matrixChangedArr.push(xAttrs[i].attr);
-		}
-		for (let i = 0; i < yAttrs.length; i++) {
-			matrixChangedArr.push(yAttrs[i].attr);
-		}
-
-		const matrixChanged = matrixChangedArr.join(''),
-			mounted = matrixChanged === this.state.matrixChanged;
-
-		this.setState({
-			mounted,
-			matrixChanged,
-			xAttrs: newXattrs,
-			yAttrs: newYattrs,
-		});
-	}
-
-	componentDidUpdate() {
-		if (!this.state.mounted) {
-			this.setState({ mounted: true });
-		}
-	}
-
-	render() {
-		const { mounted, xAttrs, yAttrs } = this.state;
-		if (mounted) {
-			const { dataset } = this.props;
-			const {
-				colorAttr,
-				colorMode,
-				ascendingIndices,
-				settings,
-			} = dataset.viewState.col;
-
-			const el = this.refs.landscapeContainer;
-			// Avoid triggering scrollbars
-			const containerW = el.clientWidth - 20;
-			const containerH = el.clientHeight - 20;
-
-			const { col } = dataset;
-			const color = col.attrs[colorAttr];
-			let matrix = [];
-			const xLength = xAttrs.length,
-				yLength = yAttrs.length;
-			for (let j = 0; j < yLength; j++) {
-				const rowW = containerW;
-				const rowH = ((containerH * (j + 1) / yLength) | 0) -
-					((containerH * j / yLength) | 0);
-				let _row = [];
-				for (let i = 0; i < xLength; i++) {
-					const canvasW = ((containerW * (i + 1) / xLength) | 0) -
-						((containerW * i / xLength) | 0) - 2;
-					const canvasH = rowH - 2;
-					const xAttr =
-						xAttrs[i],
-						yAttr = yAttrs[j],
-						x = col.attrs[xAttr.attr],
-						y = col.attrs[yAttr.attr],
-						scatterPlotSettings = {
-							colorMode,
-							logX: xAttr.logScale,
-							logY: yAttr.logScale,
-							jitter: {
-								x: xAttr.jitter,
-								y: yAttr.jitter,
-							},
-						};
-					_row.push(
-						<Canvas
-							key={`${j}_${yAttrs[j].attr}_${i}_${xAttrs[i].attr}`}
-							style={{
-								border: '1px solid lightgrey',
-								flex: '0 0 auto',
-								margin: '1px',
-							}}
-							width={canvasW}
-							height={canvasH}
-							paint={scatterPlot(x, y, color, ascendingIndices, settings, scatterPlotSettings)}
-							redraw
-							clear
-						/>
-					);
-
-				}
-				matrix.push(
-					<div
-						key={'row_' + j}
-						className={'view'}
-						style={{
-							flex: '0 0 auto',
-							minWidth: `${rowW}px`,
-							maxWidth: `${rowW}px`,
-							minHeight: `${rowH}px`,
-							maxHeight: `${rowH}px`,
-						}}>
-						{_row}
-					</div>
-				);
-			}
-
-			return (
-				<div className='view-vertical' ref='landscapeContainer'>
-					{matrix}
-				</div>
-			);
-		} else {
-			return (
-				<div className='view centred' ref='landscapeContainer'>
-					Initialising Landscape
-				</div>
-			);
-		}
-	}
-}
-
-LandscapeMatrix.propTypes = {
-	// Passed down by ViewInitialiser
-	dataset: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-};
 
 class LandscapeComponent extends PureComponent {
 	render() {
@@ -197,6 +15,8 @@ class LandscapeComponent extends PureComponent {
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
 				<LandscapeSidepanel
+					dataset={dataset}
+					dispatch={dispatch}
 					style={{
 						overflowX: 'hidden',
 						overFlowY: 'hidden',
@@ -204,10 +24,9 @@ class LandscapeComponent extends PureComponent {
 						width: '300px',
 						margin: '10px',
 					}}
-					dataset={dataset}
-					dispatch={dispatch}
 				/>
-				<LandscapeMatrix
+				<ScatterPlotMatrix
+					axis={'col'}
 					dataset={dataset}
 					dispatch={dispatch}
 				/>
@@ -227,24 +46,89 @@ const stateInitialiser = (dataset) => {
 	return {
 		landscapeInitialized: true,
 		col: {
-			xAttrs: [{
-				attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
-				jitter: false,
-				logScale: false,
-			}],
-			yAttrs: [{
-				attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
-				jitter: false,
-				logScale: false,
-			}],
-			colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
-			colorMode: 'Categorical',
+			scatterPlots: {
+				selected: 0,
+				plots: [
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+				],
+			},
 			settings: {
 				scaleFactor: 20,
-				lowerBound: 0,
-				upperBound: 100,
-				logScale: true,
-				clip: false,
 			},
 		},
 	};

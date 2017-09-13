@@ -1,14 +1,14 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { ScatterplotSidepanel } from './scatterplot-sidepanel';
+import { ScatterPlotSidepanel } from './scatterplot-sidepanel';
 
 export class GenescapeSidepanel extends PureComponent {
 	render() {
 		const { dispatch, dataset, className, style } = this.props;
 
 		return (
-			<ScatterplotSidepanel
+			<ScatterPlotSidepanel
 				dispatch={dispatch}
 				dataset={dataset}
 				axis={'row'}

@@ -11,14 +11,12 @@ import {
 } from '../settings/settings';
 
 import { setViewProps } from '../../actions/set-viewprops';
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 export class AttributeSelection extends Component {
 	componentWillMount() {
 		const { dispatch, dataset } = this.props;
 		const genesHC = (val) => {
 			dispatch(setViewProps(dataset, {
-				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: { sparkline: { genes: val } },

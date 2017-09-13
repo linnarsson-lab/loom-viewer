@@ -12,7 +12,7 @@ import {
 const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Icicle', 'Box']);
 const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Icicle', 'Box']);
 const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle', 'Box']);
-const scatterplotModes = oneOf(['Heatmap', 'Heatmap2', 'Categorical']);
+const scatterPlotModes = oneOf(['Heatmap', 'Heatmap2', 'Categorical']);
 
 export function createViewStateConverter(dataset) {
 	// to avoid confusion with row and col in schema below
@@ -34,50 +34,58 @@ export function createViewStateConverter(dataset) {
 			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
-			xAttrs: vectorOf([{
-				attr: oneOfRowAllKeys,
-				jitter: boolVal,
-				logScale: boolVal,
-			}]),
-			yAttrs: vectorOf([{
-				attr: oneOfRowAllKeys,
-				jitter: boolVal,
-				logScale: boolVal,
-			}]),
+			scatterPlots: {
+				selected: intVal,
+				plots: vectorOf([{
+					x: {
+						attr: oneOfRowAllKeys,
+						jitter: boolVal,
+						logScale: boolVal,
+					},
+					y: {
+						attr: oneOfRowAllKeys,
+						jitter: boolVal,
+						logScale: boolVal,
+					},
+					colorAttr: oneOfRowAllKeys,
+					colorMode: scatterPlotModes,
+					logScale: boolVal,
+					clip: boolVal,
+					lowerBound: intVal,
+					upperBound: intVal,
+					emphasizeNonZero: boolVal,
+				}]),
+			},
 			settings: {
 				scaleFactor: intVal,
-				logScale: boolVal,
-				clip: boolVal,
-				lowerBound: intVal,
-				upperBound: intVal,
 			},
-			colorAttr: oneOfRowAllKeys,
-			colorMode: scatterplotModes,
 		},
 		col: {
 			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
-			xAttrs: vectorOf([{
-				attr: oneOfColAllKeys,
-				jitter: boolVal,
-				logScale: boolVal,
-			}]),
-			yAttrs: vectorOf([{
-				attr: oneOfColAllKeys,
-				jitter: boolVal,
-				logScale: boolVal,
-			}]),
-			settings: {
-				scaleFactor: intVal,
+			scatterPlots: vectorOf([{
+				x: {
+					attr: oneOfRowAllKeys,
+					jitter: boolVal,
+					logScale: boolVal,
+				},
+				y: {
+					attr: oneOfRowAllKeys,
+					jitter: boolVal,
+					logScale: boolVal,
+				},
+				colorAttr: oneOfColAllKeys,
+				colorMode: scatterPlotModes,
 				logScale: boolVal,
 				clip: boolVal,
 				lowerBound: intVal,
 				upperBound: intVal,
 				emphasizeNonZero: boolVal,
+			}]),
+			settings: {
+				scaleFactor: intVal,
 			},
-			colorAttr: oneOfColAllKeys,
-			colorMode: scatterplotModes,
 		},
 		heatmap: {
 			center: { lat: anyVal, lng: anyVal },

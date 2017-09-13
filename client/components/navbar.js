@@ -50,7 +50,7 @@ export class NavbarView extends PureComponent {
 		// the dummy Navbar is to ensure the views
 		// are displayed below the real Navbar.
 		return (
-			<DocumentTitle title={title}>
+			<DocumentTitle title={'Loom - ' + title}>
 				<div className='view-vertical'>
 					<div>
 						{navbarInstance}
