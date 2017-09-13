@@ -64,25 +64,28 @@ export function createViewStateConverter(dataset) {
 			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
 			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
-			scatterPlots: vectorOf([{
-				x: {
-					attr: oneOfColAllKeys,
-					jitter: boolVal,
+			scatterPlots: {
+				selected: intVal,
+				plots: vectorOf([{
+					x: {
+						attr: oneOfColAllKeys,
+						jitter: boolVal,
+						logScale: boolVal,
+					},
+					y: {
+						attr: oneOfColAllKeys,
+						jitter: boolVal,
+						logScale: boolVal,
+					},
+					colorAttr: oneOfColAllKeys,
+					colorMode: scatterPlotModes,
 					logScale: boolVal,
-				},
-				y: {
-					attr: oneOfColAllKeys,
-					jitter: boolVal,
-					logScale: boolVal,
-				},
-				colorAttr: oneOfColAllKeys,
-				colorMode: scatterPlotModes,
-				logScale: boolVal,
-				clip: boolVal,
-				lowerBound: intVal,
-				upperBound: intVal,
-				emphasizeNonZero: boolVal,
-			}]),
+					clip: boolVal,
+					lowerBound: intVal,
+					upperBound: intVal,
+					emphasizeNonZero: boolVal,
+				}]),
+			},
 			settings: {
 				scaleFactor: intVal,
 			},
