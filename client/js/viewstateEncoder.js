@@ -66,12 +66,12 @@ export function createViewStateConverter(dataset) {
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: vectorOf([{
 				x: {
-					attr: oneOfRowAllKeys,
+					attr: oneOfColAllKeys,
 					jitter: boolVal,
 					logScale: boolVal,
 				},
 				y: {
-					attr: oneOfRowAllKeys,
+					attr: oneOfColAllKeys,
 					jitter: boolVal,
 					logScale: boolVal,
 				},
