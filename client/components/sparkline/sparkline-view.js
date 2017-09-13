@@ -89,6 +89,7 @@ const stateInitialiser = (dataset) => {
 	// Initialise sparklineState for this dataset
 	const attrs = dataset.col.attrs;
 	return {
+		landscapeInitialized: true,
 		sparkline: {
 			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
 			colMode: 'Stacked',
@@ -99,23 +100,84 @@ const stateInitialiser = (dataset) => {
 		col: {
 			scatterPlots: {
 				selected: 0,
-				plots: [{
-					x: {
-						attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
-						jitter: false,
-						logScale: false,
+				plots: [
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
 					},
-					y: {
-						attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
-						jitter: false,
-						logScale: false,
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
 					},
-					logScale: true,
-					clip: false,
-					lowerBound: 0,
-					upperBound: 100,
-					emphasizeNonZero: false,
-				}],
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+					{
+						x: {
+							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '_LogMean']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(attrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '_LogCV']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(attrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+					},
+				],
 			},
 			settings: {
 				scaleFactor: 20,
