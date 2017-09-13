@@ -5,7 +5,6 @@ import { ScatterPlotMatrix } from './scatterplot-matrix';
 import { GenescapeSidepanel } from './genescape-sidepanel';
 
 import { ViewInitialiser } from '../view-initialiser';
-import { Canvas } from '../canvas';
 
 import { firstMatchingKey } from '../../js/util';
 
