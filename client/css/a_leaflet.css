@@ -49,7 +49,8 @@
 	max-width: none !important;
 	/* Preserve crisp pixels with scaled up images */
 	image-rendering: -moz-crisp-edges;         /* Firefox */
-	image-rendering:   -o-pixelated;         /* Opera */
+	image-rendering: -webkit-optimize-contrast; /* Safari */
+	image-rendering: -o-pixelated;         /* Opera */
 	image-rendering: pixelated;
 	-ms-interpolation-mode: nearest-neighbor;  /* IE (non-standard property) */
 }
