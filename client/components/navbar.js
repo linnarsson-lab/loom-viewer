@@ -12,13 +12,20 @@ export class NavbarView extends PureComponent {
 		const { project, filename, viewsettings } = this.props.params;
 		let viewLinks;
 		if (filename) {
-			viewLinks = ['heatmap', 'sparklines', 'cells', 'cellmetadata', 'genes', 'genemetadata'].map(
+			viewLinks = [
+				{ link: 'heatmap', label: 'Heatmap'},
+				{ link: 'sparklines', label: 'Sparklines'},
+				{ link: 'cells', label: 'Cell Scatterplot'},
+				{ link: 'cellmetadata', label: 'Cell Metadata'},
+				{ link: 'genes', label: 'Gene Scatterplot'},
+				{ link: 'genemetadata', label: 'Gene Metadata'},
+			].map(
 				(view) => {
-					const link = `/dataset/${view}/${project}/${filename}/${viewsettings}`;
+					const link = `/dataset/${view.link}/${project}/${filename}/${viewsettings}`;
 					return (
-						<LinkContainer to={link} key={view}>
-							<NavItem eventKey={view}>
-								{view.charAt(0).toUpperCase() + view.slice(1)}
+						<LinkContainer to={link} key={view.link}>
+							<NavItem eventKey={view.link}>
+								{view.label}
 							</NavItem>
 						</LinkContainer>
 					);
@@ -28,7 +35,8 @@ export class NavbarView extends PureComponent {
 		const title = project && filename ? `/${project}/${filename}` : 'Data Sets';
 
 		const navbarInstance = (
-			<Navbar fixedTop collapseOnSelect>
+			<Navbar fluid fixedTop
+collapseOnSelect>
 				<Navbar.Header>
 					<LinkContainer to='/'>
 						<Navbar.Brand style={{ cursor: 'pointer' }}>
