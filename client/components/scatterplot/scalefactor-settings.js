@@ -7,51 +7,55 @@ import { debounce } from 'lodash';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class ScaleFactorSettings extends PureComponent {
-	componentWillMount() {
-		const { axis, dataset, dispatch } = this.props;
+import { merge } from '../../js/util';
 
-		const scaleFactorHC = (value) => {
-			dispatch({
-				type: SET_VIEW_PROPS,
-				stateName: axis,
-				path: dataset.path,
-				viewState: {
-					[axis]: {
-						settings: { scaleFactor: value },
+
+function scaleFactorHandleChangeFactory(props){
+	const {
+		dispatch,
+		dataset,
+		axis,
+		plotSettings,
+		selectedPlot,
+		time,
+	} = props;
+	let newPlotSettings = plotSettings.slice(0);
+	const scaleFactorHC = (scaleFactor) => {
+		newPlotSettings[selectedPlot] = merge(
+			plotSettings[selectedPlot],
+			{ scaleFactor }
+		);
+		dispatch({
+			type: SET_VIEW_PROPS,
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: {
+						plotSettings: newPlotSettings,
 					},
 				},
-			});
-		};
-
-		this.setState({
-			scaleFactorHC,
-			scaleFactorDebounced: this.props.time ? debounce(scaleFactorHC, this.props.time) : scaleFactorHC,
+			},
 		});
-	}
+	};
 
-	componentWillReceiveProps(nextProps) {
-		const newDebounce = this.state.time !== nextProps.time;
+	return time | 0 ? debounce(scaleFactorHC, time | 0) : scaleFactorHC;
+}
 
-		if (newDebounce) {
-			const scaleFactorDebounced = nextProps.time ?
-				debounce(this.state.scaleFactorHC, nextProps.time) : newDebounce;
-			this.setState({
-				scaleFactorDebounced,
-			});
-		}
-	}
-
+export class ScaleFactorSettings extends PureComponent {
 	render() {
+		const { props } = this;
+		const { scaleFactor } = props.plotSettings[props.selectedPlot];
+		const scaleFactorHC = scaleFactorHandleChangeFactory(props);
 		return (
 			<div style={{ height: '50px' }}>
 				<Slider
 					marks={{ 1: '0x', 20: '1x', 40: '2x', 60: '3x', 80: '4x', 100: '2.5x' }}
 					min={1}
 					max={100}
-					defaultValue={this.props.scaleFactor}
-					onChange={this.state.scaleFactorDebounced}
-					onAfterChange={this.state.scaleFactorDebounced} />
+					defaultValue={scaleFactor}
+					onChange={scaleFactorHC}
+					onAfterChange={scaleFactorHC} />
 			</div>
 		);
 	}
@@ -62,6 +66,7 @@ ScaleFactorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	scaleFactor: PropTypes.number,
+	selectedPlot: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
 	time: PropTypes.number,
 };

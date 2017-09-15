@@ -35,8 +35,8 @@ export function createViewStateConverter(dataset) {
 			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
-				selected: intVal,
-				plots: vectorOf([{
+				selectedPlot: intVal,
+				plotSettings: vectorOf([{
 					x: {
 						attr: oneOfRowAllKeys,
 						jitter: boolVal,
@@ -54,10 +54,8 @@ export function createViewStateConverter(dataset) {
 					lowerBound: intVal,
 					upperBound: intVal,
 					emphasizeNonZero: boolVal,
+					scaleFactor: intVal,
 				}]),
-			},
-			settings: {
-				scaleFactor: intVal,
 			},
 		},
 		col: {
@@ -65,8 +63,8 @@ export function createViewStateConverter(dataset) {
 			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal }]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
-				selected: intVal,
-				plots: vectorOf([{
+				selectedPlot: intVal,
+				plotSettings: vectorOf([{
 					x: {
 						attr: oneOfColAllKeys,
 						jitter: boolVal,
@@ -84,10 +82,8 @@ export function createViewStateConverter(dataset) {
 					lowerBound: intVal,
 					upperBound: intVal,
 					emphasizeNonZero: boolVal,
+					scaleFactor: intVal,
 				}]),
-			},
-			settings: {
-				scaleFactor: intVal,
 			},
 		},
 		heatmap: {

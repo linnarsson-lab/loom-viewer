@@ -80,7 +80,7 @@ export class ColorSettings extends Component {
 			this.props.showLabels !== nextProps.showLabels ||
 			this.props.geneMode !== nextProps.geneMode ||
 			this.props.showLabels !== nextProps.showLabels ||
-			vs.settings !== nvs.settings
+			vs.scatterPlots !== nvs.scatterPlots
 		);
 	}
 
@@ -99,15 +99,15 @@ export class ColorSettings extends Component {
 			geneMode,
 		} = this.props;
 
-		const { plots, selected } = dataset.viewState.col.scatterPlots;
-		const selectedPlot = plots[selected];
+		const { plotSettings, selectedPlot } = dataset.viewState.col.scatterPlots;
+		const setting = plotSettings[selectedPlot];
 
 		let emphasizeNonZeroComponent;
 		if (geneMode === 'Flame' || geneMode === 'Icicle') {
 			const { emphasizeNonZero } = selectedPlot;
 
-			let newPlots = plots.slice(0);
-			newPlots[selected] = merge(selectedPlot, { emphasizeNonZero: !emphasizeNonZero });
+			let newPlotSettings = plotSettings.slice(0);
+			newPlotSettings[selectedPlot] = merge(setting, { emphasizeNonZero: !emphasizeNonZero });
 			const emphasizeNZhc = () => {
 				dispatch({
 					type: SET_VIEW_PROPS,
@@ -116,7 +116,7 @@ export class ColorSettings extends Component {
 					viewState: {
 						col: {
 							scatterPlots: {
-								plots: newPlots,
+								plotSettings: newPlotSettings,
 							},
 						},
 					},
@@ -166,8 +166,8 @@ export class ColorSettings extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'col'}
-							plots={plots}
-							plotNr={selected}
+							plotSettings={plotSettings}
+							selectedPlot={selectedPlot}
 							time={200} />
 						{geneMode === 'Box' ? boxLegend : null}
 						{emphasizeNonZeroComponent}

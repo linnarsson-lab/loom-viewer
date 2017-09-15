@@ -43,10 +43,21 @@ function constrain(x, a, b) {
 			x;
 }
 
-export function scatterPlot(xAttr, yAttr, colorAttr, indices, settings) {
+function noopPainter(){}
+
+export function scatterPlot(attrs, indices, settings) {
+	// only render if all required settings are supplied
+	if (!(indices && settings)){
+		return noopPainter;
+	}
+
+	const xAttr = attrs[settings.x.attr],
+		yAttr = attrs[settings.y.attr],
+		colorAttr = attrs[settings.colorAttr];
+
 	// only render if all required data is supplied
-	if (!(xAttr && yAttr && colorAttr && indices && settings)) {
-		return () => { };
+	if (!(xAttr && yAttr && colorAttr && indices)) {
+		return noopPainter;
 	}
 
 	let {

@@ -25,20 +25,20 @@ function colorAttrFactory(props) {
 		dispatch,
 		dataset,
 		axis,
-		plots,
-		plotNr,
+		plotSettings,
+		selectedPlot,
 	} = props;
 
-	let newPlots = plots.slice(0);
+	let newPlotSettings = plotSettings.slice(0);
 	return (value) => {
-		newPlots[plotNr] = merge(plots[plotNr], { colorAttr: value });
+		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], { colorAttr: value });
 		dispatch(setViewProps(dataset, {
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plots: newPlots,
+						plotSettings: newPlotSettings,
 					},
 				},
 			},
@@ -50,8 +50,8 @@ colorAttrFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-	plots: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
 };
 
 function colorSettingsFactory(props, colorMode) {
@@ -59,19 +59,19 @@ function colorSettingsFactory(props, colorMode) {
 		dispatch,
 		dataset,
 		axis,
-		plots,
-		plotNr,
+		plotSettings,
+		selectedPlot,
 	} = props;
-	let newPlots = plots.slice(0);
+	let newPlotSettings = plotSettings.slice(0);
 	return () => {
-		newPlots[plotNr] = merge(plots[plotNr], { colorMode });
+		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], { colorMode });
 		dispatch(setViewProps(dataset, {
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plots: newPlots,
+						plotSettings: newPlotSettings,
 					},
 				},
 			},
@@ -83,8 +83,8 @@ colorSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-	plots: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
 };
 
 // to ensure that selected buttons don't dispatch anything.
@@ -93,7 +93,7 @@ function nullFunc() { }
 export class ColorSettings extends Component {
 	shouldComponentUpdate(nextProps) {
 		const { props } = this;
-		return nextProps.plots !== props.plots;
+		return nextProps.plotSettings !== props.plotSettings;
 	}
 
 	render() {
@@ -104,14 +104,14 @@ export class ColorSettings extends Component {
 			dataset,
 			axis,
 			settings,
-			plots,
-			plotNr,
+			plotSettings,
+			selectedPlot,
 		} = props;
 
 		const {
 			colorAttr,
 			colorMode,
-		} = plots[plotNr];
+		} = plotSettings[selectedPlot];
 
 		const {
 			attrs,
@@ -154,8 +154,8 @@ export class ColorSettings extends Component {
 				dispatch={dispatch}
 				dataset={dataset}
 				axis={axis}
-				plots={plots}
-				plotNr={plotNr}
+				plotSettings={plotSettings}
+				selectedPlot={selectedPlot}
 				time={200} />
 		) : null;
 
@@ -211,6 +211,6 @@ ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-	plots: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
 };

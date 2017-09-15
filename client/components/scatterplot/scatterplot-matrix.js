@@ -1,19 +1,20 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-
-import {
-	Button,
-} from 'react-bootstrap';
-
 import { scatterPlot } from '../../plotters/scatterplot';
 import { Canvas } from '../canvas';
 import { RemountOnResize } from '../remount-on-resize';
 
 import { setViewProps } from '../../actions/set-viewprops';
 
-import { merge } from '../../js/util';
 
+class SinglePlot extends PureComponent{}
+
+class TwoPlots extends PureComponent{}
+
+class ThreePlots extends PureComponent{}
+
+class FourPLots extends PureComponent {}
 
 export class ScatterPlotMatrix extends PureComponent {
 	constructor(props) {
@@ -33,7 +34,7 @@ export class ScatterPlotMatrix extends PureComponent {
 				viewState: {
 					[axis]: {
 						scatterPlots: {
-							selected: key,
+							selectedPlot: key,
 						},
 					},
 				},
@@ -48,7 +49,7 @@ export class ScatterPlotMatrix extends PureComponent {
 		// on a case-by-case basis.
 		if (view) {
 			const { props } = this;
-			const totalPlots = props.dataset.viewState[props.axis].scatterPlots.plots.length;
+			const totalPlots = props.dataset.viewState[props.axis].scatterPlots.plotSettings.length;
 			// Avoid triggering presence of scrollbars
 			const totalRows = totalPlots > 2 ? 2 : 1,
 				totalColumns = totalPlots > 1 ? 2 : 1,
@@ -85,24 +86,19 @@ export class ScatterPlotMatrix extends PureComponent {
 		const {
 			ascendingIndices,
 			scatterPlots,
-			settings,
 		} = dataset.viewState[axis];
 
 		const {
-			plots,
-			selected,
+			plotSettings,
+			selectedPlot,
 		} = scatterPlots;
 
 		let matrix;
-		if (this.state.view && this.state.totalPlots === plots.length) {
+		if (this.state.view && this.state.totalPlots === plotSettings.length) {
 			matrix = [];
 
-			const plotters = plots.map((plot) => {
-				const xAttr = attrs[plot.x.attr],
-					yAttr = attrs[plot.y.attr],
-					colorAttr = attrs[plot.colorAttr],
-					scatterPlotSettings = merge(plot, settings);
-				return scatterPlot(xAttr, yAttr, colorAttr, ascendingIndices, scatterPlotSettings);
+			const plotters = plotSettings.map((settings) => {
+				return scatterPlot(attrs, ascendingIndices, settings);
 			});
 
 			const {
@@ -122,7 +118,7 @@ export class ScatterPlotMatrix extends PureComponent {
 					row.push(
 						<button
 							style={{
-								border: idx === selected ? '1px solid black' : '1px solid lightgrey',
+								border: idx === selectedPlot ? '1px solid black' : '1px solid lightgrey',
 								flex: '0 0 auto',
 								margin: '1px',
 								padding: 0,
@@ -130,7 +126,7 @@ export class ScatterPlotMatrix extends PureComponent {
 							}}
 							onClick={() => { this.selectTab(idx); }}>
 							<Canvas
-								key={`${i}_${j}-${plots[idx].x.attr}-${plots[idx].y.attr}`}
+								key={`${i}_${j}-${plotSettings[idx].x.attr}-${plotSettings[idx].y.attr}`}
 								width={canvasW}
 								height={canvasH}
 								paint={plotters[idx]}

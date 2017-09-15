@@ -26,15 +26,15 @@ function quickSettingsFactory(props, settingsList) {
 		dispatch,
 		dataset,
 		axis,
-		plots,
-		plotNr,
+		plotSettings,
+		selectedPlot,
 	} = props;
 
 	const {
 		attrs,
 	} = dataset[axis];
 
-	const plot = plots[plotNr];
+	const plot = plotSettings[selectedPlot];
 
 	let quickSettingsList = [];
 
@@ -48,8 +48,8 @@ function quickSettingsFactory(props, settingsList) {
 
 			let handleClick = nullFunc;
 			if (plot.x.attr !== xAttr || plot.y.attr !== yAttr) {
-				const newPlots = plots.slice(0);
-				newPlots[plotNr] = merge(plot, {
+				const newPlotSettings = plotSettings.slice(0);
+				newPlotSettings[selectedPlot] = merge(plot, {
 					x: { attr: xAttr },
 					y: { attr: yAttr },
 				});
@@ -60,7 +60,7 @@ function quickSettingsFactory(props, settingsList) {
 						viewState: {
 							[axis]: {
 								scatterPlots: {
-									plots: newPlots,
+									plotSettings: newPlotSettings,
 								},
 							},
 						},
@@ -69,10 +69,10 @@ function quickSettingsFactory(props, settingsList) {
 			}
 
 			quickSettingsList.push(
-				<ListGroupItem key={`${plotNr + 1}-set-${xAttr}_${yAttr}`}>
+				<ListGroupItem key={`${selectedPlot + 1}-set-${xAttr}_${yAttr}`}>
 					<OverlayTooltip
 						tooltip={`Set attributes to ${xAttr} and ${yAttr}`}
-						tooltipId={`${plotNr + 1}-set-${xAttr}_${yAttr}-tltp`}>
+						tooltipId={`${selectedPlot + 1}-set-${xAttr}_${yAttr}-tltp`}>
 						<Button
 							bsStyle='link'
 							onClick={handleClick}
@@ -105,8 +105,8 @@ quickSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plots: PropTypes.array.isRequired,
-	plotNr: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
 };
 
 function nullFunc() { }
@@ -144,15 +144,15 @@ function attrSettingHandleChangeFactory(props, attrAxis, key) {
 		dispatch,
 		dataset,
 		axis,
-		plots,
-		plotNr,
+		plotSettings,
+		selectedPlot,
 	} = props;
 
-	const value = !plots[plotNr][attrAxis][key];
-	const newPlots = plots.slice(0);
+	const value = !plotSettings[selectedPlot][attrAxis][key];
+	const newPlotSettings = plotSettings.slice(0);
 
 	return () => {
-		newPlots[plotNr] = merge(newPlots[plotNr], {
+		newPlotSettings[selectedPlot] = merge(newPlotSettings[selectedPlot], {
 			[attrAxis]: { [key]: value },
 		});
 		return dispatch(setViewProps(dataset, {
@@ -161,7 +161,7 @@ function attrSettingHandleChangeFactory(props, attrAxis, key) {
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plots: newPlots,
+						plotSettings: newPlotSettings,
 					},
 				},
 			},
@@ -173,11 +173,11 @@ function attrSettingsFactory(props, attrAxis) {
 	const {
 		dataset,
 		axis,
-		plots,
-		plotNr,
+		plotSettings,
+		selectedPlot,
 	} = props;
 
-	const attrData = plots[plotNr][attrAxis];
+	const attrData = plotSettings[selectedPlot][attrAxis];
 
 	const { allKeysNoUniques, dropdownOptions } = dataset[axis];
 	const filterOptions = dropdownOptions.allNoUniques;
@@ -187,13 +187,13 @@ function attrSettingsFactory(props, attrAxis) {
 		jitterHC = attrSettingHandleChangeFactory(props, attrAxis, 'jitter');
 
 	return (
-		<div className={'view'} key={`${attrAxis}-${plotNr + 1}-attr`}>
+		<div className={'view'} key={`${attrAxis}-${selectedPlot + 1}-attr`}>
 			<OverlayTooltip
 				tooltip={`select attribute for ${attrAxis}-axis`}
-				tooltipId={`${attrAxis}-${plotNr + 1}-attr-tltp`}>
+				tooltipId={`${attrAxis}-${selectedPlot + 1}-attr-tltp`}>
 				<div style={{ flex: 8 }}>
 					<DropdownMenu
-						key={plotNr}
+						key={selectedPlot}
 						value={attrData.attr}
 						options={allKeysNoUniques}
 						filterOptions={filterOptions}
@@ -203,7 +203,7 @@ function attrSettingsFactory(props, attrAxis) {
 			</OverlayTooltip>
 			<OverlayTooltip
 				tooltip={`toggle log2-scaling for ${attrAxis}-axis`}
-				tooltipId={`${attrAxis}-${plotNr + 1}-log-tltp`}>
+				tooltipId={`${attrAxis}-${selectedPlot + 1}-log-tltp`}>
 				<Button
 					bsStyle='link'
 					bsSize='small'
@@ -214,7 +214,7 @@ function attrSettingsFactory(props, attrAxis) {
 			</OverlayTooltip>
 			<OverlayTooltip
 				tooltip={`toggle jitter for ${attrAxis}-axis`}
-				tooltipId={`${attrAxis}-${plotNr + 1}-jitter-tltp`}>
+				tooltipId={`${attrAxis}-${selectedPlot + 1}-jitter-tltp`}>
 				<Button
 					bsStyle='link'
 					bsSize='small'
@@ -231,8 +231,8 @@ attrSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plots: PropTypes.array.isRequired,
-	plotNr: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
 };
 
 
@@ -240,7 +240,7 @@ export class CoordinateSettings extends Component {
 
 	shouldComponentUpdate(nextProps) {
 		const { props } = this;
-		return nextProps.plots !== props.plots;
+		return nextProps.plotSettings !== props.plotSettings;
 	}
 
 	render() {
@@ -260,7 +260,7 @@ export class CoordinateSettings extends Component {
 						tooltipId={'xyAttrs-tltp'}
 						popover={popoverTest}
 						popoverTitle={'Test'}
-						popoverId={`popover-xy-${props.plotNr}`}
+						popoverId={`popover-xy-${props.selectedPlot}`}
 					>
 						<div>
 							{xAttrSettings}
@@ -277,6 +277,6 @@ CoordinateSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plots: PropTypes.array.isRequired,
-	plotNr: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
 };

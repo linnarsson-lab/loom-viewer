@@ -62,6 +62,7 @@ export class HeatmapSidepanel extends Component {
 			hms.colMode !== nextHMS.colMode ||
 			hms.rowMode !== nextHMS.rowMode ||
 			hms.rowMode !== nextHMS.rowMode ||
+			//TODO: update to new schema
 			vs.col.settings !== nvs.col.settings ||
 			vs.row.settings !== nvs.row.settings ||
 			ds.col.attrs[hms.colAttr] !== nds.col.attrs[nextHMS.colAttr] ||

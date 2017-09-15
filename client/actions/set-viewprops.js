@@ -53,9 +53,9 @@ export function setViewProps(dataset, action) {
 						appendIfUnfetchedGene(filter[i].attr);
 					}
 				}
-				if (scatterPlots && scatterPlots.plots) {
-					for (let i = 0; i < scatterPlots.plots.length; i++) {
-						const plot = scatterPlots.plots[i];
+				if (scatterPlots && scatterPlots.plotSettings) {
+					for (let i = 0; i < scatterPlots.plotSettings.length; i++) {
+						const plot = scatterPlots.plotSettings[i];
 						appendIfUnfetchedGene(plot.x.attr);
 						appendIfUnfetchedGene(plot.y.attr);
 						appendIfUnfetchedGene(plot.colorAttr);

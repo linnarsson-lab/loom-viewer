@@ -47,7 +47,7 @@ class SparklineViewComponent extends PureComponent {
 		}
 		const { indicesChanged } = this.state;
 
-		const scatterPlotSettings = merge(settings, scatterPlots.plots[0]);
+		const scatterPlotSettings = merge(settings, scatterPlots.plotSettings[0]);
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
 				<SparklineSidepanel
@@ -99,8 +99,8 @@ const stateInitialiser = (dataset) => {
 		},
 		col: {
 			scatterPlots: {
-				selected: 0,
-				plots: [
+				selectedPlot: 0,
+				plotSettings: [
 					{
 						x: {
 							attr: firstMatchingKey(attrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
@@ -119,6 +119,7 @@ const stateInitialiser = (dataset) => {
 						lowerBound: 0,
 						upperBound: 100,
 						emphasizeNonZero: false,
+						scaleFactor: 20,
 					},
 					{
 						x: {
@@ -138,6 +139,7 @@ const stateInitialiser = (dataset) => {
 						lowerBound: 0,
 						upperBound: 100,
 						emphasizeNonZero: false,
+						scaleFactor: 20,
 					},
 					{
 						x: {
@@ -157,6 +159,7 @@ const stateInitialiser = (dataset) => {
 						lowerBound: 0,
 						upperBound: 100,
 						emphasizeNonZero: false,
+						scaleFactor: 20,
 					},
 					{
 						x: {
@@ -176,11 +179,9 @@ const stateInitialiser = (dataset) => {
 						lowerBound: 0,
 						upperBound: 100,
 						emphasizeNonZero: false,
+						scaleFactor: 20,
 					},
 				],
-			},
-			settings: {
-				scaleFactor: 20,
 			},
 		},
 	};

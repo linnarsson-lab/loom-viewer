@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -55,7 +55,8 @@ function scaleSettingsComponent(props) {
 		dataset,
 		dispatch,
 	} = props;
-	const { scaleFactor } = dataset.viewState[axis].settings;
+	const { selectedPlot, plotSettings } = dataset.viewState[axis].scatterPlots;
+	const { scaleFactor } = plotSettings[selectedPlot];
 	return (
 		<ListGroupItem>
 			<CollapsibleSettings
@@ -71,7 +72,8 @@ function scaleSettingsComponent(props) {
 						dispatch={dispatch}
 						dataset={dataset}
 						axis={axis}
-						scaleFactor={scaleFactor}
+						selectedPlot={selectedPlot}
+						plotSettings={plotSettings}
 						time={200} />
 				</div>
 			</CollapsibleSettings>
@@ -85,7 +87,67 @@ scaleSettingsComponent.propTypes = {
 	axis: PropTypes.string.isRequired,
 };
 
-export class ScatterPlotSidepanel extends PureComponent {
+class PlotSettingsTabContent extends Component {
+
+	shouldComponentUpdate(nextProps) {
+		// No need to touch the dom if the contents are hidden anyway
+		return nextProps.selected === nextProps.selectedPlot;
+	}
+
+	render() {
+		const {
+			axis,
+			dataset,
+			dispatch,
+			filteredValues,
+			plot,
+			plotSettings,
+			selected,
+			selectedPlot,
+		} = this.props;
+		const { scaleFactor } = plot;
+		return (
+			<ListGroup fill>
+				<CoordinateSettings
+					dispatch={dispatch}
+					dataset={dataset}
+					axis={axis}
+					plotSettings={plotSettings}
+					selectedPlot={selected}
+				/>
+				<ListGroupItem>
+					<CollapsibleSettings
+						label={`Point size (x${(scaleFactor / 20).toFixed(1)})`}
+						tooltip={'Change the radius of the drawn points'}
+						tooltipId={'radiusstngs-tltp'}
+						popover={popoverTest}
+						popoverTitle={'Test'}
+						popoverId={`popoverId-scatterplot-scale-${selected}`}
+						mountClosed>
+						<div>
+							<ScaleFactorSettings
+								dispatch={dispatch}
+								dataset={dataset}
+								axis={axis}
+								selectedPlot={selectedPlot}
+								plotSettings={plotSettings}
+								time={200} />
+						</div>
+					</CollapsibleSettings>
+				</ListGroupItem>											<ColorSettings
+					dispatch={dispatch}
+					dataset={dataset}
+					axis={axis}
+					plotSettings={plotSettings}
+					selectedPlot={selected}
+				/>
+				{filteredValues}
+			</ListGroup>
+		);
+	}
+}
+
+export class ScatterPlotSidepanel extends Component {
 	constructor(props) {
 		super(props);
 		this.selectTab = this.selectTab.bind(this);
@@ -95,14 +157,12 @@ export class ScatterPlotSidepanel extends PureComponent {
 		const { props } = this;
 		this.setState({
 			filteredValues: filteredValuesComponent(props),
-			scaleSettings: scaleSettingsComponent(props),
 		});
 	}
 
 	componentWillUpdate(nextProps) {
 		let {
 			filteredValues,
-			scaleSettings,
 		} = this.state;
 
 		const {
@@ -110,23 +170,13 @@ export class ScatterPlotSidepanel extends PureComponent {
 			dataset,
 		} = nextProps;
 
-		let newState = false;
 		if (dataset.viewState[axis].filter !== this.props.dataset.viewState[axis].filter) {
 			filteredValues = filteredValuesComponent(nextProps);
-			newState = true;
-		}
-
-		if (dataset.viewState[axis].settings.scaleFactor !== this.props.dataset.viewState[axis].settings.scaleFactor) {
-			scaleSettings = scaleSettingsComponent(nextProps);
-			newState = true;
-		}
-
-		if (newState) {
 			this.setState({
 				filteredValues,
-				scaleSettings,
 			});
 		}
+
 	}
 
 	selectTab(key) {
@@ -139,7 +189,7 @@ export class ScatterPlotSidepanel extends PureComponent {
 				viewState: {
 					[axis]: {
 						scatterPlots: {
-							selected: key,
+							selectedPlot: key,
 						},
 					},
 				},
@@ -148,6 +198,10 @@ export class ScatterPlotSidepanel extends PureComponent {
 	}
 
 	render() {
+		const {
+			filteredValues,
+		} = this.state;
+
 		const {
 			dispatch,
 			dataset,
@@ -161,14 +215,9 @@ export class ScatterPlotSidepanel extends PureComponent {
 		} = this.props.viewState;
 
 		const {
-			selected,
-			plots,
+			selectedPlot,
+			plotSettings,
 		} = scatterPlots;
-
-		const {
-			filteredValues,
-			scaleSettings,
-		} = this.state;
 
 		return (
 			<FlexboxContainer
@@ -181,34 +230,25 @@ export class ScatterPlotSidepanel extends PureComponent {
 					bsStyle='default'>
 					<Tabs
 						animation={false}
-						activeKey={selected}
+						activeKey={selectedPlot}
 						onSelect={this.selectTab}
 						id={`scatterPlot-${axis}`}>
 						{
-							plots.map((plot, plotNr) => {
+							plotSettings.map((plot, selected) => {
 								return (
 									<Tab
-										key={`${plotNr}${plot.x.attr}${plot.y.attr}`}
-										eventKey={plotNr}
-										title={plotNr === selected ? <b>{plotNr+1}</b> : plotNr + 1}>
-										<ListGroup fill>
-											<CoordinateSettings
-												dispatch={dispatch}
-												dataset={dataset}
-												axis={axis}
-												plots={plots}
-												plotNr={plotNr}
-											/>
-											{scaleSettings}
-											<ColorSettings
-												dispatch={dispatch}
-												dataset={dataset}
-												axis={axis}
-												plots={plots}
-												plotNr={plotNr}
-											/>
-											{filteredValues}
-										</ListGroup>
+										key={`${selected}${plot.x.attr}${plot.y.attr}`}
+										eventKey={selected}
+										title={selected === selectedPlot ? <b>{selected + 1}</b> : selected + 1}>
+										<PlotSettingsTabContent
+											axis={axis}
+											dataset={dataset}
+											dispatch={dispatch}
+											filteredValues={filteredValues}
+											plot={plot}
+											plotSettings={plotSettings}
+											selected={selected}
+											selectedPlot={selectedPlot} />
 									</Tab >
 								);
 							})

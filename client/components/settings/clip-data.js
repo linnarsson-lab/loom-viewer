@@ -22,15 +22,15 @@ function clampRangeHandleChangeFactory(props){
 		axis,
 		dataset,
 		dispatch,
-		plotNr,
-		plots,
+		selectedPlot,
+		plotSettings,
 		time,
 	} = props;
 
-	let newPlots = plots.slice(0);
+	let newPlotSettings = plotSettings.slice(0);
 
 	const handleChange = (values) => {
-		newPlots[plotNr] = merge(plots[plotNr], {
+		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], {
 			lowerBound: values[0],
 			upperBound: values[1],
 		});
@@ -41,7 +41,7 @@ function clampRangeHandleChangeFactory(props){
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plots: newPlots,
+						plotSettings: newPlotSettings,
 					},
 				},
 			},
@@ -56,15 +56,15 @@ function handleChangeFactory(props, key, value){
 		axis,
 		dataset,
 		dispatch,
-		plotNr,
-		plots,
+		selectedPlot,
+		plotSettings,
 	} = props;
 
-	let newPlots = plots.slice(0);
-	const plot = plots[plotNr];
+	let newPlotSettings = plotSettings.slice(0);
+	const plot = plotSettings[selectedPlot];
 
 	return () => {
-		newPlots[plotNr] = merge(plot, {
+		newPlotSettings[selectedPlot] = merge(plot, {
 			[key]: value,
 		});
 		dispatch({
@@ -74,7 +74,7 @@ function handleChangeFactory(props, key, value){
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plots: newPlots,
+						plotSettings: newPlotSettings,
 					},
 				},
 			},
@@ -88,8 +88,8 @@ export class ClipDataSettings extends Component {
 		const { props } = this;
 
 		const {
-			plotNr,
-			plots,
+			selectedPlot,
+			plotSettings,
 		} = props;
 
 		const {
@@ -97,7 +97,7 @@ export class ClipDataSettings extends Component {
 			logScale,
 			lowerBound,
 			upperBound,
-		} = plots[plotNr];
+		} = plotSettings[selectedPlot];
 
 		const clampRangeHC = clampRangeHandleChangeFactory(props);
 		const logScaleHC = handleChangeFactory(props, 'logScale', !logScale);
@@ -156,7 +156,7 @@ ClipDataSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-	plots: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	plotSettings: PropTypes.array.isRequired,
 	time: PropTypes.number,
 };

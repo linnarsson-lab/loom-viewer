@@ -35,18 +35,17 @@ export class NavbarView extends PureComponent {
 		const title = project && filename ? `/${project}/${filename}` : 'Data Sets';
 
 		const navbarInstance = (
-			<Navbar fluid fixedTop
-collapseOnSelect>
-				<Navbar.Header>
-					<LinkContainer to='/'>
-						<Navbar.Brand style={{ cursor: 'pointer' }}>
-							Loom
-						</Navbar.Brand>
-					</LinkContainer>
-					<Navbar.Toggle />
-				</Navbar.Header>
+			<Navbar
+				collapseOnSelect
+				fixedTop
+				fluid >
 				<Navbar.Collapse>
 					<Nav>
+						<LinkContainer to='/'>
+							<NavItem eventKey={'datasets'}>
+							Loom
+							</NavItem>
+						</LinkContainer>
 						<NavItem disabled eventKey={title}>
 							{title}
 						</NavItem>
