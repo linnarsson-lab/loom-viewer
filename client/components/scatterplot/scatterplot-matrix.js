@@ -227,7 +227,7 @@ export class ScatterPlotMatrix extends Component {
 					changedPaintFunctions = true;
 					paintFunctions[idx] = scatterPlot(nextAttrs, nextIndices, newSettings);
 					if (view){
-						plots[idx] = preparePlot(idx, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot);
+						plots[idx] = preparePlot(idx, dataset, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot);
 					}
 				}
 			});
