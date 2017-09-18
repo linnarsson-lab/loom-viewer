@@ -107,7 +107,7 @@ class PlotSettingsTabContent extends Component {
 		} = this.props;
 		const { scaleFactor } = plot;
 		return (
-			<ListGroup fill>
+			<ListGroup>
 				<CoordinateSettings
 					dispatch={dispatch}
 					dataset={dataset}
@@ -223,38 +223,35 @@ export class ScatterPlotSidepanel extends Component {
 			<FlexboxContainer
 				className={className}
 				style={style} >
-				<Panel
+				<Tabs
 					className='sidepanel'
 					key={`${axis}-settings`}
-					header='Settings'
-					bsStyle='default'>
-					<Tabs
-						animation={false}
-						activeKey={selectedPlot}
-						onSelect={this.selectTab}
-						id={`scatterPlot-${axis}`}>
-						{
-							plotSettings.map((plot, selected) => {
-								return (
-									<Tab
-										key={`${selected}${plot.x.attr}${plot.y.attr}`}
-										eventKey={selected}
-										title={selected === selectedPlot ? <b>{selected + 1}</b> : selected + 1}>
-										<PlotSettingsTabContent
-											axis={axis}
-											dataset={dataset}
-											dispatch={dispatch}
-											filteredValues={filteredValues}
-											plot={plot}
-											plotSettings={plotSettings}
-											selected={selected}
-											selectedPlot={selectedPlot} />
-									</Tab >
-								);
-							})
-						}
-					</Tabs>
-				</Panel >
+					animation={false}
+					activeKey={selectedPlot}
+					onSelect={this.selectTab}
+					id={`scatterPlot-${axis}`}>
+					<Tab title={'Settings'} disabled />
+					{
+						plotSettings.map((plot, selected) => {
+							return (
+								<Tab
+									key={`${selected}${plot.x.attr}${plot.y.attr}`}
+									eventKey={selected}
+									title={selected === selectedPlot ? <b>{selected + 1}</b> : selected + 1}>
+									<PlotSettingsTabContent
+										axis={axis}
+										dataset={dataset}
+										dispatch={dispatch}
+										filteredValues={filteredValues}
+										plot={plot}
+										plotSettings={plotSettings}
+										selected={selected}
+										selectedPlot={selectedPlot} />
+								</Tab >
+							);
+						})
+					}
+				</Tabs>
 			</FlexboxContainer>
 		);
 	}
