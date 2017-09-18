@@ -1,5 +1,6 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { TypedArrayProp } from '../../js/proptypes-typedarray';
 
 import { scatterPlot } from '../../plotters/scatterplot';
 import { Canvas } from '../canvas';
@@ -8,38 +9,134 @@ import { RemountOnResize } from '../remount-on-resize';
 import { setViewProps } from '../../actions/set-viewprops';
 
 
-class SinglePlot extends PureComponent{}
+class SinglePlot extends Component {
+	constructor(props) {
+		super(props);
+		const { dispatch, dataset, axis, idx } = this.props;
+		const { path } = dataset;
+		this.selectTab = () => {
+			dispatch(setViewProps(
+				dataset,
+				{
+					stateName: axis,
+					path,
+					viewState: {
+						[axis]: {
+							scatterPlots: {
+								selectedPlot: idx,
+							},
+						},
+					},
+				}
+			));
+		};
+	}
 
-class TwoPlots extends PureComponent{}
 
-class ThreePlots extends PureComponent{}
+	render() {
+		const {
+			idx,
+			selectedPlot,
+			canvasW,
+			canvasH,
+			paintFunctions,
+		} = this.props;
 
-class FourPLots extends PureComponent {}
+		return (
+			<button
+				style={{
+					border: idx === selectedPlot ? '1px solid black' : '1px solid lightgrey',
+					flex: '0 0 auto',
+					margin: '1px',
+					padding: 0,
+					backgroundColor: 'transparent',
+				}}
+				onClick={this.selectTab}>
+				<Canvas
+					width={canvasW}
+					height={canvasH}
+					paint={paintFunctions[idx]}
+					redraw
+					clear
+				/>
+			</button>
+		);
+	}
+}
 
-export class ScatterPlotMatrix extends PureComponent {
+SinglePlot.propTypes = {
+	axis: PropTypes.string.isRequired,
+	dataset: PropTypes.object.isRequired,
+	dispatch: PropTypes.func.isRequired,
+	idx: PropTypes.number.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	canvasW: PropTypes.number.isRequired,
+	canvasH: PropTypes.number.isRequired,
+	paintFunctions: PropTypes.arrayOf(PropTypes.func).isRequired,
+
+};
+
+// see if individual attr has changed -
+// this may happen as the result of
+// a fetched gene
+function changedAttrs(oldAttrs, newAttrs, settings) {
+	const xAttr = oldAttrs[settings.x.attr],
+		yAttr = oldAttrs[settings.y.attr],
+		colorAttr = oldAttrs[settings.colorAttr],
+		newXAttr = newAttrs[settings.x.attr],
+		newYAttr = newAttrs[settings.y.attr],
+		newColorAttr = newAttrs[settings.colorAttr];
+	return xAttr !== newXAttr ||
+		yAttr !== newYAttr ||
+		colorAttr !== newColorAttr;
+}
+
+function preparePlot(idx, dataset, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot){
+	return(
+		<SinglePlot
+			key={`plot-${idx}`}
+			axis={axis}
+			dataset={dataset}
+			dispatch={dispatch}
+			idx={idx}
+			selectedPlot={selectedPlot}
+			canvasW={canvasW}
+			canvasH={canvasH}
+			paintFunctions={paintFunctions}
+		/>
+	);
+}
+
+// We want to keep these as constant as possible
+function preparePlots(dataset, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot){
+	let plots = [];
+	for (let i = 0; i < totalPlots; i++) {
+		plots.push(preparePlot(
+			i,
+			dataset, dispatch, axis,
+			canvasW, canvasH,
+			paintFunctions,
+			totalPlots, selectedPlot));
+	}
+	return plots;
+}
+
+export class ScatterPlotMatrix extends Component {
 	constructor(props) {
 		super(props);
 		this.mountedView = this.mountedView.bind(this);
-		this.selectTab = this.selectTab.bind(this);
-		this.state = {};
-	}
 
-	selectTab(key) {
-		const { dispatch, dataset, axis } = this.props;
-		dispatch(setViewProps(
-			dataset,
-			{
-				stateName: axis,
-				path: dataset.path,
-				viewState: {
-					[axis]: {
-						scatterPlots: {
-							selectedPlot: key,
-						},
-					},
-				},
-			}
-		));
+		const {
+			attrs,
+			plotSettings,
+			indices,
+		} = this.props;
+
+		const paintFunctions = plotSettings.map((settings) => {
+			return scatterPlot(attrs, indices, settings);
+		});
+
+		this.state = { paintFunctions, plots: [] };
 	}
 
 	mountedView(view) {
@@ -49,7 +146,8 @@ export class ScatterPlotMatrix extends PureComponent {
 		// on a case-by-case basis.
 		if (view) {
 			const { props } = this;
-			const totalPlots = props.dataset.viewState[props.axis].scatterPlots.plotSettings.length;
+			const { axis, dataset, dispatch, selectedPlot } = props;
+			const totalPlots = props.plotSettings.length;
 			// Avoid triggering presence of scrollbars
 			const totalRows = totalPlots > 2 ? 2 : 1,
 				totalColumns = totalPlots > 1 ? 2 : 1,
@@ -59,6 +157,9 @@ export class ScatterPlotMatrix extends PureComponent {
 				rowH = containerH / totalRows | 0,
 				canvasW = containerW / totalColumns - 2 | 0,
 				canvasH = rowH - 2;
+
+			const { paintFunctions } = this.state;
+			const plots = preparePlots(dataset, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot);
 
 			this.setState({
 				view,
@@ -71,36 +172,85 @@ export class ScatterPlotMatrix extends PureComponent {
 				rowH,
 				canvasW,
 				canvasH,
+				plots,
 			});
 		}
 	}
 
-	render() {
+	componentWillUpdate(nextProps) {
 		const {
 			dataset,
+			dispatch,
 			axis,
-		} = this.props;
-
-		const { attrs } = dataset[axis];
-
-		const {
-			ascendingIndices,
-			scatterPlots,
-		} = dataset.viewState[axis];
-
-		const {
+			attrs,
+			indices,
 			plotSettings,
 			selectedPlot,
-		} = scatterPlots;
+		} = this.props;
+
+		const nextDataset = nextProps.dataset;
+		const nextIndices = nextProps.indices;
+		const nextAttrs = nextProps.attrs;
+		const newPlotSettings = nextDataset.viewState[axis].scatterPlots.plotSettings;
+
+		const { state } = this;
+		const {
+			canvasW,
+			canvasH,
+			totalPlots,
+			view,
+		} = state;
+
+		let paintFunctions = state.paintFunctions.slice(0),
+			plots = state.plots.slice(0),
+			changedPaintFunctions = false;
+
+		// if the indices change, all plots have to be updated
+		if (nextIndices !== indices) {
+			changedPaintFunctions = true;
+			paintFunctions = newPlotSettings.map((newSettings) => {
+				return scatterPlot(nextAttrs, nextIndices, newSettings);
+			});
+			if (view){
+				plots = preparePlots(dataset, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot);
+			}
+
+		} else {
+			// only update paintFunctions if their settings have changed.
+			// Only one plot changes settings at a time, but what
+			// might happen is that we fetch genes for all plots
+			// at once, and they arrive all at once. This would
+			// cause attrs to update for multiple plots
+			plotSettings.map((settings, idx) => {
+				const newSettings = newPlotSettings[idx];
+				if (settings !== newSettings || changedAttrs(attrs, nextAttrs, settings)) {
+					changedPaintFunctions = true;
+					paintFunctions[idx] = scatterPlot(nextAttrs, nextIndices, newSettings);
+					if (view){
+						plots[idx] = preparePlot(idx, dispatch, axis, canvasW, canvasH, paintFunctions, totalPlots, selectedPlot);
+					}
+				}
+			});
+		}
+
+		if (changedPaintFunctions) {
+			this.setState({ paintFunctions, plots });
+		}
+
+	}
+
+	render() {
+		const {
+			axis,
+			dataset,
+			dispatch,
+			plotSettings,
+			selectedPlot,
+		} = this.props;
 
 		let matrix;
 		if (this.state.view && this.state.totalPlots === plotSettings.length) {
 			matrix = [];
-
-			const plotters = plotSettings.map((settings) => {
-				return scatterPlot(attrs, ascendingIndices, settings);
-			});
-
 			const {
 				totalColumns,
 				totalRows,
@@ -108,32 +258,25 @@ export class ScatterPlotMatrix extends PureComponent {
 				rowH,
 				canvasW,
 				canvasH,
+				paintFunctions,
 			} = this.state;
 
 			for (let j = 0; j < totalRows; j++) {
 				let row = [];
 				for (let i = 0; i < totalColumns; i++) {
-					let idx = i + j * 2;
-
+					const idx = i + j * 2;
 					row.push(
-						<button
-							style={{
-								border: idx === selectedPlot ? '1px solid black' : '1px solid lightgrey',
-								flex: '0 0 auto',
-								margin: '1px',
-								padding: 0,
-								backgroundColor: 'transparent',
-							}}
-							onClick={() => { this.selectTab(idx); }}>
-							<Canvas
-								key={`${i}_${j}-${plotSettings[idx].x.attr}-${plotSettings[idx].y.attr}`}
-								width={canvasW}
-								height={canvasH}
-								paint={plotters[idx]}
-								redraw
-								clear
-							/>
-						</button>
+						<SinglePlot
+							key={`plot-${idx}`}
+							axis={axis}
+							dataset={dataset}
+							dispatch={dispatch}
+							idx={idx}
+							selectedPlot={selectedPlot}
+							canvasW={canvasW}
+							canvasH={canvasH}
+							paintFunctions={paintFunctions}
+						/>
 					);
 				}
 
@@ -155,7 +298,7 @@ export class ScatterPlotMatrix extends PureComponent {
 		}
 
 		return (
-			<RemountOnResize watchedVal={scatterPlots}>
+			<RemountOnResize watchedVal={plotSettings.length}>
 				<div className='view-vertical' ref={this.mountedView}>
 					{matrix}
 				</div>
@@ -166,7 +309,11 @@ export class ScatterPlotMatrix extends PureComponent {
 
 ScatterPlotMatrix.propTypes = {
 	// Passed down by ViewInitialiser
+	attrs: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
+	plotSettings: PropTypes.array.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+	indices: TypedArrayProp.any,
 };

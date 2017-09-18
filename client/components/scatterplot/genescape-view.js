@@ -11,6 +11,13 @@ import { firstMatchingKey } from '../../js/util';
 class GenescapeComponent extends PureComponent {
 	render() {
 		const { dispatch, dataset } = this.props;
+		const vs = dataset.viewState.row;
+		const { ascendingIndices } = vs;
+		const {
+			selectedPlot,
+			plotSettings,
+		} = vs.scatterPlots;
+		const { attrs } = dataset.row;
 
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
@@ -29,6 +36,10 @@ class GenescapeComponent extends PureComponent {
 					axis={'row'}
 					dataset={dataset}
 					dispatch={dispatch}
+					plotSettings={plotSettings}
+					selectedPlot={selectedPlot}
+					indices={ascendingIndices}
+					attrs={attrs}
 				/>
 			</div>
 		);
