@@ -50,7 +50,9 @@ const initialState = {
 	fetchProjectsStatus: UNKNOWN,
 };
 
-function datasets(state = initialState, action) {
+function datasets(state, action) {
+	state = state || initialState;
+
 	let newState = null;
 	switch (action.type) {
 		case RECEIVE_PROJECTS:

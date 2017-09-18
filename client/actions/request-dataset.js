@@ -13,7 +13,7 @@ localforage.config({
 });
 
 import { merge, mergeInPlace, convertJSONarray, arrayConstr } from '../js/util';
-import { createViewStateConverter } from '../js/viewstateEncoder';
+import { createViewStateConverter } from '../js/viewstate-encoder';
 
 import {
 	REQUEST_DATASET,
@@ -53,12 +53,19 @@ export function requestDataset(datasets, path) {
 					localforage.getItem(path + '/genes').then((genes) => {
 						if (genes) {
 							console.log('cached genes loaded from localforage');
+
+							// mark all genes retrieved from cache as fetched
 							let fetchedGenes = {};
 							let keys = Object.keys(genes), i = keys.length;
 							while (i--){
 								fetchedGenes[keys[i]] = true;
 							}
-							mergeInPlace(dataset, { fetchedGenes, col: { attrs: genes } });
+
+							// merge genes into column attributes
+							mergeInPlace(
+								dataset,
+								{ fetchedGenes, col: { attrs: genes } }
+							);
 						}
 						dispatch(dataSetAction(LOAD_DATASET, path, dataset));
 					});
@@ -127,66 +134,51 @@ function convertToDataSet(data, dataset) {
 	// viewStateConverter, and the fastFilterOptions
 	// for the dropdowns)
 
-	let prepRows = prepData(data.rowAttrs),
-		prepCols = prepData(data.colAttrs);
-	let rows = prepRows.data,
-		cols = prepCols.data;
+	let row = prepData(data.rowAttrs),
+		col = prepData(data.colAttrs);
 
 	// some old loom files have 'Cell_ID'
-	rows.cellKeys = cols.attrs.CellID ?
-		cols.attrs.CellID.data.slice() : cols.attrs.Cell_ID ?
-			cols.attrs.Cell_ID.data.slice() : [];
-	rows.cellKeys.sort();
-	rows.allKeys = rows.keys.concat(rows.cellKeys);
-	rows.allKeysNoUniques = rows.keysNoUniques.concat(rows.cellKeys);
+	row.cellKeys = col.attrs.CellID ?
+		col.attrs.CellID.data.slice() : col.attrs.Cell_ID ?
+			col.attrs.Cell_ID.data.slice() : [];
+	row.cellKeys.sort();
+	row.allKeys = row.keys.concat(row.cellKeys);
+	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
-	cols.geneKeys = rows.attrs.Gene ? rows.attrs.Gene.data.slice() : [];
-	cols.rowToGenes = new Array(cols.geneKeys.length);
-	cols.geneToRow = {};
-	cols.geneToRowLowerCase = {};
+	col.geneKeys = row.attrs.Gene ? row.attrs.Gene.data.slice() : [];
+	col.rowToGenes = new Array(col.geneKeys.length);
+	col.geneToRow = {};
+	col.geneToRowLowerCase = {};
 	// store row indices for gene fetching later
-	let i = cols.geneKeys.length;
+	let i = col.geneKeys.length;
 	while (i--) {
-		let gene = cols.geneKeys[i];
-		cols.rowToGenes[i] = gene;
-		cols.geneToRow[gene] = i;
-		cols.geneToRowLowerCase[gene.toLowerCase()] = i;
+		let gene = col.geneKeys[i];
+		col.rowToGenes[i] = gene;
+		col.geneToRow[gene] = i;
+		col.geneToRowLowerCase[gene.toLowerCase()] = i;
 	}
-	cols.geneKeys.sort();
-	cols.geneKeysLowerCase = cols.geneKeys.map((gene) => { return gene.toLowerCase(); });
-	cols.allKeys = cols.keys.concat(cols.geneKeys);
-	cols.allKeysNoUniques = cols.keysNoUniques.concat(cols.geneKeys);
+	col.geneKeys.sort();
+	col.geneKeysLowerCase = col.geneKeys.map((gene) => { return gene.toLowerCase(); });
+	col.allKeys = col.keys.concat(col.geneKeys);
+	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
 
-	let viewState = {
-		row: {
-			order: prepRows.order,
-			filter: [],
-			indices: prepRows.indices,
-			originalIndices: prepRows.originalIndices,
-			ascendingIndices: prepRows.indices,
-		},
-		col: {
-			order: prepCols.order,
-			filter: [],
-			indices: prepCols.indices,
-			originalIndices: prepCols.originalIndices,
-			ascendingIndices: prepCols.indices,
-		},
+	// merge all static data into dataset,
+	// note that this returns a new object
+	// so we can safely add viewState later
+	dataset = merge(dataset, {
+		col,
+		row,
+		totalCols: col.geneKeys.length,
+		totalRows: row.cellKeys.length,
 		heatmap: {
 			zoomRange: data.zoomRange,
 			fullZoomHeight: data.fullZoomHeight,
 			fullZoomWidth: data.fullZoomWidth,
 			shape: data.shape,
 		},
-	};
-
-	return merge(dataset, {
-		col: cols,
-		row: rows,
-		totalCols: cols.geneKeys.length,
-		totalRows: rows.cellKeys.length,
-		viewState,
 	});
+
+	return dataset;
 }
 
 function dataSetAction(type, path, dataset) {
@@ -268,29 +260,35 @@ export function reduxToJSON(attrs) {
 function prepData(attrs) {
 	let keys = Object.keys(attrs).sort();
 
-	// store original attribute order
+	// store original data order
+	// This isn't part of the regular
+	// meta-data we have to add it
 	const dataLength = attrs[keys[0]].data.length;
-	let originalOrder = originalOrderArray(dataLength);
-	attrs[originalOrder.name] = originalOrder;
+	let originalOrder = originalOrderAttribute(dataLength);
+
+	let newAttrs = {
+		[originalOrder.name]: originalOrder,
+	};
 	keys.unshift(originalOrder.name);
 
-	// Initial sort order
-	let order = [];
-	for (let i = 0; i < Math.min(5, keys.length); i++) {
-		order.push({ key: keys[i], asc: true });
+	// convert rest of attribute arrays to objects with summary
+	// metadata (arrayType, uniques, colorIndices, etc)
+	// Note --i prefix to skip originalOrder
+	let i = keys.length;
+	while (--i) {
+		// Set attrs[k] to null early, so it can be GC'ed if necessary
+		// (had an allocation failure of a new typed array for large attrs,
+		// so this is a realistic worry)
+		const k = keys[i], attr = attrs[k];
+		attrs[k] = null;
+		newAttrs[k] = convertJSONarray(attr, k);
 	}
 
-	// convert attribute arrays to objects with summary
-	// metadata (most frequent, filtered/visible)
-	// '(original order)' isn't part of the regular
-	// meta-data so we have to add it first
-	let newAttrs = convertArrays(attrs);
-
 	// Add the set of keys for data that excludes data
-	// where all values are the same (are useless in scatterplot
-	// and sparkline views, so filtered out for convenience).
+	// where all values are the same (these are useless in
+	// scatterplot and sparkline views, so filtered out).
 	let keysNoUniques = [];
-	let i = keys.length;
+	i = keys.length;
 	while (i--) {
 		let key = keys[i];
 		if (!newAttrs[key].uniqueVal) {
@@ -299,23 +297,16 @@ function prepData(attrs) {
 	}
 	keysNoUniques.sort();
 
-	const indices = originalOrder.data.slice();
-	const originalIndices = originalOrder.data.slice();
 
 	return {
-		data: {
-			keys,
-			keysNoUniques,
-			attrs: newAttrs,
-			length: dataLength,
-		},
-		order,
-		indices,
-		originalIndices,
+		keys,
+		keysNoUniques,
+		attrs: newAttrs,
+		length: dataLength,
 	};
 }
 
-function originalOrderArray(length) {
+function originalOrderAttribute(length) {
 	let arrayType = length < (1 << 8) ? 'uint8' : (length < (1 << 16) ? 'uint16' : (length < (1 << 32) ? 'uint32' : 'float64'));
 	let data = new (arrayConstr(arrayType))(length);
 	let i = length;
@@ -325,7 +316,8 @@ function originalOrderArray(length) {
 
 	return {
 		name: '(original order)',
-		arrayType, data,
+		arrayType,
+		data,
 		colorIndices: { mostFreq: {} },
 		uniques: [],
 		allUnique: true,
@@ -334,21 +326,6 @@ function originalOrderArray(length) {
 	};
 }
 
-
-function convertArrays(attrs) {
-	let keys = Object.keys(attrs);
-	let newAttrs = {};
-	let i = keys.length;
-	while (i--) {
-		// Set attrs[k] to null early, so it can be GC'ed if necessary
-		// (had an allocation failure of a new typed array for large attrs,
-		// so this is a realistic worry)
-		const k = keys[i], attr = attrs[k];
-		attrs[k] = null;
-		newAttrs[k] = convertJSONarray(attr, k);
-	}
-	return newAttrs;
-}
 
 function prepFilter(options) {
 	let i = options.length, newOptions = new Array(i);

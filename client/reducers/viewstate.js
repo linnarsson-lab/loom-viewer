@@ -24,11 +24,11 @@ export function updateViewState(state, action) {
 		viewState = updateIndices(dataset, viewState, axis);
 	} else {
 		// check if we updated the filter from encoded URL state
-		if (pVS.row.order !== viewState.row.order ||
+		if (!pVS || pVS.row.order !== viewState.row.order ||
 			viewState.row.filter !== pVS.row.filter) {
 			viewState = updateIndices(dataset, viewState, 'row');
 		}
-		if (pVS.col.order !== viewState.col.order ||
+		if (!pVS || pVS.col.order !== viewState.col.order ||
 			viewState.col.filter !== pVS.col.filter) {
 			viewState = updateIndices(dataset, viewState, 'col');
 		}

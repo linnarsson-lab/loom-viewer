@@ -11,9 +11,9 @@ import { sparkline } from '../../plotters/sparkline';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-import * as _ from 'lodash';
+import { debounce } from 'lodash';
 
-import { merge, firstMatchingKey } from '../../js/util';
+import { merge } from '../../js/util';
 
 // Just the map+sparklines part
 class HeatmapMapComponent extends Component {
@@ -23,7 +23,7 @@ class HeatmapMapComponent extends Component {
 
 		this.heatmapContainer = this.heatmapContainer.bind(this);
 
-		const onViewChanged = _.debounce(
+		const onViewChanged = debounce(
 			(val) => {
 				const { dataBounds, zoom, center } = val;
 				dispatch({
@@ -171,43 +171,10 @@ HeatmapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-function stateInitialiser(dataset) {
-	return { // Initialise heatmap state for this dataset
-		heatmap: {
-			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10']),
-			colMode: 'Stacked',
-			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded']),
-			rowMode: 'Stacked',
-			zoom: 8,
-		},
-		col: {
-			settings: {
-				scaleFactor: 40,
-				lowerBound: 0,
-				upperBound: 100,
-				logScale: true,
-				clip: false,
-			},
-		},
-		row: {
-			settings: {
-				scaleFactor: 40,
-				lowerBound: 0,
-				upperBound: 100,
-				logScale: true,
-				clip: false,
-			},
-		},
-	};
-}
-
 export const HeatmapViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
 			View={HeatmapComponent}
-			stateName={'heatmap'}
-			stateInitialiser={stateInitialiser}
 			dispatch={props.dispatch}
 			params={props.params}
 			datasets={props.datasets} />

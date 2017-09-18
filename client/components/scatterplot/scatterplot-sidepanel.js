@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
-	Panel,
 	ListGroup,
 	ListGroupItem,
 	Tab,
@@ -181,20 +180,25 @@ export class ScatterPlotSidepanel extends Component {
 
 	selectTab(key) {
 		const { dispatch, dataset, axis } = this.props;
-		dispatch(setViewProps(
-			dataset,
-			{
-				stateName: axis,
-				path: dataset.path,
-				viewState: {
-					[axis]: {
-						scatterPlots: {
-							selectedPlot: key,
+		if (key === '+'){
+			// new tab
+		}else {
+			// switch to existing tab
+			dispatch(setViewProps(
+				dataset,
+				{
+					stateName: axis,
+					path: dataset.path,
+					viewState: {
+						[axis]: {
+							scatterPlots: {
+								selectedPlot: key,
+							},
 						},
 					},
-				},
-			}
-		));
+				}
+			));
+		}
 	}
 
 	render() {
@@ -218,6 +222,10 @@ export class ScatterPlotSidepanel extends Component {
 			selectedPlot,
 			plotSettings,
 		} = scatterPlots;
+
+		const newPlotTab =  plotSettings.length < 4 ? (
+			<Tab key={'+'} title={'+'} />
+		) : null;
 
 		return (
 			<FlexboxContainer
@@ -251,6 +259,7 @@ export class ScatterPlotSidepanel extends Component {
 							);
 						})
 					}
+					{newPlotTab}
 				</Tabs>
 			</FlexboxContainer>
 		);

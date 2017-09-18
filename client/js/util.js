@@ -444,36 +444,24 @@ export function convertJSONarray(arr, name) {
 		indexedVal.unshift(null);
 	}
 
-	let retArr = {
-		name, arrayType, indexedVal,
-		uniques, colorIndices, min, max,
+	const processedData = indexedVal ? Uint8Array.from(data) : arrayConstr(arrayType).from(data);
+
+	const uniqueVal = (uniques.length === 1 && uniques[0].count === data.length) ? data[0] : undefined;
+
+	const allUnique = uniques.length === 0 || uniques.length === data.length;
+
+	return {
+		name,
+		arrayType,
+		indexedVal,
+		data: processedData,
+		allUnique,
+		uniqueVal,
+		uniques,
+		colorIndices,
+		min,
+		max,
 	};
-
-	retArr.data = indexedVal ? Uint8Array.from(data) : arrayConstr(arrayType).from(data);
-
-	if (uniques.length === 1 && uniques[0].count === data.length) {
-		retArr.uniqueVal = data[0];
-	} else if (uniques.length === 0 || uniques.length === data.length) {
-		retArr.allUnique = true;
-	}
-
-	// if (process.env.NODE_ENV !== 'production') {
-	// 	// redux tools trips over gigantic typed arrays
-	// 	const reduxJSON = {
-	// 		name,
-	// 		arrayType,
-	// 		data: Array.from(data.slice(0, Math.min(3, data.length))),
-	// 		data_length: `${data.length} items`,
-	// 		indexedVal,
-	// 		uniques: uniques.slice(0, Math.min(3, uniques.length)),
-	// 		total_uniques: `${uniques.length} items`,
-	// 		colorIndices,
-	// 		min,
-	// 		max,
-	// 	};
-	// 	retArr.toJSON = () => { return reduxJSON; };
-	// }
-	return retArr;
 }
 
 /**

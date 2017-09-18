@@ -7,72 +7,68 @@ import { setViewProps } from '../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../actions/actionTypes';
 
 import { decompressFromEncodedURIComponent } from '../js/lz-string';
-import { merge } from '../js/util';
+import { mergeInPlace } from '../js/util';
+import { viewStateInitialiser } from '../js/viewstate-initialiser';
 
-class ViewStateInitialiser extends PureComponent {
-	constructor(props){
-		super(props);
-		this.state = { finishedDispatch: false };
+function generateViewState(dispatch, dataset, path, viewStateURI){
+	// Generate default initial state
+	let viewState = viewStateInitialiser(dataset);
+	// If there is any encoded state, decode and overwrite
+	// initialstate with it.
+	if (viewStateURI){
+		const decompressed = decompressFromEncodedURIComponent(viewStateURI);
+		const parsedJSON = JSON.parse(decompressed);
+		const decode = dataset.viewStateConverter.decode;
+		const decodedViewState = decode(parsedJSON, dataset);
+		viewState = mergeInPlace(viewState, decodedViewState);
 	}
-
-	componentWillMount() {
-		let { dispatch, dataset,
-			viewsettings, initialState,
-			path, stateName } = this.props;
-
-		let viewState = merge(initialState, dataset.viewState);
-		if (viewsettings) {
-			viewsettings = dataset.viewStateConverter.decode(JSON.parse(decompressFromEncodedURIComponent(viewsettings)), dataset);
-			viewState = merge(viewState, viewsettings);
-		}
-
-		// We dispatch even in case of existing state,
-		// to synchronise the view-settings URL
-		dispatch(setViewProps(dataset, {
-			type: SET_VIEW_PROPS,
-			viewState,
-			stateName,
-			path,
-		}));
-	}
-
-	componentWillReceiveProps(){
-		if (!this.state.finishedDispatch){
-			this.setState({finishedDispatch: true});
-		}
-	}
-
-	render() {
-		const { dispatch, dataset, View, stateName } = this.props;
-		return this.state.finishedDispatch ? (
-			<View
-				dispatch={dispatch}
-				dataset={dataset}
-			/>
-		) : <div className='view centred'><h1>Initialising View Settings - {stateName}</h1></div>;
-	}
+	// Synchronise the view-settings URI
+	dispatch(setViewProps(dataset, {
+		type: SET_VIEW_PROPS,
+		viewState,
+		path,
+	}));
 }
-
-ViewStateInitialiser.propTypes = {
-	dataset: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-	View: PropTypes.func.isRequired,
-	stateName: PropTypes.string.isRequired,
-	path: PropTypes.string.isRequired,
-	initialState: PropTypes.object.isRequired,
-	viewsettings: PropTypes.string,
-};
 
 const NO_DATASETS = 0;
 const NO_ATTRIBUTES = 1;
-const READY = 2;
+const NO_VIEWSTATE = 2;
+const READY = 3;
 const MANGLED_PATH = -1;
+
+function currentInitialisation(dispatch, datasets, path, viewStateURI, prevInitialisationState) {
+	const dataset = datasets ? datasets[path] : null;
+
+	const initialisationState = !datasets ? NO_DATASETS : (
+		!dataset ? MANGLED_PATH : (
+			!(dataset.col || dataset.row) ? NO_ATTRIBUTES : (
+				!dataset.viewState ? NO_VIEWSTATE : READY
+			)
+		)
+	);
+
+	if (initialisationState !== prevInitialisationState) {
+		switch (initialisationState) {
+			case NO_DATASETS:
+				dispatch(requestProjects());
+				break;
+			case NO_ATTRIBUTES:
+				dispatch(requestDataset(datasets, path));
+				break;
+			case NO_VIEWSTATE:
+				generateViewState(dispatch, dataset, path, viewStateURI);
+				break;
+			default:
+		}
+	}
+	return initialisationState;
+}
 
 export class ViewInitialiser extends PureComponent {
 	componentWillMount() {
-		this.updateState = this.updateState.bind(this);
 
 		const {
+			dispatch,
 			datasets,
 			params,
 		} = this.props;
@@ -80,6 +76,7 @@ export class ViewInitialiser extends PureComponent {
 		const {
 			project,
 			filename,
+			viewStateURI,
 		} = params;
 
 		const path = `${project}/${filename}`;
@@ -94,105 +91,71 @@ export class ViewInitialiser extends PureComponent {
 				<h1>Fetching dataset: {path}</h1>
 			</div>
 		);
+		const initialisingViewState = (
+			<div className='view centred'>
+				<h1>Initialising View Settings</h1>
+			</div>
+		);
 		const mangledPath = (
 			<div className='view centred' >
 				<h1>Error: <i>{path}</i> not found in list of datasets</h1>
 			</div>
 		);
 
-		let state = {
+		const initialisationState = currentInitialisation(dispatch, datasets, path, viewStateURI, MANGLED_PATH);
+
+		this.setState({
 			path,
 			fetchingProjects,
 			fetchingDatasets,
+			initialisingViewState,
 			mangledPath,
-		};
-
-		let updatedState = this.updateState(datasets, path, MANGLED_PATH);
-		if (updatedState){
-			state = merge(state, updatedState);
-		}
-
-		this.setState(state);
+			initialisationState,
+		});
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { datasets } = nextProps;
+		const { dispatch, datasets, params } = nextProps;
 		const { path, initialisationState } = this.state;
-		const updatedState = this.updateState(datasets, path, initialisationState);
-		if (updatedState){
-			this.setState(updatedState);
-		}
-	}
-
-	updateState(datasets, path, prevInitialisationState) {
-		const { dispatch } = this.props;
-		const dataset = datasets ? datasets[path] : null;
-		let initialState;
-
-		const initialisationState = datasets ? (
-			dataset ? (
-				(dataset.col && dataset.row) ? READY : NO_ATTRIBUTES
-			) : MANGLED_PATH) : NO_DATASETS;
-
-		if (initialisationState !== prevInitialisationState) {
-			switch (initialisationState) {
-				case NO_DATASETS:
-					dispatch(requestProjects());
-					break;
-				case NO_ATTRIBUTES:
-					dispatch(requestDataset(datasets, path));
-					break;
-				case READY:
-					initialState = this.props.stateInitialiser(dataset);
-			}
-			return {
-				initialisationState,
-				initialState,
-			};
+		const newInitialisationState = currentInitialisation(dispatch, datasets, path, params.viewStateURI, initialisationState);
+		if (initialisationState !== newInitialisationState){
+			this.setState({ initialisationState: newInitialisationState });
 		}
 	}
 
 	render() {
 		const {
 			View,
-			stateName,
 			dispatch,
 			datasets,
-			params,
 		} = this.props;
-		const {
-			viewsettings,
-		} = params;
 
 		const {
 			path,
 			fetchingProjects,
 			fetchingDatasets,
+			initialisingViewState,
 			mangledPath,
 			initialisationState,
-			initialState,
 		} = this.state;
 
 		switch (initialisationState) {
+			case MANGLED_PATH:
+				return mangledPath;
 			case NO_DATASETS:
 				return fetchingProjects;
 			case NO_ATTRIBUTES:
 				return fetchingDatasets;
+			case NO_VIEWSTATE:
+				return initialisingViewState;
 			case READY:
 				// datasets is guaranteed to be defined
 				// if initialisationState === READY
 				return (
-					<ViewStateInitialiser
-						View={View}
-						stateName={stateName}
-						initialState={initialState}
-						dataset={datasets[path]}
-						path={path}
+					<View
 						dispatch={dispatch}
-						viewsettings={viewsettings} />
+						dataset={datasets[path]} />
 				);
-			case MANGLED_PATH:
-				return mangledPath;
 		}
 	}
 }
@@ -201,7 +164,5 @@ ViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	View: PropTypes.func.isRequired,
-	stateName: PropTypes.string.isRequired,
-	stateInitialiser: PropTypes.func.isRequired,
 	datasets: PropTypes.object,
 };
