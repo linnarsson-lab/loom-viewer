@@ -6,28 +6,9 @@ import { SparklineList } from './sparklines';
 
 import { ViewInitialiser } from '../view-initialiser';
 
-import { isEqual } from 'lodash';
-
 import { merge } from '../../js/util';
 
 class SparklineViewComponent extends PureComponent {
-	componentWillMount() {
-		this.setState({
-			indicesChanged: false,
-		});
-	}
-
-	componentWillReceiveProps(nextProps) {
-		const pVS = this.props.dataset.viewState.col,
-			nVS = nextProps.dataset.viewState.col;
-
-		const indicesChanged = !isEqual(pVS.order, nVS.order) ||
-			!isEqual(pVS.indices, nVS.indices);
-		this.setState({
-			indicesChanged,
-		});
-
-	}
 
 	render() {
 		const { dispatch, dataset } = this.props;
@@ -35,7 +16,6 @@ class SparklineViewComponent extends PureComponent {
 		const sl = dataset.viewState.sparkline;
 		const {
 			indices,
-			settings,
 			scatterPlots,
 		} = dataset.viewState.col;
 		// The old column attribute values that we displayed in the "legend"
@@ -45,9 +25,8 @@ class SparklineViewComponent extends PureComponent {
 		if (legendData === undefined) {
 			legendData = col.attrs[col.keys[0]];
 		}
-		const { indicesChanged } = this.state;
 
-		const scatterPlotSettings = merge(settings, scatterPlots.plotSettings[0]);
+		const scatterPlotSettings = scatterPlots.plotSettings[0];
 		return (
 			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
 				<SparklineSidepanel
@@ -64,7 +43,6 @@ class SparklineViewComponent extends PureComponent {
 				<SparklineList
 					attrs={dataset.col.attrs}
 					selection={sl.genes}
-					indicesChanged={indicesChanged}
 					groupAttr={sl.groupBy ? sl.colAttr : ''}
 					indices={indices}
 					geneMode={sl.geneMode}

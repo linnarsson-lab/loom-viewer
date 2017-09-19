@@ -6,6 +6,8 @@ import { Canvas } from '../canvas';
 
 import { groupedSparkline } from '../../plotters/grouped-sparkline';
 
+import { createComparator } from '../../js/state-comparator';
+
 const sparklineHeight = 40;
 
 function nullfunc() { }
@@ -57,7 +59,6 @@ Legend.propTypes = {
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
 	path: PropTypes.string.isRequired,
-	indicesChanged: PropTypes.bool.isRequired,
 };
 
 
@@ -78,7 +79,7 @@ export class Sparkline extends PureComponent {
 		const label = showLabels ? gene : null;
 
 		return (
-			<div style={style} key={gene}>
+			<div style={style}>
 				<Canvas
 					height={sparklineHeight}
 					paint={sparkline(geneData, geneMode, settings, label)}
@@ -95,55 +96,145 @@ Sparkline.propTypes = {
 	gene: PropTypes.string,
 	geneData: PropTypes.object,
 	geneMode: PropTypes.string,
-	indicesChanged: PropTypes.bool,
 	settings: PropTypes.object.isRequired,
 	showLabels: PropTypes.bool.isRequired,
 	indices: TypedArrayProp.any,
 	style: PropTypes.object,
 };
 
+// if any of these are not equal, all sparklines have to be updated
+// otherwise, we can limit our updates to a selection.
+const notAllSparklines = createComparator({
+	sparkline: 'func',
+	indices: 'array',
+	geneMode: 'sparklineType',
+	settings: 'object',
+	containerWidth: 'number',
+	showLabels: 'boolean',
+});
+
+function makeSparklines(props) {
+	const {
+		sparkline,
+		attrs,
+		selection,
+		indices,
+		geneMode,
+		settings,
+		containerWidth,
+		showLabels,
+	} = props;
+
+
+
+	let sparklines = [];
+	for (let i = 0; i < selection.length; i++) {
+		let gene = selection[i];
+		let geneData = attrs[gene];
+		sparklines.push(
+			<Sparkline
+				key={'sparkline_' + gene}
+				sparkline={sparkline}
+				gene={gene}
+				geneData={geneData}
+				geneMode={geneMode}
+				indices={indices}
+				settings={settings}
+				showLabels={showLabels}
+				style={{
+					background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
+					minHeight: `${sparklineHeight}px`,
+					maxHeight: `${sparklineHeight}px`,
+					minWidth: `${containerWidth - 20}px`,
+					maxWidth: `${containerWidth - 20}px`,
+				}}
+			/>
+		);
+	}
+	return sparklines;
+}
+
+// TODO: make this not loop infinitely
 export class Sparklines extends PureComponent {
 
-	render() {
-		const {
-			sparkline,
-			attrs,
-			selection,
-			indices,
-			indicesChanged,
-			geneMode,
-			settings,
-			containerWidth,
-			showLabels,
-		} = this.props;
+	componentWillMount() {
+		const sparklines = makeSparklines(this.props);
+		this.setState({ sparklines });
+	}
 
+	componentWillReceiveProps(nextProps) {
+		if (notAllSparklines(nextProps, this.props)) {
+			// only update the sparklines that changed
+			const {
+				sparkline,
+				attrs,
+				selection,
+				indices,
+				geneMode,
+				settings,
+				containerWidth,
+				showLabels,
+			} = nextProps;
+			const pSelection = this.props.selection,
+				pAttrs = this.props.attrs;
 
+			let sparklines = this.state.sparklines.slice(0),
+				changedPlotters = false;
 
-		let sparklines = [];
-		for (let i = 0; i < selection.length; i++) {
-			let gene = selection[i];
-			let geneData = attrs[gene];
-			sparklines.push(
-				<Sparkline
-					key={gene}
-					sparkline={sparkline}
-					gene={gene}
-					geneData={geneData}
-					geneMode={geneMode}
-					indicesChanged={indicesChanged}
-					indices={indices}
-					settings={settings}
-					showLabels={showLabels}
-					style={{
-						background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
-						minHeight: `${sparklineHeight}px`,
-						maxHeight: `${sparklineHeight}px`,
-						minWidth: `${containerWidth - 20}px`,
-						maxWidth: `${containerWidth - 20}px`,
-					}}
-				/>
-			);
+			// A sparkline only needs  updating when
+			// the gene selection changed, or if
+			// a fetched gene has arrived.
+			for (let i = 0; i < selection.length; i++) {
+				const gene = selection[i],
+					geneData = attrs[gene];
+				if (gene !== pSelection[i] || geneData !== pAttrs[gene]) {
+					changedPlotters = true;
+					// this is a bit of a weird construction,
+					// but basically: if the gene was already
+					// present in a different location,
+					// and the gene data hasn't changed,
+					// just move the plot from the other
+					// location.
+					if (geneData === pAttrs[gene]) {
+						let j = pSelection.indexOf(gene, i+1);
+						if (j !== -1) {
+							sparklines[i] = sparklines[j];
+						}
+					} else {
+						sparklines[i] = (
+							<Sparkline
+								key={'sparkline_' + gene}
+								sparkline={sparkline}
+								gene={gene}
+								geneData={geneData}
+								geneMode={geneMode}
+								indices={indices}
+								settings={settings}
+								showLabels={showLabels}
+								style={{
+									background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
+									minHeight: `${sparklineHeight}px`,
+									maxHeight: `${sparklineHeight}px`,
+									minWidth: `${containerWidth - 20}px`,
+									maxWidth: `${containerWidth - 20}px`,
+								}}
+							/>
+						);
+					}
+				}
+			}
+			if (changedPlotters) {
+				sparklines.length = selection.length;
+				this.setState({ sparklines });
+			}
+		} else {
+			this.setState({ sparklines: makeSparklines(nextProps) });
 		}
+	}
+
+	render() {
+		const { containerWidth } = this.props;
+		const { sparklines } = this.state;
 		return (
 			<div
 				style={{
@@ -151,7 +242,7 @@ export class Sparklines extends PureComponent {
 					flexDirection: 'column',
 					minWidth: `${containerWidth - 20}px`,
 					maxWidth: `${containerWidth - 20}px`,
-					height: `${Math.max(200, selection.length * sparklineHeight)}px`,
+					height: `${Math.max(200, sparklines.length * sparklineHeight)}px`,
 				}}>
 				{sparklines.length ? sparklines : (
 					<div className='view centred'>
@@ -170,7 +261,6 @@ Sparklines.propTypes = {
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
 	indices: TypedArrayProp.any,
-	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,
 	settings: PropTypes.object.isRequired,
 	showLabels: PropTypes.bool.isRequired,
@@ -187,7 +277,7 @@ export class SparklineList extends PureComponent {
 	}
 
 
-	sparklineContainer(div){
+	sparklineContainer(div) {
 		this.setState({ sparklineContainer: div });
 	}
 
@@ -212,7 +302,6 @@ export class SparklineList extends PureComponent {
 				attrs,
 				selection,
 				indices,
-				indicesChanged,
 				geneMode,
 				showLabels,
 				settings,
@@ -242,7 +331,6 @@ export class SparklineList extends PureComponent {
 						colMode={colMode}
 						indices={indices}
 						path={path}
-						indicesChanged={indicesChanged}
 					/>
 					<div
 						style={{
@@ -260,7 +348,6 @@ export class SparklineList extends PureComponent {
 							sparkline={sparkline}
 							selection={selection}
 							indices={indices}
-							indicesChanged={indicesChanged}
 							settings={settings}
 							geneMode={geneMode}
 							showLabels={showLabels}
@@ -285,7 +372,6 @@ SparklineList.propTypes = {
 	selection: PropTypes.arrayOf(PropTypes.string),
 	groupAttr: PropTypes.string,
 	indices: TypedArrayProp.any,
-	indicesChanged: PropTypes.bool,
 	geneMode: PropTypes.string,
 	settings: PropTypes.object.isRequired,
 	showLabels: PropTypes.bool.isRequired,
