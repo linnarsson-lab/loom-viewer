@@ -1,12 +1,10 @@
 #! /bin/bash
 
 # Remove old files
-if [ -a ./python/loom_viewer/static/js ]; then
-  rm -r ./python/loom_viewer/static/js
+if [ -a ./python/loom_viewer/static/ ]; then
+  rm -r ./python/loom_viewer/static/
 fi
-if [ -a ./python/loom_viewer/static/css ]; then
-  rm -r ./python/loom_viewer/static/css
-fi
+
 if [ -a ./python/build ]; then
   rm -r ./python/build
 fi
@@ -17,9 +15,6 @@ fi
 set -o nounset
 set -o errexit
 
-# Set up the static directory
-mkdir ./python/loom_viewer/static/js
-mkdir ./python/loom_viewer/static/css
 
 # Build static assets
 
@@ -40,12 +35,6 @@ if [ $build_status == 0 ]; then
   # template, and have the resulting index.html be put in the right folders.
   # Yes, this is an ugly hack around my incompetence, but it works - Job
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
-  mv ./python/loom_viewer/service-worker.js ./python/loom_viewer/static/service-worker.js
-
-  # CSS
-  uglifycss ./client/css/*.css > ./python/loom_viewer/static/css/bundle.min.css
-  # Fonts
-  cp -R ./client/fonts ./python/loom_viewer/static/
 
   cd python
   echo "Installing loom python package"

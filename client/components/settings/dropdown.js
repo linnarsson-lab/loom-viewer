@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import Select from 'react-virtualized-select';
+
+import VirtualizedSelect from 'react-virtualized-select';
 import createFilterOptions from 'react-select-fast-filter-options';
 
 //TODO: document what DropdownMenu expects
@@ -78,7 +79,7 @@ export class DropdownMenu extends PureComponent {
 	render() {
 		const { options, filterOptions, value } = this.state;
 		return (
-			<Select
+			<VirtualizedSelect
 				value={value}
 				options={options}
 				filterOptions={filterOptions}

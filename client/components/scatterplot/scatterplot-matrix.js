@@ -252,6 +252,7 @@ export class ScatterPlotMatrix extends Component {
 		if (this.state.view && this.state.totalPlots === plotSettings.length) {
 			matrix = [];
 			const {
+				totalPlots,
 				totalColumns,
 				totalRows,
 				rowW,
@@ -265,19 +266,21 @@ export class ScatterPlotMatrix extends Component {
 				let row = [];
 				for (let i = 0; i < totalColumns; i++) {
 					const idx = i + j * 2;
-					row.push(
-						<SinglePlot
-							key={`plot-${idx}`}
-							axis={axis}
-							dataset={dataset}
-							dispatch={dispatch}
-							idx={idx}
-							selectedPlot={selectedPlot}
-							canvasW={canvasW}
-							canvasH={canvasH}
-							paintFunctions={paintFunctions}
-						/>
-					);
+					if (idx < totalPlots){
+						row.push(
+							<SinglePlot
+								key={`plot-${idx}`}
+								axis={axis}
+								dataset={dataset}
+								dispatch={dispatch}
+								idx={idx}
+								selectedPlot={selectedPlot}
+								canvasW={canvasW}
+								canvasH={canvasH}
+								paintFunctions={paintFunctions}
+							/>
+						);
+					}
 				}
 
 				matrix.push(

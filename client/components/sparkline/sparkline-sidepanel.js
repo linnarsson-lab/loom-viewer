@@ -32,6 +32,7 @@ export const SparklineSidepanel = function (props) {
 		filter,
 		settings,
 	} = dataset.viewState.col;
+
 	return (
 		<FlexboxContainer
 			className={className}
@@ -58,7 +59,8 @@ export const SparklineSidepanel = function (props) {
 						dispatch={dispatch}
 						colAttr={sparkline.colAttr}
 						colMode={sparkline.colMode}
-						groupBy={sparkline.groupBy} />
+						groupBy={sparkline.groupBy}
+						legendData={dataset.col.attrs[sparkline.colAttr]} />
 					{
 						filter &&
 							filter.length ? (

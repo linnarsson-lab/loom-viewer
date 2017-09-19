@@ -1,7 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 
 const uglifySettings = {
 	mangle: {
@@ -13,6 +12,7 @@ const uglifySettings = {
 		properties: true,
 		dead_code: true,
 		drop_debugger: true,
+		drop_console: true,
 		unsafe: true,
 		unsafe_math: true,
 		unsafe_proto: true,
@@ -35,7 +35,7 @@ const uglifySettings = {
 		drop_console: true,
 		keep_fargs: false,
 		keep_fnames: false,
-		passes: 3,
+		passes: 1,
 	},
 };
 
@@ -50,6 +50,39 @@ module.exports = {
 	},
 	module: {
 		loaders: [
+			{
+				test: /\.css$/,
+				use: [
+					{
+						loader: 'style-loader',
+						options: {
+							minimize: true,
+							sourceMap: false,
+						},
+					},
+					{
+						loader: 'css-loader',
+						options: {
+							minimize: true,
+							sourceMap: false,
+						},
+					},
+				],
+			},
+			{
+				test: /\.(png|jpg|gif)$/,
+				loader: 'file-loader',
+				options: {
+					name: 'static/images/[name]-[hash].[ext]',
+				},
+			},
+			{
+				test: /\.(svg|eot|ttf|woff|woff2)$/,
+				loader: 'file-loader',
+				options: {
+					name: 'static/fonts/[name]-[hash].[ext]',
+				},
+			},
 			{
 				test: /\.js$/,
 				exclude: /node_modules/,
@@ -69,22 +102,5 @@ module.exports = {
 			filename: 'index.html',
 			inject: 'body',
 		}),
-		new SWPrecacheWebpackPlugin(
-			{
-				cacheId: 'loom-offline-cache',
-				dontCacheBustUrlsMatching: /\.\w{8}\./,
-				staticFileGlobsIgnorePatterns: [/\.map$/, /asset-manifest\.json$/],
-				staticFileGlobs: [
-					'./python/loom_viewer/static/**/*.*',
-				],
-				maximumFileSizeToCacheInBytes: 8<<20,
-				stripPrefix: './python/loom_viewer', // stripPrefixMulti is also supported
-				mergeStaticsConfig: true, // if you don't set this to true, you won't see any webpack-emitted assets in your serviceworker config
-				filename: 'service-worker.js',
-				navigateFallback: 'index.html',
-				navigateFallbackWhitelist: [ '/', /^\/dataset\//],
-				minify: true,
-			}
-		),
 	],
 };

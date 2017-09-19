@@ -64,7 +64,6 @@ Legend.propTypes = {
 
 
 export class Sparkline extends PureComponent {
-
 	render() {
 		const {
 			sparkline,
@@ -79,7 +78,7 @@ export class Sparkline extends PureComponent {
 		const label = showLabels ? gene : null;
 
 		return (
-			<div style={style}>
+			<div style={style} key={gene}>
 				<Canvas
 					height={sparklineHeight}
 					paint={sparkline(geneData, geneMode, settings, label)}
@@ -230,7 +229,7 @@ export class SparklineList extends PureComponent {
 					className='view-vertical'
 					style={{
 						overflowX: 'hidden',
-						overFloxY: 'hidden',
+						overflowY: 'hidden',
 						minHeight: 0,
 					}}
 					ref={this.sparklineContainer}>

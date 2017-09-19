@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import Select from 'react-virtualized-select';
+import VirtualizedSelect from 'react-virtualized-select';
 import {
 	FormControl,
 } from 'react-bootstrap';
@@ -123,7 +123,7 @@ export class SelectGeneComponent extends PureComponent {
 		const col = this.props.dataset.col;
 		return (
 			<div>
-				<Select
+				<VirtualizedSelect
 					placeholder={'Type to search'}
 					options={this.state.selectOptions}
 					filterOptions={col.dropdownOptions.keyAttr}
@@ -135,7 +135,7 @@ export class SelectGeneComponent extends PureComponent {
 					className='scroll'
 					componentClass={'textarea'}
 					rows={8}
-					placeholder={'Paste genes here or use the dropdown above to search \n\n(don\'t worry about capitalization, commas, semicolons, or quotations. This is automatically corrected. Duplicate or incorrect entries are removed)'}
+					placeholder={'Paste genes here or use the dropdown above to search \n\n(Don\'t worry about capitalization, commas, semicolons, or quotations. This is automatically corrected. Duplicate or incorrect entries are removed)'}
 					onChange={this.handleTextAreaChange}
 					onKeyPress={this.handleTextAreaChange}
 					value={this.state.selectedGenes} />

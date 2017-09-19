@@ -25,10 +25,6 @@ export class AttributeSelection extends Component {
 		this.setState({ genesHC });
 	}
 
-	shouldComponentUpdate(nextProps) {
-		return nextProps.genes !== this.props.genes;
-	}
-
 	render() {
 		const { dispatch, dataset, genes } = this.props;
 

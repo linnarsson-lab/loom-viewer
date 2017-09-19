@@ -237,30 +237,10 @@ compress.init_app(app)
 # Static assets
 #
 
-@app.route('/service-worker.js')
-@cache(expires=None)
-def send_service_worker():
-	return app.send_static_file('service-worker.js')
-
-@app.route('/js/<path:path>')
+@app.route('/static/<path:path>')
 @cache(expires=604800)
-def send_js(path):
-	return flask.send_from_directory('/js', path)
-
-@app.route('/css/<path:path>')
-@cache(expires=604800)
-def send_css(path):
-	return flask.send_from_directory('/css', path)
-
-@app.route('/img/<path:path>')
-@cache(expires=604800)
-def send_img(path):
-	return flask.send_from_directory('/img', path)
-
-@app.route('/fonts/<path:path>')
-@cache(expires=604800)
-def send_fonts(path):
-	return flask.send_from_directory('/fonts', path)
+def send_static(path):
+	return flask.send_from_directory('/static', path)
 
 #
 # Catch-all for the react-router endpoints

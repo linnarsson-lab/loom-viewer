@@ -133,18 +133,31 @@ class PlotSettingsTabContent extends Component {
 								time={200} />
 						</div>
 					</CollapsibleSettings>
-				</ListGroupItem>											<ColorSettings
+				</ListGroupItem>
+				<ColorSettings
 					dispatch={dispatch}
 					dataset={dataset}
 					axis={axis}
 					plotSettings={plotSettings}
-					selectedPlot={selected}
+					selected={selected}
+					selectedPlot={selectedPlot}
 				/>
 				{filteredValues}
 			</ListGroup>
 		);
 	}
 }
+
+PlotSettingsTabContent.propTypes = {
+	dispatch: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	axis: PropTypes.string.isRequired,
+	filteredValues: PropTypes.array.isRequired,
+	plot: PropTypes.object.isRequired,
+	plotSettings: PropTypes.array.isRequired,
+	selected: PropTypes.number.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
+};
 
 export class ScatterPlotSidepanel extends Component {
 	constructor(props) {

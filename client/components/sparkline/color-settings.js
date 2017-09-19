@@ -18,7 +18,6 @@ import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import { merge } from '../../js/util';
 
-
 const boxLegend = (
 	<table>
 		<tbody>
@@ -71,17 +70,6 @@ export class ColorSettings extends Component {
 		const geneModeHC = handleChangeFactory(dispatch, dataset, 'geneMode');
 		const showLabelsHC = handleChangeFactory(dispatch, dataset, 'showLabels');
 		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
-	}
-
-	shouldComponentUpdate(nextProps) {
-		const vs = this.props.dataset.viewState.col;
-		const nvs = nextProps.dataset.viewState.col;
-		return (
-			this.props.showLabels !== nextProps.showLabels ||
-			this.props.geneMode !== nextProps.geneMode ||
-			this.props.showLabels !== nextProps.showLabels ||
-			vs.scatterPlots !== nvs.scatterPlots
-		);
 	}
 
 	render() {

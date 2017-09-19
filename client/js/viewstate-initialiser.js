@@ -29,6 +29,27 @@ export function viewStateInitialiser(dataset) {
 		shape,
 	} = dataset.heatmap;
 
+	const colPlotSettings = {
+		x: {
+			attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+			jitter: false,
+			logScale: false,
+		},
+		y: {
+			attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+			jitter: false,
+			logScale: false,
+		},
+		colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+		colorMode: 'Categorical',
+		logScale: true,
+		clip: false,
+		lowerBound: 0,
+		upperBound: 100,
+		emphasizeNonZero: false,
+		scaleFactor: 20,
+	};
+
 	return {
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
@@ -49,6 +70,7 @@ export function viewStateInitialiser(dataset) {
 			geneMode: 'Bars',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
 			showLabels: true,
+			groupBy: false,
 		},
 
 		cellMD: { searchVal: '' },
@@ -62,28 +84,7 @@ export function viewStateInitialiser(dataset) {
 			ascendingIndices: colIndices,
 			scatterPlots: {
 				selectedPlot: 0,
-				plotSettings: [
-					{
-						x: {
-							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
-							jitter: false,
-							logScale: false,
-						},
-						y: {
-							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
-							jitter: false,
-							logScale: false,
-						},
-						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
-						colorMode: 'Categorical',
-						logScale: true,
-						clip: false,
-						lowerBound: 0,
-						upperBound: 100,
-						emphasizeNonZero: false,
-						scaleFactor: 20,
-					},
-				],
+				plotSettings: [ colPlotSettings ],
 			},
 		},
 

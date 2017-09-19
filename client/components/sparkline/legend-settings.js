@@ -15,6 +15,38 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
+import { createComparator } from '../../js/state-comparator';
+
+const comparePlotSetting = createComparator({
+	logScale: 'boolean',
+	clip: 'boolean',
+	lowerBound: 'number',
+	upperBound: 'number',
+});
+
+// we only look at the first scatterPlot
+const comparePlotSettings = (a, b) => {
+	return comparePlotSetting(a[0], b[0]);
+};
+
+const compareProps = createComparator({
+	colAttr: 'string',
+	colMode: 'string',
+	groupBy: 'boolean',
+	legendData: 'object',
+	// clip and log settings for heatmap
+	// also affect the legend
+	dataset: {
+		viewState: {
+			col: {
+				filter: 'array',
+				scatterPlots: {
+					plotSettings: comparePlotSettings,
+				},
+			},
+		},
+	},
+});
 
 export class LegendSettings extends Component {
 	componentWillMount() {
@@ -47,21 +79,8 @@ export class LegendSettings extends Component {
 		});
 	}
 
-	shouldComponentUpdate(np) {
-		const p = this.props,
-			ds = p.dataset, nds = np.dataset,
-			ca = p.colAttr, nca = np.colAttr,
-			vs = ds.viewState, nvs = nds.viewState,
-			vsc = vs.col, nvsc = nvs.col;
-
-		return nca !== ca ||
-			np.colMode !== p.colMode ||
-			vs.sparkline.groupBy !== nvs.sparkline.groupBy ||
-			nvsc.filter !== vsc.filter ||
-			nvsc.lowerBound !== vsc.lowerBound ||
-			nvsc.upperBound !== vsc.upperBound ||
-			nvsc.logScale !== vsc.logScale ||
-			nds.col.attrs[nca] !== ds.col.attrs[ca];
+	shouldComponentUpdate(nextProps) {
+		return !compareProps(this.props, nextProps);
 	}
 
 	render() {
@@ -71,6 +90,7 @@ export class LegendSettings extends Component {
 			colAttr,
 			colMode,
 			groupBy,
+			legendData,
 		} = this.props;
 
 		const {
@@ -96,7 +116,6 @@ export class LegendSettings extends Component {
 			};
 		} : () => { };
 
-		const legendData = col.attrs[colAttr];
 		let legend;
 
 		if (legendData) {
@@ -170,4 +189,5 @@ LegendSettings.propTypes = {
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
 	groupBy: PropTypes.bool,
+	legendData: PropTypes.object,
 };

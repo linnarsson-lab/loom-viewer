@@ -92,8 +92,29 @@ function nullFunc() { }
 
 export class ColorSettings extends Component {
 	shouldComponentUpdate(nextProps) {
-		const { props } = this;
-		return nextProps.plotSettings !== props.plotSettings;
+		const {
+			axis,
+			dataset,
+			plotSettings,
+			selected,
+			selectedPlot,
+		} = this.props;
+		const settings = plotSettings[selected],
+			nDataset = nextProps.dataset,
+			nAxis = nextProps.axis,
+			nSettings = nextProps.plotSettings[selected];
+
+		// Only update if tab is visible, and if
+		// the relevant data has changed
+		return selected === selectedPlot && (
+			settings.colorAttr !== nSettings.colorAttr ||
+			settings.colorMode !== nSettings.colorMode ||
+			settings.logScale !== nSettings.logScale ||
+			settings.clip !== nSettings.clip ||
+			settings.lowerBound !== nSettings.lowerBound ||
+			settings.upperBound !== nSettings.upperBound ||
+			dataset.viewState[axis].filter !== nDataset.viewState[nAxis].filter
+		);
 	}
 
 	render() {
@@ -104,14 +125,14 @@ export class ColorSettings extends Component {
 			dataset,
 			axis,
 			settings,
+			selected,
 			plotSettings,
-			selectedPlot,
 		} = props;
 
 		const {
 			colorAttr,
 			colorMode,
-		} = plotSettings[selectedPlot];
+		} = plotSettings[selected];
 
 		const {
 			attrs,
@@ -155,7 +176,7 @@ export class ColorSettings extends Component {
 				dataset={dataset}
 				axis={axis}
 				plotSettings={plotSettings}
-				selectedPlot={selectedPlot}
+				selectedPlot={selected}
 				time={200} />
 		) : null;
 
@@ -211,6 +232,7 @@ ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
 	plotSettings: PropTypes.array.isRequired,
+	selected: PropTypes.number.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
 };
