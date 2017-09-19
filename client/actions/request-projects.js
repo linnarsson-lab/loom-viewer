@@ -75,7 +75,6 @@ function receiveProjects(json, prevList) {
 		if (prevList && prevList[ds.path]) {
 			ds = prevList[ds.path];
 		} else {
-			ds.viewState = null;
 			ds.fetchedGenes = {};
 			ds.fetchingGenes = {};
 			ds.col = null;
