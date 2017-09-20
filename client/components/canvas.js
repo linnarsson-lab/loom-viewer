@@ -5,80 +5,136 @@ import {
 	RemountOnResize,
 } from './remount-on-resize';
 
-class CanvasComponent extends PureComponent {
+import {
+	textSize,
+	textStyle,
+	drawText,
+} from '../plotters/canvas';
 
-	draw() {
-		const { canvas, props, state } = this;
-		if (canvas && props.paint) {
-			let context = canvas.getContext('2d');
-			// store width, height and ratio in context for paint functions
-			context.width = state.width;
-			context.height = state.height;
-			context.pixelRatio = state.ratio;
-			context.pixelScale = state.pixelScale;
-			// should we clear the canvas every redraw?
-			if (props.clear) {
-				if (props.bgColor) {
-					context.fillStyle = props.bgColor;
-					context.fillRect(0, 0, context.width, context.height);
-				} else {
-					context.clearRect(0, 0, context.width, context.height);
-				}
-			}
-			props.paint(context);
+const noop = () => { };
+
+function makeIdlePainter(paint) {
+	let running = false;
+
+	let isRunning = () => {
+		return (running);
+	};
+
+	let apply = (context) => {
+		if (!running) {
+			running = true;
+			// indicate that we are rendering a new painter
+			let size = Math.min(context.height / 3 | 0, 20);
+			let height = Math.min(context.height / 3 | 0, 40);
+			textSize(context, size);
+			textStyle(context, 'black', 'white', 5);
+			drawText(context, 'Rendering...', size, height);
+			// render in background
+			requestIdleCallback(() => {
+				context.clearRect(0, 0, context.width, context.height);
+				paint(context);
+				running = false;
+			});
 		}
-	}
+	};
+
+	let cancel = () => {
+		paint = noop;
+	};
+
+	let replace = (newPainter) => {
+		paint = newPainter;
+	};
+	return { apply, isRunning, cancel, replace };
+}
+
+class CanvasComponent extends PureComponent {
 
 	constructor(props) {
 		super(props);
-		this.mountedView = this.mountedView.bind(this);
-		this.draw = this.draw.bind(this);
+
+		this.mountView = (view) => {
+			// Scaling lets us adjust the painter function for
+			// high density displays and zoomed browsers.
+			// Painter functions decide how to use scaling
+			// on a case-by-case basis.
+			if (view) {
+				const pixelScale = this.props.pixelScale || 1;
+				const ratio = window.devicePixelRatio || 1;
+				const width = (view.clientWidth * ratio) | 0;
+				const height = (view.clientHeight * ratio) | 0;
+				this.setState({ view, width, height, ratio, pixelScale });
+			}
+		};
+
+		this.mountCanvas = (canvas) => {
+			if (canvas) {
+				let context = canvas.getContext('2d');
+				const { state } = this;
+				// store width, height and ratio in context for paint functions
+				context.width = state.width;
+				context.height = state.height;
+				context.pixelRatio = state.ratio;
+				context.pixelScale = state.pixelScale;
+				let idlePainter = this.props.paint ? makeIdlePainter(this.props.paint) : noop;
+				this.setState({ canvas, context, idlePainter });
+			}
+		};
+
+		this.state = {};
 	}
 
-	mountedView(view) {
-		// Scaling lets us adjust the painter function for
-		// high density displays and zoomed browsers.
-		// Painter functions decide how to use scaling
-		// on a case-by-case basis.
-		if (view) {
-			const pixelScale = this.props.pixelScale || 1;
-			const ratio = window.devicePixelRatio || 1;
-			const width = (view.clientWidth * ratio) | 0;
-			const height = (view.clientHeight * ratio) | 0;
-			this.setState({ view, width, height, ratio, pixelScale });
+	componentWillUpdate(nextProps, nextState) {
+		const {
+			idlePainter,
+			context,
+		} = nextState;
+
+		const {
+			paint,
+		} = nextProps;
+
+
+		if (idlePainter && context) {
+			if (paint && this.props.paint !== paint) {
+				// if our painter changed, update idlePainter accordingly
+				idlePainter.replace(paint);
+			}
+			// draw plot in "background thread"
+			// (technically there's no such thing in JS)
+			idlePainter.apply(context);
 		}
 	}
 
-
-	componentDidUpdate() {
-		if (this.props.redraw) {
-			this.draw();
+	componentWillUnMount() {
+		if (this.state.idlePainter) {
+			this.state.idlePainter.cancel();
 		}
 	}
 
 	render() {
-		// The way canvas interacts with CSS layouting is a bit buggy
+		// The way canvas interacts with CSS layout is a bit buggy
 		// and inconsistent across browsers. To make it dependent on
-		// the layout of the parent container, we only render it after
-		// mounting view, that is: after CSS layouting is done.
-		const canvas = this.state && this.state.view ? (
-			<canvas
-				ref={(cv) => { this.canvas = cv; }}
-				width={this.state.width}
-				height={this.state.height}
-				style={{
-					width: '100%',
-					height: '100%',
-				}}
-			/>
-		) : null;
-
+		// the layout of the parent container, we only mount it after
+		// mounting view.
 		return (
 			<div
 				className={this.props.className}
 				style={this.props.style}
-				ref={this.mountedView}>
-				{canvas}
+				ref={this.mountView}>
+				{
+					this.state.view ? (
+						<canvas
+							ref={this.mountCanvas}
+							width={this.state.width}
+							height={this.state.height}
+							style={{
+								width: '100%',
+								height: '100%',
+							}}
+						/>
+					) : null
+				}
 			</div>
 		);
 	}
@@ -86,8 +142,6 @@ class CanvasComponent extends PureComponent {
 
 CanvasComponent.propTypes = {
 	paint: PropTypes.func.isRequired,
-	clear: PropTypes.bool,
-	redraw: PropTypes.bool,
 	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
@@ -101,7 +155,7 @@ CanvasComponent.propTypes = {
 // Expects a "paint" function that takes a "context" to draw on
 // Whenever this component updates it will call this paint function
 // to draw on the canvas. For convenience, pixel dimensions are stored
-// in context.width, context.height and contex.pixelRatio.
+// in context.width, context.height and context.pixelRatio.
 export class Canvas extends PureComponent {
 	render() {
 		// If not given a width or height prop, make these fill their parent div
@@ -126,10 +180,8 @@ export class Canvas extends PureComponent {
 			>
 				<CanvasComponent
 					paint={props.paint}
-					clear={props.clear}
 					bgColor={props.bgColor}
 					pixelScale={props.pixelScale}
-					redraw={props.redraw}
 					className={props.className}
 					style={style}
 				/>
@@ -140,8 +192,6 @@ export class Canvas extends PureComponent {
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
-	clear: PropTypes.bool,
-	redraw: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,
 	pixelScale: PropTypes.number,

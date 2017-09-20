@@ -108,8 +108,6 @@ class HeatmapMapComponent extends Component {
 						height={sparklineHeight}
 						paint={colSparkline}
 						style={{ marginRight: (sparklineHeight + 'px') }}
-						redraw
-						clear
 					/>
 					<div className='view'>
 						<div style={heatmapStyle}>
@@ -120,10 +118,7 @@ class HeatmapMapComponent extends Component {
 						<Canvas
 							width={sparklineHeight}
 							height={heatmapHeight}
-							paint={rowSparkline}
-							redraw
-							clear
-						/>
+							paint={rowSparkline} />
 					</div>
 				</div >
 			);

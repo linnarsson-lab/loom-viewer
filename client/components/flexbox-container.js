@@ -25,16 +25,16 @@ export class FlexboxContainer extends PureComponent {
 				margin: 0,
 				padding: 0,
 			};
-			this.setState({ flexboxContainer: div, boxStyle });
+			this.setState({ mountedContainer: div, boxStyle });
 		}
 	}
 
 	render() {
-		const { flexboxContainer, boxStyle } = this.state;
+		const { mountedContainer, boxStyle } = this.state;
 		const { props } = this;
 
 		return (
-			flexboxContainer ? (
+			mountedContainer ? (
 				<div
 					className={props.className}
 					style={props.style}

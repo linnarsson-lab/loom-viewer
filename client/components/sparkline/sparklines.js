@@ -43,8 +43,6 @@ class Legend extends PureComponent {
 					width={width - 20}
 					height={height}
 					paint={painter}
-					redraw
-					clear
 				/>
 			</div>
 		);
@@ -83,8 +81,6 @@ export class Sparkline extends PureComponent {
 				<Canvas
 					height={sparklineHeight}
 					paint={sparkline(geneData, geneMode, settings, label)}
-					redraw
-					clear
 				/>
 			</div>
 		);
@@ -154,12 +150,12 @@ function makeSparklines(props) {
 	return sparklines;
 }
 
-// TODO: make this not loop infinitely
 export class Sparklines extends PureComponent {
-
-	componentWillMount() {
-		const sparklines = makeSparklines(this.props);
-		this.setState({ sparklines });
+	constructor(props){
+		super(props);
+		this.state = {
+			sparklines: makeSparklines(props),
+		};
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -196,7 +192,7 @@ export class Sparklines extends PureComponent {
 					// just move the plot from the other
 					// location.
 					if (geneData === pAttrs[gene]) {
-						let j = pSelection.indexOf(gene, i+1);
+						let j = pSelection.indexOf(gene, i + 1);
 						if (j !== -1) {
 							sparklines[i] = sparklines[j];
 						}
@@ -228,6 +224,9 @@ export class Sparklines extends PureComponent {
 				this.setState({ sparklines });
 			}
 		} else {
+			// one of the props that requires an update
+			// to all sparklines has changed, so we must
+			// recreate all nodes.
 			this.setState({ sparklines: makeSparklines(nextProps) });
 		}
 	}
@@ -267,18 +266,39 @@ Sparklines.propTypes = {
 };
 
 export class SparklineList extends PureComponent {
-	componentWillMount() {
-		this.sparklineContainer = this.sparklineContainer.bind(this);
+	constructor(props) {
+		super(props);
+
 		const { attrs, groupAttr, indices } = this.props;
-		const sparkline = groupedSparkline(indices, attrs[groupAttr]);
-		this.setState({
-			sparkline,
-		});
-	}
 
+		this.sparklineContainer = (div) => {
+			if (div) {
+				const containerWidth = div.clientWidth - 20;
+				const containerHeight = div.clientHeight - 20;
+				const legendHeight = 60;
+				const sparklineContainerStyle = {
+					display: 'flex',
+					flex: '0 0 auto',
+					minWidth: `${containerWidth}px`,
+					maxWidth: `${containerWidth}px`,
+					minHeight: `${containerHeight - legendHeight}px`,
+					maxHeight: `${containerHeight - legendHeight}px`,
+					overflowX: 'hidden',
+					overflowY: 'scroll',
+				};
+				this.setState({
+					mountedContainer: div,
+					containerWidth,
+					containerHeight,
+					legendHeight,
+					sparklineContainerStyle,
+				});
+			}
+		};
 
-	sparklineContainer(div) {
-		this.setState({ sparklineContainer: div });
+		this.state = {
+			sparkline: groupedSparkline(indices, attrs[groupAttr]),
+		};
 	}
 
 	componentWillUpdate(nextProps) {
@@ -292,8 +312,15 @@ export class SparklineList extends PureComponent {
 	}
 
 	render() {
-		const el = this.state.sparklineContainer;
-		if (el) {
+		const {
+			sparkline,
+			mountedContainer,
+			sparklineContainerStyle,
+			containerWidth,
+			legendHeight,
+		} = this.state;
+
+		if (mountedContainer) {
 			const {
 				col,
 				colAttr,
@@ -306,12 +333,6 @@ export class SparklineList extends PureComponent {
 				showLabels,
 				settings,
 			} = this.props;
-
-			const { sparkline } = this.state;
-
-			const containerWidth = el.clientWidth - 20;
-			const containerHeight = el.clientHeight - 20;
-			const legendHeight = 60;
 
 			return (
 				<div
@@ -333,16 +354,7 @@ export class SparklineList extends PureComponent {
 						path={path}
 					/>
 					<div
-						style={{
-							display: 'flex',
-							flex: '0 0 auto',
-							minWidth: `${containerWidth}px`,
-							maxWidth: `${containerWidth}px`,
-							minHeight: `${containerHeight - legendHeight}px`,
-							maxHeight: `${containerHeight - legendHeight}px`,
-							overflowX: 'hidden',
-							overflowY: 'scroll',
-						}}>
+						style={sparklineContainerStyle}>
 						<Sparklines
 							attrs={attrs}
 							sparkline={sparkline}

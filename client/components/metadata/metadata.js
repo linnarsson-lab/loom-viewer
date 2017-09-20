@@ -52,8 +52,7 @@ export class MetadataPlot extends PureComponent {
 						style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 						<Canvas
 							height={80}
-							paint={sparkline(attr, indices, modes[mode])}
-							redraw clear />
+							paint={sparkline(attr, indices, modes[mode])} />
 					</Button>
 				</OverlayTooltip>
 				<AttrLegend

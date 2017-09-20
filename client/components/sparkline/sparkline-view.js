@@ -6,20 +6,17 @@ import { SparklineList } from './sparklines';
 
 import { ViewInitialiser } from '../view-initialiser';
 
-import { merge } from '../../js/util';
-
 class SparklineViewComponent extends PureComponent {
-
 	render() {
 		const { dispatch, dataset } = this.props;
 		const { col } = dataset;
-		const sl = dataset.viewState.sparkline;
+		const { sparkline } = dataset.viewState;
 		const {
 			indices,
 			scatterPlots,
 		} = dataset.viewState.col;
 		// The old column attribute values that we displayed in the "legend"
-		let legendData = col.attrs[sl.colAttr];
+		let legendData = col.attrs[sparkline.colAttr];
 		// if colAttr does not exist (for example, the default values
 		// in the Loom interface is not present), pick the first column
 		if (legendData === undefined) {
@@ -42,16 +39,16 @@ class SparklineViewComponent extends PureComponent {
 				/>
 				<SparklineList
 					attrs={dataset.col.attrs}
-					selection={sl.genes}
-					groupAttr={sl.groupBy ? sl.colAttr : ''}
+					selection={sparkline.genes}
+					groupAttr={sparkline.groupBy ? sparkline.colAttr : ''}
 					indices={indices}
-					geneMode={sl.geneMode}
+					geneMode={sparkline.geneMode}
 					col={col}
-					colAttr={sl.colAttr}
-					colMode={sl.colMode}
+					colAttr={sparkline.colAttr}
+					colMode={sparkline.colMode}
 					path={dataset.path}
 					settings={scatterPlotSettings}
-					showLabels={sl.showLabels} />
+					showLabels={sparkline.showLabels} />
 			</div>
 		);
 	}

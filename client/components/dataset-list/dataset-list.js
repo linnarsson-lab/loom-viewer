@@ -294,7 +294,6 @@ class SearchDataSetViewComponent extends PureComponent {
 		super(props);
 		this.filterProjects = this.filterProjects.bind(this);
 		this.prepareProjects = this.prepareProjects.bind(this);
-
 	}
 
 	componentWillMount() {
