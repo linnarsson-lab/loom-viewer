@@ -2,8 +2,8 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
-	RemountOnResize,
-} from './remount-on-resize';
+	Remount,
+} from './remount';
 
 import {
 	textSize,
@@ -11,45 +11,81 @@ import {
 	drawText,
 } from '../plotters/canvas';
 
-const noop = () => { };
+// Waits until the CPU idles, then automatically
+// renders once. Automatically rerenders
+// if paint or context changes.
+// Assume painters are pure, that is:
+// wil always render the same output
+// for a given context, and that nothing
+// else is touching our context.
+function makeIdlePainter(paint, context) {
+	let running = false,
+		rendered = false,
+		removed = false;
 
-function makeIdlePainter(paint) {
-	let running = false;
-
-	let isRunning = () => {
-		return (running);
-	};
-
-	let apply = (context) => {
-		if (!running) {
+	let apply = () => {
+		if (!rendered && !running && !removed && paint && context) {
 			running = true;
 			// indicate that we are rendering a new painter
 			let size = Math.min(context.height / 3 | 0, 20);
-			let height = Math.min(context.height / 3 | 0, 40);
+			let height = Math.min(size + context.height / 3 | 0, 40);
 			textSize(context, size);
 			textStyle(context, 'black', 'white', 5);
 			drawText(context, 'Rendering...', size, height);
 			// render in background
 			requestIdleCallback(() => {
-				context.clearRect(0, 0, context.width, context.height);
-				paint(context);
-				running = false;
+				if (!removed) {
+					context.clearRect(0, 0, context.width, context.height);
+					paint(context);
+					running = false;
+					rendered = true;
+				}
 			});
 		}
 	};
 
-	let cancel = () => {
-		paint = noop;
+	let remove = () => {
+		removed = true;
+		paint = null;
+		context = null;
 	};
 
-	let replace = (newPainter) => {
-		paint = newPainter;
+	let isRunning = () => {
+		return (running);
 	};
-	return { apply, isRunning, cancel, replace };
+
+	// Note: requestIdleCallback is guaranteed to wait with
+	// calling its callback until replacePaint/replaceContext
+	// return, so we can safely call `apply()` from within them.
+
+	let replacePaint = (newPainter) => {
+		rendered = false;
+		paint = newPainter;
+		apply();
+	};
+
+	let replaceContext = (newContext) => {
+		rendered = false;
+		context = newContext;
+		apply();
+	};
+
+	// try to immediately start rendering if the necessary
+	// paint and context were passed.
+	apply();
+
+	return {
+		apply,
+		isRunning,
+		replacePaint,
+		replaceContext,
+		remove,
+	};
 }
 
+// Mounts a canvas and gets its context,
+// then passes this context to the idlePainter.
 class CanvasComponent extends PureComponent {
-
 	constructor(props) {
 		super(props);
 
@@ -76,8 +112,10 @@ class CanvasComponent extends PureComponent {
 				context.height = state.height;
 				context.pixelRatio = state.ratio;
 				context.pixelScale = state.pixelScale;
-				let idlePainter = this.props.paint ? makeIdlePainter(this.props.paint) : noop;
-				this.setState({ canvas, context, idlePainter });
+				if (this.props.idlePainter) {
+					this.props.idlePainter.replaceContext(context);
+				}
+				this.setState({ canvas, context });
 			}
 		};
 
@@ -85,30 +123,12 @@ class CanvasComponent extends PureComponent {
 	}
 
 	componentWillUpdate(nextProps, nextState) {
-		const {
-			idlePainter,
-			context,
-		} = nextState;
-
-		const {
-			paint,
-		} = nextProps;
-
-
-		if (idlePainter && context) {
-			if (paint && this.props.paint !== paint) {
-				// if our painter changed, update idlePainter accordingly
-				idlePainter.replace(paint);
+		// if our idlePainter changed, and we have a
+		// context, pass it the context to start rendering
+		if (nextProps.idlePainter && nextState.context) {
+			if (nextProps.idlePainter !== this.props.idlePainter && nextProps.idlePainter && nextState.context) {
+				nextProps.idlePainter.replaceContext(nextState.context);
 			}
-			// draw plot in "background thread"
-			// (technically there's no such thing in JS)
-			idlePainter.apply(context);
-		}
-	}
-
-	componentWillUnMount() {
-		if (this.state.idlePainter) {
-			this.state.idlePainter.cancel();
 		}
 	}
 
@@ -141,22 +161,36 @@ class CanvasComponent extends PureComponent {
 }
 
 CanvasComponent.propTypes = {
-	paint: PropTypes.func.isRequired,
+	idlePainter: PropTypes.object.isRequired,
 	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
 
-
-// A simple helper component, wrapping retina logic for canvas and
-// auto-resizing the canvas to fill its parent container.
-// To determine size/layout, we just use CSS on the div containing
-// the Canvas component (we're using this with flexbox, for example).
-// Expects a "paint" function that takes a "context" to draw on
-// Whenever this component updates it will call this paint function
-// to draw on the canvas. For convenience, pixel dimensions are stored
-// in context.width, context.height and context.pixelRatio.
+/**
+ * A helper component, auto-resizing the canvas to fill its parent container.
+ *
+ * To determine size/layout, we just use CSS on the div containing the Canvas
+ * component (we're using this with flexbox, for example).
+ *
+ * Expects a `paint` function that takes a `context` to draw on. After the canvas is mounted, this paint function will be called _once_. Pixel dimensions are stored in context.width, context.height and context.pixelRatio, making it possible for paint functions to depend on canvas size. Whenever the paint function or the canvas size changes it will  call this paint function, passing the canvas context
+ */
 export class Canvas extends PureComponent {
+	constructor(props) {
+		super(props);
+		this.state = { idlePainter: makeIdlePainter(props.paint, null) };
+	}
+
+	componentWillReceiveProps(nextProps){
+		if(nextProps.paint !== this.props.paint){
+			this.state.idlePainter.replacePaint(nextProps.paint);
+		}
+	}
+
+	componentWillUnMount() {
+		this.state.idlePainter.remove();
+	}
+
 	render() {
 		// If not given a width or height prop, make these fill their parent div
 		// This will implicitly set the size of the <Canvas> component, which
@@ -173,19 +207,19 @@ export class Canvas extends PureComponent {
 			style['maxHeight'] = (height | 0) + 'px';
 		}
 		return (
-			<RemountOnResize
+			<Remount
 				/* Since canvas interferes with CSS layouting,
-				we unmount and remount it on resize events */
-				watchedVal={props.watchedVal}
-			>
+				we unmount and remount it on resize events,
+				unless width and height are set */
+				noResize={width !== undefined && height !== undefined}
+				watchedVal={props.watchedVal} >
 				<CanvasComponent
-					paint={props.paint}
-					bgColor={props.bgColor}
+					idlePainter={this.state.idlePainter}
 					pixelScale={props.pixelScale}
 					className={props.className}
 					style={style}
 				/>
-			</RemountOnResize>
+			</Remount>
 		);
 	}
 }

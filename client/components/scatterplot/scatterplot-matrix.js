@@ -4,7 +4,7 @@ import { TypedArrayProp } from '../../js/proptypes-typedarray';
 
 import { scatterPlot } from '../../plotters/scatterplot';
 import { Canvas } from '../canvas';
-import { RemountOnResize } from '../remount-on-resize';
+import { Remount } from '../remount';
 
 import { setViewProps } from '../../actions/set-viewprops';
 
@@ -56,8 +56,6 @@ class SinglePlot extends Component {
 					width={canvasW}
 					height={canvasH}
 					paint={paintFunctions[idx]}
-					redraw
-					clear
 				/>
 			</button>
 		);
@@ -301,11 +299,11 @@ export class ScatterPlotMatrix extends Component {
 		}
 
 		return (
-			<RemountOnResize watchedVal={plotSettings.length}>
+			<Remount watchedVal={plotSettings.length}>
 				<div className='view-vertical' ref={this.mountedView}>
 					{matrix}
 				</div>
-			</RemountOnResize>
+			</Remount>
 		);
 	}
 }

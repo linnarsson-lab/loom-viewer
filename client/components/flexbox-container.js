@@ -8,7 +8,6 @@ export class FlexboxContainer extends PureComponent {
 		this.state = {};
 	}
 
-
 	flexboxContainer(div) {
 		if (div) {
 			const w = `${div.clientWidth - 20}px`;

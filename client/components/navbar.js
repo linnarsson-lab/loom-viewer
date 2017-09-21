@@ -5,7 +5,7 @@ import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import DocumentTitle from 'react-document-title';
 
-import { RemountOnResize } from './remount-on-resize';
+import { Remount } from './remount';
 
 // Since this is constant, we hoist it
 const navDataset = (
@@ -96,9 +96,9 @@ export class NavbarView extends Component {
 						{realNavBar}
 						{dummyNavBar}
 					</div>
-					<RemountOnResize>
+					<Remount>
 						{this.props.children}
-					</RemountOnResize>
+					</Remount>
 				</div>
 			</DocumentTitle>
 		);
