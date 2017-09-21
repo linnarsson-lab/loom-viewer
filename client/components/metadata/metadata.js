@@ -19,6 +19,8 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
+import { createComparator } from '../../js/state-comparator';
+
 import Fuse from 'fuse.js';
 
 export class MetadataPlot extends PureComponent {
@@ -75,6 +77,16 @@ MetadataPlot.propTypes = {
 	filterFunc: PropTypes.func.isRequired,
 };
 
+const samePropMetadataTable = createComparator({
+	attrKeys: 'array',
+	searchField: 'node',
+	searchVal: 'string',
+	sortOrderList: 'array',
+	indices: 'array',
+	filteredAttrs: 'array',
+	onClickAttrFactory: 'func',
+	onClickFilterFactory: 'func',
+});
 
 class MetadataTable extends PureComponent {
 	constructor(props) {
@@ -93,8 +105,10 @@ class MetadataTable extends PureComponent {
 
 
 	componentWillReceiveProps(nextProps) {
-		const { columns, tableData } = this.createTableData(nextProps);
-		this.setState({ columns, tableData });
+		if (!samePropMetadataTable(nextProps, this.props)){
+			const { columns, tableData } = this.createTableData(nextProps);
+			this.setState({ columns, tableData });
+		}
 	}
 
 	createTableData(props) {
@@ -279,15 +293,7 @@ export class MetadataComponent extends PureComponent {
 			};
 		};
 
-		this.state = {
-			onClickAttrFactory,
-			onClickFilterFactory,
-		};
-	}
-
-	componentWillMount() {
-		const { dispatch, dataset, stateName } = this.props;
-		const path = dataset.path;
+		const { searchVal } = dataset.viewState[stateName];
 
 		const searchMetadata = (event) => {
 			let searchVal = event.target.value ? event.target.value : '';
@@ -299,27 +305,57 @@ export class MetadataComponent extends PureComponent {
 			});
 		};
 
-		this.setState({ searchMetadata });
-	}
+		const { order } = dataset.viewState[axis];
 
-	render() {
-
-		const {
-			dataset, dispatch,
-			attributes, attrKeys, axis,
-			stateName, mdName,
-		} = this.props;
-		const filteredAttrs = dataset.viewState[axis].filter;
-
-		const {
+		this.state = {
 			onClickAttrFactory,
 			onClickFilterFactory,
+			searchVal,
 			searchMetadata,
+			searchField: this.updateSearchField(searchVal, searchMetadata),
+			order,
+			sortOrderList: this.updateSortOrderList(order),
+		};
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const {
+			dataset,
+			stateName,
+			axis,
+		} = nextProps;
+
+		const {
+			searchVal,
+			searchMetadata,
+			order,
 		} = this.state;
 
-		let { searchVal } = dataset.viewState[stateName];
+		const newSearchVal = dataset.viewState[stateName].searchVal;
+		const newOrder = dataset.viewState[axis].order;
 
-		const searchField = (
+		let newState = {},
+			stateChanged = false;
+
+		if (newSearchVal !== searchVal) {
+			newState.searchField = this.updateSearchField(newSearchVal, searchMetadata);
+			newState.searchVal = newSearchVal;
+			stateChanged = true;
+		}
+
+		if (newOrder !== order) {
+			newState.sortOrderList = this.updateSortOrderList(order);
+			newState.order = newOrder;
+			stateChanged = true;
+		}
+
+		if (stateChanged) {
+			this.setState(newState);
+		}
+	}
+
+	updateSearchField(searchVal, searchMetadata) {
+		return (
 			<DebouncedFormcontrol
 				type='text'
 				onChange={searchMetadata}
@@ -327,9 +363,9 @@ export class MetadataComponent extends PureComponent {
 				time={500}
 			/>
 		);
+	}
 
-		// Show first four attributes to use as sort keys
-		const { order, indices } = dataset.viewState[axis];
+	updateSortOrderList(order) {
 		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
 		for (let i = 0; i < Math.min(order.length, 4); i++) {
 			const val = order[i];
@@ -343,6 +379,33 @@ export class MetadataComponent extends PureComponent {
 				</span>
 			);
 		}
+		return sortOrderList;
+	}
+
+	render() {
+
+		const {
+			dataset,
+			dispatch,
+			attributes,
+			attrKeys,
+			axis,
+			stateName,
+			mdName,
+		} = this.props;
+
+		const filteredAttrs = dataset.viewState[axis].filter;
+
+		const {
+			onClickAttrFactory,
+			onClickFilterFactory,
+			searchField,
+			sortOrderList,
+		} = this.state;
+
+		const { searchVal } = dataset.viewState[stateName];
+
+		const { indices } = dataset.viewState[axis];
 
 		return (
 			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden' }}>
