@@ -12,7 +12,6 @@ const uglifySettings = {
 		properties: true,
 		dead_code: true,
 		drop_debugger: true,
-		drop_console: true,
 		unsafe: true,
 		unsafe_math: true,
 		unsafe_proto: true,
@@ -35,7 +34,7 @@ const uglifySettings = {
 		drop_console: true,
 		keep_fargs: false,
 		keep_fnames: false,
-		passes: 1,
+		passes: 3,
 	},
 };
 

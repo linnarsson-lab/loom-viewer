@@ -1,20 +1,45 @@
 {
 	"presets": [
-		"react",
+		"flow",
 		[
 			"env",
 			{
 				"targets": {
-					"browsers": ["last 5 versions"],
+					"browsers": [
+						"last 3 versions"
+					],
 				},
 				"loose": true,
-				"modules": false
+				"modules": false,
 			}
-		],
+		]
 	],
 	"plugins": [
-		"transform-react-constant-elements",
 		"lodash",
+		[
+			"module-resolver",
+			{
+				"root": [
+					"./client"
+				],
+				"alias": {
+					"actions/": "./client/actions/",
+					"components/": "./client/components/",
+					"css/": "./client/css/",
+					"fonts/": "./client/fonts",
+					"js/": "./client/js/",
+					"plotters/": "./client/plotters",
+					"reducers/": "./client/reducers",
+					"underscore": "lodash"
+				}
+			}
+		],
+		"syntax-jsx",
+		"transform-react-jsx",
+		"transform-react-constant-elements",
+		"transform-react-inline-elements",
+		/*"closure-elimination",*/
+		"babel-plugin-loop-optimizer",
 		[
 			"transform-strict-mode",
 			{

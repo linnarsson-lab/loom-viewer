@@ -52,6 +52,7 @@ module.exports = {
 		new webpack.DefinePlugin({
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
+		new webpack.optimize.ModuleConcatenationPlugin(),
 		new HtmlWebpackPlugin({
 			template: path.join(__dirname + '/client/index.html'),
 			filename: 'index.html',
