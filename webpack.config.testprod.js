@@ -2,6 +2,10 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+// webpack needs the trailing slash for output.publicPath
+const PUBLIC_PATH = 'http://localhost:8003/';
+
+
 const uglifySettings = {
 	mangle: {
 		toplevel: true,
@@ -55,6 +59,7 @@ module.exports = {
 					{
 						loader: 'style-loader',
 						options: {
+							publicPath: PUBLIC_PATH,
 							minimize: true,
 							sourceMap: false,
 						},
@@ -62,6 +67,7 @@ module.exports = {
 					{
 						loader: 'css-loader',
 						options: {
+							publicPath: PUBLIC_PATH,
 							minimize: true,
 							sourceMap: false,
 						},
@@ -72,6 +78,7 @@ module.exports = {
 				test: /\.(png|jpg|gif)$/,
 				loader: 'file-loader',
 				options: {
+					publicPath: PUBLIC_PATH,
 					name: 'static/images/[name]-[hash].[ext]',
 				},
 			},
@@ -79,6 +86,7 @@ module.exports = {
 				test: /\.(svg|eot|ttf|woff|woff2)$/,
 				loader: 'file-loader',
 				options: {
+					publicPath: PUBLIC_PATH,
 					name: 'static/fonts/[name]-[hash].[ext]',
 				},
 			},

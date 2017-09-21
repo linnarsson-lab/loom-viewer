@@ -21,9 +21,15 @@ set -o errexit
 if  [ "${1:-dev}" == "dev" ]; then
   echo "Bundling development build and inserting it into HTML template"
   webpack --config='webpack.config.dev.js' --progress --profile --colors
+elif [ "${1:-dev}" == "prod" ]; then
+  echo "Testing production. Minifying + bundling production build and inserting it into HTML template"
+  webpack --config='webpack.config.testprod.js' --progress --profile --colors
+elif [ "${1:-dev}" == "deploy" ]; then
+  echo "Building for deployment. Minifying + bundling production build and inserting it into HTML template"
+  webpack --config='webpack.config.deploy.js' --progress --profile --colors
 else
-  echo "Minifying + bundling production build and inserting it into HTML template"
-  webpack --config='webpack.config.prod.js' --progress --profile --colors
+  echo "Incorrect flags passed"
+  exit 1
 fi
 
 build_status=$?

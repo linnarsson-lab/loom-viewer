@@ -1,6 +1,6 @@
 #! /bin/bash
 
-./build prod
+./build deploy
 build_status=$?
 if [ $build_status == 0 ]; then
   cd python
