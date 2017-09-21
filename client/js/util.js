@@ -757,36 +757,51 @@ export function disjointArrays(a, b) {
  * Returns a new object that merges the values of
  * `newObj` into `oldObj`. Uses shallow copying.
  *
+ * **WARNING: Do NOT pass cyclical objects!
+ * This includes React nodes!**
+ *
  * **IMPORTANT:** util.merge does **NOT** behave like
- * lodash merge!
+ * lodash merge! *TL;DR:* (typed) arrays are not merged
+ * but replaced by the newer array.
  *
- * - for duplicate keys, values that are objects
- * (but not (typed) arrays) are recursively merged.
+ * - for duplicate keys, values that are objects are
+ *   recursively merged (except (typed) arrays and `null`)
  * - in all other cases, the value from `newObj` is
- * assigned to the resulting object.
+ *   assigned to the returned object (including (typed) arrays and `null`).
  *
- * **TL;DR:** (typed) arrays are not merged but replaced
- * by the newer array!
  * @param {object} oldObj
  * @param {object} newObj
  */
 export function merge(oldObj, newObj) {
-	if (!oldObj) {
+	if (!(oldObj || newObj)) {
+	// if neither are defined, return whatever oldObj is
+		return oldObj;
+	} else if (!oldObj) {
+		// we expect a new object (immutability guarantee),
+		// so if there is no oldObj, return a copy of newObj
 		return Object.assign({}, newObj);
 	} else if (!newObj) {
+		// we expect a new object (immutability guarantee),
+		// so if there is no newObj, return a copy of oldObj
 		return Object.assign({}, oldObj);
 	}
-	let untouchedKeys = Object.keys(oldObj);
-	let newKeys = Object.keys(newObj);
-	let overlappingKeys = disjointArrays(untouchedKeys, newKeys);
 
-	let mergedObj = {}, key = '', i = overlappingKeys.length;
+	let untouchedKeys = Object.keys(oldObj),
+		newKeys = Object.keys(newObj),
+		overlappingKeys = disjointArrays(untouchedKeys, newKeys),
+		mergedObj = {},
+		key = '',
+		i = overlappingKeys.length;
+
 	while (i--) {
 		key = overlappingKeys[i];
 		let newVal = newObj[key];
 		// merge object values by recursion, otherwise just assign new value
-		mergedObj[key] = (typeof newVal === 'object' && !isArray(newVal)) ?
-			merge(oldObj[key], newVal) : newVal;
+		mergedObj[key] = (
+			typeof newVal === 'object' &&
+			newVal !== null && // avoid accidentally turning null into {}
+			!isArray(newVal)   // typof returns object for arrays
+		) ? merge(oldObj[key], newVal) : newVal;
 	}
 	// directly assign all values that don't need merging
 	i = untouchedKeys.length;
@@ -809,22 +824,29 @@ export function merge(oldObj, newObj) {
  * @param {object} newObj - new object to merge into oldObj
  */
 export function mergeInPlace(oldObj, newObj) {
-	if (!oldObj) {
+	if (!(oldObj || newObj)) {
+		return oldObj;
+	} else if (!oldObj) {
 		return Object.assign({}, newObj);
 	} else if (!newObj) {
 		return oldObj;
 	}
-	let untouchedKeys = Object.keys(oldObj);
-	let newKeys = Object.keys(newObj);
-	let overlappingKeys = disjointArrays(untouchedKeys, newKeys);
 
-	let key = '', i = overlappingKeys.length;
+	let untouchedKeys = Object.keys(oldObj),
+		newKeys = Object.keys(newObj),
+		overlappingKeys = disjointArrays(untouchedKeys, newKeys),
+		key = '',
+		i = overlappingKeys.length;
+
 	while (i--) {
 		key = overlappingKeys[i];
 		let newVal = newObj[key];
 		// merge object values by recursion, otherwise just assign new value
-		oldObj[key] = (typeof newVal === 'object' && !isArray(newVal)) ?
-			mergeInPlace(oldObj[key], newVal) : newVal;
+		oldObj[key] = (
+			typeof newVal === 'object' &&
+			newVal !== null && // avoid accidentally turning null into {}
+			!isArray(newVal)   // typof returns object for arrays
+		) ? mergeInPlace(oldObj[key], newVal) : newVal;
 	}
 	i = newKeys.length;
 	while (i--) {
