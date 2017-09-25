@@ -54,17 +54,19 @@ export function groupedSparkline(indices, groupAttr) {
 		return (context) => {
 			const { width, pixelRatio } = context;
 			const gapWidth = (4 * pixelRatio) | 0;
-			const gaps = (sparklines.length - 2) * gapWidth;
-			const baseWidth = width - gaps;
-			let x0 = 0;
+			const gaps = (sparklines.length - 2) * gapWidth | 0;
+			const baseWidth = width - gaps | 0;
+			const ratio = baseWidth / totalPoints;
+			let slWidthSum = 0;
+			let x = 0;
 			for (let i = 0; i < sparklines.length; i++) {
-				const sparklineWidth = (lengths[i] * baseWidth / totalPoints) | 0;
-				const xRounded = x0|0;
-				context.translate(xRounded, 0);
-				context.width = sparklineWidth;
+				const sparklineWidth = lengths[i] * ratio | 0;
+				x = (slWidthSum * ratio | 0) + gapWidth * i;
+				context.translate(x, 0);
+				context.width = sparklineWidth | 0;
 				sparklines[i](context);
-				context.translate(-xRounded, 0);
-				x0 += sparklineWidth + gapWidth;
+				context.translate(-x, 0);
+				slWidthSum += lengths[i];
 			}
 			context.width = width;
 		};
