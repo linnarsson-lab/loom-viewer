@@ -20,12 +20,12 @@ class Legend extends PureComponent {
 			col,
 			colAttr,
 			colMode,
-			sparkline,
+			groupedPainter,
 		} = this.props;
 		const data = col.attrs[colAttr];
 
 		const label = data ? data.name : null;
-		const painter = data ? sparkline(data, colMode, null, label, true) : nullfunc;
+		const painter = data ? groupedPainter(data, colMode, null, label, true) : nullfunc;
 
 		return (
 			<div style={{
@@ -51,7 +51,7 @@ class Legend extends PureComponent {
 }
 
 Legend.propTypes = {
-	sparkline: PropTypes.func.isRequired,
+	groupedPainter: PropTypes.func.isRequired,
 	height: PropTypes.number.isRequired,
 	width: PropTypes.number.isRequired,
 	col: PropTypes.object.isRequired,
@@ -60,51 +60,10 @@ Legend.propTypes = {
 	path: PropTypes.string.isRequired,
 };
 
-
-
-
-export class Sparkline extends PureComponent {
-	render() {
-		const {
-			sparkline,
-			gene,
-			geneData,
-			geneMode,
-			settings,
-			showLabels,
-			style,
-		} = this.props;
-
-		const label = showLabels ? gene : null;
-
-		return (
-			<div style={style}>
-				<Canvas
-					height={sparklineHeight}
-					paint={sparkline(geneData, geneMode, settings, label)}
-					ignoreHeight
-				/>
-			</div>
-		);
-	}
-}
-
-Sparkline.propTypes = {
-	sparkline: PropTypes.func.isRequired,
-	gene: PropTypes.string,
-	geneData: PropTypes.object,
-	geneMode: PropTypes.string,
-	settings: PropTypes.object.isRequired,
-	showLabels: PropTypes.bool.isRequired,
-	indices: TypedArrayProp.any,
-	style: PropTypes.object,
-};
-
 // if any of these are not equal, all sparklines have to be updated
 // otherwise, we can limit our updates to a selection.
 const notAllSparklines = createComparator({
-	sparkline: 'func',
-	indices: 'array',
+	groupedPainter: 'func',
 	geneMode: 'sparklineType',
 	settings: 'object',
 	containerWidth: 'number',
@@ -113,39 +72,42 @@ const notAllSparklines = createComparator({
 
 function makeSparklines(props) {
 	const {
-		sparkline,
+		groupedPainter,
 		attrs,
 		selection,
-		indices,
 		geneMode,
 		settings,
 		containerWidth,
 		showLabels,
 	} = props;
 
+	const styleOdd = {
+		background: '#F4F4F4',
+		minHeight: `${sparklineHeight}px`,
+		maxHeight: `${sparklineHeight}px`,
+		minWidth: `${containerWidth - 20}px`,
+		maxWidth: `${containerWidth - 20}px`,
+	};
 
+	const styleEven = {
+		background: '#FCFCFC',
+		minHeight: `${sparklineHeight}px`,
+		maxHeight: `${sparklineHeight}px`,
+		minWidth: `${containerWidth - 20}px`,
+		maxWidth: `${containerWidth - 20}px`,
+	};
 
 	let sparklines = [];
 	for (let i = 0; i < selection.length; i++) {
 		let gene = selection[i];
 		let geneData = attrs[gene];
+		const label = showLabels ? gene : '';
 		sparklines.push(
-			<Sparkline
+			<Canvas
 				key={'sparkline_' + gene}
-				sparkline={sparkline}
-				gene={gene}
-				geneData={geneData}
-				geneMode={geneMode}
-				indices={indices}
-				settings={settings}
-				showLabels={showLabels}
-				style={{
-					background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
-					minHeight: `${sparklineHeight}px`,
-					maxHeight: `${sparklineHeight}px`,
-					minWidth: `${containerWidth - 20}px`,
-					maxWidth: `${containerWidth - 20}px`,
-				}}
+				paint={groupedPainter(geneData, geneMode, settings, label)}
+				style={(i & 1) ? styleOdd : styleEven}
+				ignoreHeight
 			/>
 		);
 	}
@@ -153,7 +115,7 @@ function makeSparklines(props) {
 }
 
 export class Sparklines extends PureComponent {
-	constructor(props){
+	constructor(props) {
 		super(props);
 		this.state = {
 			sparklines: makeSparklines(props),
@@ -164,10 +126,9 @@ export class Sparklines extends PureComponent {
 		if (notAllSparklines(nextProps, this.props)) {
 			// only update the sparklines that changed
 			const {
-				sparkline,
+				groupedPainter,
 				attrs,
 				selection,
-				indices,
 				geneMode,
 				settings,
 				containerWidth,
@@ -199,16 +160,11 @@ export class Sparklines extends PureComponent {
 							sparklines[i] = sparklines[j];
 						}
 					} else {
+						const label = showLabels ? gene : '';
 						sparklines[i] = (
-							<Sparkline
+							<Canvas
 								key={'sparkline_' + gene}
-								sparkline={sparkline}
-								gene={gene}
-								geneData={geneData}
-								geneMode={geneMode}
-								indices={indices}
-								settings={settings}
-								showLabels={showLabels}
+								paint={groupedPainter(geneData, geneMode, settings, label)}
 								style={{
 									background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
 									minHeight: `${sparklineHeight}px`,
@@ -216,6 +172,7 @@ export class Sparklines extends PureComponent {
 									minWidth: `${containerWidth - 20}px`,
 									maxWidth: `${containerWidth - 20}px`,
 								}}
+								ignoreHeight
 							/>
 						);
 					}
@@ -257,11 +214,10 @@ export class Sparklines extends PureComponent {
 
 
 Sparklines.propTypes = {
-	sparkline: PropTypes.func.isRequired,
+	groupedPainter: PropTypes.func.isRequired,
 	containerWidth: PropTypes.number.isRequired,
 	attrs: PropTypes.object,
 	selection: PropTypes.arrayOf(PropTypes.string),
-	indices: TypedArrayProp.any,
 	geneMode: PropTypes.string,
 	settings: PropTypes.object.isRequired,
 	showLabels: PropTypes.bool.isRequired,
@@ -299,23 +255,24 @@ export class SparklineList extends PureComponent {
 		};
 
 		this.state = {
-			sparkline: groupedSparkline(indices, attrs[groupAttr]),
+			groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
 		};
 	}
 
-	componentWillUpdate(nextProps) {
+	componentWillReceiveProps(nextProps) {
 		const { indices, attrs, groupAttr } = nextProps;
 		if (groupAttr !== this.props.groupAttr ||
-			indices !== this.props.indices) {
+			indices !== this.props.indices ||
+			groupAttr && attrs[groupAttr] !== this.props.attrs[groupAttr]) {
 			this.setState({
-				sparkline: groupedSparkline(indices, attrs[groupAttr]),
+				groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
 			});
 		}
 	}
 
 	render() {
 		const {
-			sparkline,
+			groupedPainter,
 			mountedContainer,
 			sparklineContainerStyle,
 			containerWidth,
@@ -346,7 +303,7 @@ export class SparklineList extends PureComponent {
 					}}
 					ref={this.sparklineContainer}>
 					<Legend
-						sparkline={sparkline}
+						groupedPainter={groupedPainter}
 						height={legendHeight}
 						width={containerWidth}
 						col={col}
@@ -358,14 +315,13 @@ export class SparklineList extends PureComponent {
 					<div
 						style={sparklineContainerStyle}>
 						<Sparklines
-							attrs={attrs}
-							sparkline={sparkline}
-							selection={selection}
-							indices={indices}
-							settings={settings}
-							geneMode={geneMode}
-							showLabels={showLabels}
+							groupedPainter={groupedPainter}
 							containerWidth={containerWidth}
+							attrs={attrs}
+							selection={selection}
+							geneMode={geneMode}
+							settings={settings}
+							showLabels={showLabels}
 						/>
 					</div>
 				</div >

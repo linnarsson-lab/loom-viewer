@@ -1,6 +1,7 @@
 import { sparkline } from './sparkline';
 
 export function groupedSparkline(indices, groupAttr) {
+	indices = indices.slice(0);
 	let groupedIndices = [], labels = [], totalPoints = indices.length;
 
 	if (!groupAttr) {
@@ -57,7 +58,7 @@ export function groupedSparkline(indices, groupAttr) {
 			const baseWidth = width - gaps;
 			let x0 = 0;
 			for (let i = 0; i < sparklines.length; i++) {
-				const sparklineWidth = (lengths[i] * baseWidth / totalPoints);
+				const sparklineWidth = (lengths[i] * baseWidth / totalPoints) | 0;
 				const xRounded = x0|0;
 				context.translate(xRounded, 0);
 				context.width = sparklineWidth;
@@ -65,6 +66,7 @@ export function groupedSparkline(indices, groupAttr) {
 				context.translate(-xRounded, 0);
 				x0 += sparklineWidth + gapWidth;
 			}
+			context.width = width;
 		};
 	};
 }
