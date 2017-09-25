@@ -23,11 +23,7 @@ function blackColor() {
 	return 'black';
 }
 
-export const log2 = Math.log2 || (
-	function (x) {
-		return Math.log(x) * Math.LOG2E;
-	}
-);
+const { log2 } = Math;
 
 export function logProject(x) {
 	return x >= 0 ? log2(1 + x) : -log2(1 - x);

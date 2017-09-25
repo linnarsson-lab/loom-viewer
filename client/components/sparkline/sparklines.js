@@ -43,6 +43,7 @@ class Legend extends PureComponent {
 					width={width - 20}
 					height={height}
 					paint={painter}
+					ignoreHeight
 				/>
 			</div>
 		);
@@ -81,6 +82,7 @@ export class Sparkline extends PureComponent {
 				<Canvas
 					height={sparklineHeight}
 					paint={sparkline(geneData, geneMode, settings, label)}
+					ignoreHeight
 				/>
 			</div>
 		);

@@ -6,6 +6,14 @@ import { debounce } from 'lodash';
 import MobileDetect from 'mobile-detect';
 const isMobile = new MobileDetect(window.navigator.userAgent).mobile();
 
+function shouldResize(state) {
+	return (
+		!state.ignoreWidth && window.innerWidth !== state.windowWidth ||
+		!state.ignoreHeight && window.innerHeight !== state.windowHeight ||
+		state.pixelRatio !== window.devicePixelRatio
+	);
+}
+
 export class Remount extends PureComponent {
 	constructor(props) {
 		super(props);
@@ -17,23 +25,32 @@ export class Remount extends PureComponent {
 		// portrait and landscape modes
 		const resize = isMobile ? (
 			() => {
-				let isPortrait = window.innerHeight > window.innerWidth;
-				if (isPortrait !== this.state.isPortrait && !this.state.resizing) {
+				const { state } = this;
+				const isPortrait = window.innerHeight > window.innerWidth;
+				const portraitChanged = isPortrait !== state.isPortrait;
+				if (!state.resizing && (portraitChanged || shouldResize(state))) {
 					this.setState({
 						resizing: true,
 						isPortrait,
+						windowWidth: window.innerWidth,
+						windowHeight: window.innerHeight,
+						pixelRatio: window.devicePixelRatio,
 					});
 				}
 			}
-		) : (
-			() => {
-				if (!this.state.resizing) {
-					this.setState({
-						resizing: true,
-					});
+		) :
+			(
+				() => {
+					if (!this.state.resizing && shouldResize(this.state)) {
+						this.setState({
+							resizing: true,
+							windowWidth: window.innerWidth,
+							windowHeight: window.innerHeight,
+							pixelRatio: window.devicePixelRatio,
+						});
+					}
 				}
-			}
-		);
+			);
 
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
@@ -48,11 +65,15 @@ export class Remount extends PureComponent {
 			}
 		};
 
-
 		this.state = {
 			resizing: true,
 			isPortrait: window.innerHeight > window.innerWidth,
 			delayedResize,
+			ignoreWidth: props.ignoreWidth,
+			ignoreHeight: props.ignoreHeight,
+			windowWidth: window.innerWidth,
+			windowHeight: window.innerHeight,
+			pixelRatio: window.devicePixelRatio,
 		};
 
 	}
@@ -67,16 +88,35 @@ export class Remount extends PureComponent {
 		this.state.delayedResize.cancel();
 	}
 
-	componentWillReceiveProps(nextProps) {
+	componentWillReceiveProps(nProps) {
+		let newState = {}, changedState = false;
+
 		// Two possible reasons to force a remount:
 		// - if our watchedVal changed, trigger a resize
 		// - when we turn resize triggering on if it was
 		//   previously off. In this case we probably
 		//   to make sure props.children still follow the
 		//   CSS layout properly, so we force a remount.
-		if (this.props.watchedVal !== nextProps.watchedVal ||
-			(this.props.noResize && !nextProps.noResize)) {
-			this.setState({ resizing: true });
+		if (this.props.watchedVal !== nProps.watchedVal ||
+			(this.props.noResize && !nProps.noResize)) {
+			newState.resizing = true;
+			changedState = true;
+		}
+
+		if (this.props.ignoreWidth !== nProps.ignoreWidth) {
+			// default to false
+			newState.ignoreWidth = nProps.ignoreWidth;
+			changedState = true;
+		}
+
+		if (this.props.ignoreHeight !== nProps.ignoreHeight) {
+			// default to false
+			newState.ignoreHeight = nProps.ignoreHeight;
+			changedState = true;
+		}
+
+		if (changedState) {
+			this.setState(newState);
 		}
 	}
 
@@ -97,6 +137,8 @@ export class Remount extends PureComponent {
 Remount.propTypes = {
 	children: PropTypes.node.isRequired,
 	noResize: PropTypes.bool,
+	ignoreWidth: PropTypes.bool,
+	ignoreHeight: PropTypes.bool,
 	watchedVal: PropTypes.any,
 	delay: PropTypes.number,
 };

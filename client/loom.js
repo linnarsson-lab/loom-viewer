@@ -1,5 +1,8 @@
 import { render } from 'react-dom';
 
+// initiate any custom polyfills that we might have
+import 'js/polyfills';
+
 // Import all CSS once, at the top level
 
 // react-virtualized-select

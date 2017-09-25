@@ -6,7 +6,6 @@ import {
 	rndNorm,
 	attrSubset,
 	arraySubset,
-	log2,
 	logProject,
 	logProjectArray,
 } from '../js/util';
@@ -44,6 +43,8 @@ function constrain(x, a, b) {
 }
 
 function noopPainter(){}
+
+const { log2 } = Math;
 
 export function scatterPlot(attrs, indices, settings) {
 	// only render if all required settings are supplied

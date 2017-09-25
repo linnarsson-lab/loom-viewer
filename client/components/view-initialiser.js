@@ -10,6 +10,8 @@ import { decompressFromEncodedURIComponent } from '../js/lz-string';
 import { mergeInPlace } from '../js/util';
 import { viewStateInitialiser } from '../js/viewstate-initialiser';
 
+import { asyncPainterQueue } from '/plotters/async-painter';
+
 function generateViewState(dispatch, dataset, path, viewStateURI){
 	// Generate default initial state
 	let viewState = viewStateInitialiser(dataset);
@@ -121,6 +123,10 @@ export class ViewInitialiser extends PureComponent {
 		if (initialisationState !== newInitialisationState){
 			this.setState({ initialisationState: newInitialisationState });
 		}
+	}
+
+	componentWillUnmount(){
+		asyncPainterQueue.clear();
 	}
 
 	render() {

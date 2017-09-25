@@ -5,86 +5,10 @@ import {
 	Remount,
 } from './remount';
 
-import {
-	textSize,
-	textStyle,
-	drawText,
-} from '../plotters/canvas';
-
-// Waits until the CPU idles, then automatically
-// renders once. Automatically rerenders
-// if paint or context changes.
-// Assume painters are pure, that is:
-// wil always render the same output
-// for a given context, and that nothing
-// else is touching our context.
-function makeIdlePainter(paint, context) {
-	let running = false,
-		rendered = false,
-		removed = false;
-
-	let apply = () => {
-		if (!rendered && !running && !removed && paint && context) {
-			running = true;
-			// indicate that we are rendering a new painter
-			let size = Math.min(context.height / 3 | 0, 20);
-			let height = Math.min(size + context.height / 3 | 0, 40);
-			textSize(context, size);
-			textStyle(context, 'black', 'white', 5);
-			drawText(context, 'Rendering...', size, height);
-			// render in background
-			requestIdleCallback(() => {
-				if (!removed) {
-					context.clearRect(0, 0, context.width, context.height);
-					paint(context);
-					running = false;
-					rendered = true;
-				}
-			});
-		}
-	};
-
-	let remove = () => {
-		removed = true;
-		paint = null;
-		context = null;
-	};
-
-	let isRunning = () => {
-		return (running);
-	};
-
-	// Note: requestIdleCallback is guaranteed to wait with
-	// calling its callback until replacePaint/replaceContext
-	// return, so we can safely call `apply()` from within them.
-
-	let replacePaint = (newPainter) => {
-		rendered = false;
-		paint = newPainter;
-		apply();
-	};
-
-	let replaceContext = (newContext) => {
-		rendered = false;
-		context = newContext;
-		apply();
-	};
-
-	// try to immediately start rendering if the necessary
-	// paint and context were passed.
-	apply();
-
-	return {
-		apply,
-		isRunning,
-		replacePaint,
-		replaceContext,
-		remove,
-	};
-}
+import { AsyncPainter } from '../plotters/async-painter';
 
 // Mounts a canvas and gets its context,
-// then passes this context to the idlePainter.
+// then passes this context to the AsyncPainter.
 class CanvasComponent extends PureComponent {
 	constructor(props) {
 		super(props);
@@ -112,8 +36,8 @@ class CanvasComponent extends PureComponent {
 				context.height = state.height;
 				context.pixelRatio = state.ratio;
 				context.pixelScale = state.pixelScale;
-				if (this.props.idlePainter) {
-					this.props.idlePainter.replaceContext(context);
+				if (this.props.AsyncPainter) {
+					this.props.AsyncPainter.replaceContext(context);
 				}
 				this.setState({ canvas, context });
 			}
@@ -123,11 +47,11 @@ class CanvasComponent extends PureComponent {
 	}
 
 	componentWillUpdate(nextProps, nextState) {
-		// if our idlePainter changed, and we have a
+		// if our AsyncPainter changed, and we have a
 		// context, pass it the context to start rendering
-		if (nextProps.idlePainter && nextState.context) {
-			if (nextProps.idlePainter !== this.props.idlePainter && nextProps.idlePainter && nextState.context) {
-				nextProps.idlePainter.replaceContext(nextState.context);
+		if (nextProps.AsyncPainter && nextState.context) {
+			if (nextProps.AsyncPainter !== this.props.AsyncPainter && nextProps.AsyncPainter && nextState.context) {
+				nextProps.AsyncPainter.replaceContext(nextState.context);
 			}
 		}
 	}
@@ -161,7 +85,7 @@ class CanvasComponent extends PureComponent {
 }
 
 CanvasComponent.propTypes = {
-	idlePainter: PropTypes.object.isRequired,
+	AsyncPainter: PropTypes.object.isRequired,
 	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
@@ -178,17 +102,17 @@ CanvasComponent.propTypes = {
 export class Canvas extends PureComponent {
 	constructor(props) {
 		super(props);
-		this.state = { idlePainter: makeIdlePainter(props.paint, null) };
+		this.state = { AsyncPainter: new AsyncPainter(props.paint, null) };
 	}
 
 	componentWillReceiveProps(nextProps){
 		if(nextProps.paint !== this.props.paint){
-			this.state.idlePainter.replacePaint(nextProps.paint);
+			this.state.AsyncPainter.replacePaint(nextProps.paint);
 		}
 	}
 
 	componentWillUnMount() {
-		this.state.idlePainter.remove();
+		this.state.AsyncPainter.remove();
 	}
 
 	render() {
@@ -199,12 +123,12 @@ export class Canvas extends PureComponent {
 		let style = Object.assign({}, props.style);
 		let { width, height } = props;
 		if (width) {
-			style['minWidth'] = (width | 0) + 'px';
-			style['maxWidth'] = (width | 0) + 'px';
+			style.minWidth = (width | 0) + 'px';
+			style.maxWidth = (width | 0) + 'px';
 		}
 		if (height) {
-			style['minHeight'] = (height | 0) + 'px';
-			style['maxHeight'] = (height | 0) + 'px';
+			style.minHeight = (height | 0) + 'px';
+			style.maxHeight = (height | 0) + 'px';
 		}
 		return (
 			<Remount
@@ -212,9 +136,11 @@ export class Canvas extends PureComponent {
 				we unmount and remount it on resize events,
 				unless width and height are set */
 				noResize={width !== undefined && height !== undefined}
+				ignoreWidth={props.ignoreWidth}
+				ignoreHeight={props.ignoreHeight}
 				watchedVal={props.watchedVal} >
 				<CanvasComponent
-					idlePainter={this.state.idlePainter}
+					AsyncPainter={this.state.AsyncPainter}
 					pixelScale={props.pixelScale}
 					className={props.className}
 					style={style}
@@ -230,6 +156,8 @@ Canvas.propTypes = {
 	height: PropTypes.number,
 	pixelScale: PropTypes.number,
 	watchedVal: PropTypes.any,
+	ignoreWidth: PropTypes.bool,
+	ignoreHeight: PropTypes.bool,
 	className: PropTypes.string,
 	style: PropTypes.object,
 };
