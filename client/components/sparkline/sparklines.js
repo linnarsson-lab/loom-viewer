@@ -1,12 +1,14 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { TypedArrayProp } from '../../js/proptypes-typedarray';
+import { TypedArrayProp } from 'js/proptypes-typedarray';
 
-import { Canvas } from '../canvas';
+import { Canvas } from 'components/canvas';
 
-import { groupedSparkline } from '../../plotters/grouped-sparkline';
+import { groupedSparkline } from 'plotters/grouped-sparkline';
 
-import { createComparator } from '../../js/state-comparator';
+import { asyncPainterQueue } from 'plotters/async-painter';
+
+import { createComparator } from 'js/state-comparator';
 
 const sparklineHeight = 40;
 
@@ -72,127 +74,116 @@ const notAllSparklines = createComparator({
 
 function makeSparklines(props) {
 	const {
-		groupedPainter,
-		attrs,
 		selection,
-		geneMode,
-		settings,
 		containerWidth,
-		showLabels,
 	} = props;
 
-	const styleOdd = {
-		background: '#F4F4F4',
-		minHeight: `${sparklineHeight}px`,
-		maxHeight: `${sparklineHeight}px`,
-		minWidth: `${containerWidth - 20}px`,
-		maxWidth: `${containerWidth - 20}px`,
-	};
+	let i = selection.length,
+		painters = new Array(i),
+		canvases = new Array(i);
 
-	const styleEven = {
-		background: '#FCFCFC',
-		minHeight: `${sparklineHeight}px`,
-		maxHeight: `${sparklineHeight}px`,
-		minWidth: `${containerWidth - 20}px`,
-		maxWidth: `${containerWidth - 20}px`,
-	};
-
-	let sparklines = [];
-	for (let i = 0; i < selection.length; i++) {
+	while (i--) {
 		let gene = selection[i];
-		let geneData = attrs[gene];
-		const label = showLabels ? gene : '';
-		sparklines.push(
-			<Canvas
-				key={'sparkline_' + gene}
-				paint={groupedPainter(geneData, geneMode, settings, label)}
-				style={(i & 1) ? styleOdd : styleEven}
-				ignoreHeight
-			/>
-		);
+		painters[i] = makePainter(props, gene);
+		canvases[i] = makeCanvas(gene, containerWidth, painters, i);
 	}
-	return sparklines;
+	return {
+		painters,
+		canvases,
+	};
+}
+
+function makePainter(props, gene) {
+	const {
+		attrs,
+		showLabels,
+		groupedPainter,
+		geneMode,
+		settings,
+	} = props;
+	let geneData = attrs[gene];
+	const label = showLabels ? gene : '';
+	return groupedPainter(geneData, geneMode, settings, label);
+}
+
+function makeCanvas(gene, containerWidth, painters, idx) {
+	return (
+		<Canvas
+			key={'sparkline_' + gene}
+			paint={painters[idx]}
+			style={{ background: (idx & 1) ? '#F4F4F4' : '#FCFCFC' }}
+			width={containerWidth - 20}
+			height={sparklineHeight}
+			ignoreHeight
+			noBump
+		/>
+	);
 }
 
 export class Sparklines extends PureComponent {
 	constructor(props) {
 		super(props);
-		this.state = {
-			sparklines: makeSparklines(props),
-		};
+		this.updateChangedSparklines = this.updateChangedSparklines.bind(this);
+		this.state = makeSparklines(props);
 	}
 
 	componentWillReceiveProps(nextProps) {
-		if (notAllSparklines(nextProps, this.props)) {
-			// only update the sparklines that changed
-			const {
-				groupedPainter,
-				attrs,
-				selection,
-				geneMode,
-				settings,
-				containerWidth,
-				showLabels,
-			} = nextProps;
-			const pSelection = this.props.selection,
-				pAttrs = this.props.attrs;
-
-			let sparklines = this.state.sparklines.slice(0),
-				changedPlotters = false;
-
-			// A sparkline only needs  updating when
-			// the gene selection changed, or if
-			// a fetched gene has arrived.
-			for (let i = 0; i < selection.length; i++) {
-				const gene = selection[i],
-					geneData = attrs[gene];
-				if (gene !== pSelection[i] || geneData !== pAttrs[gene]) {
-					changedPlotters = true;
-					// this is a bit of a weird construction,
-					// but basically: if the gene was already
-					// present in a different location,
-					// and the gene data hasn't changed,
-					// just move the plot from the other
-					// location.
-					if (geneData === pAttrs[gene]) {
-						let j = pSelection.indexOf(gene, i + 1);
-						if (j !== -1) {
-							sparklines[i] = sparklines[j];
-						}
-					} else {
-						const label = showLabels ? gene : '';
-						sparklines[i] = (
-							<Canvas
-								key={'sparkline_' + gene}
-								paint={groupedPainter(geneData, geneMode, settings, label)}
-								style={{
-									background: ((i % 2 === 0) ? '#F4F4F4' : '#FCFCFC'),
-									minHeight: `${sparklineHeight}px`,
-									maxHeight: `${sparklineHeight}px`,
-									minWidth: `${containerWidth - 20}px`,
-									maxWidth: `${containerWidth - 20}px`,
-								}}
-								ignoreHeight
-							/>
-						);
-					}
-				}
-			}
-			if (changedPlotters) {
-				sparklines.length = selection.length;
-				this.setState({ sparklines });
-			}
-		} else {
+		if (!notAllSparklines(nextProps, this.props)) {
 			// one of the props that requires an update
 			// to all sparklines has changed, so we must
 			// recreate all nodes.
-			this.setState({ sparklines: makeSparklines(nextProps) });
+			asyncPainterQueue.clear();
+			this.setState(makeSparklines(nextProps));
+		} else {
+			this.updateChangedSparklines(nextProps);
+		}
+	}
+
+	updateChangedSparklines(nextProps) {
+		// only update the sparklines that changed
+		const {
+			groupedPainter,
+			attrs,
+			selection,
+			geneMode,
+			settings,
+			containerWidth,
+			showLabels,
+		} = nextProps;
+		const pSelection = this.props.selection,
+			pAttrs = this.props.attrs;
+
+		let { painters, canvases } = this.state;
+
+		let i = selection.length,
+			changedPlotters = i !== canvases.length;
+
+		// A sparkline only needs updating when
+		// the gene selection changed, or if
+		// a fetched gene has arrived.
+		while (i--) {
+			const gene = selection[i],
+				geneData = attrs[gene];
+			if (gene !== pSelection[i] || geneData !== pAttrs[gene]) {
+				changedPlotters = true;
+				const label = showLabels ? gene : '';
+				painters[i] = groupedPainter(geneData, geneMode, settings, label);
+				canvases[i] = makeCanvas(gene, containerWidth, painters, i);
+			}
+		}
+		if (changedPlotters) {
+			painters.length = selection.length;
+			canvases.length = selection.length;
+			this.setState({
+				painters,
+				canvases,
+			});
 		}
 	}
 
 	render() {
 		const { containerWidth } = this.props;
-		const { sparklines } = this.state;
+		const { canvases } = this.state;
 		return (
 			<div
 				style={{
@@ -200,9 +191,9 @@ export class Sparklines extends PureComponent {
 					flexDirection: 'column',
 					minWidth: `${containerWidth - 20}px`,
 					maxWidth: `${containerWidth - 20}px`,
-					height: `${Math.max(200, sparklines.length * sparklineHeight)}px`,
+					height: `${Math.max(200, canvases.length * sparklineHeight)}px`,
 				}}>
-				{sparklines.length ? sparklines : (
+				{canvases.length ? canvases : (
 					<div className='view centred'>
 						<span>Select genes to display sparklines</span>
 					</div>

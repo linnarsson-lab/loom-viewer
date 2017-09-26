@@ -1,16 +1,16 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { requestProjects } from '../actions/request-projects';
-import { requestDataset } from '../actions/request-dataset';
-import { setViewProps } from '../actions/set-viewprops';
-import { SET_VIEW_PROPS } from '../actions/actionTypes';
+import { requestProjects } from 'actions/request-projects';
+import { requestDataset } from 'actions/request-dataset';
+import { setViewProps } from 'actions/set-viewprops';
+import { SET_VIEW_PROPS } from 'actions/actionTypes';
 
-import { decompressFromEncodedURIComponent } from '../js/lz-string';
-import { mergeInPlace } from '../js/util';
-import { viewStateInitialiser } from '../js/viewstate-initialiser';
+import { decompressFromEncodedURIComponent } from 'js/lz-string';
+import { mergeInPlace } from 'js/util';
+import { viewStateInitialiser } from 'js/viewstate-initialiser';
 
-import { asyncPainterQueue } from '/plotters/async-painter';
+import { asyncPainterQueue } from 'plotters/async-painter';
 
 function generateViewState(dispatch, dataset, path, viewStateURI){
 	// Generate default initial state

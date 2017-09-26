@@ -11,22 +11,18 @@ import {
  * `clear()`: removes all asyncPainters at once, for when
  *   we unmount a view.
  *
- * `push()`: appends an `AsyncPainter` to the queue, but only
- *  if it is not enqueued yet.
- *
- * `unshift()` puts an `AsyncPainter` to the front of the queue,
+ * `push()`: puts an `AsyncPainter` to the front of the queue,
  *  or if already present, bumps it to the front.
  *
- * `setMaxTime(number)` sets the number of millis we get to render
- *  enqueued painters before returning (default: 200)
+ * `unshift()` adds an `AsyncPainter` to the back of the queue,
+ *  but only if it is not enqueued yet.
  *
  * `clear()` empties the queue
  */
-let maxTime = 200,
-	running = false,
-	asyncPainters = [],
+let asyncPainters = [],
 	startTime = 0,
 	elapsed = 0,
+	maxTime = 50,
 	timeoutSet = false,
 	timeoutID = -1;
 
@@ -35,7 +31,7 @@ let maxTime = 200,
  * not already running, start painting in background thread
  */
 function start() {
-	if (!running && !timeoutSet && asyncPainters.length) {
+	if (!timeoutSet && asyncPainters.length) {
 		timeoutSet = true;
 		timeoutID = setTimeout(startNow, 0);
 	}
@@ -46,56 +42,53 @@ function start() {
  * continue in the background
  */
 function startNow() {
-	if (!running) {
-		elapsed = startTime = performance.now();
-		let i = 0;
-		// while we still have time left, draw asyncPainters
-		while (i < asyncPainters.length && elapsed - startTime < maxTime) {
-			asyncPainters[i++].drawNow();
-			elapsed = performance.now();
-		}
-		running = false;
-		// remove all asyncPainters that have run
-		asyncPainters.splice(0, i);
+	elapsed = startTime = performance.now();
+	while (asyncPainters.length && elapsed - startTime < maxTime) {
+		asyncPainters.pop().drawNow();
+		elapsed = performance.now();
+	}
+	if (asyncPainters.length) {
 		// if there are still any asyncPainters left,
-		// resume painting on next frame.
-		if (asyncPainters.length) {
-			timeoutSet = true;
-			timeoutID = setTimeout(startNow, 0);
-		} else {
-			timeoutSet = false;
-			timeoutID = -1;
+		// resume drawing on next `setTimeout`
+		timeoutSet = true;
+		timeoutID = setTimeout(startNow, 0);
+	} else {
+		// cancel any pending callbacks
+		if (timeoutID !== -1){
+			clearTimeout(timeoutID);
 		}
+		timeoutSet = false;
+		timeoutID = -1;
 	}
 }
 
 /**
- * Append `idlePainter` if not already in the
+ * Put `idlePainter` in front of queue if not already
+ * in there, otherwise bump it to the front.
  * Start the queue if not running already.
 */
 function push(idlePainter) {
-	if (asyncPainters.indexOf(idlePainter) === -1) {
+	let idx = asyncPainters.indexOf(idlePainter);
+	if (idx === -1) {
 		asyncPainters.push(idlePainter);
+	} else {
+		// bump painter to front.
+		let t = asyncPainters[idx];
+		while (++idx < asyncPainters.length) {
+			asyncPainters[idx - 1] = asyncPainters[idx];
+		}
+		asyncPainters[idx - 1] = t;
 	}
 	start();
 }
 
 /**
- * Unshift `idlePainter` if not already in the queue,
- * otherwise bump it to the front of the
- * Start the queue if not running already.
+ * Put `idlePainter` in back fo queue if not already
+ * in queue. Start the queue if not running already.
 */
 function unshift(idlePainter) {
-	let idx = asyncPainters.indexOf(idlePainter);
-	if (idx === -1) {
+	if (asyncPainters.indexOf(idlePainter) === -1) {
 		asyncPainters.unshift(idlePainter);
-	} else {
-		// bump painter to front.
-		let t = asyncPainters[idx];
-		while (idx--) {
-			asyncPainters[idx + 1] = asyncPainters[idx];
-		}
-		asyncPainters[0] = t;
 	}
 	start();
 }
@@ -127,12 +120,15 @@ function remove(idlePainter) {
  */
 function clear() {
 	if (timeoutID !== -1) {
-		cancelAnimationFrame(timeoutID);
+		clearTimeout(timeoutID);
 		timeoutID = -1;
 		timeoutSet = false;
 	}
+	let i = asyncPainters.length;
+	while (i--){
+		asyncPainters[i].running = false;
+	}
 	asyncPainters.length = 0;
-	running = false;
 }
 
 /**
@@ -143,7 +139,6 @@ function clear() {
 function setMaxTime(newMaxTime) {
 	maxTime = newMaxTime;
 }
-
 
 
 // AsyncPainters should handle their own enqueueing and removal,
@@ -195,7 +190,7 @@ AsyncPainter.prototype.draw = function () {
 		// render in background, first in queue
 		// We also call this if already running,
 		// to bump the painter to the front
-		unshift(this);
+		push(this);
 	}
 };
 
@@ -212,7 +207,7 @@ AsyncPainter.prototype.enqueue = function () {
 		textStyle(this.context, 'black', 'white', 5);
 		drawText(this.context, 'Rendering...', size, height);
 		// render in background, last in queue
-		push(this);
+		unshift(this);
 	}
 };
 
@@ -231,13 +226,13 @@ AsyncPainter.prototype.remove = function () {
 	this.running = false;
 };
 
-AsyncPainter.prototype.replacePaint = function (newPainter) {
+AsyncPainter.prototype.replacePaint = function (newPainter, noBump) {
 	this.rendered = false;
 	this.paint = newPainter;
 	// replacing the painter implies user interaction,
-	// so it should get priority. Therefore we
-	// bump to the front of the queue
-	this.draw();
+	// so it should get priority. Therefore we bump to
+	// the front of the queue unless told not to do so.
+	noBump ? this.enqueue() : this.draw();
 };
 
 AsyncPainter.prototype.replaceContext = function (newContext) {

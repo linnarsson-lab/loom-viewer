@@ -5,7 +5,7 @@ import {
 	Remount,
 } from './remount';
 
-import { AsyncPainter } from '../plotters/async-painter';
+import { AsyncPainter } from 'plotters/async-painter';
 
 // Mounts a canvas and gets its context,
 // then passes this context to the AsyncPainter.
@@ -107,7 +107,7 @@ export class Canvas extends PureComponent {
 
 	componentWillReceiveProps(nextProps){
 		if(nextProps.paint !== this.props.paint){
-			this.state.AsyncPainter.replacePaint(nextProps.paint);
+			this.state.AsyncPainter.replacePaint(nextProps.paint, nextProps.noBump);
 		}
 	}
 
@@ -152,6 +152,7 @@ export class Canvas extends PureComponent {
 
 Canvas.propTypes = {
 	paint: PropTypes.func.isRequired,
+	noBump: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,
 	pixelScale: PropTypes.number,
