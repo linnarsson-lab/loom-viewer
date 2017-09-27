@@ -3,39 +3,12 @@ import PropTypes from 'prop-types';
 
 import { requestProjects } from 'actions/request-projects';
 import { requestDataset } from 'actions/request-dataset';
-import { setViewProps } from 'actions/set-viewprops';
-import { SET_VIEW_PROPS } from 'actions/actionTypes';
-
-import { decompressFromEncodedURIComponent } from 'js/lz-string';
-import { mergeInPlace } from 'js/util';
-import { viewStateInitialiser } from 'js/viewstate-initialiser';
 
 import { asyncPainterQueue } from 'plotters/async-painter';
 
-function generateViewState(dispatch, dataset, path, viewStateURI){
-	// Generate default initial state
-	let viewState = viewStateInitialiser(dataset);
-	// If there is any encoded state, decode and overwrite
-	// initialstate with it.
-	if (viewStateURI){
-		const decompressed = decompressFromEncodedURIComponent(viewStateURI);
-		const parsedJSON = JSON.parse(decompressed);
-		const decode = dataset.viewStateConverter.decode;
-		const decodedViewState = decode(parsedJSON, dataset);
-		viewState = mergeInPlace(viewState, decodedViewState);
-	}
-	// Synchronise the view-settings URI
-	dispatch(setViewProps(dataset, {
-		type: SET_VIEW_PROPS,
-		viewState,
-		path,
-	}));
-}
-
 const NO_DATASETS = 0;
 const NO_ATTRIBUTES = 1;
-const NO_VIEWSTATE = 2;
-const READY = 3;
+const READY = 2;
 const MANGLED_PATH = -1;
 
 function currentInitialisation(dispatch, datasets, path, viewStateURI, prevInitialisationState) {
@@ -43,9 +16,7 @@ function currentInitialisation(dispatch, datasets, path, viewStateURI, prevIniti
 
 	const initialisationState = !datasets ? NO_DATASETS : (
 		!dataset ? MANGLED_PATH : (
-			!(dataset.col || dataset.row) ? NO_ATTRIBUTES : (
-				!dataset.viewState ? NO_VIEWSTATE : READY
-			)
+			!(dataset.col || dataset.row) ? NO_ATTRIBUTES : READY
 		)
 	);
 
@@ -56,9 +27,6 @@ function currentInitialisation(dispatch, datasets, path, viewStateURI, prevIniti
 				break;
 			case NO_ATTRIBUTES:
 				dispatch(requestDataset(datasets, path));
-				break;
-			case NO_VIEWSTATE:
-				generateViewState(dispatch, dataset, path, viewStateURI);
 				break;
 			default:
 		}
@@ -90,12 +58,7 @@ export class ViewInitialiser extends PureComponent {
 		);
 		const fetchingDatasets = (
 			<div className='view centred'>
-				<h1>Fetching dataset: {path}</h1>
-			</div>
-		);
-		const initialisingViewState = (
-			<div className='view centred'>
-				<h1>Initialising View Settings</h1>
+				<h1>Fetching and preparing dataset: {path}</h1>
 			</div>
 		);
 		const mangledPath = (
@@ -110,7 +73,6 @@ export class ViewInitialiser extends PureComponent {
 			path,
 			fetchingProjects,
 			fetchingDatasets,
-			initialisingViewState,
 			mangledPath,
 			initialisationState,
 		});
@@ -140,7 +102,6 @@ export class ViewInitialiser extends PureComponent {
 			path,
 			fetchingProjects,
 			fetchingDatasets,
-			initialisingViewState,
 			mangledPath,
 			initialisationState,
 		} = this.state;
@@ -152,8 +113,6 @@ export class ViewInitialiser extends PureComponent {
 				return fetchingProjects;
 			case NO_ATTRIBUTES:
 				return fetchingDatasets;
-			case NO_VIEWSTATE:
-				return initialisingViewState;
 			case READY:
 				// datasets is guaranteed to be defined
 				// if initialisationState === READY

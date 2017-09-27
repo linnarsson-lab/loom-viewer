@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import Slider from 'rc-slider';
@@ -7,45 +7,40 @@ import { debounce } from 'lodash';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-import { merge } from '../../js/util';
-
 
 function scaleFactorHandleChangeFactory(props){
 	const {
 		dispatch,
 		dataset,
 		axis,
-		plotSettings,
-		selectedPlot,
+		plotNr,
 		time,
 	} = props;
-	let newPlotSettings = plotSettings.slice(0);
 	const scaleFactorHC = (scaleFactor) => {
-		newPlotSettings[selectedPlot] = merge(
-			plotSettings[selectedPlot],
-			{ scaleFactor }
-		);
-		dispatch({
+		const action = {
 			type: SET_VIEW_PROPS,
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plotSettings: newPlotSettings,
+						plotSettings: {
+							[plotNr]: { scaleFactor },
+						},
 					},
 				},
 			},
-		});
+		};
+		dispatch(action);
 	};
 
 	return time | 0 ? debounce(scaleFactorHC, time | 0) : scaleFactorHC;
 }
 
-export class ScaleFactorSettings extends PureComponent {
+export class ScaleFactorSettings extends Component {
 	render() {
 		const { props } = this;
-		const { scaleFactor } = props.plotSettings[props.selectedPlot];
+		const { scaleFactor } = props;
 		const scaleFactorHC = scaleFactorHandleChangeFactory(props);
 		return (
 			<div style={{ height: '50px' }}>
@@ -63,10 +58,10 @@ export class ScaleFactorSettings extends PureComponent {
 
 
 ScaleFactorSettings.propTypes = {
+	scaleFactor: PropTypes.number.isRequired,
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
 	time: PropTypes.number,
 };

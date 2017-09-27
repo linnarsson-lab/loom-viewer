@@ -1,6 +1,6 @@
 import { updateFilteredIndices } from './filter';
 
-import { merge } from '../js/util';
+import { merge, mergeInPlace } from '../js/util';
 
 export function updateDatasetSortOrder(state, key) {
 	return merge(state, {
@@ -80,22 +80,27 @@ export function sortFilterIndices(axisData, order, indices) {
 export function maybeSortIndices(state, action) {
 	const { path, genes } = action;
 	const dataset = state.list[path];
-	const colVS = dataset.viewState.col;
+	const { order, filter, originalIndices } = dataset.viewState.col;
 
-	let attrs = [];
+	let attrKeys = [];
 
-	let i = colVS.order.length;
-	while (i--) { attrs.push(colVS.order[i].key); }
+	let i = order.length;
+	while (i--) {
+		attrKeys.push(order[i].key);
+	}
 
-	i = colVS.filter.length;
-	while (i--) { attrs.push(colVS.filter[i].attr); }
+	i = filter.length;
+	while (i--) {
+		attrKeys.push(filter[i].attr);
+	}
 
 	i = genes.length;
 	while (i--) {
-		const attr = attrs[i];
-		if (genes.indexOf(attr) !== -1) {
-			const newIndices = updateFilteredIndices(colVS.filter, colVS.order, dataset.col);
-			return merge(state, {
+		const key = attrKeys[i];
+		if (genes.indexOf(key) !== -1) {
+
+			const newIndices = updateFilteredIndices(filter, order, dataset.col, originalIndices);
+			mergeInPlace(action.state, {
 				list: {
 					[path]: {
 						viewState: {
@@ -107,5 +112,5 @@ export function maybeSortIndices(state, action) {
 		}
 	}
 
-	return state;
+	return merge(state, action.state);
 }

@@ -12,8 +12,24 @@ localforage.config({
 	storeName: 'datasets',
 });
 
-import { merge, mergeInPlace, convertJSONarray, arrayConstr } from '../js/util';
-import { createViewStateConverter } from '../js/viewstate-encoder';
+import {
+	merge,
+	mergeInPlace,
+	convertJSONarray,
+	arrayConstr,
+} from 'js/util';
+
+import { createViewStateConverter } from 'js/viewstate-encoder';
+
+import { viewStateInitialiser } from 'js/viewstate-initialiser';
+
+// used for writing view state to the browser URL
+import { browserHistory } from 'react-router';
+import {
+	compressToEncodedURIComponent,
+	decompressFromEncodedURIComponent,
+} from 'js/lz-string';
+
 
 import {
 	REQUEST_DATASET,
@@ -45,7 +61,7 @@ export function requestDataset(datasets, path) {
 		// See if the dataset already exists in the store
 		// If so, we can use cached version so we don't
 		// have to do anything.
-		if (!datasets[path].col) {
+		if (!datasets[path].loaded) {
 			// try to load dataset from localforage
 			localforage.getItem(path).then((dataset) => {
 				if (dataset) {
@@ -53,20 +69,9 @@ export function requestDataset(datasets, path) {
 					localforage.getItem(path + '/genes').then((genes) => {
 						if (genes) {
 							console.log('cached genes loaded from localforage');
-
-							// mark all genes retrieved from cache as fetched
-							let fetchedGenes = {};
-							let keys = Object.keys(genes), i = keys.length;
-							while (i--){
-								fetchedGenes[keys[i]] = true;
-							}
-
-							// merge genes into column attributes
-							mergeInPlace(
-								dataset,
-								{ fetchedGenes, col: { attrs: genes } }
-							);
+							mergeGenesInPlace(dataset, genes);
 						}
+						// add dataset to redux store
 						dispatch(dataSetAction(LOAD_DATASET, path, dataset));
 					});
 				} else {
@@ -79,7 +84,22 @@ export function requestDataset(datasets, path) {
 	};
 }
 
+function mergeGenesInPlace(dataset, genes) {
+	// mark all genes retrieved from cache as fetched
+	let fetchedGenes = {};
+	let keys = Object.keys(genes), i = keys.length;
+	while (i--) {
+		fetchedGenes[keys[i]] = true;
+	}
+	// merge genes into column attributes
+	return mergeInPlace(
+		dataset,
+		{ fetchedGenes, col: { attrs: genes } }
+	);
+}
+
 function fetchDataset(datasets, path, dispatch) {
+	const oldMetaData = datasets[path];
 	return (
 		fetch(`/loom/${path}`).then((response) => {
 			// convert the JSON to a JS object, and
@@ -88,28 +108,29 @@ function fetchDataset(datasets, path, dispatch) {
 		}).then((data) => {
 			let dataset = convertToDataSet(data, datasets[path]);
 			// Store dataset in localforage so we do not need to
-			// fetch it again later. This has to be done before
-			// adding functions to the dataset, since localforage
-			// cannot store those.
+			// fetch it again. This has to be done before adding
+			// functions to the dataset, since localforage cannot
+			// store those. We also want to avoid caching viewState
 			return localforage.setItem(path, dataset);
 		}).then((dataset) => {
-			addFunctions(dataset);
-			// This goes last, to ensure the above defaults
-			// are set when the views are rendered
+			// dataSetAction() adds viewState, functions and
+			//
+			// dispatch fully initialised dataset to redux store
 			dispatch(dataSetAction(RECEIVE_DATASET, path, dataset));
+
 			// We want to separate the list metadata from
 			// the full dataset attributes, to efficiently
 			// reload the page later (see request-projects)
 			return localforage.getItem('cachedDatasets');
 		}).then((list) => {
-			list = list || {};
 			// Because redux is immutable, we don't have to
-			// worry about the previous dispatch overwriting this.
+			// worry about the previous dispatch overwriting
+			// `datasets[path]`.
 			// However, we do have to check if the dataset was
-			// already cached, because in that case dataset[path]
+			// already loaded, because in that case dataset[path]
 			// will now include all attributes.
-			if (!list[path]) {
-				list[path] = datasets[path];
+			if (list && !list[path]) {
+				list[path] = oldMetaData;
 				return localforage.setItem('cachedDatasets', list);
 			}
 		}).catch((err) => {
@@ -125,15 +146,6 @@ function fetchDataset(datasets, path, dispatch) {
 }
 
 function convertToDataSet(data, dataset) {
-	// TODO: Re-order data preparation so that
-	// all non-functions are crated first, that
-	// intermediate stage is stored into localForage,
-	// then add all functions. (localForage can
-	// save every data type that we use, except
-	// functions. The function we store are the
-	// viewStateConverter, and the fastFilterOptions
-	// for the dropdowns)
-
 	let row = prepData(data.rowAttrs),
 		col = prepData(data.colAttrs);
 
@@ -162,10 +174,12 @@ function convertToDataSet(data, dataset) {
 	col.allKeys = col.keys.concat(col.geneKeys);
 	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
 
-	// merge all static data into dataset,
-	// note that this returns a new object
-	// so we can safely add viewState later
-	dataset = merge(dataset, {
+	// merge all static data into dataset, to cache in localForage
+	// (this should be done without viewState and functions)
+	// Note that this returns a new object, so we can safely
+	// use mergeInPlace on viewState later to safe some overhead.
+	return merge(dataset, {
+		loaded: true,
 		col,
 		row,
 		totalCols: col.geneKeys.length,
@@ -177,14 +191,28 @@ function convertToDataSet(data, dataset) {
 			shape: data.shape,
 		},
 	});
-
-	return dataset;
 }
 
+/**
+ * Initialise `dataset` with default `viewState`,
+ * potentially decoded `viewState` from URI, and
+ * functions (that we cannot cache in localForage)
+ * @param {*} type
+ * @param {string} path
+ * @param {*} dataset
+ */
 function dataSetAction(type, path, dataset) {
+	// add conversion functions (compressor, toJSON)
 	addFunctions(dataset);
+
+	// Initiate viewState. This includes reading and
+	// writing URI-encoded state, which requires
+	// viewStateConverter, so this must
+	// be called after functions are added.
+	addViewState(dataset);
 	return {
 		type,
+		path,
 		state: {
 			list: {
 				[path]: dataset,
@@ -193,7 +221,7 @@ function dataSetAction(type, path, dataset) {
 	};
 }
 
-export function addFunctions(dataset) {
+function addFunctions(dataset) {
 	const { row, col } = dataset;
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
@@ -226,6 +254,38 @@ export function addFunctions(dataset) {
 	}
 
 }
+
+function addViewState(dataset) {
+	// Initiate default viewState
+	let viewState = viewStateInitialiser(dataset);
+
+	const { encode, decode } = dataset.viewStateConverter;
+
+	// overwrite with previously encoded URI viewState, if any
+	const paths = browserHistory
+		.getCurrentLocation()
+		.pathname
+		.split('/');
+	let viewStateURI = paths[5];
+	if (viewStateURI) {
+		const decompressed = decompressFromEncodedURIComponent(viewStateURI);
+		const parsedJSON = JSON.parse(decompressed);
+		const decodedViewState = decode(parsedJSON);
+		mergeInPlace(viewState, decodedViewState);
+	}
+
+	// encode viewState to URI
+
+	const encodedVS = encode(viewState);
+	const stringifiedVS = JSON.stringify(encodedVS);
+	viewStateURI = compressToEncodedURIComponent(stringifiedVS);
+	const url = `/${paths[1]}/${paths[2]}/${paths[3]}/${paths[4]}/${viewStateURI}`;
+	browserHistory.replace(url);
+
+	// add viewState to dataset
+	dataset.viewState = viewState;
+}
+
 
 export function reduxToJSON(attrs) {
 	for (let i = 0; i < attrs.keys.length; i++) {
@@ -286,7 +346,7 @@ function prepData(attrs) {
 
 	// Add the set of keys for data that excludes data
 	// where all values are the same (these are useless in
-	// scatterplot and sparkline views, so filtered out).
+	// scatter plot and sparkline views, so filtered out).
 	let keysNoUniques = [];
 	i = keys.length;
 	while (i--) {

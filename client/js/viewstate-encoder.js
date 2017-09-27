@@ -29,6 +29,48 @@ export function createViewStateConverter(dataset) {
 	// other state, it will be skipped.
 	// The skipped state is included as commented out
 	// strings for documentation purposes.
+	const rowPlot = {
+		x: {
+			attr: oneOfRowAllKeys,
+			jitter: boolVal,
+			logScale: boolVal,
+		},
+		y: {
+			attr: oneOfRowAllKeys,
+			jitter: boolVal,
+			logScale: boolVal,
+		},
+		colorAttr: oneOfRowAllKeys,
+		colorMode: scatterPlotModes,
+		logScale: boolVal,
+		clip: boolVal,
+		lowerBound: intVal,
+		upperBound: intVal,
+		emphasizeNonZero: boolVal,
+		scaleFactor: intVal,
+	};
+
+	const colPlot = {
+		x: {
+			attr: oneOfColAllKeys,
+			jitter: boolVal,
+			logScale: boolVal,
+		},
+		y: {
+			attr: oneOfColAllKeys,
+			jitter: boolVal,
+			logScale: boolVal,
+		},
+		colorAttr: oneOfColAllKeys,
+		colorMode: scatterPlotModes,
+		logScale: boolVal,
+		clip: boolVal,
+		lowerBound: intVal,
+		upperBound: intVal,
+		emphasizeNonZero: boolVal,
+		scaleFactor: intVal,
+	};
+
 	const viewStateSchema = {
 		row: {
 			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
@@ -36,26 +78,13 @@ export function createViewStateConverter(dataset) {
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
 				selectedPlot: intVal,
-				plotSettings: vectorOf([{
-					x: {
-						attr: oneOfRowAllKeys,
-						jitter: boolVal,
-						logScale: boolVal,
-					},
-					y: {
-						attr: oneOfRowAllKeys,
-						jitter: boolVal,
-						logScale: boolVal,
-					},
-					colorAttr: oneOfRowAllKeys,
-					colorMode: scatterPlotModes,
-					logScale: boolVal,
-					clip: boolVal,
-					lowerBound: intVal,
-					upperBound: intVal,
-					emphasizeNonZero: boolVal,
-					scaleFactor: intVal,
-				}]),
+				totalPlots: intVal,
+				plotSettings: {
+					0: rowPlot,
+					1: rowPlot,
+					2: rowPlot,
+					3: rowPlot,
+				},
 			},
 		},
 		col: {
@@ -64,26 +93,13 @@ export function createViewStateConverter(dataset) {
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
 				selectedPlot: intVal,
-				plotSettings: vectorOf([{
-					x: {
-						attr: oneOfColAllKeys,
-						jitter: boolVal,
-						logScale: boolVal,
-					},
-					y: {
-						attr: oneOfColAllKeys,
-						jitter: boolVal,
-						logScale: boolVal,
-					},
-					colorAttr: oneOfColAllKeys,
-					colorMode: scatterPlotModes,
-					logScale: boolVal,
-					clip: boolVal,
-					lowerBound: intVal,
-					upperBound: intVal,
-					emphasizeNonZero: boolVal,
-					scaleFactor: intVal,
-				}]),
+				totalPlots: intVal,
+				plotSettings:  {
+					0: colPlot,
+					1: colPlot,
+					2: colPlot,
+					3: colPlot,
+				},
 			},
 		},
 		heatmap: {

@@ -1,7 +1,7 @@
 import { firstMatchingKey } from './util';
 
 
-function initialiseOrder(attr, keys){
+function initialiseOrder(attr, keys) {
 	// Initial sort order
 	let order = [];
 	for (let i = 0; i < Math.min(5, keys.length); i++) {
@@ -28,27 +28,6 @@ export function viewStateInitialiser(dataset) {
 		fullZoomWidth,
 		shape,
 	} = dataset.heatmap;
-
-	const colPlotSettings = {
-		x: {
-			attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
-			jitter: false,
-			logScale: false,
-		},
-		y: {
-			attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
-			jitter: false,
-			logScale: false,
-		},
-		colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
-		colorMode: 'Categorical',
-		logScale: true,
-		clip: false,
-		lowerBound: 0,
-		upperBound: 100,
-		emphasizeNonZero: false,
-		scaleFactor: 20,
-	};
 
 	return {
 		heatmap: {
@@ -84,7 +63,89 @@ export function viewStateInitialiser(dataset) {
 			ascendingIndices: colIndices,
 			scatterPlots: {
 				selectedPlot: 0,
-				plotSettings: [ colPlotSettings ],
+				totalPlots: 3,
+				plotSettings: {
+					0: {
+						x: {
+							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+					1: {
+						x: {
+							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+					2: {
+						x: {
+							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+					3: {
+						x: {
+							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+				},
 			},
 		},
 
@@ -96,8 +157,9 @@ export function viewStateInitialiser(dataset) {
 			ascendingIndices: rowIndices,
 			scatterPlots: {
 				selectedPlot: 0,
-				plotSettings: [
-					{
+				totalPlots: 2,
+				plotSettings: {
+					0: {
 						x: {
 							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
 							jitter: false,
@@ -117,7 +179,67 @@ export function viewStateInitialiser(dataset) {
 						emphasizeNonZero: false,
 						scaleFactor: 20,
 					},
-				],
+					1: {
+						x: {
+							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+					2: {
+						x: {
+							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+					3: {
+						x: {
+							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+							jitter: false,
+							logScale: false,
+						},
+						y: {
+							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+							jitter: false,
+							logScale: false,
+						},
+						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded']),
+						colorMode: 'Categorical',
+						logScale: true,
+						clip: false,
+						lowerBound: 0,
+						upperBound: 100,
+						emphasizeNonZero: false,
+						scaleFactor: 20,
+					},
+				},
 			},
 		},
 	};

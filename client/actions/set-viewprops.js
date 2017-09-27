@@ -54,7 +54,7 @@ export function setViewProps(dataset, action) {
 					}
 				}
 				if (scatterPlots && scatterPlots.plotSettings) {
-					for (let i = 0; i < scatterPlots.plotSettings.length; i++) {
+					for (let i = 0; i < scatterPlots.totalPlots; i++) {
 						const plot = scatterPlots.plotSettings[i];
 						appendIfUnfetchedGene(plot.x.attr);
 						appendIfUnfetchedGene(plot.y.attr);

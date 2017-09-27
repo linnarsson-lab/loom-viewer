@@ -151,7 +151,7 @@ export class Canvas extends PureComponent {
 }
 
 Canvas.propTypes = {
-	paint: PropTypes.func.isRequired,
+	paint: PropTypes.func,
 	noBump: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,

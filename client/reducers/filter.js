@@ -1,39 +1,18 @@
 import { sortFilterIndices } from './sort-dataset';
 
-export function updateFilteredIndices(filter, order, data) {
-	const { length } = data;
-	let i = length,
-		indices = new Array(i),
-		arrayType = i < (1 << 8) ? Uint8Array :
-			(i < (1 < 16) ? Uint16Array :
-				(i < (1 << 32) ? Uint32Array : Float64Array)
-			);
+export function updateFilteredIndices(data, filter, order, originalIndices) {
+	let indices = Array.from(originalIndices);
 
-	while (i - 16 > 0) {
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-	}
-	while (i--) {
-		indices[i] = i;
+	let typedArray = Float64Array;
+	if (indices.length < (1 << 8)){
+		typedArray = Uint8Array;
+	} else if (indices.length < (1 << 16)){
+		typedArray = Uint16Array;
+	} else if (indices.length < (1 << 32)){
+		typedArray = Uint32Array;
 	}
 
-	const originalIndices = indices.slice(0);
-
-	i = filter.length;
+	let i = filter.length;
 	while (i--) {
 		let filterEntry = filter[i];
 		let filterAttrName = filterEntry.attr;
@@ -61,18 +40,17 @@ export function updateFilteredIndices(filter, order, data) {
 	}
 
 	// Convert to typed array
-	indices = arrayType.from(indices);
+	indices = typedArray.from(indices);
 
-	// for scatterplots we sort by X and Y, so sorting
-	// by ascending is more apprioriate as it will be
-	// more cache friendly. Hence, we save a separate
-	// set of indices.
-	let ascendingIndices = indices.slice();
+	// In some cases, we just want to know which indices
+	// are present, and iterating by ascending indices
+	// will be more cache friendly in that case.
+	// Hence, we save a separate set of indices.
+	let ascendingIndices = indices.slice(0);
 	ascendingIndices.sort();
 
 	return {
 		indices: sortFilterIndices(data, order, indices),
 		ascendingIndices,
-		originalIndices,
 	};
 }

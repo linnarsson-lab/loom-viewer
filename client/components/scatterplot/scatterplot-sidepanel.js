@@ -48,49 +48,11 @@ filteredValuesComponent.propTypes = {
 	filter: PropTypes.array,
 };
 
-function scaleSettingsComponent(props) {
-	const {
-		axis,
-		dataset,
-		dispatch,
-	} = props;
-	const { selectedPlot, plotSettings } = dataset.viewState[axis].scatterPlots;
-	const { scaleFactor } = plotSettings[selectedPlot];
-	return (
-		<ListGroupItem>
-			<CollapsibleSettings
-				label={`Point size (x${(scaleFactor / 20).toFixed(1)})`}
-				tooltip={'Change the radius of the drawn points'}
-				tooltipId={'radiusstngs-tltp'}
-				popover={popoverTest}
-				popoverTitle={'Test'}
-				popoverId={'popoverId5'}
-				mountClosed>
-				<div>
-					<ScaleFactorSettings
-						dispatch={dispatch}
-						dataset={dataset}
-						axis={axis}
-						selectedPlot={selectedPlot}
-						plotSettings={plotSettings}
-						time={200} />
-				</div>
-			</CollapsibleSettings>
-		</ListGroupItem>
-	);
-}
-
-scaleSettingsComponent.propTypes = {
-	dispatch: PropTypes.func.isRequired,
-	dataset: PropTypes.object.isRequired,
-	axis: PropTypes.string.isRequired,
-};
-
 class PlotSettingsTabContent extends Component {
 
 	shouldComponentUpdate(nextProps) {
 		// No need to touch the dom if the contents are hidden anyway
-		return nextProps.selected === nextProps.selectedPlot;
+		return nextProps.plotNr === nextProps.selectedPlot;
 	}
 
 	render() {
@@ -99,20 +61,18 @@ class PlotSettingsTabContent extends Component {
 			dataset,
 			dispatch,
 			filteredValues,
-			plot,
-			plotSettings,
-			selected,
-			selectedPlot,
+			plotSetting,
+			plotNr,
 		} = this.props;
-		const { scaleFactor } = plot;
+		const { scaleFactor } = plotSetting;
 		return (
 			<ListGroup>
 				<CoordinateSettings
 					dispatch={dispatch}
 					dataset={dataset}
 					axis={axis}
-					plotSettings={plotSettings}
-					selectedPlot={selected}
+					plotSetting={plotSetting}
+					selectedPlot={plotNr}
 				/>
 				<ListGroupItem>
 					<CollapsibleSettings
@@ -121,15 +81,15 @@ class PlotSettingsTabContent extends Component {
 						tooltipId={'radiusstngs-tltp'}
 						popover={popoverTest}
 						popoverTitle={'Test'}
-						popoverId={`popoverId-scatterplot-scale-${selected}`}
+						popoverId={`popoverId-scatterplot-scale-${plotNr}`}
 						mountClosed>
 						<div>
 							<ScaleFactorSettings
 								dispatch={dispatch}
 								dataset={dataset}
 								axis={axis}
-								selectedPlot={selectedPlot}
-								plotSettings={plotSettings}
+								plotNr={plotNr}
+								scaleFactor={scaleFactor}
 								time={200} />
 						</div>
 					</CollapsibleSettings>
@@ -138,9 +98,8 @@ class PlotSettingsTabContent extends Component {
 					dispatch={dispatch}
 					dataset={dataset}
 					axis={axis}
-					plotSettings={plotSettings}
-					selected={selected}
-					selectedPlot={selectedPlot}
+					plotSetting={plotSetting}
+					plotNr={plotNr}
 				/>
 				{filteredValues}
 			</ListGroup>
@@ -153,9 +112,8 @@ PlotSettingsTabContent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
 	filteredValues: PropTypes.array.isRequired,
-	plot: PropTypes.object.isRequired,
-	plotSettings: PropTypes.array.isRequired,
-	selected: PropTypes.number.isRequired,
+	plotSetting: PropTypes.object.isRequired,
+	plotNr: PropTypes.number.isRequired,
 	selectedPlot: PropTypes.number.isRequired,
 };
 
@@ -193,9 +151,9 @@ export class ScatterPlotSidepanel extends Component {
 
 	selectTab(key) {
 		const { dispatch, dataset, axis } = this.props;
-		if (key === '+'){
+		if (key === '+') {
 			// new tab
-		}else {
+		} else {
 			// switch to existing tab
 			dispatch(setViewProps(
 				dataset,
@@ -233,13 +191,33 @@ export class ScatterPlotSidepanel extends Component {
 
 		const {
 			selectedPlot,
+			totalPlots,
 			plotSettings,
 		} = scatterPlots;
 
-		const newPlotTab =  plotSettings.length < 4 ? (
+		const newPlotTab = plotSettings.length < 4 ? (
 			<Tab key={'+'} title={'+'} />
 		) : null;
 
+		const settingsTabs = [];
+		for (let i = 0; i < totalPlots; i++) {
+			let plotSetting = plotSettings[i];
+			settingsTabs.push(
+				<Tab
+					key={`${i}${plotSetting.x.attr}${plotSetting.y.attr}`}
+					eventKey={i}
+					title={i === selectedPlot ? <b>{i + 1}</b> : i + 1}>
+					<PlotSettingsTabContent
+						axis={axis}
+						dataset={dataset}
+						dispatch={dispatch}
+						filteredValues={filteredValues}
+						plotSetting={plotSetting}
+						plotNr={i}
+						selectedPlot={selectedPlot} />
+				</Tab >
+			);
+		}
 		return (
 			<FlexboxContainer
 				className={className}
@@ -252,26 +230,7 @@ export class ScatterPlotSidepanel extends Component {
 					onSelect={this.selectTab}
 					id={`scatterPlot-${axis}`}>
 					<Tab title={'Settings'} disabled />
-					{
-						plotSettings.map((plot, selected) => {
-							return (
-								<Tab
-									key={`${selected}${plot.x.attr}${plot.y.attr}`}
-									eventKey={selected}
-									title={selected === selectedPlot ? <b>{selected + 1}</b> : selected + 1}>
-									<PlotSettingsTabContent
-										axis={axis}
-										dataset={dataset}
-										dispatch={dispatch}
-										filteredValues={filteredValues}
-										plot={plot}
-										plotSettings={plotSettings}
-										selected={selected}
-										selectedPlot={selectedPlot} />
-								</Tab >
-							);
-						})
-					}
+					{settingsTabs}
 					{newPlotTab}
 				</Tabs>
 			</FlexboxContainer>

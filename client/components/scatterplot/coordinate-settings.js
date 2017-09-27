@@ -16,8 +16,6 @@ import {
 
 import { popoverTest } from './popover';
 
-import { merge } from '../../js/util';
-
 import { setViewProps } from '../../actions/set-viewprops';
 
 // Factory to generate functions used in quick-set buttons
@@ -26,15 +24,13 @@ function quickSettingsFactory(props, settingsList) {
 		dispatch,
 		dataset,
 		axis,
-		plotSettings,
+		plotSetting,
 		selectedPlot,
 	} = props;
 
 	const {
 		attrs,
 	} = dataset[axis];
-
-	const plot = plotSettings[selectedPlot];
 
 	let quickSettingsList = [];
 
@@ -47,24 +43,25 @@ function quickSettingsFactory(props, settingsList) {
 		if (attrs[xAttr] && attrs[yAttr]) {
 
 			let handleClick = nullFunc;
-			if (plot.x.attr !== xAttr || plot.y.attr !== yAttr) {
-				const newPlotSettings = plotSettings.slice(0);
-				newPlotSettings[selectedPlot] = merge(plot, {
-					x: { attr: xAttr },
-					y: { attr: yAttr },
-				});
-				handleClick = () => {
-					return dispatch(setViewProps(dataset, {
-						stateName: axis,
-						path: dataset.path,
-						viewState: {
-							[axis]: {
-								scatterPlots: {
-									plotSettings: newPlotSettings,
+			if (plotSetting.x.attr !== xAttr || plotSetting.y.attr !== yAttr) {
+				const action = {
+					stateName: axis,
+					path: dataset.path,
+					viewState: {
+						[axis]: {
+							scatterPlots: {
+								plotSettings: {
+									[selectedPlot]:{
+										x: { attr: xAttr },
+										y: { attr: yAttr },
+									},
 								},
 							},
 						},
-					}));
+					},
+				};
+				handleClick = () => {
+					return dispatch(setViewProps(dataset, action));
 				};
 			}
 
@@ -105,7 +102,7 @@ quickSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotSetting: PropTypes.object.isRequired,
 	selectedPlot: PropTypes.number.isRequired,
 };
 
@@ -144,28 +141,30 @@ function attrSettingHandleChangeFactory(props, attrAxis, key) {
 		dispatch,
 		dataset,
 		axis,
-		plotSettings,
+		plotSetting,
 		selectedPlot,
 	} = props;
 
-	const value = !plotSettings[selectedPlot][attrAxis][key];
-	const newPlotSettings = plotSettings.slice(0);
-
-	return () => {
-		newPlotSettings[selectedPlot] = merge(newPlotSettings[selectedPlot], {
-			[attrAxis]: { [key]: value },
-		});
-		return dispatch(setViewProps(dataset, {
-			stateName: axis,
-			path: dataset.path,
-			viewState: {
-				[axis]: {
-					scatterPlots: {
-						plotSettings: newPlotSettings,
+	const action = {
+		stateName: axis,
+		path: dataset.path,
+		viewState: {
+			[axis]: {
+				scatterPlots: {
+					plotSettings: {
+						[selectedPlot]: {
+							[attrAxis]: {
+								[key]: !plotSetting[attrAxis][key],
+							},
+						},
 					},
 				},
 			},
-		}));
+		},
+	};
+
+	return () => {
+		return dispatch(setViewProps(dataset, action));
 	};
 }
 
@@ -173,11 +172,11 @@ function attrSettingsFactory(props, attrAxis) {
 	const {
 		dataset,
 		axis,
-		plotSettings,
+		plotSetting,
 		selectedPlot,
 	} = props;
 
-	const attrData = plotSettings[selectedPlot][attrAxis];
+	const attrData = plotSetting[attrAxis];
 
 	const { allKeysNoUniques, dropdownOptions } = dataset[axis];
 	const filterOptions = dropdownOptions.allNoUniques;
@@ -231,7 +230,7 @@ attrSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotSetting: PropTypes.object.isRequired,
 	selectedPlot: PropTypes.number.isRequired,
 };
 
@@ -240,7 +239,7 @@ export class CoordinateSettings extends Component {
 
 	shouldComponentUpdate(nextProps) {
 		const { props } = this;
-		return nextProps.plotSettings !== props.plotSettings;
+		return nextProps.plotSetting !== props.plotSetting;
 	}
 
 	render() {
@@ -277,6 +276,6 @@ CoordinateSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotSetting: PropTypes.object.isRequired,
 	selectedPlot: PropTypes.number.isRequired,
 };

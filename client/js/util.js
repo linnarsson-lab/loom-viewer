@@ -770,8 +770,9 @@ export function disjointArrays(a, b) {
  */
 export function merge(oldObj, newObj) {
 	if (!(oldObj || newObj)) {
-	// if neither are defined, return whatever oldObj is
-		return oldObj;
+		// if neither are defined, return whatever newObj is
+		// (safe, since all falsy values are immutable values)
+		return newObj;
 	} else if (!oldObj) {
 		// we expect a new object (immutability guarantee),
 		// so if there is no oldObj, return a copy of newObj
@@ -821,7 +822,7 @@ export function merge(oldObj, newObj) {
  */
 export function mergeInPlace(oldObj, newObj) {
 	if (!(oldObj || newObj)) {
-		return oldObj;
+		return newObj;
 	} else if (!oldObj) {
 		return Object.assign({}, newObj);
 	} else if (!newObj) {

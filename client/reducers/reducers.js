@@ -22,7 +22,7 @@ import {
 import {	UNKNOWN } from '../actions/request-projects';
 
 import { updateDatasetSortOrder, maybeSortIndices } from './sort-dataset';
-import { setViewStateURL, updateViewState } from './viewstate';
+import { updateViewState } from './viewstate';
 
 /**
  * `action` can optionally have "state" trees
@@ -53,8 +53,9 @@ const initialState = {
 function datasets(state, action) {
 	state = state || initialState;
 
-	let newState = null;
 	switch (action.type) {
+		// state changes so simple that a plain
+		// merge with the state tree is enough
 		case RECEIVE_PROJECTS:
 		case LOAD_CACHED_PROJECTS:
 		case RECEIVE_DATASET:
@@ -65,14 +66,11 @@ function datasets(state, action) {
 			return update(state, action);
 
 		case RECEIVE_GENE:
-			newState = update(state, action);
-			return maybeSortIndices(newState, action);
-
+			return maybeSortIndices(state, action);
 
 		//===VIEW ACTIONS===
 		case SET_VIEW_PROPS:
-			newState = updateViewState(state, action);
-			return setViewStateURL(newState, action);
+			return updateViewState(state, action);
 
 		case SORT_DATASETS:
 			return updateDatasetSortOrder(state, action.key);

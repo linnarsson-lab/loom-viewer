@@ -7,8 +7,6 @@ import {
 } from 'react-bootstrap';
 import { Range } from 'rc-slider';
 
-import { merge } from '../../js/util';
-
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
 import {
@@ -22,26 +20,25 @@ function clampRangeHandleChangeFactory(props){
 		axis,
 		dataset,
 		dispatch,
-		selectedPlot,
-		plotSettings,
+		plotNr,
 		time,
 	} = props;
-
-	let newPlotSettings = plotSettings.slice(0);
+	const path = dataset.path;
 
 	const handleChange = (values) => {
-		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], {
-			lowerBound: values[0],
-			upperBound: values[1],
-		});
 		dispatch({
 			type: SET_VIEW_PROPS,
 			stateName: axis,
-			path: dataset.path,
+			path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plotSettings: newPlotSettings,
+						plotSettings: {
+							[plotNr]: {
+								lowerBound: values[0],
+								upperBound: values[1],
+							},
+						},
 					},
 				},
 			},
@@ -56,25 +53,23 @@ function handleChangeFactory(props, key, value){
 		axis,
 		dataset,
 		dispatch,
-		selectedPlot,
-		plotSettings,
+		plotNr,
 	} = props;
-
-	let newPlotSettings = plotSettings.slice(0);
-	const plot = plotSettings[selectedPlot];
+	const path = dataset.path;
 
 	return () => {
-		newPlotSettings[selectedPlot] = merge(plot, {
-			[key]: value,
-		});
 		dispatch({
 			type: SET_VIEW_PROPS,
 			stateName: axis,
-			path: dataset.path,
+			path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plotSettings: newPlotSettings,
+						plotSettings: {
+							[plotNr]: {
+								[key]: value,
+							},
+						},
 					},
 				},
 			},
@@ -83,13 +78,16 @@ function handleChangeFactory(props, key, value){
 }
 
 export class ClipDataSettings extends Component {
+	constructor(props){
+		super(props);
+		this.clampRangeHC = clampRangeHandleChangeFactory(props);
+	}
 
 	render() {
 		const { props } = this;
 
 		const {
-			selectedPlot,
-			plotSettings,
+			plotSetting,
 		} = props;
 
 		const {
@@ -97,9 +95,8 @@ export class ClipDataSettings extends Component {
 			logScale,
 			lowerBound,
 			upperBound,
-		} = plotSettings[selectedPlot];
+		} = plotSetting;
 
-		const clampRangeHC = clampRangeHandleChangeFactory(props);
 		const logScaleHC = handleChangeFactory(props, 'logScale', !logScale);
 		const clipHC = handleChangeFactory(props, 'clip', !clip);
 		return (
@@ -141,8 +138,8 @@ export class ClipDataSettings extends Component {
 									pushable={0}
 									count={2}
 									defaultValue={[lowerBound, upperBound]}
-									onChange={clampRangeHC}
-									onAfterChange={clampRangeHC} />
+									onChange={this.clampRangeHC}
+									onAfterChange={this.clampRangeHC} />
 							</div>
 						</OverlayTooltip>
 					) : null
@@ -156,7 +153,7 @@ ClipDataSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
+	plotSetting: PropTypes.object.isRequired,
 	time: PropTypes.number,
 };

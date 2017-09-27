@@ -30,7 +30,6 @@ export const SparklineSidepanel = function (props) {
 
 	const {
 		filter,
-		settings,
 	} = dataset.viewState.col;
 
 	return (
@@ -52,7 +51,6 @@ export const SparklineSidepanel = function (props) {
 						dispatch={dispatch}
 						geneMode={sparkline.geneMode}
 						showLabels={sparkline.showLabels}
-						settings={settings}
 					/>
 					<LegendSettings
 						dataset={dataset}

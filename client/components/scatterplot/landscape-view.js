@@ -8,13 +8,19 @@ import { ViewInitialiser } from '../view-initialiser';
 
 class LandscapeComponent extends PureComponent {
 	render() {
-		const { dispatch, dataset } = this.props;
-		const vs = dataset.viewState.col;
-		const { ascendingIndices } = vs;
+		const {
+			dispatch,
+			dataset,
+		} = this.props;
+		const {
+			ascendingIndices,
+			scatterPlots,
+		} = dataset.viewState.col;
 		const {
 			selectedPlot,
+			totalPlots,
 			plotSettings,
-		} = vs.scatterPlots;
+		} = scatterPlots;
 		const { attrs } = dataset.col;
 
 		return (
@@ -31,13 +37,14 @@ class LandscapeComponent extends PureComponent {
 					}}
 				/>
 				<ScatterPlotMatrix
+					attrs={attrs}
 					axis={'col'}
 					dataset={dataset}
 					dispatch={dispatch}
 					plotSettings={plotSettings}
 					selectedPlot={selectedPlot}
+					totalPlots={totalPlots}
 					indices={ascendingIndices}
-					attrs={attrs}
 				/>
 			</div>
 		);

@@ -16,8 +16,6 @@ import {
 	DropdownMenu,
 } from '../settings/settings';
 
-import { merge } from '../../js/util';
-
 import { setViewProps } from '../../actions/set-viewprops';
 
 function colorAttrFactory(props) {
@@ -25,24 +23,24 @@ function colorAttrFactory(props) {
 		dispatch,
 		dataset,
 		axis,
-		plotSettings,
-		selectedPlot,
+		plotNr,
 	} = props;
 
-	let newPlotSettings = plotSettings.slice(0);
 	return (value) => {
-		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], { colorAttr: value });
-		dispatch(setViewProps(dataset, {
+		let action = {
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plotSettings: newPlotSettings,
+						plotSettings: {
+							[plotNr]: { colorAttr: value },
+						},
 					},
 				},
 			},
-		}));
+		};
+		dispatch(setViewProps(dataset, action));
 	};
 }
 
@@ -50,8 +48,7 @@ colorAttrFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
 };
 
 function colorSettingsFactory(props, colorMode) {
@@ -59,23 +56,23 @@ function colorSettingsFactory(props, colorMode) {
 		dispatch,
 		dataset,
 		axis,
-		plotSettings,
-		selectedPlot,
+		plotNr,
 	} = props;
-	let newPlotSettings = plotSettings.slice(0);
 	return () => {
-		newPlotSettings[selectedPlot] = merge(plotSettings[selectedPlot], { colorMode });
-		dispatch(setViewProps(dataset, {
+		const action = {
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
 				[axis]: {
 					scatterPlots: {
-						plotSettings: newPlotSettings,
+						plotSettings: {
+							[plotNr]: { colorMode },
+						},
 					},
 				},
 			},
-		}));
+		};
+		dispatch(setViewProps(dataset, action));
 	};
 }
 
@@ -83,8 +80,7 @@ colorSettingsFactory.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
-	plotSettings: PropTypes.array.isRequired,
+	plotNr: PropTypes.number.isRequired,
 };
 
 // to ensure that selected buttons don't dispatch anything.
@@ -95,24 +91,20 @@ export class ColorSettings extends Component {
 		const {
 			axis,
 			dataset,
-			plotSettings,
-			selected,
-			selectedPlot,
+			plotSetting,
 		} = this.props;
-		const settings = plotSettings[selected],
-			nDataset = nextProps.dataset,
+		const nDataset = nextProps.dataset,
 			nAxis = nextProps.axis,
-			nSettings = nextProps.plotSettings[selected];
+			nSettings = nextProps.plotSetting;
 
-		// Only update if tab is visible, and if
-		// the relevant data has changed
-		return selected === selectedPlot && (
-			settings.colorAttr !== nSettings.colorAttr ||
-			settings.colorMode !== nSettings.colorMode ||
-			settings.logScale !== nSettings.logScale ||
-			settings.clip !== nSettings.clip ||
-			settings.lowerBound !== nSettings.lowerBound ||
-			settings.upperBound !== nSettings.upperBound ||
+		// Only update if the relevant data has changed
+		return(
+			plotSetting.colorAttr !== nSettings.colorAttr ||
+			plotSetting.colorMode !== nSettings.colorMode ||
+			plotSetting.logScale !== nSettings.logScale ||
+			plotSetting.clip !== nSettings.clip ||
+			plotSetting.lowerBound !== nSettings.lowerBound ||
+			plotSetting.upperBound !== nSettings.upperBound ||
 			dataset.viewState[axis].filter !== nDataset.viewState[nAxis].filter
 		);
 	}
@@ -125,14 +117,14 @@ export class ColorSettings extends Component {
 			dataset,
 			axis,
 			settings,
-			selected,
-			plotSettings,
+			plotNr,
+			plotSetting,
 		} = props;
 
 		const {
 			colorAttr,
 			colorMode,
-		} = plotSettings[selected];
+		} = plotSetting;
 
 		const {
 			attrs,
@@ -175,8 +167,8 @@ export class ColorSettings extends Component {
 				dispatch={dispatch}
 				dataset={dataset}
 				axis={axis}
-				plotSettings={plotSettings}
-				selectedPlot={selected}
+				plotSetting={plotSetting}
+				plotNr={plotNr}
 				time={200} />
 		) : null;
 
@@ -232,7 +224,6 @@ ColorSettings.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 	dataset: PropTypes.object.isRequired,
 	axis: PropTypes.string.isRequired,
-	plotSettings: PropTypes.array.isRequired,
-	selected: PropTypes.number.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
+	plotSetting: PropTypes.object.isRequired,
+	plotNr: PropTypes.number.isRequired,
 };

@@ -8,13 +8,19 @@ import { ViewInitialiser } from '../view-initialiser';
 
 class GenescapeComponent extends PureComponent {
 	render() {
-		const { dispatch, dataset } = this.props;
-		const vs = dataset.viewState.row;
-		const { ascendingIndices } = vs;
+		const {
+			dispatch,
+			dataset,
+		} = this.props;
+		const {
+			ascendingIndices,
+			scatterPlots,
+		} = dataset.viewState.row;
 		const {
 			selectedPlot,
+			totalPlots,
 			plotSettings,
-		} = vs.scatterPlots;
+		} = scatterPlots;
 		const { attrs } = dataset.row;
 
 		return (
@@ -31,13 +37,14 @@ class GenescapeComponent extends PureComponent {
 					}}
 				/>
 				<ScatterPlotMatrix
+					attrs={attrs}
 					axis={'row'}
 					dataset={dataset}
 					dispatch={dispatch}
 					plotSettings={plotSettings}
 					selectedPlot={selectedPlot}
+					totalPlots={totalPlots}
 					indices={ascendingIndices}
-					attrs={attrs}
 				/>
 			</div>
 		);

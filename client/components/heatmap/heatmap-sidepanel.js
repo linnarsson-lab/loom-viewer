@@ -93,7 +93,8 @@ export class HeatmapSidepanel extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'col'}
-							settings={viewState.col.settings}
+							plotSetting={viewState.col.scatterPlots.plotSettings[0]}
+							plotNr={0}
 							time={200} />
 					);
 					break;
@@ -131,7 +132,8 @@ export class HeatmapSidepanel extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'row'}
-							settings={viewState.row.settings}
+							plotSetting={viewState.row.scatterPlots.plotSettings[0]}
+							plotNr={0}
 							time={200} />
 					);
 					break;

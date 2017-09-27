@@ -16,8 +16,6 @@ import {
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-import { merge } from '../../js/util';
-
 const boxLegend = (
 	<table>
 		<tbody>
@@ -73,7 +71,6 @@ export class ColorSettings extends Component {
 	}
 
 	render() {
-
 		const {
 			geneModeOptions,
 			geneModeHC,
@@ -88,14 +85,11 @@ export class ColorSettings extends Component {
 		} = this.props;
 
 		const { plotSettings, selectedPlot } = dataset.viewState.col.scatterPlots;
-		const setting = plotSettings[selectedPlot];
+		const plotSetting = plotSettings[selectedPlot];
 
 		let emphasizeNonZeroComponent;
 		if (geneMode === 'Flame' || geneMode === 'Icicle') {
-			const { emphasizeNonZero } = selectedPlot;
-
-			let newPlotSettings = plotSettings.slice(0);
-			newPlotSettings[selectedPlot] = merge(setting, { emphasizeNonZero: !emphasizeNonZero });
+			const { emphasizeNonZero } = plotSetting;
 			const emphasizeNZhc = () => {
 				dispatch({
 					type: SET_VIEW_PROPS,
@@ -104,7 +98,11 @@ export class ColorSettings extends Component {
 					viewState: {
 						col: {
 							scatterPlots: {
-								plotSettings: newPlotSettings,
+								plotSettings: {
+									[selectedPlot]: {
+										emphasizeNonZero: !emphasizeNonZero,
+									},
+								},
 							},
 						},
 					},
@@ -154,8 +152,8 @@ export class ColorSettings extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'col'}
-							plotSettings={plotSettings}
-							selectedPlot={selectedPlot}
+							plotSetting={plotSetting}
+							plotNr={selectedPlot}
 							time={200} />
 						{geneMode === 'Box' ? boxLegend : null}
 						{emphasizeNonZeroComponent}
