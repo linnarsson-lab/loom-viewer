@@ -13,7 +13,7 @@ const containerStyle = {
 
 const sidepanelStyle = {
 	overflowX: 'hidden',
-	overFlowY: 'hidden',
+	overflowY: 'hidden',
 	minHeight: 0,
 	width: '300px',
 	margin: '10px',

@@ -50,7 +50,10 @@ class Legend extends PureComponent {
 					width={width - 20}
 					height={height}
 					paint={painter}
-					ignoreHeight
+					// We're wrapped inside a component that
+					// automatically remounts, so there is
+					// no need to add resize event listeners
+					ignoreResize
 				/>
 			</div>
 		);
@@ -119,7 +122,7 @@ function makeCanvas(gene, containerWidth, painters, idx) {
 			style={{ background: (idx & 1) ? '#F4F4F4' : '#FCFCFC' }}
 			width={containerWidth - 20}
 			height={sparklineHeight}
-			ignoreHeight
+			ignoreResize
 			noBump
 		/>
 	);
@@ -223,56 +226,35 @@ Sparklines.propTypes = {
 	showLabels: PropTypes.bool.isRequired,
 };
 
-export class SparklineList extends PureComponent {
+class SparklineListMounter extends PureComponent {
 	constructor(...args) {
 		super(...args);
-
-		const {
-			attrs, groupAttr, indices,
-		} = this.props;
-
-		this.sparklineContainer = (div) => {
-			if (div) {
-				const containerWidth = div.clientWidth - 20;
-				const containerHeight = div.clientHeight - 20;
-				const legendHeight = 60;
-				const sparklineContainerStyle = {
-					display: 'flex',
-					flex: '0 0 auto',
-					minWidth: `${containerWidth}px`,
-					maxWidth: `${containerWidth}px`,
-					minHeight: `${containerHeight - legendHeight}px`,
-					maxHeight: `${containerHeight - legendHeight}px`,
-					overflowX: 'hidden',
-					overflowY: 'scroll',
-				};
-				this.setState(() => {
-					return {
-						mountedContainer: div,
-						containerWidth,
-						containerHeight,
-						legendHeight,
-						sparklineContainerStyle,
-					};
-				});
-			}
-		};
-
-		this.state = {
-			groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
-		};
+		this.sparklineContainer = this.sparklineContainer.bind(this);
+		this.state = {};
 	}
 
-	componentWillReceiveProps(nextProps) {
-		const {
-			indices, attrs, groupAttr,
-		} = nextProps;
-		if (groupAttr !== this.props.groupAttr ||
-			indices !== this.props.indices ||
-			groupAttr && attrs[groupAttr] !== this.props.attrs[groupAttr]) {
+	sparklineContainer(div){
+		if (div) {
+			const containerWidth = div.clientWidth - 20;
+			const containerHeight = div.clientHeight - 20;
+			const legendHeight = 60;
+			const sparklineContainerStyle = {
+				display: 'flex',
+				flex: '0 0 auto',
+				minWidth: `${containerWidth}px`,
+				maxWidth: `${containerWidth}px`,
+				minHeight: `${containerHeight - legendHeight}px`,
+				maxHeight: `${containerHeight - legendHeight}px`,
+				overflowX: 'hidden',
+				overflowY: 'scroll',
+			};
 			this.setState(() => {
 				return {
-					groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
+					mountedContainer: div,
+					containerWidth,
+					containerHeight,
+					legendHeight,
+					sparklineContainerStyle,
 				};
 			});
 		}
@@ -280,7 +262,6 @@ export class SparklineList extends PureComponent {
 
 	render() {
 		const {
-			groupedPainter,
 			mountedContainer,
 			sparklineContainerStyle,
 			containerWidth,
@@ -289,52 +270,51 @@ export class SparklineList extends PureComponent {
 
 		if (mountedContainer) {
 			const {
+				attrs,
 				col,
 				colAttr,
 				colMode,
-				path,
-				attrs,
-				selection,
-				indices,
 				geneMode,
-				showLabels,
+				groupedPainter,
+				indices,
+				path,
+				selection,
 				settings,
+				showLabels,
 			} = this.props;
 
 			return (
-				<Remount ignoreHeight>
+				<div
+					className='view-vertical'
+					style={{
+						overflowX: 'hidden',
+						overflowY: 'hidden',
+						minHeight: 0,
+					}}
+					ref={this.sparklineContainer}>
+					<Legend
+						groupedPainter={groupedPainter}
+						height={legendHeight}
+						width={containerWidth}
+						col={col}
+						colAttr={colAttr}
+						colMode={colMode}
+						indices={indices}
+						path={path}
+					/>
 					<div
-						className='view-vertical'
-						style={{
-							overflowX: 'hidden',
-							overflowY: 'hidden',
-							minHeight: 0,
-						}}
-						ref={this.sparklineContainer}>
-						<Legend
+						style={sparklineContainerStyle}>
+						<Sparklines
 							groupedPainter={groupedPainter}
-							height={legendHeight}
-							width={containerWidth}
-							col={col}
-							colAttr={colAttr}
-							colMode={colMode}
-							indices={indices}
-							path={path}
+							containerWidth={containerWidth}
+							attrs={attrs}
+							selection={selection}
+							geneMode={geneMode}
+							settings={settings}
+							showLabels={showLabels}
 						/>
-						<div
-							style={sparklineContainerStyle}>
-							<Sparklines
-								groupedPainter={groupedPainter}
-								containerWidth={containerWidth}
-								attrs={attrs}
-								selection={selection}
-								geneMode={geneMode}
-								settings={settings}
-								showLabels={showLabels}
-							/>
-						</div>
-					</div >
-				</Remount>
+					</div>
+				</div >
 			);
 		}
 		else {
@@ -347,16 +327,102 @@ export class SparklineList extends PureComponent {
 	}
 }
 
-SparklineList.propTypes = {
+SparklineListMounter.propTypes = {
 	attrs: PropTypes.object,
-	selection: PropTypes.arrayOf(PropTypes.string),
-	groupAttr: PropTypes.string,
-	indices: TypedArrayProp.any,
-	geneMode: PropTypes.string,
-	settings: PropTypes.object.isRequired,
-	showLabels: PropTypes.bool.isRequired,
 	col: PropTypes.object.isRequired,
 	colAttr: PropTypes.string,
 	colMode: PropTypes.string.isRequired,
+	geneMode: PropTypes.string,
+	groupAttr: PropTypes.string,
+	groupedPainter: PropTypes.func.isRequired,
+	indices: TypedArrayProp.any,
 	path: PropTypes.string.isRequired,
+	selection: PropTypes.arrayOf(PropTypes.string),
+	settings: PropTypes.object.isRequired,
+	showLabels: PropTypes.bool.isRequired,
+};
+
+export class SparklineList extends PureComponent {
+	constructor(...args) {
+		super(...args);
+
+		const {
+			attrs,
+			groupAttr,
+			indices,
+		} = this.props;
+
+		this.state = {
+			groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
+		};
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const {
+			indices, attrs, groupAttr,
+		} = nextProps;
+		if (
+			groupAttr &&
+			attrs[groupAttr] !== this.props.attrs[groupAttr] ||
+			groupAttr !== this.props.groupAttr ||
+			indices !== this.props.indices) {
+			this.setState(() => {
+				return {
+					groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
+				};
+			});
+		}
+	}
+
+	render() {
+		const {
+			groupedPainter,
+		} = this.state;
+
+		const {
+			col,
+			colAttr,
+			colMode,
+			path,
+			attrs,
+			selection,
+			indices,
+			geneMode,
+			groupAttr,
+			showLabels,
+			settings,
+		} = this.props;
+
+		return (
+			<Remount>
+				<SparklineListMounter
+					attrs={attrs}
+					col={col}
+					colAttr={colAttr}
+					colMode={colMode}
+					geneMode={geneMode}
+					groupAttr={groupAttr}
+					groupedPainter={groupedPainter}
+					indices={indices}
+					path={path}
+					selection={selection}
+					settings={settings}
+					showLabels={showLabels} />
+			</Remount>
+		);
+	}
+}
+
+SparklineList.propTypes = {
+	attrs: PropTypes.object,
+	col: PropTypes.object.isRequired,
+	colAttr: PropTypes.string,
+	colMode: PropTypes.string.isRequired,
+	geneMode: PropTypes.string,
+	groupAttr: PropTypes.string,
+	indices: TypedArrayProp.any,
+	path: PropTypes.string.isRequired,
+	selection: PropTypes.arrayOf(PropTypes.string),
+	settings: PropTypes.object.isRequired,
+	showLabels: PropTypes.bool.isRequired,
 };
