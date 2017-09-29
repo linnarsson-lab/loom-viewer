@@ -1,52 +1,17 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { ScatterPlotMatrix } from './scatterplot-matrix';
-import { LandscapeSidepanel } from './landscape-sidepanel';
+import { ScatterplotComponent } from 'components/scatterplot/scatterplot-view';
 
-import { ViewInitialiser } from '../view-initialiser';
+import { ViewInitialiser } from 'components/view-initialiser';
 
 class LandscapeComponent extends PureComponent {
 	render() {
-		const {
-			dispatch,
-			dataset,
-		} = this.props;
-		const {
-			ascendingIndices,
-			scatterPlots,
-		} = dataset.viewState.col;
-		const {
-			selectedPlot,
-			totalPlots,
-			plotSettings,
-		} = scatterPlots;
-		const { attrs } = dataset.col;
-
 		return (
-			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-				<LandscapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-					style={{
-						overflowX: 'hidden',
-						overFlowY: 'hidden',
-						minHeight: 0,
-						width: '300px',
-						margin: '10px',
-					}}
-				/>
-				<ScatterPlotMatrix
-					attrs={attrs}
-					axis={'col'}
-					dataset={dataset}
-					dispatch={dispatch}
-					plotSettings={plotSettings}
-					selectedPlot={selectedPlot}
-					totalPlots={totalPlots}
-					indices={ascendingIndices}
-				/>
-			</div>
+			<ScatterplotComponent
+				axis='col'
+				dataset={this.props.dataset}
+				dispatch={this.props.dispatch} />
 		);
 	}
 }

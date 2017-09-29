@@ -12,7 +12,11 @@ import { SET_VIEW_PROPS } from 'actions/actionTypes';
 // this may happen as the result of a gene
 // being fetched or retrieved from cache
 function changedAttrs(oldAttrs, newAttrs, settings) {
-	if (!(oldAttrs, newAttrs, settings)) { return false; }
+
+	if (!(oldAttrs, newAttrs, settings)) {
+		return false;
+	}
+
 	const {
 		x,
 		y,
@@ -24,9 +28,9 @@ function changedAttrs(oldAttrs, newAttrs, settings) {
 		newXAttr = newAttrs[x.attr],
 		newYAttr = newAttrs[y.attr],
 		newColorAttr = newAttrs[settings.colorAttr];
-	return xAttr !== newXAttr ||
-		yAttr !== newYAttr ||
-		colorAttr !== newColorAttr;
+	return colorAttr !== newColorAttr ||
+		xAttr !== newXAttr ||
+		yAttr !== newYAttr;
 }
 
 

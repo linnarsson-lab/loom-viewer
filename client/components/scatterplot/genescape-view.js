@@ -1,52 +1,17 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { ScatterPlotMatrix } from './scatterplot-matrix';
-import { GenescapeSidepanel } from './genescape-sidepanel';
+import { ScatterplotComponent } from 'components/scatterplot/scatterplot-view';
 
-import { ViewInitialiser } from '../view-initialiser';
+import { ViewInitialiser } from 'components/view-initialiser';
 
 class GenescapeComponent extends PureComponent {
 	render() {
-		const {
-			dispatch,
-			dataset,
-		} = this.props;
-		const {
-			ascendingIndices,
-			scatterPlots,
-		} = dataset.viewState.row;
-		const {
-			selectedPlot,
-			totalPlots,
-			plotSettings,
-		} = scatterPlots;
-		const { attrs } = dataset.row;
-
 		return (
-			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
-				<GenescapeSidepanel
-					dataset={dataset}
-					dispatch={dispatch}
-					style={{
-						overflowX: 'hidden',
-						overFlowY: 'hidden',
-						minHeight: 0,
-						width: '300px',
-						margin: '10px',
-					}}
-				/>
-				<ScatterPlotMatrix
-					attrs={attrs}
-					axis={'row'}
-					dataset={dataset}
-					dispatch={dispatch}
-					plotSettings={plotSettings}
-					selectedPlot={selectedPlot}
-					totalPlots={totalPlots}
-					indices={ascendingIndices}
-				/>
-			</div>
+			<ScatterplotComponent
+				axis='row'
+				dataset={this.props.dataset}
+				dispatch={this.props.dispatch} />
 		);
 	}
 }
