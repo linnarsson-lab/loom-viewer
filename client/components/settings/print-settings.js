@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -24,14 +24,14 @@ const printCanvas = (() => {
 	return {
 		Print: {
 			A4: {
-				low: makeCanvas(595, 842), //72DPI
-				med: makeCanvas(1190, 1684), //144DPI
-				high: makeCanvas(2480, 3508), //300DPI
+				low: makeCanvas(595, 842), // 72DPI
+				med: makeCanvas(1190, 1684), // 144DPI
+				high: makeCanvas(2480, 3508), // 300DPI
 			},
 			US: {
-				low: makeCanvas(612, 792), //72DPI
-				med: makeCanvas(1224, 1584), //144DPI
-				high: makeCanvas(2550, 3300), //300DPI
+				low: makeCanvas(612, 792), // 72DPI
+				med: makeCanvas(1224, 1584), // 144DPI
+				high: makeCanvas(2550, 3300), // 300DPI
 			},
 		},
 		Screen: {
@@ -44,9 +44,11 @@ const printCanvas = (() => {
 
 // Since print settings are pretty much equivalent across side-panels,
 // make one component for them. Print settings are not saved in redux
-export class PrintSettings extends PureComponent {
+export class PrintSettings extends Component {
 	render() {
-		const { dataset, stateName, actionType, sketches } = this.props;
+		const {
+ dataset, stateName, actionType, sketches 
+} = this.props;
 		const state = dataset[stateName];
 		const { printSettings } = state;
 		const handleChangeFactory = (field) => {
@@ -82,10 +84,15 @@ export class PrintSettings extends PureComponent {
 				onClick={() => { printMenuProps.onChange(!showPrint); }}
 			>
 				Export image
-		</Button>
+			</Button>
 		);
 
-		let orientationMenu, exportTargetMenu, printSizeMenu, dpiMenu, pixelSizeMenu, saveMenu;
+		let orientationMenu, 
+exportTargetMenu, 
+printSizeMenu, 
+dpiMenu, 
+pixelSizeMenu, 
+saveMenu;
 
 		if (showPrint) {
 
@@ -155,7 +162,9 @@ export class PrintSettings extends PureComponent {
 				);
 			}
 
-			const { savePNG, saveSVG } = generateExportRenderFuncs(
+			const {
+ savePNG, saveSVG 
+} = generateExportRenderFuncs(
 				exportTargetProps.value,
 				printSizeProps.value,
 				dpiProps.value,

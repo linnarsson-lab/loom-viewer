@@ -1,6 +1,5 @@
 import {
 	merge,
-	mergeInPlace,
 } from 'js/util';
 
 import { updateSortOrder } from 'reducers/sort-dataset';
@@ -19,22 +18,22 @@ export function updateViewState(state, action) {
 	// Update state tree with passed viewState first,
 	// since this new state might be required for
 	// sorting or filtering correctly later
-	let newState = merge(state, {
-		list: {
-			[action.path]: {
-				viewState: action.viewState,
+	let newState = action.viewState ?
+		merge(state, {
+			list: {
+				[action.path]: {
+					viewState: action.viewState,
+				},
 			},
-		},
-	});
+		}) :
+		state;
 
 	// the change in viewState might change
 	// affect sorting or filtering.
 	if (action.sortAttrName || action.filterAttrName) {
-		// note that at this point, viewState is a new
-		// object and we can safely overwrite it
 		let { viewState } = newState.list[path];
-		mergeInPlace(newState.list[path].viewState,
-			sortFilterUpdateIndices(dataset, viewState, action));
+		const newSortFilterVS = sortFilterUpdateIndices(dataset, viewState, action);
+		newState.list[path].viewState = merge(viewState, newSortFilterVS);
 	}
 
 	// Update URL to represent new viewState
@@ -62,48 +61,55 @@ function sortFilterUpdateIndices(dataset, viewState, action) {
 		filterVal,
 	} = action;
 
-	let subSettings = {};
+	const {
+		filter,
+		order,
+		originalIndices,
+	} = viewState[axis];
 
-	if (sortAttrName) {
-		subSettings.order = updateSortOrder(viewState[axis].order, sortAttrName);
-	}
-	if (filterAttrName) {
-		subSettings.filter = updateFilter(viewState, filterAttrName, filterVal, axis);
-	}
+	let axisVS = {
+		order: updateSortOrder(order, sortAttrName),
+		filter: updateFilter(filter, filterAttrName, filterVal),
+	};
 
 	if (sortAttrName || filterAttrName) {
-		const { filter, order, originalIndices } = viewState[axis];
-		const newIndices = updateFilteredIndices(filter, order, dataset[axis], originalIndices);
-		subSettings.indices = newIndices.indices;
-		subSettings.ascendingIndices = newIndices.ascendingIndices;
+		const ind = updateFilteredIndices(dataset[axis], axisVS.filter, axisVS.order, originalIndices);
+		axisVS.indices = ind.indices;
+		axisVS.ascendingIndices = ind.ascendingIndices;
 	}
 
-	return subSettings;
+	return { [axis]: axisVS };
 }
 
-function updateFilter(viewState, filterAttrName, filterVal, axis) {
-	let filter = viewState[axis].filter.slice();
-	let i = filter.length;
-	while (i--) {
-		let filterEntry = filter[i];
-		if (filterEntry.attr === filterAttrName &&
-			filterEntry.val === filterVal) {
-			break;
+function updateFilter(filter, filterAttrName, filterVal) {
+	if (filterAttrName) {
+		filter = filter.slice(0);
+		let i = filter.length;
+		while (i--) {
+			let filterEntry = filter[i];
+			if (filterEntry.attr === filterAttrName &&
+				filterEntry.val === filterVal) {
+				break;
+			}
 		}
-	}
-	if (i === -1) {
-		// a new filter entry
-		filter.push({ attr: filterAttrName, val: filterVal });
-	} else {
-		// a filter being removed
-		filter[i] = filter[filter.length - 1];
-		filter.pop();
+		if (i === -1) {
+			// a new filter entry
+			filter.push({
+				attr: filterAttrName, val: filterVal,
+			});
+		} else {
+			// a filter being removed
+			filter[i] = filter[filter.length - 1];
+			filter.pop();
+		}
 	}
 	return filter;
 }
 
 function setViewStateURL(state, action) {
-	let { stateName, path } = action;
+	let {
+		stateName, path,
+	} = action;
 	let view = 'unknown';
 	switch (stateName) {
 		case 'heatmap':

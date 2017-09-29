@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -10,7 +10,7 @@ import {
 	Popover,
 } from 'react-bootstrap';
 
-export class OverlayPopover extends PureComponent {
+export class OverlayPopover extends Component {
 	render() {
 		const { props } = this;
 		const _popover = (
@@ -43,7 +43,7 @@ OverlayPopover.propTypes = {
 	placement: PropTypes.string,
 };
 
-export class OverlayTooltip extends PureComponent {
+export class OverlayTooltip extends Component {
 	render() {
 		const { props } = this;
 		return (
@@ -65,7 +65,7 @@ OverlayTooltip.propTypes = {
 	children: PropTypes.node.isRequired,
 };
 
-export class CollapsibleSettings extends PureComponent {
+export class CollapsibleSettings extends Component {
 	constructor(...args) {
 		super(...args);
 		this.toggle = this.toggle.bind(this);

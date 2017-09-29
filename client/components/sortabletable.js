@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -16,9 +16,18 @@ const mapToCell = (row, key, keys) => {
 	) : null;
 };
 
-export class SortableTable extends PureComponent {
+export class SortableTable extends Component {
 	render() {
-		const { data, columns, order, striped, bordered, condensed, hover, responsive } = this.props;
+		const {
+			data,
+			columns,
+			order,
+			striped,
+			bordered,
+			condensed,
+			hover,
+			responsive,
+		} = this.props;
 
 		let headerRows = [];
 		let maxHeaders = 0;
@@ -34,7 +43,13 @@ export class SortableTable extends PureComponent {
 			let headerCells = [];
 			for (let j = 0; j < columns.length; j++) {
 				const column = columns[j];
-				const { key, keys, headers, headerStyles, onHeaderClick } = column;
+				const {
+					key,
+					keys,
+					headers,
+					headerStyles,
+					onHeaderClick,
+				} = column;
 
 				const sortIcon = (i === 0 && order && key === order.key) ? (
 					<Glyphicon
@@ -61,7 +76,12 @@ export class SortableTable extends PureComponent {
 		for (let i = 0; i < data.length; i++) {
 			let rowCells = [];
 			for (let j = 0; j < columns.length; j++) {
-				const { dataStyle, key, keys, mergeRows } = columns[j];
+				const {
+					dataStyle,
+					key,
+					keys,
+					mergeRows,
+				} = columns[j];
 				const cell = mapToCell(data[i], key, keys);
 				let rowSpan = 1;
 				if (mergeRows) {

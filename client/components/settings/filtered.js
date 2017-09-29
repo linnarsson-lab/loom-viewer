@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -11,14 +11,30 @@ import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class FilteredValues extends PureComponent {
+export class FilteredValues extends Component {
 	render() {
-		const { filtered, dispatch, dataset, axis } = this.props;
+
+		const {
+			filtered,
+			dispatch,
+			dataset,
+			axis,
+		} = this.props;
+
 		const { attrs } = dataset[axis];
 		if (filtered && filtered.length) {
-			let filteredVals = [], attrNames = [], i = filtered.length;
+
+			let filteredVals = [],
+				attrNames = [],
+				i = filtered.length;
+
 			while (i--) {
-				let { attr, val } = filtered[i];
+
+				let {
+					attr,
+					val,
+				} = filtered[i];
+
 				let j = attrNames.indexOf(attr);
 				if (j === -1) {
 					j = attrNames.length;
@@ -31,9 +47,11 @@ export class FilteredValues extends PureComponent {
 			let filteredList = new Array(filteredVals.length);
 			i = filteredVals.length;
 			while (i--) {
+
 				let filterAttrName = attrNames[i],
 					attr = attrs[filterAttrName],
 					label = `${attrNames[i]}: (${filteredVals[i].length})`;
+
 				const listGroupElements = attr ? filteredVals[i].map(
 					(filterVal) => {
 						const onFilterClick = () => {

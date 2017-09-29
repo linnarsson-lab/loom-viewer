@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { debounce } from 'lodash';
@@ -14,7 +14,7 @@ function shouldResize(state) {
 	);
 }
 
-export class Remount extends PureComponent {
+export class Remount extends Component {
 	constructor(...args) {
 		super(...args);
 

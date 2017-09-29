@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { Heatmap } from 'components/heatmap/heatmap';
@@ -17,12 +17,13 @@ import { debounce } from 'lodash';
 import { merge } from 'js/util';
 
 // Just the map+sparklines part
-class HeatmapMapPureComponent extends PureComponent {
+class MapComponent extends Component {
 
 	constructor(...args) {
 		super(...args);
 		this.mountContainer = this.mountContainer.bind(this);
 		this.onViewChanged = debounce(this.onViewChanged.bind(this), 50);
+		this.state = {};
 	}
 
 	mountContainer(el){
@@ -133,23 +134,26 @@ class HeatmapMapPureComponent extends PureComponent {
 						height={sparklineHeight}
 						paint={colSparkline}
 						style={{ marginRight: (sparklineHeight + 'px') }}
+						ignoreResize
 					/>
 					<div className='view'>
 						<div style={heatmapStyle}>
 							<Heatmap
 								dataset={dataset}
-								onViewChanged={this.state.onViewChanged} />
+								onViewChanged={this.onViewChanged} />
 						</div>
 						<Canvas
 							width={sparklineHeight}
 							height={heatmapHeight}
-							paint={rowSparkline} />
+							paint={rowSparkline}
+							ignoreResize
+						/>
 					</div>
 				</div >
 			);
 		} else {
 			return (
-				<div className='view-vertical' ref={this.heatmapContainer}>
+				<div className='view-vertical' ref={this.mountContainer}>
 					Initialising Heatmap Settings
 				</div>
 			);
@@ -157,12 +161,12 @@ class HeatmapMapPureComponent extends PureComponent {
 	}
 }
 
-HeatmapMapPureComponent.propTypes = {
+MapComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-class HeatmapPureComponent extends PureComponent {
+class HeatmapComponent extends Component {
 	render() {
 		const {
 			dispatch,
@@ -183,7 +187,7 @@ class HeatmapPureComponent extends PureComponent {
 					}}
 				/>
 				<Remount>
-					<HeatmapMapPureComponent
+					<MapComponent
 						dataset={dataset}
 						dispatch={dispatch} />
 				</Remount>
@@ -192,7 +196,7 @@ class HeatmapPureComponent extends PureComponent {
 	}
 }
 
-HeatmapPureComponent.propTypes = {
+HeatmapComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -200,7 +204,7 @@ HeatmapPureComponent.propTypes = {
 export const HeatmapViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
-			View={HeatmapPureComponent}
+			View={HeatmapComponent}
 			dispatch={props.dispatch}
 			params={props.params}
 			datasets={props.datasets} />
@@ -217,7 +221,7 @@ import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
 // through ownProps.params. See also:
-// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-PureComponent
+// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-Component
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { ScatterPlotMatrix } from 'components/scatterplot/scatterplot-matrix';
@@ -19,7 +19,7 @@ const sidePanelStyle = {
 	margin: '10px',
 };
 
-export class ScatterplotComponent extends PureComponent {
+export class ScatterplotComponent extends Component {
 	render() {
 		const {
 			dispatch,

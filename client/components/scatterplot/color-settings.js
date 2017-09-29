@@ -88,27 +88,6 @@ colorSettingsFactory.propTypes = {
 };
 
 export class ColorSettings extends Component {
-	shouldComponentUpdate(nextProps) {
-		const {
-			axis,
-			dataset,
-			plotSetting,
-		} = this.props;
-		const nDataset = nextProps.dataset,
-			nAxis = nextProps.axis,
-			nSettings = nextProps.plotSetting;
-
-		// Only update if the relevant data has changed
-		return(
-			plotSetting.colorAttr !== nSettings.colorAttr ||
-			plotSetting.colorMode !== nSettings.colorMode ||
-			plotSetting.logScale !== nSettings.logScale ||
-			plotSetting.clip !== nSettings.clip ||
-			plotSetting.lowerBound !== nSettings.lowerBound ||
-			plotSetting.upperBound !== nSettings.upperBound ||
-			dataset.viewState[axis].filter !== nDataset.viewState[nAxis].filter
-		);
-	}
 
 	render() {
 		const { props } = this;

@@ -1,11 +1,11 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { ScatterplotComponent } from 'components/scatterplot/scatterplot-view';
 
 import { ViewInitialiser } from 'components/view-initialiser';
 
-class GenescapeComponent extends PureComponent {
+class GenescapeComponent extends Component {
 	render() {
 		return (
 			<ScatterplotComponent
@@ -22,7 +22,7 @@ GenescapeComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-export class GenescapeViewInitialiser extends PureComponent {
+export class GenescapeViewInitialiser extends Component {
 	render() {
 		return (
 			<ViewInitialiser

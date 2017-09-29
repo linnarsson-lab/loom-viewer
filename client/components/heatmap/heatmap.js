@@ -1,8 +1,8 @@
 import L from 'leaflet';
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-export class Heatmap extends PureComponent {
+export class Heatmap extends Component {
 	constructor(...args) {
 		super(...args);
 		this.mapContainer = this.mapContainer.bind(this);

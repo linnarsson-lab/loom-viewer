@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
@@ -35,7 +35,7 @@ const defaultModes = [
 	'Stacked',
 ];
 
-export class MetadataPlot extends PureComponent {
+export class MetadataPlot extends Component {
 	constructor(...args) {
 		super(...args);
 
@@ -136,7 +136,7 @@ const samePropMetadataTable = createComparator({
 	onClickFilterFactory: 'func',
 });
 
-class MetadataTable extends PureComponent {
+class MetadataTable extends Component {
 	constructor(...args) {
 		super(...args);
 		this.createTableData = this.createTableData.bind(this);
@@ -345,7 +345,7 @@ MetadataTable.propTypes = {
 };
 
 
-export class MetadataComponent extends PureComponent {
+export class MetadataComponent extends Component {
 	// given that this component will only be rendered
 	// after the dataset has been fetched, and that the
 	// dataset is immutable, we might as well pre-process

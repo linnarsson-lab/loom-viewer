@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'react-bootstrap';
 
@@ -31,7 +31,7 @@ const rowStyle = {
 	flexDirection: 'row',
 };
 
-export class AttrLegend extends PureComponent {
+export class AttrLegend extends Component {
 	render() {
 		const {
 			filteredAttrs,

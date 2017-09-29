@@ -1,15 +1,20 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { MetadataComponent } from './metadata';
 
 import { ViewInitialiser } from '../view-initialiser';
 
-class CellMDComponent extends PureComponent {
+class CellMDComponent extends Component {
 	render() {
-		const { dataset, dispatch } = this.props;
-		const { col } = dataset;
-		const { attrs, keys } = col;
+		const {
+			dataset,
+			dispatch,
+		} = this.props;
+		const {
+			attrs,
+			keys,
+		} = dataset.col;
 
 		return (
 			<MetadataComponent
@@ -30,7 +35,7 @@ CellMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-class CellMetadataViewInitialiser extends PureComponent {
+class CellMetadataViewInitialiser extends Component {
 
 	render() {
 		// Initialise cellMetadataState for this dataset

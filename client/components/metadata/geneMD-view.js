@@ -1,15 +1,20 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { MetadataComponent } from './metadata';
 
 import { ViewInitialiser } from '../view-initialiser';
 
-class GeneMDComponent extends PureComponent {
+class GeneMDComponent extends Component {
 	render() {
-		const { dataset, dispatch } = this.props;
-		const { row } = dataset;
-		const { attrs, keys } = row;
+		const {
+			dataset,
+			dispatch,
+		} = this.props;
+		const {
+			attrs,
+			keys,
+		} = dataset.row;
 
 		return (
 			<MetadataComponent
@@ -30,7 +35,7 @@ GeneMDComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-class GeneMetadataViewInitialiser extends PureComponent {
+class GeneMetadataViewInitialiser extends Component {
 	render() {
 		// Initialise geneMetadata state for this dataset
 		return (

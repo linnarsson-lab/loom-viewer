@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import VirtualizedSelect from 'react-virtualized-select';
@@ -107,7 +107,7 @@ function arrayEqual(arr1, arr2) {
 }
 
 // TODO: document how SelectGeneComponent works and what it expects
-export class SelectGeneComponent extends PureComponent {
+export class SelectGeneComponent extends Component {
 
 	constructor(...args) {
 		super(...args);

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -12,7 +12,7 @@ import {
 
 import { setViewProps } from '../../actions/set-viewprops';
 
-export class AttributeSelection extends PureComponent {
+export class AttributeSelection extends Component {
 	constructor(...args){
 		super(...args);
 		this.genesHC = (val) => {

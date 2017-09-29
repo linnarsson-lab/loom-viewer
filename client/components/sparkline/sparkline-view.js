@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { SparklineSidepanel } from './sparkline-sidepanel';
@@ -19,7 +19,7 @@ const sidepanelStyle = {
 	margin: '10px',
 };
 
-class SparklineViewComponent extends PureComponent {
+class SparklineViewComponent extends Component {
 	render() {
 		const {
 			dispatch,
@@ -63,7 +63,7 @@ SparklineViewComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-export class SparklineViewInitialiser extends PureComponent {
+export class SparklineViewInitialiser extends Component {
 	render() {
 		return (
 			<ViewInitialiser

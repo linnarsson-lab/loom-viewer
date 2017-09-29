@@ -15,17 +15,17 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	// PrintSettings,
-} from '../settings/settings';
+} from 'components/settings/settings';
 
-import { setViewProps } from '../../actions/set-viewprops';
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { setViewProps } from 'actions/set-viewprops';
+import { SET_VIEW_PROPS } from 'actions/actionTypes';
 
 function handleChangeFactory(that, field){
 	return (value) => {
 		const {
 			dataset,
 			dispatch,
-	 	} = that.props;
+		} = that.props;
 		const action = {
 			stateName: 'heatmap',
 			path: dataset.path,
@@ -66,24 +66,6 @@ export class HeatmapSidepanel extends Component {
 			rowAttrHC,
 			rowModeHC,
 		};
-	}
-
-	shouldComponentUpdate(nextProps) {
-		const ds = this.props.dataset,
-			nds = nextProps.dataset,
-			vs = ds.viewState,
-			nvs = nds.viewState,
-			hms = vs.heatmap,
-			nextHMS = nvs.heatmap;
-		return hms.colAttr !== nextHMS.colAttr ||
-			hms.colMode !== nextHMS.colMode ||
-			hms.rowMode !== nextHMS.rowMode ||
-			hms.rowMode !== nextHMS.rowMode ||
-			// TODO: update to new schema
-			vs.col.settings !== nvs.col.settings ||
-			vs.row.settings !== nvs.row.settings ||
-			ds.col.attrs[hms.colAttr] !== nds.col.attrs[nextHMS.colAttr] ||
-			ds.row.attrs[hms.rowAttr] !== nds.row.attrs[nextHMS.rowAttr];
 	}
 
 	render() {

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { requestProjects } from 'actions/request-projects';
@@ -34,7 +34,7 @@ function currentInitialisation(dispatch, datasets, path, viewStateURI, prevIniti
 	return initialisationState;
 }
 
-export class ViewInitialiser extends PureComponent {
+export class ViewInitialiser extends Component {
 	componentWillMount() {
 
 		const {

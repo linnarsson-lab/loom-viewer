@@ -1,7 +1,7 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-export class FlexboxContainer extends PureComponent {
+export class FlexboxContainer extends Component {
 	constructor(...args) {
 		super(...args);
 		this.flexboxContainer = this.flexboxContainer.bind(this);

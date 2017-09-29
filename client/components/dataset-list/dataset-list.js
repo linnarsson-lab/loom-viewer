@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { Link } from 'react-router';
@@ -39,7 +39,7 @@ function handleSearchChangeFactory(field, dispatch) {
 
 // Generates tabular list of datasets
 
-class DatasetList extends PureComponent {
+class DatasetList extends Component {
 
 	componentWillMount() {
 		const { dispatch } = this.props;
@@ -328,7 +328,7 @@ SearchField.propTypes = {
 	mountClosed: PropTypes.bool,
 };
 
-class SearchDataSetViewComponent extends PureComponent {
+class SearchDataSetViewComponent extends Component {
 	constructor(...args) {
 		super(...args);
 		this.filterProjects = this.filterProjects.bind(this);
