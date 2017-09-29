@@ -3,15 +3,19 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 export class Heatmap extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.mapContainer = this.mapContainer.bind(this);
 		this.state = {};
 	}
 
 	mapContainer(containerDiv) {
 		if (containerDiv && !this.state.map){
-			const { dataset, project, viewState } = this.props.dataset;
+			const {
+				dataset,
+				project,
+				viewState,
+			} = this.props.dataset;
 			const hms = viewState.heatmap;
 			const { zoomRange } = hms;
 
@@ -54,18 +58,27 @@ export class Heatmap extends PureComponent {
 				const dataBounds = [dnw.x, dnw.y, dse.x, dse.y];
 				const zoom = map.getZoom();
 				const center = map.getCenter();
-				this.props.onViewChanged({ dataBounds, zoom, center });
+				this.props.onViewChanged({
+					dataBounds,
+					zoom,
+					center,
+				});
 			};
 
 			handleViewChanged();
 			map.on('move', handleViewChanged);
-			this.setState({ map, handleViewChanged });
+			this.setState(() => { return {
+				map,
+				handleViewChanged,
+			}; });
 		}
 
 	}
 
 	componentWillUnmount() {
-		const { map, handleViewChanged } = this.state;
+		const {
+			map, handleViewChanged,
+		} = this.state;
 		map.off('move', handleViewChanged);
 	}
 

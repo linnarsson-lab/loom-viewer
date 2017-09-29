@@ -62,12 +62,21 @@ function handleChangeFactory(dispatch, dataset, field) {
 export class ColorSettings extends Component {
 
 	componentWillMount() {
-		const { dispatch, dataset } = this.props;
+		const {
+			dispatch,
+			dataset,
+		} = this.props;
 
 		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
 		const geneModeHC = handleChangeFactory(dispatch, dataset, 'geneMode');
 		const showLabelsHC = handleChangeFactory(dispatch, dataset, 'showLabels');
-		this.setState({ geneModeOptions, geneModeHC, showLabelsHC });
+		this.setState(() => {
+			return {
+				geneModeOptions,
+				geneModeHC,
+				showLabelsHC,
+			};
+		});
 	}
 
 	render() {
@@ -84,7 +93,9 @@ export class ColorSettings extends Component {
 			geneMode,
 		} = this.props;
 
-		const { plotSettings, selectedPlot } = dataset.viewState.col.scatterPlots;
+		const {
+			plotSettings, selectedPlot,
+		} = dataset.viewState.col.scatterPlots;
 		const plotSetting = plotSettings[selectedPlot];
 
 		let emphasizeNonZeroComponent;

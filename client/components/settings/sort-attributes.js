@@ -6,19 +6,9 @@ import { DropdownMenu } from './dropdown';
 import { setViewProps } from '../../actions/set-viewprops';
 
 export class SortAttributeComponent extends Component {
-	constructor(props) {
-		super(props);
-		const { dispatch, dataset, stateName, axis } = props;
-		const path = dataset.path;
-
-		this.onChange = (value) => {
-			dispatch(setViewProps(dataset, {
-				path,
-				axis,
-				sortAttrName: value,
-				stateName,
-			}));
-		};
+	constructor(...args) {
+		super(...args);
+		this.onChange = this.onChange.bind(this);
 	}
 
 	shouldComponentUpdate(nextProps) {
@@ -26,9 +16,33 @@ export class SortAttributeComponent extends Component {
 			this.props.dataset.viewState[this.props.axis].order;
 	}
 
+	onChange(value){
+		const { props } = this;
+
+		const action = {
+			path: props.path,
+			axis: props.axis,
+			sortAttrName: value,
+			stateName: props.stateName,
+		};
+
+		const {
+			dispatch,
+			dataset,
+		} = props;
+
+		dispatch(setViewProps(dataset, action));
+	}
+
 	render() {
-		const { dataset, axis } = this.props;
-		const { allKeysNoUniques, dropdownOptions } = dataset[axis];
+		const {
+			dataset,
+			axis,
+		} = this.props;
+		const {
+			allKeysNoUniques,
+			dropdownOptions,
+		} = dataset[axis];
 		// Show first four attributes to use as sort keys
 		const { order } = dataset.viewState[axis];
 		let sortOrderList = [(
@@ -65,6 +79,7 @@ SortAttributeComponent.propTypes = {
 	attributes: PropTypes.object.isRequired,
 	attrKeys: PropTypes.array.isRequired,
 	axis: PropTypes.string.isRequired,
+	path: PropTypes.string.isRequired,
 	stateName: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,

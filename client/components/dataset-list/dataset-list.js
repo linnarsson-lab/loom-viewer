@@ -12,7 +12,7 @@ import {
 import { SortableTable } from '../sortabletable';
 
 import {
-	DebouncedFormcontrol,
+	DebouncedFormControl,
 	CollapsibleSettings,
 } from '../settings/settings.js';
 
@@ -31,11 +31,7 @@ function handleSearchChangeFactory(field, dispatch) {
 		let val = event.target.value ? event.target.value : '';
 		dispatch({
 			type: SEARCH_DATASETS,
-			state: {
-				search: {
-					[field]: val,
-				},
-			},
+			state: { search: { [field]: val } },
 		});
 	};
 }
@@ -49,19 +45,34 @@ class DatasetList extends PureComponent {
 		const { dispatch } = this.props;
 
 		const sortByProject = () => {
-			dispatch({ type: SORT_DATASETS, key: 'project' });
+			dispatch({
+				type: SORT_DATASETS,
+				key: 'project',
+			});
 		};
 		const sortByTitle = () => {
-			dispatch({ type: SORT_DATASETS, key: 'title' });
+			dispatch({
+				type: SORT_DATASETS,
+				key: 'title',
+			});
 		};
 		const sortByDescription = () => {
-			dispatch({ type: SORT_DATASETS, key: 'description' });
+			dispatch({
+				type: SORT_DATASETS,
+				key: 'description',
+			});
 		};
 		const sortByCreationDate = () => {
-			dispatch({ type: SORT_DATASETS, key: 'creationDate' });
+			dispatch({
+				type: SORT_DATASETS,
+				key: 'creationDate',
+			});
 		};
 		const sortByTotalCells = () => {
-			dispatch({ type: SORT_DATASETS, key: 'totalCells' });
+			dispatch({
+				type: SORT_DATASETS,
+				key: 'totalCells',
+			});
 		};
 
 		const headerStyles = [{ border: 'none 0px' }, { padding: '4px' }];
@@ -72,7 +83,10 @@ class DatasetList extends PureComponent {
 				key: 'title',
 				sortIcon: 'sort-by-alphabet',
 				headerStyles,
-				dataStyle: { width: '34%', fontWeight: 'bold' },
+				dataStyle: {
+					width: '34%',
+					fontWeight: 'bold',
+				},
 				onHeaderClick: [sortByTitle],
 			},
 			{
@@ -80,7 +94,10 @@ class DatasetList extends PureComponent {
 				key: 'description',
 				sortIcon: 'sort-by-alphabet',
 				headerStyles,
-				dataStyle: { width: '36%', fontStyle: 'italic' },
+				dataStyle: {
+					width: '36%',
+					fontStyle: 'italic',
+				},
 				onHeaderClick: [sortByDescription],
 			},
 			{
@@ -88,7 +105,10 @@ class DatasetList extends PureComponent {
 				key: 'creationDate',
 				sortIcon: 'sort-by-order',
 				headerStyles,
-				dataStyle: { width: '14%', fontSize: '12px' },
+				dataStyle: {
+					width: '14%',
+					fontSize: '12px',
+				},
 				onHeaderClick: [sortByCreationDate],
 			},
 			{
@@ -96,7 +116,10 @@ class DatasetList extends PureComponent {
 				key: 'totalCells',
 				sortIcon: 'sort-by-attributes',
 				headerStyles,
-				dataStyle: { width: '6%', fontSize: '12px' },
+				dataStyle: {
+					width: '6%',
+					fontSize: '12px',
+				},
 				onHeaderClick: [sortByTotalCells],
 			},
 			{
@@ -108,19 +131,24 @@ class DatasetList extends PureComponent {
 					</div>
 				)],
 				key: 'buttons',
-				headerStyles: [{ border: 'none 0px', padding: '8px 0px' }, { padding: '0px' }],
-				dataStyle: { width: '10%', padding: '8px 0px' },
+				headerStyles: [{
+					border: 'none 0px', padding: '8px 0px',
+				}, { padding: '0px' }],
+				dataStyle: {
+					width: '10%', padding: '8px 0px',
+				},
 			},
 		];
-
-		this.setState({
-			sortByProject,
-			sortByTitle,
-			sortByDescription,
-			sortByCreationDate,
-			sortByTotalCells,
-			headerStyles,
-			columns,
+		this.setState(() => {
+			return {
+				sortByProject,
+				sortByTitle,
+				sortByDescription,
+				sortByCreationDate,
+				sortByTotalCells,
+				headerStyles,
+				columns,
+			};
 		});
 	}
 
@@ -135,14 +163,21 @@ class DatasetList extends PureComponent {
 			mountClosed,
 		} = this.props;
 
-		const {
-			columns,
-		} = this.state;
+		const { columns } = this.state;
 
 		if (filteredList) {
 			let tableData = [];
 			for (let i = 0; i < filteredList.length; i++) {
-				const { path, project, title, description, creationDate, totalCells, dataset, url, doi } = filteredList[i];
+				const {
+					path,
+					title,
+					description,
+					creationDate,
+					totalCells,
+					dataset,
+					url,
+					doi,
+				} = filteredList[i];
 				// create new datasets object with proper tags
 				// strip '.loom' ending
 				const titleURL = (
@@ -174,7 +209,9 @@ class DatasetList extends PureComponent {
 					<Glyphicon
 						key={path + '_doi'}
 						glyph='file'
-						style={{ fontSize: '14px', color: 'lightgrey' }} />
+						style={{
+							fontSize: '14px', color: 'lightgrey',
+						}} />
 				) : (
 					<Button
 						key={path + '_doi'}
@@ -190,7 +227,9 @@ class DatasetList extends PureComponent {
 					<Glyphicon
 						key={path + '_url'}
 						glyph='globe'
-						style={{ fontSize: '14px', color: 'lightgrey' }} />
+						style={{
+							fontSize: '14px', color: 'lightgrey',
+						}} />
 				) : (
 					<Button
 						key={path + '_url'}
@@ -270,7 +309,7 @@ function SearchField(props) {
 			size={'large'}
 			mountClosed={props.mountClosed}>
 			<div>
-				<DebouncedFormcontrol
+				<DebouncedFormControl
 					type='text'
 					value={props.value || ''}
 					onChange={props.onChange}
@@ -290,8 +329,8 @@ SearchField.propTypes = {
 };
 
 class SearchDataSetViewComponent extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.filterProjects = this.filterProjects.bind(this);
 		this.prepareProjects = this.prepareProjects.bind(this);
 	}
@@ -323,7 +362,13 @@ class SearchDataSetViewComponent extends PureComponent {
 
 		dispatch(requestProjects(list, fetchProjectsStatus));
 		if (list) {
-			let { projectNames, projectLists, projectListsFiltered } = this.prepareProjects(list);
+
+			let {
+				projectNames,
+				projectLists,
+				projectListsFiltered,
+			} = this.prepareProjects(list);
+
 			let i = projectNames.length;
 			projectListsFiltered = new Array(i);
 			while (i--) {
@@ -333,7 +378,7 @@ class SearchDataSetViewComponent extends PureComponent {
 			state.projectLists = projectLists;
 			state.projectListsFiltered = projectListsFiltered;
 		}
-		this.setState(state);
+		this.setState(() => { return state; });
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -350,7 +395,9 @@ class SearchDataSetViewComponent extends PureComponent {
 		}
 
 		if (projectNames) {
-			const { order, search } = nextProps;
+			const {
+				order, search,
+			} = nextProps;
 			if (JSON.stringify(order) !== JSON.stringify(this.props.order) ||
 				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
 				let i = projectNames.length;
@@ -359,7 +406,13 @@ class SearchDataSetViewComponent extends PureComponent {
 					projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
 				}
 			}
-			this.setState({ projectNames, projectLists, projectListsFiltered });
+			this.setState(() => {
+				return {
+					projectNames,
+					projectLists,
+					projectListsFiltered,
+				};
+			});
 		}
 	}
 
@@ -377,7 +430,9 @@ class SearchDataSetViewComponent extends PureComponent {
 		});
 
 
-		let projectNames = [], projectLists = [], projectListsFiltered = [];
+		let projectNames = [],
+			projectLists = [],
+			projectListsFiltered = [];
 		let i = list.length;
 		while (i--) {
 			const dataset = list[i];
@@ -391,7 +446,11 @@ class SearchDataSetViewComponent extends PureComponent {
 			}
 			projectLists[j].push(dataset);
 		}
-		return { projectNames, projectLists, projectListsFiltered };
+		return {
+			projectNames,
+			projectLists,
+			projectListsFiltered,
+		};
 	}
 
 	filterProjects(list, order, search) {
@@ -622,7 +681,7 @@ SearchDataSetViewComponent.propTypes = {
 	fetchProjectsStatus: PropTypes.number,
 };
 
-//connect SearchDataSetViewComponent to store
+// connect SearchDataSetViewComponent to store
 import { connect } from 'react-redux';
 
 const mapStateToProps = (state) => {

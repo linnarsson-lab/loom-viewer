@@ -1,10 +1,10 @@
-export { ClipDataSettings} from './clip-data';
+export { ClipDataSettings } from './clip-data';
 export {
 	OverlayPopover,
 	OverlayTooltip,
 	CollapsibleSettings,
 } from './collapsible';
-export { DebouncedFormcontrol } from './debounced-formcontrol';
+export { DebouncedFormControl } from './debounced-formcontrol';
 export { DropdownMenu } from './dropdown';
 export { SelectGeneComponent } from './select-gene';
 export { FilteredValues } from './filtered';

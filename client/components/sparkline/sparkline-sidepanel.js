@@ -26,7 +26,10 @@ export const SparklineSidepanel = function (props) {
 		className,
 		style,
 	} = props;
-	const { sparkline } = dataset.viewState;
+
+	const {
+		sparkline,
+	} = dataset.viewState;
 
 	const {
 		filter,
@@ -83,6 +86,7 @@ export const SparklineSidepanel = function (props) {
 									attributes={dataset.col.attrs}
 									attrKeys={dataset.col.allKeysNoUniques}
 									axis={'col'}
+									path={dataset.path}
 									stateName={'sparkline'}
 									dataset={dataset}
 									dispatch={dispatch} />

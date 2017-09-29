@@ -10,39 +10,10 @@ import { AsyncPainter } from 'plotters/async-painter';
 // Mounts a canvas and gets its context,
 // then passes this context to the AsyncPainter.
 class CanvasComponent extends PureComponent {
-	constructor(props) {
-		super(props);
-
-		this.mountView = (view) => {
-			// Scaling lets us adjust the painter function for
-			// high density displays and zoomed browsers.
-			// Painter functions decide how to use scaling
-			// on a case-by-case basis.
-			if (view) {
-				const pixelScale = this.props.pixelScale || 1;
-				const ratio = window.devicePixelRatio || 1;
-				const width = (view.clientWidth * ratio) | 0;
-				const height = (view.clientHeight * ratio) | 0;
-				this.setState({ view, width, height, ratio, pixelScale });
-			}
-		};
-
-		this.mountCanvas = (canvas) => {
-			if (canvas) {
-				let context = canvas.getContext('2d');
-				const { state } = this;
-				// store width, height and ratio in context for paint functions
-				context.width = state.width;
-				context.height = state.height;
-				context.pixelRatio = state.ratio;
-				context.pixelScale = state.pixelScale;
-				if (this.props.AsyncPainter) {
-					this.props.AsyncPainter.replaceContext(context);
-				}
-				this.setState({ canvas, context });
-			}
-		};
-
+	constructor(...args) {
+		super(...args);
+		this.mountView = this.mountView.bind(this);
+		this.mountCanvas = this.mountCanvas.bind(this);
 		this.state = {};
 	}
 
@@ -53,6 +24,50 @@ class CanvasComponent extends PureComponent {
 			if (nextProps.AsyncPainter !== this.props.AsyncPainter && nextProps.AsyncPainter && nextState.context) {
 				nextProps.AsyncPainter.replaceContext(nextState.context);
 			}
+		}
+	}
+
+	mountView(view){
+		// Scaling lets us adjust the painter function for
+		// high density displays and zoomed browsers.
+		// Painter functions decide how to use scaling
+		// on a case-by-case basis.
+		if (view) {
+			const pixelScale = this.props.pixelScale || 1;
+			const ratio = window.devicePixelRatio || 1;
+			const width = (view.clientWidth * ratio) | 0;
+			const height = (view.clientHeight * ratio) | 0;
+			this.setState(() => {
+				return {
+					view,
+					width,
+					height,
+					ratio,
+					pixelScale,
+				};
+			});
+		}
+	}
+
+	mountCanvas(canvas){
+		if (canvas) {
+			let context = canvas.getContext('2d');
+			const { state } = this;
+			// store width, height and ratio in context for paint functions
+			context.width = state.width;
+			context.height = state.height;
+			context.pixelRatio = state.ratio;
+			context.pixelScale = state.pixelScale;
+			if (this.props.AsyncPainter) {
+				this.props.AsyncPainter.replaceContext(context);
+			}
+			const newState = {
+				canvas,
+				context,
+			};
+			this.setState(() => {
+				return newState;
+			});
 		}
 	}
 
@@ -100,19 +115,19 @@ CanvasComponent.propTypes = {
  * Expects a `paint` function that takes a `context` to draw on. After the canvas is mounted, this paint function will be called _once_. Pixel dimensions are stored in context.width, context.height and context.pixelRatio, making it possible for paint functions to depend on canvas size. Whenever the paint function or the canvas size changes it will  call this paint function, passing the canvas context
  */
 export class Canvas extends PureComponent {
-	constructor(props) {
-		super(props);
-		this.state = { AsyncPainter: new AsyncPainter(props.paint, null) };
+	constructor(...args) {
+		super(...args);
+		this.AsyncPainter = new AsyncPainter(this.props.paint, null);
 	}
 
-	componentWillReceiveProps(nextProps){
-		if(nextProps.paint !== this.props.paint){
-			this.state.AsyncPainter.replacePaint(nextProps.paint, nextProps.noBump);
+	componentWillReceiveProps(nextProps) {
+		if (nextProps.paint !== this.props.paint) {
+			this.AsyncPainter.replacePaint(nextProps.paint, nextProps.noBump);
 		}
 	}
 
 	componentWillUnMount() {
-		this.state.AsyncPainter.remove();
+		this.AsyncPainter.remove();
 	}
 
 	render() {
@@ -121,7 +136,9 @@ export class Canvas extends PureComponent {
 		// will then call the passed paint function with the right dimensions.
 		const { props } = this;
 		let style = Object.assign({}, props.style);
-		let { width, height } = props;
+		let {
+			width, height,
+		} = props;
 		if (width) {
 			style.minWidth = (width | 0) + 'px';
 			style.maxWidth = (width | 0) + 'px';
@@ -138,9 +155,10 @@ export class Canvas extends PureComponent {
 				noResize={width !== undefined && height !== undefined}
 				ignoreWidth={props.ignoreWidth}
 				ignoreHeight={props.ignoreHeight}
+				ignoreResize={props.ignoreResize}
 				watchedVal={props.watchedVal} >
 				<CanvasComponent
-					AsyncPainter={this.state.AsyncPainter}
+					AsyncPainter={this.AsyncPainter}
 					pixelScale={props.pixelScale}
 					className={props.className}
 					style={style}
@@ -152,12 +170,18 @@ export class Canvas extends PureComponent {
 
 Canvas.propTypes = {
 	paint: PropTypes.func,
+	/** Never bump rendering to front of queue */
 	noBump: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,
 	pixelScale: PropTypes.number,
+	/** Trigger remount whenever this value changes */
 	watchedVal: PropTypes.any,
+	/** Do not trigger remount on resize */
+	ignoreResize: PropTypes.bool,
+	/** Do not trigger remount on width resize */
 	ignoreWidth: PropTypes.bool,
+	/** Do not trigger remount on height resize */
 	ignoreHeight: PropTypes.bool,
 	className: PropTypes.string,
 	style: PropTypes.object,

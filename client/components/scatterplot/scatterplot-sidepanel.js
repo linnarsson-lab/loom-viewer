@@ -118,15 +118,17 @@ PlotSettingsTabContent.propTypes = {
 };
 
 export class ScatterPlotSidepanel extends Component {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.selectTab = this.selectTab.bind(this);
 	}
 
 	componentWillMount() {
 		const { props } = this;
-		this.setState({
-			filteredValues: filteredValuesComponent(props),
+		this.setState( () => {
+			return {
+				filteredValues: filteredValuesComponent(props),
+			};
 		});
 	}
 
@@ -140,17 +142,24 @@ export class ScatterPlotSidepanel extends Component {
 			dataset,
 		} = nextProps;
 
-		if (dataset.viewState[axis].filter !== this.props.dataset.viewState[axis].filter) {
+		if (dataset.viewState[axis].filter !==
+			this.props.dataset.viewState[axis].filter) {
+
 			filteredValues = filteredValuesComponent(nextProps);
-			this.setState({
-				filteredValues,
+			this.setState(() => {
+				return { filteredValues };
 			});
 		}
 
 	}
 
 	selectTab(key) {
-		const { dispatch, dataset, axis } = this.props;
+		const {
+			dispatch,
+			dataset,
+			axis,
+		} = this.props;
+
 		if (key === '+') {
 			// new tab
 		} else {

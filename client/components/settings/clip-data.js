@@ -78,13 +78,15 @@ function handleChangeFactory(props, key, value){
 }
 
 export class ClipDataSettings extends Component {
-	constructor(props){
-		super(props);
-		this.clampRangeHC = clampRangeHandleChangeFactory(props);
+	constructor(...args){
+		super(...args);
+		this.clampRangeHC = clampRangeHandleChangeFactory(this.props);
 	}
 
 	render() {
-		const { props } = this;
+		const {
+			props,
+		} = this;
 
 		const {
 			plotSetting,
@@ -130,9 +132,13 @@ export class ClipDataSettings extends Component {
 						<OverlayTooltip
 							tooltip={`Clip data between ${lowerBound}% to ${upperBound}% of min/max values`}
 							tooltipId={'clip-range-tltp'} >
-							<div style={{ height: '50px', padding: '10px' }}>
+							<div style={{
+								height: '50px', padding: '10px',
+							}}>
 								<Range
-									marks={{ 0: '0%', 20: '20%', 40: '40%', 60: '60%', 80: '80%', 100: '100%' }}
+									marks={{
+										0: '0%', 20: '20%', 40: '40%', 60: '60%', 80: '80%', 100: '100%',
+									}}
 									min={0}
 									max={100}
 									pushable={0}

@@ -6,36 +6,39 @@ import { SparklineList } from './sparklines';
 
 import { ViewInitialiser } from '../view-initialiser';
 
+const containerStyle = {
+	overflowX: 'hidden',
+	minHeight: 0,
+};
+
+const sidepanelStyle = {
+	overflowX: 'hidden',
+	overFlowY: 'hidden',
+	minHeight: 0,
+	width: '300px',
+	margin: '10px',
+};
+
 class SparklineViewComponent extends PureComponent {
 	render() {
-		const { dispatch, dataset } = this.props;
+		const {
+			dispatch,
+			dataset,
+		} = this.props;
 		const { col } = dataset;
 		const { sparkline } = dataset.viewState;
 		const {
 			indices,
 			scatterPlots,
 		} = dataset.viewState.col;
-		// The old column attribute values that we displayed in the "legend"
-		let legendData = col.attrs[sparkline.colAttr];
-		// if colAttr does not exist (for example, the default values
-		// in the Loom interface is not present), pick the first column
-		if (legendData === undefined) {
-			legendData = col.attrs[col.keys[0]];
-		}
 
 		const scatterPlotSettings = scatterPlots.plotSettings[0];
 		return (
-			<div className='view' style={{ overflowX: 'hidden', minHeight: 0 }}>
+			<div className='view' style={containerStyle}>
 				<SparklineSidepanel
 					dispatch={dispatch}
 					dataset={dataset}
-					style={{
-						overflowX: 'hidden',
-						overFlowY: 'hidden',
-						minHeight: 0,
-						width: '300px',
-						margin: '10px',
-					}}
+					style={sidepanelStyle}
 				/>
 				<SparklineList
 					attrs={dataset.col.attrs}

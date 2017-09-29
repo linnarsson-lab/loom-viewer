@@ -75,7 +75,11 @@ export class CollapsibleSettings extends PureComponent {
 	}
 
 	toggle() {
-		this.setState({ open: !this.state.open });
+		this.setState(() => {
+			return {
+				open: !this.state.open,
+			};
+		});
 	}
 
 	render() {

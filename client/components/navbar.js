@@ -5,11 +5,9 @@ import { Navbar, Nav, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import DocumentTitle from 'react-document-title';
 
-import { Remount } from './remount';
-
 // Since this is constant, we hoist it
 const navDataset = (
-	<LinkContainer to='/'>
+	<LinkContainer key='datasets' to='/'>
 		<NavItem eventKey={'datasets'}>
 			Loom
 		</NavItem>
@@ -37,24 +35,50 @@ const dummyNavBar = (
 );
 
 const views = [
-	{ link: 'heatmap', label: 'Heatmap' },
-	{ link: 'sparklines', label: 'Sparklines' },
-	{ link: 'cells', label: 'Cell Scatterplot' },
-	{ link: 'cellmetadata', label: 'Cell Metadata' },
-	{ link: 'genes', label: 'Gene Scatterplot' },
-	{ link: 'genemetadata', label: 'Gene Metadata' },
+	{
+		link: 'heatmap',
+		label: 'Heatmap',
+	},
+	{
+		link: 'sparklines',
+		label: 'Sparklines',
+	},
+	{
+		link: 'cells',
+		label: 'Cell Scatterplot',
+	},
+	{
+		link: 'cellmetadata',
+		label: 'Cell Metadata',
+	},
+	{
+		link: 'genes',
+		label: 'Gene Scatterplot',
+	},
+	{
+		link: 'genemetadata',
+		label: 'Gene Metadata',
+	},
 ];
 
 export class NavbarView extends Component {
 	render() {
-		const { project, filename, viewStateURI } = this.props.params;
+
+		const {
+			project,
+			filename,
+			viewStateURI,
+		} = this.props.params;
 
 		const isViewingDataset = project && filename;
 
 		const datasetTitle = `${project}/${filename}`;
 
 		const navTitle = (
-			<NavItem disabled eventKey={'title'}>
+			<NavItem
+				key='title'
+				eventKey={'title'}
+				disabled>
 				{isViewingDataset ? datasetTitle : 'Data Sets'}
 			</NavItem>
 		);
@@ -90,15 +114,13 @@ export class NavbarView extends Component {
 		);
 
 		return (
-			<DocumentTitle title={isViewingDataset ? datasetTitle : 'Loom'}>
-				<div className='view-vertical'>
+			<DocumentTitle key='document-title' title={isViewingDataset ? datasetTitle : 'Loom'}>
+				<div key='main-view' className='view-vertical'>
 					<div>
 						{realNavBar}
 						{dummyNavBar}
 					</div>
-					<Remount>
-						{this.props.children}
-					</Remount>
+					{this.props.children}
 				</div>
 			</DocumentTitle>
 		);

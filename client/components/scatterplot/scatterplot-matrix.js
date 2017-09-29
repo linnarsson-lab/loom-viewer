@@ -13,7 +13,11 @@ import { SET_VIEW_PROPS } from 'actions/actionTypes';
 // being fetched or retrieved from cache
 function changedAttrs(oldAttrs, newAttrs, settings) {
 	if (!(oldAttrs, newAttrs, settings)) { return false; }
-	const { x, y } = settings;
+	const {
+		x,
+		y,
+	} = settings;
+
 	const xAttr = oldAttrs[x.attr],
 		yAttr = oldAttrs[y.attr],
 		colorAttr = oldAttrs[settings.colorAttr],
@@ -27,8 +31,8 @@ function changedAttrs(oldAttrs, newAttrs, settings) {
 
 
 class SinglePlot extends Component {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		const {
 			dispatch,
 			dataset,
@@ -72,8 +76,10 @@ class SinglePlot extends Component {
 			indices !== props.indices ||
 			settings !== props.settings ||
 			changedAttrs(attrs, props.attrs, settings)) {
-			this.setState({
-				paint: scatterPlot(attrs, indices, settings),
+			this.setState(() => {
+				return {
+					paint: scatterPlot(attrs, indices, settings),
+				};
 			});
 		}
 	}
@@ -150,15 +156,17 @@ SinglePlot.propTypes = {
 };
 
 export class ScatterPlotMatrix extends Component {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.mountedView = this.mountedView.bind(this);
 		this.state = { matrix: [] };
 	}
 
 	mountedView(view) {
 		if (view) {
-			this.setState({ view });
+			this.setState(() => {
+				return { view };
+			});
 		}
 	}
 

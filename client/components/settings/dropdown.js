@@ -4,89 +4,78 @@ import PropTypes from 'prop-types';
 import VirtualizedSelect from 'react-virtualized-select';
 import createFilterOptions from 'react-select-fast-filter-options';
 
-//TODO: document what DropdownMenu expects
 export class DropdownMenu extends PureComponent {
 
-	constructor(props) {
-		super(props);
-		this.handleChange = this.handleChange.bind(this);
-		this.setButtonName = this.setButtonName.bind(this);
-	}
+	constructor(...args) {
+		super(...args);
 
-	componentWillMount() {
-		let { options, filterOptions, value, multi } = this.props;
-		let i = options.length, newOptions = new Array(i);
-		while (i--) {
-			newOptions[i] = {
-				value: options[i],
-				label: options[i],
-			};
-		}
+		this.handleChange = (selectValue) => {
+			if (selectValue !== undefined && selectValue !== null) {
+				this.props.onChange(selectValue.value);
+				this.setState(() => {
+					return selectValue;
+				});
+			}
+		};
 
-		if (!filterOptions && options.length > 100) {
-			filterOptions = createFilterOptions({ options: newOptions });
-		}
-
-		this.setState({
-			options: newOptions,
+		const {
+			options,
 			filterOptions,
+			value,
+		} = this.props;
+
+		let newOptions = options.map((option) => {
+			return {
+				value: option,
+				label: option,
+			};
 		});
-		this.setButtonName(value, multi);
+
+		this.state = {
+			options: newOptions,
+			filterOptions: (
+				!filterOptions && options.length > 100 ?
+					createFilterOptions({ options: newOptions }) :
+					filterOptions
+			),
+			value,
+			label: value,
+		};
 	}
 
 	componentWillReceiveProps(nextProps) {
-		let { value, multi } = nextProps;
-		this.setButtonName(value, multi);
-	}
-
-	setButtonName(value, multi) {
-		let newState = {};
-		if (multi) {
-			if (value) {
-				const genes = value;
-				let i = genes.length;
-				newState.values = new Array(i);
-				while (i--) {
-					newState.values[i] = { value: genes[i], label: genes[i] };
-				}
-			}
-		} else {
-			if (value) {
-				newState = { value: value, label: value };
-			} else {
-				newState = { value: undefined, label: undefined };
-			}
-		}
-		this.setState(newState);
-	}
-
-	handleChange(event) {
-		this.setState(event);
-		if (event !== undefined && event !== null) {
-			const { onChange } = this.props;
-			if (this.props.multi) {
-				let i = event.length, value = new Array(i);
-				while (i--) {
-					value[i] = event[i].value;
-				}
-				onChange(value);
-			} else {
-				onChange(event.value);
-			}
+		const { value } = nextProps;
+		if (value) {
+			this.setState(() => {
+				return {
+					value: value,
+					label: value,
+				};
+			});
 		}
 	}
 
 	render() {
-		const { options, filterOptions, value } = this.state;
+
+		const {
+			options,
+			filterOptions,
+			value,
+		} = this.state;
+
+		const {
+			clearable,
+			style,
+		} = this.props;
+
 		return (
 			<VirtualizedSelect
 				value={value}
 				options={options}
 				filterOptions={filterOptions}
 				onChange={this.handleChange}
-				multi={this.props.multi}
-				clearable={this.props.clearable === true}
-				style={this.props.style}
+				clearable={clearable === true}
+				style={style}
 				maxHeight={100}
 			/>
 		);
@@ -101,7 +90,6 @@ DropdownMenu.propTypes = {
 	options: PropTypes.array.isRequired,
 	filterOptions: PropTypes.func,
 	onChange: PropTypes.func.isRequired,
-	multi: PropTypes.bool,
 	clearable: PropTypes.bool,
 	style: PropTypes.object,
 };

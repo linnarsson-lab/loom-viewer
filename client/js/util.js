@@ -1,7 +1,16 @@
+// You'd be surprised how often I need this.
+// I hope webpack puts it at top level...
+
+export function nullFunc(){}
+
 // === Color handling ===
 
 import * as colorLUT from './colors';
-const { solar256, YlGnBu256, category20 } = colorLUT;
+const {
+	solar256,
+	YlGnBu256,
+	category20,
+} = colorLUT;
 
 export function getPalette(colorMode) {
 	switch (colorMode) {
@@ -38,8 +47,14 @@ export function logProjectArray(data) {
 }
 
 export function clipRange(attr, settings) {
-	let { min, max } = attr;
-	let { lowerBound, upperBound } = settings;
+	let {
+		min,
+		max,
+	} = attr;
+	let {
+		lowerBound,
+		upperBound,
+	} = settings;
 	if (lowerBound === undefined) {
 		lowerBound = 0;
 	}
@@ -62,7 +77,12 @@ export function clipRange(attr, settings) {
 		clipMin = min + lowerBound * delta / 100;
 		clipMax = min + upperBound * delta / 100;
 	}
-	return { min, max, clipMin, clipMax };
+	return {
+		min,
+		max,
+		clipMin,
+		clipMax,
+	};
 }
 
 export function attrToColorFactory(colorAttr, colorMode, settings) {
@@ -82,7 +102,12 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap2':
 		case 'Flame':
 		case 'Icicle':
-			let { min, max, clipMin, clipMax } = clipRange(colorAttr, settings);
+			let {
+				min,
+				max,
+				clipMin,
+				clipMax,
+			} = clipRange(colorAttr, settings);
 			const isZero = min === 0;
 
 			if (min === max) {
@@ -175,7 +200,12 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
-			let { min, max, clipMin, clipMax } = clipRange(colorAttr, settings);
+			let {
+				min,
+				max,
+				clipMin,
+				clipMax,
+			} = clipRange(colorAttr, settings);
 			const isZero = min === 0;
 			if (min === max) {
 				if (isZero) {
@@ -310,18 +340,27 @@ export function countElements(array, start, end) {
 	// smallest element of the array.
 	// Many gene arrays contain mostly zeros, which will
 	// be at the front, so this can save a bit of time.
-	let val = sorted[i], sentinel = sorted[start], j = i, uniques = [];
+	let val = sorted[i],
+		sentinel = sorted[start],
+		j = i,
+		uniques = [];
 	while (val !== sentinel) {
 
 		// keep going until a different value is found
 		while (j > start && sorted[j] === val) { j--; }
 
-		uniques.push({ val, count: i - j });
+		uniques.push({
+			val,
+			count: i - j,
+		});
 		i = j;
 		val = sorted[j];
 	}
 	// add skipped first value
-	uniques.push({ val, count: j + 1 });
+	uniques.push({
+		val,
+		count: j + 1,
+	});
 
 	return uniques;
 }
@@ -329,8 +368,12 @@ export function countElements(array, start, end) {
 export function findMostCommon(array, start, end) {
 	start = start > 0 ? start : 0;
 	end = end < array.length ? end : array.length;
-	let i = 0, j = 0, sorted = array.slice(start, end).sort(),
-		val = sorted[i], mv = val, mc = 1;
+	let i = 0,
+		j = 0,
+		sorted = array.slice(start, end).sort(),
+		val = sorted[i],
+		mv = val,
+		mc = 1;
 	// linearly run through the array, count unique values
 	while (val !== null && val !== undefined) {
 
@@ -356,7 +399,8 @@ export function calcMinMax(data, start, end) {
 	start = start || 0;
 	end = end || data.length;
 
-	let min, max;
+	let min,
+		max;
 	let i = end - 1;
 	let v = data[i];
 	if (typeof v === 'number') {
@@ -367,7 +411,10 @@ export function calcMinMax(data, start, end) {
 			max = max > v ? max : v;
 		}
 	}
-	return { min, max };
+	return {
+		min,
+		max,
+	};
 }
 
 /**
@@ -375,7 +422,9 @@ export function calcMinMax(data, start, end) {
  * and finds min and max values of the array.
 */
 export function isIntegerMinMax(array) {
-	let min, max, isInt;
+	let min,
+		max,
+		isInt;
 	let i = array.length - 1;
 	let v = array[i];
 	if (typeof v === 'number') {
@@ -388,14 +437,19 @@ export function isIntegerMinMax(array) {
 			isInt = isInt && v === (v | 0);
 		}
 	}
-	return { min, max, isInt };	// |0 forces to integer value, we can
+	return {
+		min,
+		max,
+		isInt,
+	};	// |0 forces to integer value, we can
 }
 
 export function normalise(array) {
 	let data = Float64Array.from(array);
 	// sorted summation reduces error
 	data.sort();
-	let sum = 0, i = 0;
+	let sum = 0,
+		i = 0;
 	for (; i < data.length; i++) {
 		sum += data[i];
 	}
@@ -409,14 +463,25 @@ export function normalise(array) {
 	}
 	i = data.length;
 	const deviation = sum / i;
-	let normMin = Number.MAX_VALUE, normMax = Number.MIN_VALUE;
+	let normMin = Number.MAX_VALUE,
+		normMax = Number.MIN_VALUE;
 	while (i--) {
 		let norm = data[i] / deviation;
 		if (norm < normMin) { normMin = norm; }
 		if (norm > normMax) { normMax = norm; }
 		data[i] = norm;
 	}
-	return { data, mean, deviation, normMin, normMax };
+	return {
+		data,
+
+		mean,
+
+		deviation,
+
+		normMin,
+
+		normMax,
+	};
 }
 
 // === Metadata Arrays ===
@@ -433,8 +498,15 @@ export function normalise(array) {
 // Convert plain array to object with
 // typed/indexed array and metadata
 export function convertJSONarray(arr, name) {
-	let { arrayType, data, indexedVal, uniques,
-		colorIndices, min, max } = arr;
+	let {
+		arrayType,
+		data,
+		indexedVal,
+		uniques,
+		colorIndices,
+		min,
+		max,
+	} = arr;
 
 	if (indexedVal) {
 		indexedVal.unshift(null);
@@ -538,7 +610,8 @@ export function findIndices(array, comparator) {
 	// 4 billion elements; uses the smallest fitting typed array
 	// for smaller input sizes.
 	const indicesConstr = array.length < 256 ? Uint8Array : array.length < 65535 ? Uint16Array : Uint32Array;
-	let indices = new indicesConstr(array.length), i = array.length;
+	let i = array.length,
+		indices = new indicesConstr(i);
 	// unrolled 16-decrement loop was benchmarked as the fastest
 	while (i - 16 > 0) {
 		indices[--i] = i;
@@ -627,7 +700,8 @@ export function attrIndexedSubset(attr, indices, i0, i1) {
 export function arraySubset(data, arrayType, indices, i0, i1) {
 	i0 = i0 || 0;
 	i1 = i1 === undefined ? indices.length : i1;
-	let selection = new (arrayConstr(arrayType))(i1 - i0), i = i0;
+	let i = i0,
+		selection = new (arrayConstr(arrayType))(i1 - i0);
 	while (i < i1) {
 		selection[i - i0] = data[indices[i++]];
 	}
@@ -637,7 +711,8 @@ export function arraySubset(data, arrayType, indices, i0, i1) {
 export function indexedSubset(data, indices, i0, i1, indexedVal) {
 	i0 = i0 || 0;
 	i1 = i1 === undefined ? indices.length : i1;
-	let selection = new Array(i1 - i0), i = i0;
+	let i = i0,
+		selection = new Array(i1 - i0);
 	while (i < i1) {
 		selection[i - i0] = indexedVal[data[indices[i]]];
 		i++;
@@ -730,7 +805,8 @@ export function disjointArrays(a, b) {
 		a = b;
 		b = t;
 	}
-	let overlap = [], i = a.length;
+	let overlap = [],
+		i = a.length;
 	while (i--) {
 		let aVal = a[i];
 		let j = b.length;

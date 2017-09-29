@@ -7,16 +7,20 @@ import {
 	ButtonGroup,
 } from 'react-bootstrap';
 
-import { popoverTest } from './popover';
+import { popoverTest } from 'components/scatterplot/popover';
 
 import {
 	AttrLegend,
 	ClipDataSettings,
 	CollapsibleSettings,
 	DropdownMenu,
-} from '../settings/settings';
+} from 'components/settings/settings';
 
-import { setViewProps } from '../../actions/set-viewprops';
+import { setViewProps } from 'actions/set-viewprops';
+
+// to ensure that selected buttons don't dispatch anything.
+import { nullFunc } from 'js/util';
+
 
 function colorAttrFactory(props) {
 	const {
@@ -82,9 +86,6 @@ colorSettingsFactory.propTypes = {
 	axis: PropTypes.string.isRequired,
 	plotNr: PropTypes.number.isRequired,
 };
-
-// to ensure that selected buttons don't dispatch anything.
-function nullFunc() { }
 
 export class ColorSettings extends Component {
 	shouldComponentUpdate(nextProps) {

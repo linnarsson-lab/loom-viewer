@@ -1,47 +1,33 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { Heatmap } from './heatmap';
-import { HeatmapSidepanel } from './heatmap-sidepanel';
+import { Heatmap } from 'components/heatmap/heatmap';
+import { HeatmapSidepanel } from 'components/heatmap/heatmap-sidepanel';
 
-import { ViewInitialiser } from '../view-initialiser';
-import { Canvas } from '../canvas';
+import { ViewInitialiser } from 'components/view-initialiser';
+import { Canvas } from 'components/canvas';
+import { Remount } from 'components/remount';
 
-import { sparkline } from '../../plotters/sparkline';
+import { sparkline } from 'plotters/sparkline';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { SET_VIEW_PROPS } from 'actions/actionTypes';
 
 import { debounce } from 'lodash';
 
-import { merge } from '../../js/util';
+import { merge } from 'js/util';
 
 // Just the map+sparklines part
-class HeatmapMapComponent extends Component {
+class HeatmapMapPureComponent extends PureComponent {
 
-	componentWillMount() {
-		const { dispatch, dataset } = this.props;
-
-		this.heatmapContainer = this.heatmapContainer.bind(this);
-
-		const onViewChanged = debounce(
-			(val) => {
-				const { dataBounds, zoom, center } = val;
-				dispatch({
-					type: SET_VIEW_PROPS,
-					stateName: 'heatmap',
-					path: dataset.path,
-					viewState: { heatmap: { dataBounds, zoom, center } },
-				});
-			},
-			50
-		);
-		this.setState({ onViewChanged });
+	constructor(...args) {
+		super(...args);
+		this.mountContainer = this.mountContainer.bind(this);
+		this.onViewChanged = debounce(this.onViewChanged.bind(this), 50);
 	}
 
-	heatmapContainer(heatmapContainer) {
-		const el = heatmapContainer;
-		if (heatmapContainer) {
-			const sparklineHeight = 80 / (window.devicePixelRatio || 1);
+	mountContainer(el){
+		if (el) {
+			const sparklineHeight = 80 / (window.devicePixelRatio || 1) | 0;
 			let heatmapWidth = el.clientWidth - sparklineHeight - 20;
 			let heatmapHeight = el.clientHeight - sparklineHeight - 20;
 			const heatmapStyle = {
@@ -52,15 +38,43 @@ class HeatmapMapComponent extends Component {
 				minHeight: `${heatmapHeight}px`,
 				maxHeight: `${heatmapHeight}px`,
 			};
-			this.setState({
-				heatmapContainer,
+			const newState = {
+				heatmapContainer: el,
 				sparklineHeight,
 				heatmapWidth,
 				heatmapHeight,
 				heatmapStyle,
+			};
+			this.setState(() => {
+				return newState;
 			});
 		}
 	}
+
+	onViewChanged(val){
+		const {
+			dataset,
+			dispatch,
+		} = this.props;
+		const {
+			dataBounds,
+			zoom,
+			center,
+		} = val;
+		dispatch({
+			type: SET_VIEW_PROPS,
+			stateName: 'heatmap',
+			path: dataset.path,
+			viewState: {
+				heatmap: {
+					dataBounds,
+					zoom,
+					center,
+				},
+			},
+		});
+	}
+
 	render() {
 		const {
 			heatmapContainer,
@@ -72,9 +86,14 @@ class HeatmapMapComponent extends Component {
 
 		if (heatmapContainer) {
 			// Calculate the layout of everything, which we can only
-			// do after mounting because we rely on the parent node.
-			const { dataset } = this.props;
-			const { col, row } = dataset;
+			// do after mounting, because we rely on the parent node.
+			const {
+				dataset,
+			} = this.props;
+			const {
+				col,
+				row,
+			} = dataset;
 			const vs = dataset.viewState;
 			const hms = vs.heatmap;
 			const { dataBounds } = hms;
@@ -85,7 +104,10 @@ class HeatmapMapComponent extends Component {
 			const colSettings = merge(
 				vs.col.settings,
 				{
-					dataRange: [dataBounds[0], dataBounds[2]],
+					dataRange: [
+						dataBounds[0],
+						dataBounds[2],
+					],
 				}
 			);
 
@@ -96,13 +118,16 @@ class HeatmapMapComponent extends Component {
 			const rowSettings = merge(
 				vs.row.settings,
 				{
-					dataRange: [dataBounds[1], dataBounds[3]],
+					dataRange: [
+						dataBounds[1],
+						dataBounds[3],
+					],
 					orientation: 'vertical',
 				}
 			);
 			const rowSparkline = sparkline(rowAttr, vs.row.originalIndices, hms.rowMode, rowSettings, rowLabel);
 			return (
-				<div className='view-vertical' ref={this.heatmapContainer}>
+				<div className='view-vertical' ref={this.mountContainer}>
 					<Canvas
 						width={heatmapWidth}
 						height={sparklineHeight}
@@ -132,14 +157,18 @@ class HeatmapMapComponent extends Component {
 	}
 }
 
-HeatmapMapComponent.propTypes = {
+HeatmapMapPureComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
 
-class HeatmapComponent extends Component {
+class HeatmapPureComponent extends PureComponent {
 	render() {
-		const { dispatch, dataset } = this.props;
+		const {
+			dispatch,
+			dataset,
+		} = this.props;
+
 		return (
 			<div className='view'>
 				<HeatmapSidepanel
@@ -153,15 +182,17 @@ class HeatmapComponent extends Component {
 						margin: '10px',
 					}}
 				/>
-				<HeatmapMapComponent
-					dataset={dataset}
-					dispatch={dispatch} />
+				<Remount>
+					<HeatmapMapPureComponent
+						dataset={dataset}
+						dispatch={dispatch} />
+				</Remount>
 			</div>
 		);
 	}
 }
 
-HeatmapComponent.propTypes = {
+HeatmapPureComponent.propTypes = {
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
@@ -169,7 +200,7 @@ HeatmapComponent.propTypes = {
 export const HeatmapViewInitialiser = function (props) {
 	return (
 		<ViewInitialiser
-			View={HeatmapComponent}
+			View={HeatmapPureComponent}
 			dispatch={props.dispatch}
 			params={props.params}
 			datasets={props.datasets} />
@@ -186,7 +217,7 @@ import { connect } from 'react-redux';
 
 // react-router-redux passes URL parameters
 // through ownProps.params. See also:
-// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-component
+// https://github.com/reactjs/react-router-redux#how-do-i-access-router-state-in-a-container-PureComponent
 const mapStateToProps = (state, ownProps) => {
 	return {
 		params: ownProps.params,

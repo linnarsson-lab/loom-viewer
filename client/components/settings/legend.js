@@ -2,11 +2,34 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'react-bootstrap';
 
-import { OverlayTooltip } from './collapsible';
+import { OverlayTooltip } from 'components/settings/collapsible';
 
-import { attrToColorFactory } from '../../js/util';
+import {
+	nullFunc,
+	attrToColorFactory,
+} from 'js/util';
 
-const nullfunc = () => { };
+const buttonStyle = {
+	whiteSpace: 'normal',
+	textAlign: 'left',
+};
+
+const iconStyle = {
+	fontStyle: 'normal',
+	fontWeight: 'bold',
+};
+
+const restStyle1 = { fontStyle: 'normal' };
+const restStyle2 = { display: 'flex' };
+
+const rowStyle = {
+	display: 'flex',
+	flex: '0 0 auto',
+	flexWrap: 'wrap',
+	justifyContent: 'start',
+	alignContent: 'start',
+	flexDirection: 'row',
+};
 
 export class AttrLegend extends PureComponent {
 	render() {
@@ -17,6 +40,7 @@ export class AttrLegend extends PureComponent {
 			mode,
 			settings,
 		} = this.props;
+
 		const {
 			uniques,
 			indexedVal,
@@ -41,7 +65,12 @@ export class AttrLegend extends PureComponent {
 			i = l,
 			visibleData = new Array(l + (l < uniques.length ? 1 : 0));
 		while (i--) {
-			let { val, count } = uniques[i];
+
+			let {
+				val,
+				count,
+			} = uniques[i];
+
 			const filtered = filteredVals[val];
 			const cellStyle = {
 				display: 'flex',
@@ -58,26 +87,24 @@ export class AttrLegend extends PureComponent {
 				dataVal = dataVal.toExponential(3);
 			}
 
-			const valFilterFunc = filterFunc ? filterFunc(val) : nullfunc;
+			const valFilterFunc = filterFunc ? filterFunc(val) : nullFunc;
+
+			const tooltipText = filtered ?
+				`Click to remove "${dataVal}" from filter` :
+				`Filter out "${dataVal}"`;
 
 			visibleData[i] = (
 				<td
 					key={`${i}_${val}`}
 					style={cellStyle}>
 					<OverlayTooltip
-						tooltip={filtered ?
-							`Click to remove "${dataVal}" from filter` :
-							`Filter out "${dataVal}"`}
+						tooltip={tooltipText}
 						tooltipId={`filter-${i}_${val}-tltp`}>
 						<Button
 							bsStyle='link'
-							style={{
-								whiteSpace: 'normal',
-								textAlign: 'left',
-							}}
+							style={buttonStyle}
 							onClick={valFilterFunc} >
-							<span style={{ fontStyle: 'normal', fontWeight: 'bold' }}>
-								{icon} {dataVal}: </span> {count}
+							<span style={iconStyle}>{icon} {dataVal}:</span> {count}
 						</Button>
 					</OverlayTooltip>
 				</td>
@@ -97,10 +124,10 @@ export class AttrLegend extends PureComponent {
 		}
 		if (rest) {
 			let icon = showBlock ? (
-				<span style={{ fontStyle: 'normal' }}>□ </span>
+				<span style={restStyle1}>□ </span>
 			) : null;
 			visibleData[l] = (
-				<td key={20} style={{ display: 'flex' }}>
+				<td key={20} style={restStyle2}>
 					{icon} (other): {rest}
 				</td>
 			);
@@ -109,7 +136,7 @@ export class AttrLegend extends PureComponent {
 		return (
 			<table>
 				<tbody>
-					<tr style={{ display: 'flex', flex: '0 0 auto', flexWrap: 'wrap', justifyContent: 'start', alignContent: 'start', flexDirection: 'row' }}>
+					<tr style={rowStyle}>
 						{visibleData}
 					</tr>
 				</tbody>

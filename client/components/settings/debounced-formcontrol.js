@@ -5,52 +5,61 @@ import { FormControl } from 'react-bootstrap';
 
 import { debounce } from 'lodash';
 
-export class DebouncedFormcontrol extends PureComponent {
+export class DebouncedFormControl extends PureComponent {
 
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.handleChange = this.handleChange.bind(this);
-	}
-
-	componentWillMount(){
-		this.setState({
-			type: this.props.type,
+		this.state = {
 			value: this.props.value,
 			onChange: this.props.onChange,
 			onChangeDebounced: debounce(this.props.onChange, this.props.time || 0),
-		});
+		};
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const newDebounce =
-			this.state.onChange !== nextProps.onChange ||
-			this.state.time !== nextProps.time;
+		let newState = {},
+			changedState = false;
+		const { state } = this;
 
-		const onChangeDebounced = newDebounce ?
-			debounce(nextProps.onChange, nextProps.time || 0)
-			:
-			this.state.onChangeDebounced;
+		if (
+			state.onChange !== nextProps.onChange ||
+			state.time !== nextProps.time
+		) {
+			newState.onChange = nextProps.onChange;
+			newState.onChangeDebounced = debounce(nextProps.onChange, nextProps.time || 0);
+			changedState = false;
+		}
 
-		this.setState({
-			type: nextProps.type,
-			value: nextProps.value,
-			onChange: nextProps.onChange,
-			onChangeDebounced,
-		});
+		if (state.value !== nextProps.value){
+			newState.value = nextProps.value;
+			changedState = false;
+		}
+
+		if (changedState){
+			this.setState(() => {
+				return newState;
+			});
+		}
 	}
 
 	handleChange(e) {
 		e.persist();
-		this.setState({ value: e.target.value });
+		const newState = { value: e.target.value };
+		this.setState(() => {
+			return newState;
+		});
 		this.state.onChangeDebounced(e);
 	}
 
 	render() {
-		const { key, type, value } = this.state;
+		const {
+			value,
+		} = this.state;
+
 		return (
 			<FormControl
-				key={key}
-				type={type}
+				type={this.props.type}
 				value={value}
 				onChange={this.handleChange}
 			/>
@@ -58,8 +67,7 @@ export class DebouncedFormcontrol extends PureComponent {
 	}
 }
 
-DebouncedFormcontrol.propTypes = {
-	key: PropTypes.any,
+DebouncedFormControl.propTypes = {
 	type: PropTypes.string,
 	value: PropTypes.string,
 	onChange: PropTypes.func,

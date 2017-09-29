@@ -16,19 +16,30 @@ localforage.config({
 	name: 'Loom',
 	storeName: 'datasets',
 });
-////////////////////////////////////////////////////////////////////////////////
-//
-// Fetch a row of values for a single gene for a dataset
-//
-////////////////////////////////////////////////////////////////////////////////
 
-// Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
-// Though its insides are different, you would use it just like any other action creator:
+// =======================================================
+// Fetch a row of values for a single gene for a dataset
+// =======================================================
+
+
+// Thunk action creator, following:
+// http://rackt.org/redux/docs/advanced/AsyncActions.html
+// Though its insides are different,
+// you would use it just like any
+// other action creator:
 // store.dispatch(fetchgene(...))
 
 export function fetchGene(dataset, genes) {
-	const { title, path, col, fetchedGenes, fetchingGenes } = dataset;
-	const { geneToRow, rowToGenes } = col;
+	const {
+		title,
+		path,
+		col,
+		fetchedGenes,
+		fetchingGenes,
+	} = dataset;
+	const {
+		geneToRow, rowToGenes,
+	} = col;
 	if (geneToRow === undefined || genes === undefined) {
 		return () => { };
 	} else {
@@ -147,9 +158,11 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 }
 
 function cacheGenes(genes, path) {
-	let keys = Object.keys(genes), items = {};
+	let keys = Object.keys(genes),
+		items = {};
 	for (let i = 0; i < keys.length; i++) {
-		let key = keys[i], gene = genes[key];
+		let key = keys[i],
+			gene = genes[key];
 		items[path + '/' + key] = gene;
 	}
 	console.log('caching genes: ', keys);
@@ -194,7 +207,8 @@ function requestGenesFailed(genes, path) {
 }
 
 function receiveGenes(attrs, genes, path) {
-	let fetchingGenes = {}, fetchedGenes = {};
+	let fetchingGenes = {},
+		fetchedGenes = {};
 	let i = genes.length;
 	while (i--) {
 		fetchingGenes[genes[i]] = false;

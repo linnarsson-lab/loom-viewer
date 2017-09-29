@@ -17,11 +17,14 @@ export function setViewProps(dataset, action) {
 		viewState,
 	} = action;
 
-	let geneFetchlist = [];
+	let geneFetchList = [];
 
 	const { geneToRow } = dataset.col;
 	if (geneToRow) {
-		const { fetchedGenes, fetchingGenes } = dataset;
+		const {
+			fetchedGenes,
+			fetchingGenes,
+		} = dataset;
 		// tests if a value is a gene and  needs to be fetched,
 		// if so appends it to list
 		const appendIfUnfetchedGene = (val) => {
@@ -29,8 +32,8 @@ export function setViewProps(dataset, action) {
 				geneToRow[val] !== undefined &&
 				!fetchedGenes[val] &&
 				!fetchingGenes[val] &&
-				geneFetchlist.indexOf(val) === -1) {
-				geneFetchlist.push(val);
+				geneFetchList.indexOf(val) === -1) {
+				geneFetchList.push(val);
 			}
 		};
 
@@ -40,9 +43,21 @@ export function setViewProps(dataset, action) {
 		}
 
 		if (viewState) {
-			const { col, heatmap, sparkline } = viewState;
+
+			const {
+				col,
+				heatmap,
+				sparkline,
+			} = viewState;
+
 			if (col) {
-				const { order, filter, scatterPlots } = col;
+
+				const {
+					order,
+					filter,
+					scatterPlots,
+				} = col;
+
 				if (order) {
 					for (let i = 0; i < order.length; i++) {
 						appendIfUnfetchedGene(order[i].key);
@@ -78,8 +93,8 @@ export function setViewProps(dataset, action) {
 	}
 
 	return (dispatch) => {
-		if (geneFetchlist.length) {
-			dispatch(fetchGene(dataset, geneFetchlist));
+		if (geneFetchList.length) {
+			dispatch(fetchGene(dataset, geneFetchList));
 		}
 		action.type = SET_VIEW_PROPS;
 		dispatch(action);

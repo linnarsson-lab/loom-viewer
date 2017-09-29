@@ -14,41 +14,58 @@ import {
 	ClipDataSettings,
 	CollapsibleSettings,
 	DropdownMenu,
-	//PrintSettings,
+	// PrintSettings,
 } from '../settings/settings';
 
 import { setViewProps } from '../../actions/set-viewprops';
 import { SET_VIEW_PROPS } from '../../actions/actionTypes';
 
-export class HeatmapSidepanel extends Component {
-	constructor(props) {
-		super(props);
-	}
-
-	componentWillMount() {
-		const { dispatch, dataset } = this.props;
-
-		const handleChangeFactory = (field) => {
-			return (value) => {
-				dispatch(setViewProps(dataset, {
-					stateName: 'heatmap',
-					path: dataset.path,
-					viewState: { heatmap: { [field]: value } },
-				}));
-			};
+function handleChangeFactory(that, field){
+	return (value) => {
+		const {
+			dataset,
+			dispatch,
+	 	} = that.props;
+		const action = {
+			stateName: 'heatmap',
+			path: dataset.path,
+			viewState: {
+				heatmap: {
+					[field]: value,
+				},
+			},
 		};
+		dispatch(setViewProps(dataset, action));
+	};
+}
 
-		const colAttrHC = handleChangeFactory('colAttr');
-		const colModeHC = handleChangeFactory('colMode');
-		const rowAttrHC = handleChangeFactory('rowAttr');
-		const rowModeHC = handleChangeFactory('rowMode');
-		const modeNames = ['Text', 'Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
+const modeNames = [
+	'Text',
+	'Bars',
+	'Box',
+	'Categorical',
+	'Stacked',
+	'Heatmap',
+	'Heatmap2',
+	'Flame',
+	'Icicle',
+];
 
-		this.setState({
-			colAttrHC, colModeHC,
-			rowAttrHC, rowModeHC,
-			modeNames,
-		});
+export class HeatmapSidepanel extends Component {
+	constructor(...args) {
+		super(...args);
+
+		const colAttrHC = handleChangeFactory(this, 'colAttr');
+		const colModeHC = handleChangeFactory(this, 'colMode');
+		const rowAttrHC = handleChangeFactory(this, 'rowAttr');
+		const rowModeHC = handleChangeFactory(this, 'rowMode');
+
+		this.state = {
+			colAttrHC,
+			colModeHC,
+			rowAttrHC,
+			rowModeHC,
+		};
 	}
 
 	shouldComponentUpdate(nextProps) {
@@ -62,7 +79,7 @@ export class HeatmapSidepanel extends Component {
 			hms.colMode !== nextHMS.colMode ||
 			hms.rowMode !== nextHMS.rowMode ||
 			hms.rowMode !== nextHMS.rowMode ||
-			//TODO: update to new schema
+			// TODO: update to new schema
 			vs.col.settings !== nvs.col.settings ||
 			vs.row.settings !== nvs.row.settings ||
 			ds.col.attrs[hms.colAttr] !== nds.col.attrs[nextHMS.colAttr] ||
@@ -76,12 +93,26 @@ export class HeatmapSidepanel extends Component {
 			className,
 			style,
 		} = this.props;
-		const { col, row, path, viewState } = dataset;
+
+		const {
+			col,
+			row,
+			path,
+			viewState,
+		} = dataset;
+
 		const hms = viewState.heatmap;
-		const { colAttrHC, colModeHC, rowAttrHC, rowModeHC, modeNames } = this.state;
+
+		const {
+			colAttrHC,
+			colModeHC,
+			rowAttrHC,
+			rowModeHC,
+		} = this.state;
 
 		const colAttr = col.attrs[hms.colAttr];
-		let colGradientSettings, colLegend;
+		let colGradientSettings,
+			colLegend;
 		if (colAttr) {
 			switch (hms.colMode) {
 				case 'Heatmap':
@@ -100,27 +131,30 @@ export class HeatmapSidepanel extends Component {
 					break;
 				default:
 			}
+
+			const colLegendFunc = (filterVal) => {
+				return () => {
+					dispatch(setViewProps(dataset, {
+						path,
+						axis: 'col',
+						filterAttrName: hms.colAttr,
+						filterVal,
+					}));
+				};
+			};
 			colLegend = (
 				<AttrLegend
 					mode={hms.colMode}
 					attr={colAttr}
-					filterFunc={(filterVal) => {
-						return () => {
-							dispatch(setViewProps(dataset, {
-								path,
-								axis: 'col',
-								filterAttrName: hms.colAttr,
-								filterVal,
-							}));
-						};
-					}}
+					filterFunc={colLegendFunc}
 					filteredAttrs={viewState.col.filter}
 				/>
 			);
 		}
 
 		const rowAttr = row.attrs[hms.rowAttr];
-		let rowGradientSettings, rowLegend;
+		let rowGradientSettings,
+			rowLegend;
 		if (rowAttr) {
 			switch (hms.rowMode) {
 				case 'Heatmap':
@@ -139,21 +173,22 @@ export class HeatmapSidepanel extends Component {
 					break;
 				default:
 			}
+			const rowLegendFunc = (filterVal) => {
+				return () => {
+					dispatch({
+						type: SET_VIEW_PROPS,
+						path,
+						axis: 'row',
+						filterAttrName: hms.rowAttr,
+						filterVal,
+					});
+				};
+			};
 			rowLegend = (
 				<AttrLegend
 					mode={hms.rowMode}
 					attr={rowAttr}
-					filterFunc={(filterVal) => {
-						return () => {
-							dispatch({
-								type: SET_VIEW_PROPS,
-								path,
-								axis: 'row',
-								filterAttrName: hms.rowAttr,
-								filterVal,
-							});
-						};
-					}}
+					filterFunc={rowLegendFunc}
 					filteredAttrs={viewState.row.filter}
 				/>
 			);

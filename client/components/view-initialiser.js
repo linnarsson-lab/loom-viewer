@@ -69,21 +69,34 @@ export class ViewInitialiser extends PureComponent {
 
 		const initialisationState = currentInitialisation(dispatch, datasets, path, viewStateURI, MANGLED_PATH);
 
-		this.setState({
-			path,
-			fetchingProjects,
-			fetchingDatasets,
-			mangledPath,
-			initialisationState,
+		this.setState(() => {
+			return {
+				path,
+				fetchingProjects,
+				fetchingDatasets,
+				mangledPath,
+				initialisationState,
+			};
 		});
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { dispatch, datasets, params } = nextProps;
-		const { path, initialisationState } = this.state;
+
+		const {
+			dispatch,
+			datasets,
+			params,
+		} = nextProps;
+
+		const {
+			path,
+			initialisationState,
+		} = this.state;
+
 		const newInitialisationState = currentInitialisation(dispatch, datasets, path, params.viewStateURI, initialisationState);
+
 		if (initialisationState !== newInitialisationState){
-			this.setState({ initialisationState: newInitialisationState });
+			this.setState(() => { return { initialisationState: newInitialisationState }; });
 		}
 	}
 
@@ -122,6 +135,7 @@ export class ViewInitialiser extends PureComponent {
 						dataset={datasets[path]} />
 				);
 		}
+		return '';
 	}
 }
 

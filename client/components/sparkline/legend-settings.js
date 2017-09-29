@@ -50,14 +50,20 @@ const compareProps = createComparator({
 
 export class LegendSettings extends Component {
 	componentWillMount() {
-		const { dispatch, dataset } = this.props;
+		const {
+			dispatch, dataset,
+		} = this.props;
 
 		const colAttrHC = (val) => {
 			dispatch({
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
-				viewState: { sparkline: { colAttr: val } },
+				viewState: {
+					sparkline: {
+						colAttr: val,
+					},
+				},
 			});
 		};
 
@@ -66,16 +72,22 @@ export class LegendSettings extends Component {
 				type: SET_VIEW_PROPS,
 				stateName: 'sparkline',
 				path: dataset.path,
-				viewState: { sparkline: { colMode: val } },
+				viewState: {
+					sparkline: {
+						colMode: val,
+					},
+				},
 			});
 		};
 
 		const colModeOptions = ['Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
 
-		this.setState({
-			colAttrHC,
-			colModeHC,
-			colModeOptions,
+		this.setState(() => {
+			return {
+				colAttrHC,
+				colModeHC,
+				colModeOptions,
+			};
 		});
 	}
 

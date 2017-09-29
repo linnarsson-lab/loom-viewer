@@ -1,48 +1,95 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import { TypedArrayProp } from '../../js/proptypes-typedarray';
+import { TypedArrayProp } from 'js/proptypes-typedarray';
 
 import {
 	Glyphicon,
 	Button,
 } from 'react-bootstrap';
 
-import { SortableTable } from '../sortabletable';
-import { Canvas } from '../canvas';
-import { sparkline } from '../../plotters/sparkline';
+import { SortableTable } from 'components/sortabletable';
+import { Canvas } from 'components/canvas';
+
+import { sparkline } from 'plotters/sparkline';
 
 import {
-	DebouncedFormcontrol,
+	DebouncedFormControl,
 	AttrLegend,
 	OverlayTooltip,
 } from '../settings/settings';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { SET_VIEW_PROPS } from 'actions/actionTypes';
 
-import { createComparator } from '../../js/state-comparator';
+import { createComparator } from 'js/state-comparator';
 
 import Fuse from 'fuse.js';
 
+const defaultModes = [
+	'Bars',
+	'Box',
+	'Heatmap',
+	'Heatmap2',
+	'Flame',
+	'Icicle',
+	'Categorical',
+	'Stacked',
+];
+
 export class MetadataPlot extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
+
 		this.modeCycler = this.modeCycler.bind(this);
 
-		const modes = props.modes ? props.modes : ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle', 'Categorical', 'Stacked'];
-		let idx = modes.indexOf(props.mode);
-		const mode = idx !== -1 ? idx : 0;
-		this.state = { modes, mode };
+		const modes = this.props.modes || defaultModes;
+		let idx = modes.indexOf(this.props.mode);
+		const mode = idx === -1 ? 0 : idx;
+
+		this.state = {
+			modes,
+			mode,
+		};
 	}
 
-	modeCycler() {
-		const { mode, modes } = this.state;
-		const nextMode = (mode + 1) % modes.length;
-		this.setState({ mode: nextMode });
+	modeCycler(){
+		const mode = (this.state.mode + 1) % this.state.modes.length;
+		this.setState(() => {
+			return { mode };
+		});
+	}
+
+	componentWillReceiveProps(nextProps){
+		const { state } = this;
+		if (state.modes !== nextProps.modes){
+			// switch to new modes
+			const modes = nextProps.modes || defaultModes;
+			// adjust current mode to new mode cycle
+			const currentMode = state.modes[state.mode];
+			let idx = modes.indexOf(currentMode);
+			const mode = idx === -1 ? 0 : idx;
+			this.setState(() => {
+				return {
+					modes,
+					mode,
+				};
+			});
+		}
 	}
 
 	render() {
-		const { modes, mode } = this.state;
-		const { attr, indices, filterFunc, filteredAttrs } = this.props;
+
+		const {
+			modes,
+			mode,
+		} = this.state;
+
+		const {
+			attr,
+			indices,
+			filterFunc,
+			filteredAttrs,
+		} = this.props;
+
 		return (
 			<div className='view-vertical'>
 				<OverlayTooltip
@@ -54,7 +101,8 @@ export class MetadataPlot extends PureComponent {
 						style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
 						<Canvas
 							height={80}
-							paint={sparkline(attr, indices, modes[mode])} />
+							paint={sparkline(attr, indices, modes[mode])}
+							ignoreHeight />
 					</Button>
 				</OverlayTooltip>
 				<AttrLegend
@@ -89,25 +137,37 @@ const samePropMetadataTable = createComparator({
 });
 
 class MetadataTable extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.createTableData = this.createTableData.bind(this);
-	}
 
-	// given that this component will only be rendered
-	// after the dataset has been fetched, and that the
-	// dataset is immutable, we might as well pre-process
-	// everything and store it in the state
-	componentWillMount() {
-		const { columns, tableData } = this.createTableData(this.props);
-		this.setState({ columns, tableData });
-	}
+		// given that this component will only be rendered
+		// after the dataset has been fetched, and that the
+		// dataset is immutable, we might as well pre-process
+		// everything and store it in the state
+		const {
+			columns,
+			tableData,
+		} = this.createTableData(this.props);
 
+		this.state = {
+			columns,
+			tableData,
+		};
+	}
 
 	componentWillReceiveProps(nextProps) {
 		if (!samePropMetadataTable(nextProps, this.props)){
-			const { columns, tableData } = this.createTableData(nextProps);
-			this.setState({ columns, tableData });
+			const {
+				columns,
+				tableData,
+			} = this.createTableData(nextProps);
+			this.setState(() => {
+				return {
+					columns,
+					tableData,
+				};
+			});
 		}
 	}
 
@@ -133,13 +193,19 @@ class MetadataTable extends PureComponent {
 			{
 				headers: ['ATTRIBUTE', searchField],
 				key: 'name',
-				dataStyle: { width: '10%', fontWeight: 'bold' },
+				dataStyle: {
+					width: '10%',
+					fontWeight: 'bold',
+				},
 			},
 			{
 				headers: ['DATA', sortOrderList],
 				headerStyles: [{}, sortOrderStyle],
 				key: 'val',
-				dataStyle: { width: '90%', fontStyle: 'italic' },
+				dataStyle: {
+					width: '90%',
+					fontStyle: 'italic',
+				},
 			},
 		];
 
@@ -168,13 +234,24 @@ class MetadataTable extends PureComponent {
 						<Button
 							onClick={onClick}
 							bsStyle='link'
-							style={{ width: '100%', height: '100%', whiteSpace: 'normal', textAlign: 'left' }}>
+							style={{
+								width: '100%',
+								height: '100%',
+								whiteSpace: 'normal',
+								textAlign: 'left',
+							}}>
 							{key}
 						</Button>
 					</OverlayTooltip>),
 			};
 			const attr = attributes[key];
-			const { data, indexedVal, arrayType, uniques, uniqueVal } = attr;
+			const {
+				data,
+				indexedVal,
+				arrayType,
+				uniques,
+				uniqueVal,
+			} = attr;
 
 			if (uniqueVal !== undefined) { // only one value
 				tableRow.val = (
@@ -216,8 +293,11 @@ class MetadataTable extends PureComponent {
 						tableRow.val = (
 							<MetadataPlot
 								attr={attr}
-								mode={ /* guess default category based on nr of unique values*/
-									uniques.length <= 20 ? 'Stacked' : 'Bars'}
+								mode={
+									/* guess default category based
+									on nr of unique values */
+									uniques.length <= 20 ? 'Stacked' : 'Bars'
+								}
 								indices={indices}
 								filterFunc={filterFunc}
 								filteredAttrs={filteredAttrs} />
@@ -226,12 +306,18 @@ class MetadataTable extends PureComponent {
 			}
 			tableData.push(tableRow);
 		}
-		return { columns, tableData };
+		return {
+			columns,
+			tableData,
+		};
 	}
 
 	render() {
 		const { dispatch } = this.props;
-		const { columns, tableData } = this.state;
+		const {
+			columns,
+			tableData,
+		} = this.state;
 		return (
 			<SortableTable
 				data={tableData}
@@ -264,9 +350,14 @@ export class MetadataComponent extends PureComponent {
 	// after the dataset has been fetched, and that the
 	// dataset is immutable, we might as well pre-process
 	// everything and store it in the state
-	constructor(props) {
-		super(props);
-		const { dispatch, dataset, stateName, axis } = props;
+	constructor(...args) {
+		super(...args);
+		const {
+			dispatch,
+			dataset,
+			stateName,
+			axis,
+		} = this.props;
 		const path = dataset.path;
 
 		const onClickAttrFactory = (sortAttrName) => {
@@ -296,13 +387,17 @@ export class MetadataComponent extends PureComponent {
 		const { searchVal } = dataset.viewState[stateName];
 
 		const searchMetadata = (event) => {
-			let searchVal = event.target.value ? event.target.value : '';
-			dispatch({
+			const action = {
 				type: SET_VIEW_PROPS,
 				path,
 				stateName,
-				viewState: { [stateName]: { searchVal } },
-			});
+				viewState: {
+					[stateName]: {
+						searchVal: event.target.value || '',
+					},
+				},
+			};
+			dispatch(action);
 		};
 
 		const { order } = dataset.viewState[axis];
@@ -356,7 +451,7 @@ export class MetadataComponent extends PureComponent {
 
 	updateSearchField(searchVal, searchMetadata) {
 		return (
-			<DebouncedFormcontrol
+			<DebouncedFormControl
 				type='text'
 				onChange={searchMetadata}
 				value={searchVal}
@@ -408,7 +503,12 @@ export class MetadataComponent extends PureComponent {
 		const { indices } = dataset.viewState[axis];
 
 		return (
-			<div className='view-vertical' style={{ margin: '1em 3em 1em 3em', overflowX: 'hidden' }}>
+			<div
+				className='view-vertical'
+				style={{
+					margin: '1em 3em 1em 3em',
+					overflowX: 'hidden',
+				}}>
 				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
 				<MetadataTable
 					attributes={attributes}

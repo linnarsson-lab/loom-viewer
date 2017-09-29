@@ -2,8 +2,8 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 export class FlexboxContainer extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.flexboxContainer = this.flexboxContainer.bind(this);
 		this.state = {};
 	}
@@ -24,12 +24,20 @@ export class FlexboxContainer extends PureComponent {
 				margin: 0,
 				padding: 0,
 			};
-			this.setState({ mountedContainer: div, boxStyle });
+			this.setState(() => {
+				return {
+					mountedContainer: div,
+					boxStyle,
+				};
+			});
 		}
 	}
 
 	render() {
-		const { mountedContainer, boxStyle } = this.state;
+		const {
+			mountedContainer,
+			boxStyle,
+		} = this.state;
 		const { props } = this;
 
 		return (

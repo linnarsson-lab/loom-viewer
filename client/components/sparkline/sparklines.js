@@ -2,6 +2,8 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
+import { Remount } from 'components/remount';
+
 import { Canvas } from 'components/canvas';
 
 import { groupedSparkline } from 'plotters/grouped-sparkline';
@@ -10,9 +12,10 @@ import { asyncPainterQueue } from 'plotters/async-painter';
 
 import { createComparator } from 'js/state-comparator';
 
+import { nullFunc } from 'js/util';
+
 const sparklineHeight = 40;
 
-function nullfunc() { }
 
 class Legend extends PureComponent {
 	render() {
@@ -27,7 +30,9 @@ class Legend extends PureComponent {
 		const data = col.attrs[colAttr];
 
 		const label = data ? data.name : null;
-		const painter = data ? groupedPainter(data, colMode, null, label, true) : nullfunc;
+		const painter = data ?
+			groupedPainter(data, colMode, null, label, true) :
+			nullFunc;
 
 		return (
 			<div style={{
@@ -121,10 +126,10 @@ function makeCanvas(gene, containerWidth, painters, idx) {
 }
 
 export class Sparklines extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 		this.updateChangedSparklines = this.updateChangedSparklines.bind(this);
-		this.state = makeSparklines(props);
+		this.state = makeSparklines(this.props);
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -153,7 +158,9 @@ export class Sparklines extends PureComponent {
 		const pSelection = this.props.selection,
 			pAttrs = this.props.attrs;
 
-		let { painters, canvases } = this.state;
+		let {
+			painters, canvases,
+		} = this.state;
 
 		let i = selection.length,
 			changedPlotters = i !== canvases.length;
@@ -174,9 +181,11 @@ export class Sparklines extends PureComponent {
 		if (changedPlotters) {
 			painters.length = selection.length;
 			canvases.length = selection.length;
-			this.setState({
-				painters,
-				canvases,
+			this.setState(() => {
+				return {
+					painters,
+					canvases,
+				};
 			});
 		}
 	}
@@ -215,10 +224,12 @@ Sparklines.propTypes = {
 };
 
 export class SparklineList extends PureComponent {
-	constructor(props) {
-		super(props);
+	constructor(...args) {
+		super(...args);
 
-		const { attrs, groupAttr, indices } = this.props;
+		const {
+			attrs, groupAttr, indices,
+		} = this.props;
 
 		this.sparklineContainer = (div) => {
 			if (div) {
@@ -235,12 +246,14 @@ export class SparklineList extends PureComponent {
 					overflowX: 'hidden',
 					overflowY: 'scroll',
 				};
-				this.setState({
-					mountedContainer: div,
-					containerWidth,
-					containerHeight,
-					legendHeight,
-					sparklineContainerStyle,
+				this.setState(() => {
+					return {
+						mountedContainer: div,
+						containerWidth,
+						containerHeight,
+						legendHeight,
+						sparklineContainerStyle,
+					};
 				});
 			}
 		};
@@ -251,12 +264,16 @@ export class SparklineList extends PureComponent {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		const { indices, attrs, groupAttr } = nextProps;
+		const {
+			indices, attrs, groupAttr,
+		} = nextProps;
 		if (groupAttr !== this.props.groupAttr ||
 			indices !== this.props.indices ||
 			groupAttr && attrs[groupAttr] !== this.props.attrs[groupAttr]) {
-			this.setState({
-				groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
+			this.setState(() => {
+				return {
+					groupedPainter: groupedSparkline(indices, attrs[groupAttr]),
+				};
 			});
 		}
 	}
@@ -285,37 +302,39 @@ export class SparklineList extends PureComponent {
 			} = this.props;
 
 			return (
-				<div
-					className='view-vertical'
-					style={{
-						overflowX: 'hidden',
-						overflowY: 'hidden',
-						minHeight: 0,
-					}}
-					ref={this.sparklineContainer}>
-					<Legend
-						groupedPainter={groupedPainter}
-						height={legendHeight}
-						width={containerWidth}
-						col={col}
-						colAttr={colAttr}
-						colMode={colMode}
-						indices={indices}
-						path={path}
-					/>
+				<Remount ignoreHeight>
 					<div
-						style={sparklineContainerStyle}>
-						<Sparklines
+						className='view-vertical'
+						style={{
+							overflowX: 'hidden',
+							overflowY: 'hidden',
+							minHeight: 0,
+						}}
+						ref={this.sparklineContainer}>
+						<Legend
 							groupedPainter={groupedPainter}
-							containerWidth={containerWidth}
-							attrs={attrs}
-							selection={selection}
-							geneMode={geneMode}
-							settings={settings}
-							showLabels={showLabels}
+							height={legendHeight}
+							width={containerWidth}
+							col={col}
+							colAttr={colAttr}
+							colMode={colMode}
+							indices={indices}
+							path={path}
 						/>
-					</div>
-				</div >
+						<div
+							style={sparklineContainerStyle}>
+							<Sparklines
+								groupedPainter={groupedPainter}
+								containerWidth={containerWidth}
+								attrs={attrs}
+								selection={selection}
+								geneMode={geneMode}
+								settings={settings}
+								showLabels={showLabels}
+							/>
+						</div>
+					</div >
+				</Remount>
 			);
 		}
 		else {

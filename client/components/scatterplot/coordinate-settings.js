@@ -12,11 +12,13 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	OverlayTooltip,
-} from '../settings/settings';
+} from 'components/settings/settings';
 
-import { popoverTest } from './popover';
+import { popoverTest } from 'components/scatterplot/popover';
 
-import { setViewProps } from '../../actions/set-viewprops';
+import { setViewProps } from 'actions/set-viewprops';
+
+import { nullFunc } from 'js/util';
 
 // Factory to generate functions used in quick-set buttons
 function quickSettingsFactory(props, settingsList) {
@@ -106,8 +108,6 @@ quickSettingsFactory.propTypes = {
 	selectedPlot: PropTypes.number.isRequired,
 };
 
-function nullFunc() { }
-
 const settingsList = [
 	{
 		label: 'default X / Y',
@@ -178,7 +178,11 @@ function attrSettingsFactory(props, attrAxis) {
 
 	const attrData = plotSetting[attrAxis];
 
-	const { allKeysNoUniques, dropdownOptions } = dataset[axis];
+	const {
+		allKeysNoUniques,
+		dropdownOptions,
+	} = dataset[axis];
+
 	const filterOptions = dropdownOptions.allNoUniques;
 
 	const attrHC = attrSettingHandleChangeFactory(props, attrAxis, 'attr'),
