@@ -137,6 +137,9 @@ class SinglePlot extends Component {
 					paint={plotNr < totalPlots ? this.state.paint : null}
 					width={width}
 					height={height}
+					// We are wrapped inside a component that remounts,
+					// so we can skip the pointless event listeners
+					ignoreResize
 				/>
 			</button>
 		);
