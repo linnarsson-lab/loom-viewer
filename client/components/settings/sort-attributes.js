@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
-import { setViewProps } from '../../actions/set-viewprops';
+import { updateAndFetchGenes } from '../../actions/update-and-fetch';
 
 export class SortAttributeComponent extends Component {
 	constructor(...args) {
@@ -31,7 +31,7 @@ export class SortAttributeComponent extends Component {
 			dataset,
 		} = props;
 
-		dispatch(setViewProps(dataset, action));
+		dispatch(updateAndFetchGenes(dataset, action));
 	}
 
 	render() {

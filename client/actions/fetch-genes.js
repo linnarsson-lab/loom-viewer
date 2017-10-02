@@ -80,7 +80,7 @@ export function fetchGene(dataset, genes) {
 				return unfetched;
 			};
 
-			const fetchUncached = (genes) => {
+			const fetchUncached = (uncachedGenes) => {
 				// To avoid memory overhead issues (this has crashed
 				// the browser in testing), we shouldn't make the
 				// individual fetches *too* big. After a bit of testing
@@ -89,8 +89,8 @@ export function fetchGene(dataset, genes) {
 				const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
 				let fetchGeneNames = [];
 				let fetchRows = [];
-				for (let i = 0; i < genes.length; i++) {
-					const gene = genes[i];
+				for (let i = 0; i < uncachedGenes.length; i++) {
+					const gene = uncachedGenes[i];
 					const row = geneToRow[gene];
 					// Only fetch genes that are part of the dataset
 					if (row !== undefined) {

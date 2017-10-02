@@ -7,7 +7,7 @@ import {
 } from 'react-bootstrap';
 import { Range } from 'rc-slider';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
 
 import {
 	OverlayTooltip,
@@ -27,7 +27,7 @@ function clampRangeHandleChangeFactory(props){
 
 	const handleChange = (values) => {
 		dispatch({
-			type: SET_VIEW_PROPS,
+			type: UPDATE_VIEWSTATE,
 			stateName: axis,
 			path,
 			viewState: {
@@ -45,7 +45,9 @@ function clampRangeHandleChangeFactory(props){
 		});
 	};
 
-	return time ? debounce(handleChange, time) : handleChange;
+	return time ?
+		debounce(handleChange, time) :
+		handleChange;
 }
 
 function handleChangeFactory(props, key, value){
@@ -59,7 +61,7 @@ function handleChangeFactory(props, key, value){
 
 	return () => {
 		dispatch({
-			type: SET_VIEW_PROPS,
+			type: UPDATE_VIEWSTATE,
 			stateName: axis,
 			path,
 			viewState: {
@@ -112,7 +114,11 @@ export class ClipDataSettings extends Component {
 							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={logScaleHC}>
-							<Glyphicon glyph={logScale ? 'check' : 'unchecked'} /> log
+							<Glyphicon
+								glyph={logScale ?
+									'check' :
+									'unchecked'
+								} /> log
 						</Button>
 					</OverlayTooltip>
 					<OverlayTooltip
@@ -123,12 +129,15 @@ export class ClipDataSettings extends Component {
 							bsSize='small'
 							style={{ flex: 1 }}
 							onClick={clipHC}>
-							<Glyphicon glyph={clip ? 'check' : 'unchecked'} /> clip
+							<Glyphicon glyph={clip ?
+								'check' :
+								'unchecked'
+							} /> clip
 						</Button>
 					</OverlayTooltip>
 				</div>
-				{
-					clip ? (
+				{clip ?
+					(
 						<OverlayTooltip
 							tooltip={`Clip data between ${lowerBound}% to ${upperBound}% of min/max values`}
 							tooltipId={'clip-range-tltp'} >
@@ -137,7 +146,12 @@ export class ClipDataSettings extends Component {
 							}}>
 								<Range
 									marks={{
-										0: '0%', 20: '20%', 40: '40%', 60: '60%', 80: '80%', 100: '100%',
+										0: '0%',
+										20: '20%',
+										40: '40%',
+										60: '60%',
+										80: '80%',
+										100: '100%',
 									}}
 									min={0}
 									max={100}
@@ -148,7 +162,8 @@ export class ClipDataSettings extends Component {
 									onAfterChange={this.clampRangeHC} />
 							</div>
 						</OverlayTooltip>
-					) : null
+					) :
+					null
 				}
 			</div>
 		);

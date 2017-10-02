@@ -6,7 +6,7 @@ import { scatterPlot } from 'plotters/scatterplot';
 import { Canvas } from 'components/canvas';
 import { Remount } from 'components/remount';
 
-import { SET_VIEW_PROPS } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
 
 // See if an individual attr has changed -
 // this may happen as the result of a gene
@@ -50,7 +50,7 @@ class SinglePlot extends Component {
 		const { path } = dataset;
 		this.selectTab = () => {
 			dispatch({
-				type: SET_VIEW_PROPS,
+				type: UPDATE_VIEWSTATE,
 				stateName: axis,
 				path,
 				viewState: {
@@ -125,7 +125,9 @@ class SinglePlot extends Component {
 		return (
 			<button
 				style={{
-					border: plotNr === selectedPlot ? '1px solid black' : '1px solid lightgrey',
+					border: plotNr === selectedPlot ?
+						'1px solid black' :
+						'1px solid lightgrey',
 					flex: '0 0 auto',
 					margin: '1px',
 					padding: 0,
@@ -134,7 +136,10 @@ class SinglePlot extends Component {
 				disabled={plotNr >= totalPlots || plotNr === selectedPlot}
 				onClick={this.selectTab}>
 				<Canvas
-					paint={plotNr < totalPlots ? this.state.paint : null}
+					paint={plotNr < totalPlots ?
+						this.state.paint :
+						null
+					}
 					width={width}
 					height={height}
 					// We are wrapped inside a component that remounts,

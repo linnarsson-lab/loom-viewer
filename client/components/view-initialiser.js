@@ -35,18 +35,16 @@ function currentInitialisation(dispatch, datasets, path, viewStateURI, prevIniti
 }
 
 export class ViewInitialiser extends Component {
-	componentWillMount() {
 
+	constructor(...args){
+		super(...args);
 		const {
-			dispatch,
-			datasets,
 			params,
 		} = this.props;
 
 		const {
 			project,
 			filename,
-			viewStateURI,
 		} = params;
 
 		const path = `${project}/${filename}`;
@@ -67,14 +65,32 @@ export class ViewInitialiser extends Component {
 			</div>
 		);
 
+		this.state = {
+			path,
+			fetchingProjects,
+			fetchingDatasets,
+			mangledPath,
+		};
+	}
+
+	componentWillMount() {
+		const {
+			dispatch,
+			datasets,
+			params,
+		} = this.props;
+
+		const {
+			project,
+			filename,
+			viewStateURI,
+		} = params;
+
+		const path = `${project}/${filename}`;
 		const initialisationState = currentInitialisation(dispatch, datasets, path, viewStateURI, MANGLED_PATH);
 
 		this.setState(() => {
 			return {
-				path,
-				fetchingProjects,
-				fetchingDatasets,
-				mangledPath,
 				initialisationState,
 			};
 		});

@@ -16,7 +16,7 @@ import {
 	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
-	SET_VIEW_PROPS,
+	UPDATE_VIEWSTATE,
 } from '../actions/actionTypes';
 
 import {	UNKNOWN } from '../actions/request-projects';
@@ -68,8 +68,8 @@ function datasets(state, action) {
 		case RECEIVE_GENE:
 			return maybeSortIndices(state, action);
 
-		//===VIEW ACTIONS===
-		case SET_VIEW_PROPS:
+		// ===VIEW ACTIONS===
+		case UPDATE_VIEWSTATE:
 			return updateViewState(state, action);
 
 		case SORT_DATASETS:

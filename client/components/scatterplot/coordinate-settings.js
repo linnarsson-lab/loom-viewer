@@ -16,7 +16,7 @@ import {
 
 import { popoverTest } from 'components/scatterplot/popover';
 
-import { setViewProps } from 'actions/set-viewprops';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
 import { nullFunc } from 'js/util';
 
@@ -63,7 +63,7 @@ function quickSettingsFactory(props, settingsList) {
 					},
 				};
 				handleClick = () => {
-					return dispatch(setViewProps(dataset, action));
+					return dispatch(updateAndFetchGenes(dataset, action));
 				};
 			}
 
@@ -84,20 +84,22 @@ function quickSettingsFactory(props, settingsList) {
 		}
 	}
 
-	return quickSettingsList.length ? (
-		<CollapsibleSettings
-			label={'X/Y Quick Settings'}
-			tooltip={'Quickly set X and Y attributes to one of the listed default values'}
-			tooltipId={'quickstngs-tltp'}
-			popover={popoverTest}
-			popoverTitle={'Test'}
-			popoverId={'popoverId1'}
-			mountClosed >
-			<ListGroup>
-				{quickSettingsList}
-			</ListGroup>
-		</CollapsibleSettings>
-	) : null;
+	return quickSettingsList.length ?
+		(
+			<CollapsibleSettings
+				label={'X/Y Quick Settings'}
+				tooltip={'Quickly set X and Y attributes to one of the listed default values'}
+				tooltipId={'quickstngs-tltp'}
+				popover={popoverTest}
+				popoverTitle={'Test'}
+				popoverId={'popoverId1'}
+				mountClosed >
+				<ListGroup>
+					{quickSettingsList}
+				</ListGroup>
+			</CollapsibleSettings>
+		) :
+		null;
 }
 
 quickSettingsFactory.propTypes = {
@@ -164,7 +166,36 @@ function attrSettingHandleChangeFactory(props, attrAxis, key) {
 	};
 
 	return () => {
-		return dispatch(setViewProps(dataset, action));
+		return dispatch(updateAndFetchGenes(dataset, action));
+	};
+}
+
+function selectAttrFactory(props, attrAxis){
+	const {
+		dispatch,
+		dataset,
+		axis,
+		selectedPlot,
+	} = props;
+	return (attr) => {
+		const action = {
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: {
+						plotSettings: {
+							[selectedPlot]: {
+								[attrAxis]: {
+									attr,
+								},
+							},
+						},
+					},
+				},
+			},
+		};
+		return dispatch(updateAndFetchGenes(dataset, action));
 	};
 }
 
@@ -185,7 +216,7 @@ function attrSettingsFactory(props, attrAxis) {
 
 	const filterOptions = dropdownOptions.allNoUniques;
 
-	const attrHC = attrSettingHandleChangeFactory(props, attrAxis, 'attr'),
+	const attrHC = selectAttrFactory(props, attrAxis),
 		logScaleHC = attrSettingHandleChangeFactory(props, attrAxis, 'logScale'),
 		jitterHC = attrSettingHandleChangeFactory(props, attrAxis, 'jitter');
 
@@ -212,7 +243,11 @@ function attrSettingsFactory(props, attrAxis) {
 					bsSize='small'
 					style={{ flex: 1 }}
 					onClick={logScaleHC}>
-					<Glyphicon glyph={attrData.logScale ? 'check' : 'unchecked'} /> log
+					<Glyphicon
+						glyph={attrData.logScale ?
+							'check' :
+							'unchecked'}
+					/> log
 				</Button>
 			</OverlayTooltip>
 			<OverlayTooltip
@@ -223,7 +258,10 @@ function attrSettingsFactory(props, attrAxis) {
 					bsSize='small'
 					style={{ flex: 1 }}
 					onClick={jitterHC}>
-					<Glyphicon glyph={attrData.jitter ? 'check' : 'unchecked'} /> jitter
+					<Glyphicon glyph={attrData.jitter ?
+						'check' :
+						'unchecked'}
+					/> jitter
 				</Button>
 			</OverlayTooltip>
 		</div >

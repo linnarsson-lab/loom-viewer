@@ -7,7 +7,7 @@ import {
 	ListGroupItem,
 } from 'react-bootstrap';
 
-import { FlexboxContainer } from '../flexbox-container.js';
+import { FlexboxContainer } from 'components/flexbox-container.js';
 
 import {
 	AttrLegend,
@@ -15,10 +15,11 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	// PrintSettings,
+	boxLegend,
 } from 'components/settings/settings';
 
-import { setViewProps } from 'actions/set-viewprops';
-import { SET_VIEW_PROPS } from 'actions/actionTypes';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
+import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
 
 function handleChangeFactory(that, field){
 	return (value) => {
@@ -35,7 +36,7 @@ function handleChangeFactory(that, field){
 				},
 			},
 		};
-		dispatch(setViewProps(dataset, action));
+		dispatch(updateAndFetchGenes(dataset, action));
 	};
 }
 
@@ -52,22 +53,6 @@ const modeNames = [
 ];
 
 export class HeatmapSidepanel extends Component {
-	constructor(...args) {
-		super(...args);
-
-		const colAttrHC = handleChangeFactory(this, 'colAttr');
-		const colModeHC = handleChangeFactory(this, 'colMode');
-		const rowAttrHC = handleChangeFactory(this, 'rowAttr');
-		const rowModeHC = handleChangeFactory(this, 'rowMode');
-
-		this.state = {
-			colAttrHC,
-			colModeHC,
-			rowAttrHC,
-			rowModeHC,
-		};
-	}
-
 	render() {
 		const {
 			dispatch,
@@ -85,12 +70,10 @@ export class HeatmapSidepanel extends Component {
 
 		const hms = viewState.heatmap;
 
-		const {
-			colAttrHC,
-			colModeHC,
-			rowAttrHC,
-			rowModeHC,
-		} = this.state;
+		const colAttrHC = handleChangeFactory(this, 'colAttr');
+		const colModeHC = handleChangeFactory(this, 'colMode');
+		const rowAttrHC = handleChangeFactory(this, 'rowAttr');
+		const rowModeHC = handleChangeFactory(this, 'rowMode');
 
 		const colAttr = col.attrs[hms.colAttr];
 		let colGradientSettings,
@@ -116,7 +99,7 @@ export class HeatmapSidepanel extends Component {
 
 			const colLegendFunc = (filterVal) => {
 				return () => {
-					dispatch(setViewProps(dataset, {
+					dispatch(updateAndFetchGenes(dataset, {
 						path,
 						axis: 'col',
 						filterAttrName: hms.colAttr,
@@ -158,7 +141,7 @@ export class HeatmapSidepanel extends Component {
 			const rowLegendFunc = (filterVal) => {
 				return () => {
 					dispatch({
-						type: SET_VIEW_PROPS,
+						type: UPDATE_VIEWSTATE,
 						path,
 						axis: 'row',
 						filterAttrName: hms.rowAttr,
@@ -204,6 +187,10 @@ export class HeatmapSidepanel extends Component {
 								</div>
 							</CollapsibleSettings>
 							{colGradientSettings}
+							{hms.colMode === 'Box' ?
+								boxLegend :
+								null
+							}
 							{colLegend}
 						</ListGroupItem>
 						<ListGroupItem>

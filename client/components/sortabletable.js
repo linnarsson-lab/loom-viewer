@@ -11,9 +11,11 @@ import { isEqual } from 'lodash';
 // we can map a single or multiple
 // keys from the data set to a cell.
 const mapToCell = (row, key, keys) => {
-	return row ? (
-		keys ? keys.map((k) => { return row[k]; }) : row[key]
-	) : null;
+	return row ?
+		keys ?
+			keys.map((k) => { return row[k]; }) :
+			row[key] :
+		null;
 };
 
 export class SortableTable extends Component {
@@ -55,13 +57,22 @@ export class SortableTable extends Component {
 					<Glyphicon
 						glyph={column.sortIcon + (order.asc ? '' : '-alt')} />
 				) : null;
-				const header = headers ? headers[i] : null;
-				const onClick = header ? (
-					Array.isArray(onHeaderClick) ? onHeaderClick[i] : onHeaderClick
-				) : null;
+				const header = headers ?
+					headers[i] :
+					null;
+				const onClick = header ?
+					(
+						Array.isArray(onHeaderClick) ?
+							onHeaderClick[i] :
+							onHeaderClick
+					) :
+					null;
 				headerCells.push(
 					<th
-						key={keys ? keys.join(' ') : key}
+						key={keys ?
+							keys.join(' ') :
+							key
+						}
 						style={Object.assign({ cursor: onClick ? 'pointer' : 'default' }, headerStyles ? headerStyles[i] : null)}
 						onClick={onClick}>
 						{header}{sortIcon}

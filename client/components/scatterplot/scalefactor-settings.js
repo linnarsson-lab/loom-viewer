@@ -5,7 +5,7 @@ import Slider from 'rc-slider';
 
 import { debounce } from 'lodash';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
 
 
 function scaleFactorHandleChangeFactory(props){
@@ -18,7 +18,7 @@ function scaleFactorHandleChangeFactory(props){
 	} = props;
 	const scaleFactorHC = (scaleFactor) => {
 		const action = {
-			type: SET_VIEW_PROPS,
+			type: UPDATE_VIEWSTATE,
 			stateName: axis,
 			path: dataset.path,
 			viewState: {
@@ -34,7 +34,9 @@ function scaleFactorHandleChangeFactory(props){
 		dispatch(action);
 	};
 
-	return time | 0 ? debounce(scaleFactorHC, time | 0) : scaleFactorHC;
+	return time | 0 ?
+		debounce(scaleFactorHC, time | 0) :
+		scaleFactorHC;
 }
 
 export class ScaleFactorSettings extends Component {
@@ -45,7 +47,14 @@ export class ScaleFactorSettings extends Component {
 		return (
 			<div style={{ height: '50px' }}>
 				<Slider
-					marks={{ 1: '0x', 20: '1x', 40: '2x', 60: '3x', 80: '4x', 100: '2.5x' }}
+					marks={{
+						1: '0x',
+						20: '1x',
+						40: '2x',
+						60: '3x',
+						80: '4x',
+						100: '2.5x',
+					}}
 					min={1}
 					max={100}
 					defaultValue={scaleFactor}

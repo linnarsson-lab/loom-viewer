@@ -110,9 +110,11 @@ function baseCompare(a, b) {
 // Arrays in the schema are assumed to be fixed size
 // For variable sized arrays, use vectorOf()
 function compareArray(patternArray) {
-	let l = patternArray.length, i = l, compareArray = [];
+	let l = patternArray.length,
+		i = l,
+		comparatorArray = [];
 	while (i--) {
-		compareArray[i] = createComparator(patternArray[i]);
+		comparatorArray[i] = createComparator(patternArray[i]);
 	}
 	return (arr1, arr2) => {
 		if (arr1 === arr2) {
@@ -122,7 +124,7 @@ function compareArray(patternArray) {
 		}
 		let i = l;
 		while (i--) {
-			if (!compareArray[i](arr1[i], arr2[i])) {
+			if (!comparatorArray[i](arr1[i], arr2[i])) {
 				return false;
 			}
 		}
@@ -131,9 +133,11 @@ function compareArray(patternArray) {
 }
 
 export function vectorOf(patternArray) {
-	let l = patternArray.length, i = l, compareArray = [];
+	let l = patternArray.length,
+		i = l,
+		comparatorArray = [];
 	while (i--) {
-		compareArray[i] = createComparator(patternArray[i]);
+		comparatorArray[i] = createComparator(patternArray[i]);
 	}
 	return (arr1, arr2) => {
 		if (arr1 === arr2) {
@@ -143,7 +147,7 @@ export function vectorOf(patternArray) {
 		}
 		let i = arr1.length;
 		while (i--) {
-			if (!compareArray[i % l](arr1[i], arr2[i])) {
+			if (!comparatorArray[i % l](arr1[i], arr2[i])) {
 				return false;
 			}
 		}

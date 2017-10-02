@@ -2,13 +2,19 @@ import { sparkline } from './sparkline';
 
 export function groupedSparkline(indices, groupAttr) {
 	indices = indices.slice(0);
-	let groupedIndices = [], labels = [], totalPoints = indices.length;
+	let groupedIndices = [],
+		labels = [],
+		totalPoints = indices.length;
 
 	if (!groupAttr) {
 		groupedIndices = [indices];
 		labels = [''];
 	} else {
-		const { data, uniques, indexedVal } = groupAttr;
+		const {
+			data,
+			uniques,
+			indexedVal,
+		} = groupAttr;
 		if (uniques.length === 0) {
 			groupedIndices = [indices];
 			labels = [''];
@@ -41,7 +47,8 @@ export function groupedSparkline(indices, groupAttr) {
 	}
 
 	return (attr, mode, settings, label, labelGroups) => {
-		let sparklines = [], lengths = [];
+		let sparklines = [],
+			lengths = [];
 		for (let i = 0; i < groupedIndices.length; i++) {
 			const indx = groupedIndices[i];
 			// only label leftmost sparkline
@@ -52,7 +59,10 @@ export function groupedSparkline(indices, groupAttr) {
 			lengths.push(indx.length);
 		}
 		return (context) => {
-			const { width, pixelRatio } = context;
+			const {
+				width,
+				pixelRatio,
+			} = context;
 			const gapWidth = (4 * pixelRatio) | 0;
 			const gaps = (sparklines.length - 2) * gapWidth | 0;
 			const baseWidth = width - gaps | 0;

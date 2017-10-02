@@ -13,50 +13,20 @@ import {
 	AttrLegend,
 } from '../settings/settings';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
-
-import { createComparator } from '../../js/state-comparator';
-
-const comparePlotSetting = createComparator({
-	logScale: 'boolean',
-	clip: 'boolean',
-	lowerBound: 'number',
-	upperBound: 'number',
-});
-
-// we only look at the first scatterPlot
-const comparePlotSettings = (a, b) => {
-	return comparePlotSetting(a[0], b[0]);
-};
-
-const compareProps = createComparator({
-	colAttr: 'string',
-	colMode: 'string',
-	groupBy: 'boolean',
-	legendData: 'object',
-	// clip and log settings for heatmap
-	// also affect the legend
-	dataset: {
-		viewState: {
-			col: {
-				filter: 'array',
-				scatterPlots: {
-					plotSettings: comparePlotSettings,
-				},
-			},
-		},
-	},
-});
+import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
 
 export class LegendSettings extends Component {
-	componentWillMount() {
+	constructor(...args) {
+		super(...args);
+
 		const {
-			dispatch, dataset,
+			dispatch,
+			dataset,
 		} = this.props;
 
 		const colAttrHC = (val) => {
 			dispatch({
-				type: SET_VIEW_PROPS,
+				type: UPDATE_VIEWSTATE,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: {
@@ -69,7 +39,7 @@ export class LegendSettings extends Component {
 
 		const colModeHC = (val) => {
 			dispatch({
-				type: SET_VIEW_PROPS,
+				type: UPDATE_VIEWSTATE,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: {
@@ -82,17 +52,11 @@ export class LegendSettings extends Component {
 
 		const colModeOptions = ['Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
 
-		this.setState(() => {
-			return {
-				colAttrHC,
-				colModeHC,
-				colModeOptions,
-			};
-		});
-	}
-
-	shouldComponentUpdate(nextProps) {
-		return !compareProps(this.props, nextProps);
+		this.state = {
+			colAttrHC,
+			colModeHC,
+			colModeOptions,
+		};
 	}
 
 	render() {
@@ -119,7 +83,7 @@ export class LegendSettings extends Component {
 		const filterFunc = colAttr ? (val) => {
 			return () => {
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: UPDATE_VIEWSTATE,
 					path,
 					axis: 'col',
 					filterAttrName: colAttr,
@@ -147,7 +111,7 @@ export class LegendSettings extends Component {
 
 		const groupByHC = () => {
 			dispatch({
-				type: SET_VIEW_PROPS,
+				type: UPDATE_VIEWSTATE,
 				stateName: 'sparkline',
 				path: dataset.path,
 				viewState: {

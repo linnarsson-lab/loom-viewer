@@ -26,9 +26,33 @@ import {
 import Fuse from 'fuse.js';
 import { stableSortInPlace } from '../../js/util';
 
+const centerTextStyle = {
+	textAlign: 'center',
+};
+
+const buttonStyle = {
+	padding: 0,
+};
+const glyphStyle = {
+	fontSize: '14px',
+};
+
+const lightGlyphStyle = {
+	fontSize: '14px',
+	color: 'lightgrey',
+};
+
+const componentStyle = {
+	justifyContent: 'center',
+	overflowX: 'hidden',
+	overflowY: 'scroll',
+};
+
 function handleSearchChangeFactory(field, dispatch) {
 	return (event) => {
-		let val = event.target.value ? event.target.value : '';
+		let val = event.target.value ?
+			event.target.value :
+			'';
 		dispatch({
 			type: SEARCH_DATASETS,
 			state: { search: { [field]: val } },
@@ -41,7 +65,9 @@ function handleSearchChangeFactory(field, dispatch) {
 
 class DatasetList extends Component {
 
-	componentWillMount() {
+	constructor(...args){
+		super(...args);
+
 		const { dispatch } = this.props;
 
 		const sortByProject = () => {
@@ -124,7 +150,7 @@ class DatasetList extends Component {
 			},
 			{
 				headers: [(
-					<div style={{ textAlign: 'center' }}>
+					<div style={centerTextStyle}>
 						<Glyphicon glyph='file' title={'Original Reference'} />
 						<Glyphicon glyph='globe' title={'External Webpage'} />
 						<Glyphicon glyph='cloud-download' title={'Download Loom File'} />
@@ -139,17 +165,15 @@ class DatasetList extends Component {
 				},
 			},
 		];
-		this.setState(() => {
-			return {
-				sortByProject,
-				sortByTitle,
-				sortByDescription,
-				sortByCreationDate,
-				sortByTotalCells,
-				headerStyles,
-				columns,
-			};
-		});
+		this.state = {
+			sortByProject,
+			sortByTitle,
+			sortByDescription,
+			sortByCreationDate,
+			sortByTotalCells,
+			headerStyles,
+			columns,
+		};
 	}
 
 	render() {
@@ -200,46 +224,51 @@ class DatasetList extends Component {
 						bsStyle='link'
 						href={downloadURL}
 						title={'Download ' + path}
-						style={{ padding: 0 }}
+						style={buttonStyle}
 					>
-						<Glyphicon glyph='cloud-download' style={{ fontSize: '14px' }} />
+						<Glyphicon
+							glyph='cloud-download'
+							style={glyphStyle} />
 					</Button>
 				);
-				const paperButton = doi === '' ? (
-					<Glyphicon
-						key={path + '_doi'}
-						glyph='file'
-						style={{
-							fontSize: '14px', color: 'lightgrey',
-						}} />
-				) : (
+				const paperButton = (
 					<Button
 						key={path + '_doi'}
 						bsSize='xsmall'
 						bsStyle='link'
 						href={'http://dx.doi.org/' + doi}
-						title={'Original reference: http://dx.doi.org/' + doi}
-						style={{ padding: 0 }} >
-						<Glyphicon glyph='file' style={{ fontSize: '14px' }} />
+						title={doi === '' ?
+							'No reference info in metadata' :
+							'Original reference: http://dx.doi.org/' + doi
+						}
+						style={buttonStyle}
+						disabled={doi === ''}>
+						<Glyphicon
+							glyph='file'
+							style={doi === '' ?
+								lightGlyphStyle :
+								glyphStyle
+							} />
 					</Button>
 				);
-				const urlButton = url === '' ? (
-					<Glyphicon
-						key={path + '_url'}
-						glyph='globe'
-						style={{
-							fontSize: '14px', color: 'lightgrey',
-						}} />
-				) : (
+				const urlButton = (
 					<Button
 						key={path + '_url'}
 						bsSize='xsmall'
 						bsStyle='link'
 						href={url}
-						title={'External web page: ' + url}
-						style={{ padding: 0 }}
+						title={url === '' ?
+							'No external webpage in metadata' :
+							'External web page: ' + url}
+						style={buttonStyle}
+						disabled={url === ''}
 					>
-						<Glyphicon glyph='globe' style={{ fontSize: '14px' }} />
+						<Glyphicon
+							glyph='globe'
+							style={url === '' ?
+								lightGlyphStyle :
+								glyphStyle
+							} />
 					</Button>
 				);
 
@@ -248,24 +277,28 @@ class DatasetList extends Component {
 					path, project, description, creationDate, totalCells,
 					title: titleURL,
 					buttons: (
-						<div style={{ textAlign: 'center' }}>
+						<div style={centerTextStyle}>
 							{[paperButton, urlButton, downloadButton]}
 						</div>
 					),
 				});
 			}
 
-			let projectLabel = `${project} (${filteredList.length}/${fullDatasetList.length} ${fullDatasetList.length === 1 ? 'dataset' : 'datasets'})`;
+			const fullLength = fullDatasetList.length;
+			let projectLabel = `${project} (${filteredList.length}/` +
+			`${fullLength} dataset${fullLength === 1 ? '' : 's'})`;
 			return (
 				<CollapsibleSettings
 					key={project}
 					label={projectLabel}
-					size={filteredList.length ? 'large' : 'xsmall'}
+					size={filteredList.length ?
+						'large' :
+						'xsmall'}
 					mountClosed={mountClosed}
 					unmountOnExit>
 					<div>
-						{
-							filteredList.length ? (
+						{filteredList.length ?
+							(
 								<SortableTable
 									data={tableData}
 									columns={columns}
@@ -275,7 +308,8 @@ class DatasetList extends Component {
 									responsive
 								/>
 
-							) : null
+							) :
+							null
 						}
 					</div>
 				</CollapsibleSettings>
@@ -333,15 +367,12 @@ class SearchDataSetViewComponent extends Component {
 		super(...args);
 		this.filterProjects = this.filterProjects.bind(this);
 		this.prepareProjects = this.prepareProjects.bind(this);
-	}
 
-	componentWillMount() {
-		let {
+		const {
 			dispatch,
 			list,
 			order,
 			search,
-			fetchProjectsStatus,
 		} = this.props;
 
 		const searchAll = handleSearchChangeFactory('all', dispatch);
@@ -350,7 +381,7 @@ class SearchDataSetViewComponent extends Component {
 		const searchByTitle = handleSearchChangeFactory('title', dispatch);
 		const searchByDescription = handleSearchChangeFactory('description', dispatch);
 
-		let state = {
+		this.state = {
 			projectLists: null,
 			projectNames: null,
 			searchAll,
@@ -360,7 +391,6 @@ class SearchDataSetViewComponent extends Component {
 			searchByDescription,
 		};
 
-		dispatch(requestProjects(list, fetchProjectsStatus));
 		if (list) {
 
 			let {
@@ -374,11 +404,19 @@ class SearchDataSetViewComponent extends Component {
 			while (i--) {
 				projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
 			}
-			state.projectNames = projectNames;
-			state.projectLists = projectLists;
-			state.projectListsFiltered = projectListsFiltered;
+			this.state.projectNames = projectNames;
+			this.state.projectLists = projectLists;
+			this.state.projectListsFiltered = projectListsFiltered;
 		}
-		this.setState(() => { return state; });
+	}
+
+	componentWillMount(){
+		const {
+			dispatch,
+			list,
+			fetchProjectsStatus,
+		} = this.props;
+		dispatch(requestProjects(list, fetchProjectsStatus));
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -418,13 +456,20 @@ class SearchDataSetViewComponent extends Component {
 
 	prepareProjects(list) {
 		// Convert to array sorted by dataset creation date
-		list = Object.keys(list).map((key) => { return list[key]; });
+		list = Object
+			.keys(list)
+			.map((key) => {
+				return list[key];
+			});
+
 		stableSortInPlace(list, (i, j) => {
 			let vi = list[i].creationDate;
 			let vj = list[j].creationDate;
 			return (
-				vi < vj ? -1 :
-					vi > vj ? 1 :
+				vi < vj ?
+					-1 :
+					vi > vj ?
+						1 :
 						i - j
 			);
 		});
@@ -456,7 +501,9 @@ class SearchDataSetViewComponent extends Component {
 	filterProjects(list, order, search) {
 		let filtered;
 
-		const retVal = order.asc ? 1 : -1;
+		const retVal = order.asc ?
+			1 :
+			-1;
 		const compareKey = order.key;
 		const comparator = (i, j) => {
 			let vi = list[i][compareKey];
@@ -467,8 +514,10 @@ class SearchDataSetViewComponent extends Component {
 			}
 
 			return (
-				vi < vj ? -retVal :
-					vi > vj ? retVal :
+				vi < vj ?
+					-retVal :
+					vi > vj ?
+						retVal :
 						i - j
 			);
 		};
@@ -546,7 +595,9 @@ class SearchDataSetViewComponent extends Component {
 			fetchProjectsStatus,
 		} = this.props;
 
-		search = search ? search : {};
+		search = search ?
+			search :
+			{};
 		let datasetList = null;
 		if (projectNames && projectNames.length) {
 			let i = projectNames.length;
@@ -573,31 +624,28 @@ class SearchDataSetViewComponent extends Component {
 				</div>
 			);
 		} else {
-
-			datasetList = fetchProjectsStatus === UNKNOWN ? (
-				<div className='view centred'>
-					<div>
-						<h2>Downloading list of available datasets...</h2>
+			datasetList = fetchProjectsStatus === UNKNOWN ?
+				(
+					<div className='view centred'>
+						<div>
+							<h2>Downloading list of available datasets...</h2>
+						</div>
+						<div>
+							<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
+						</div>
 					</div>
-					<div>
-						<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
+				) :
+				(
+					<div className='view centred'>
+						<h2>Fetch failed, checking IndexedDB cache</h2>
 					</div>
-				</div>
-			) : (
-				<div className='view centred'>
-					<h2>Fetch failed, checking IndexedDB cache</h2>
-				</div>
-			);
+				);
 		}
 
 		return (
 			<div
 				className='view'
-				style={{
-					justifyContent: 'center',
-					overflowX: 'hidden',
-					overflowY: 'scroll',
-				}}>
+				style={componentStyle}>
 				<Grid>
 					<Row>
 						<Col xs={12} md={12}

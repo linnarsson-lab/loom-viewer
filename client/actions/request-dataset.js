@@ -30,6 +30,7 @@ import {
 	decompressFromEncodedURIComponent,
 } from 'js/lz-string';
 
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
 import {
 	REQUEST_DATASET,
@@ -40,11 +41,11 @@ import {
 	LOAD_DATASET,
 } from './actionTypes';
 
-////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
 //
 // Fetch metadata for a dataSet
 //
-////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
 
 
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
@@ -66,13 +67,14 @@ export function requestDataset(datasets, path) {
 			localforage.getItem(path).then((dataset) => {
 				if (dataset) {
 					console.log(`${path} loaded from localforage`);
-					localforage.getItem(path + '/genes').then((genes) => {
+					// We only have cached genes if the dataset is cached
+					return localforage.getItem(path + '/genes').then((genes) => {
 						if (genes) {
 							console.log('cached genes loaded from localforage');
 							mergeGenesInPlace(dataset, genes);
 						}
 						// add dataset to redux store
-						dispatch(dataSetAction(LOAD_DATASET, path, dataset));
+						dataSetAction(LOAD_DATASET, path, dataset, dispatch);
 					});
 				} else {
 					// dataset does not exist in localforage,
@@ -87,14 +89,17 @@ export function requestDataset(datasets, path) {
 function mergeGenesInPlace(dataset, genes) {
 	// mark all genes retrieved from cache as fetched
 	let fetchedGenes = {};
-	let keys = Object.keys(genes), i = keys.length;
+	let keys = Object.keys(genes),
+		i = keys.length;
 	while (i--) {
 		fetchedGenes[keys[i]] = true;
 	}
 	// merge genes into column attributes
 	return mergeInPlace(
 		dataset,
-		{ fetchedGenes, col: { attrs: genes } }
+		{
+			fetchedGenes, col: { attrs: genes },
+		}
 	);
 }
 
@@ -105,43 +110,48 @@ function fetchDataset(datasets, path, dispatch) {
 			// convert the JSON to a JS object, and
 			// do some prep-work
 			return response.json();
-		}).then((data) => {
-			let dataset = convertToDataSet(data, datasets[path]);
-			// Store dataset in localforage so we do not need to
-			// fetch it again. This has to be done before adding
-			// functions to the dataset, since localforage cannot
-			// store those. We also want to avoid caching viewState
-			return localforage.setItem(path, dataset);
-		}).then((dataset) => {
+		})
+			.then((data) => {
+				let dataset = convertToDataSet(data, datasets[path]);
+				// Store dataset in localforage so we do not need to
+				// fetch it again. This has to be done before adding
+				// functions to the dataset, since localforage cannot
+				// store those. We also want to avoid caching viewState
+				return localforage.setItem(path, dataset);
+			})
+			.then((dataset) => {
 			// dataSetAction() adds viewState, functions and
 			//
 			// dispatch fully initialised dataset to redux store
-			dispatch(dataSetAction(RECEIVE_DATASET, path, dataset));
+				dataSetAction(RECEIVE_DATASET, path, dataset, dispatch);
 
-			// We want to separate the list metadata from
-			// the full dataset attributes, to efficiently
-			// reload the page later (see request-projects)
-			return localforage.getItem('cachedDatasets');
-		}).then((list) => {
+				// We want to separate the list metadata from
+				// the full dataset attributes, to efficiently
+				// reload the page later (see request-projects)
+				return localforage.getItem('cachedDatasets');
+			})
+			.then((list) => {
 			// Because redux is immutable, we don't have to
 			// worry about the previous dispatch overwriting
 			// `datasets[path]`.
 			// However, we do have to check if the dataset was
 			// already loaded, because in that case dataset[path]
 			// will now include all attributes.
-			if (list && !list[path]) {
-				list[path] = oldMetaData;
-				return localforage.setItem('cachedDatasets', list);
-			}
-		}).catch((err) => {
+				if (list && !list[path]) {
+					list[path] = oldMetaData;
+					return localforage.setItem('cachedDatasets', list);
+				}
+				return null;
+			})
+			.catch((err) => {
 			// Or, if fetch request failed, dispatch
 			// an action to set the error flag
-			console.log(err);
-			dispatch({
-				type: REQUEST_DATASET_FAILED,
-				datasetName: path,
-			});
-		})
+				console.log(err);
+				dispatch({
+					type: REQUEST_DATASET_FAILED,
+					datasetName: path,
+				});
+			})
 	);
 }
 
@@ -157,7 +167,9 @@ function convertToDataSet(data, dataset) {
 	row.allKeys = row.keys.concat(row.cellKeys);
 	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
-	col.geneKeys = row.attrs.Gene ? row.attrs.Gene.data.slice() : [];
+	col.geneKeys = row.attrs.Gene ?
+		row.attrs.Gene.data.slice() :
+		[];
 	col.rowToGenes = new Array(col.geneKeys.length);
 	col.geneToRow = {};
 	col.geneToRowLowerCase = {};
@@ -201,7 +213,7 @@ function convertToDataSet(data, dataset) {
  * @param {string} path
  * @param {*} dataset
  */
-function dataSetAction(type, path, dataset) {
+function dataSetAction(type, path, dataset, dispatch) {
 	// add conversion functions (compressor, toJSON)
 	addFunctions(dataset);
 
@@ -210,7 +222,7 @@ function dataSetAction(type, path, dataset) {
 	// viewStateConverter, so this must
 	// be called after functions are added.
 	addViewState(dataset);
-	return {
+	const action = {
 		type,
 		path,
 		state: {
@@ -219,29 +231,33 @@ function dataSetAction(type, path, dataset) {
 			},
 		},
 	};
+	dispatch(updateAndFetchGenes(dataset, action));
 }
 
 function addFunctions(dataset) {
-	const { row, col } = dataset;
+	const {
+		row,
+		col,
+	} = dataset;
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
 	// Also, I've commented out the filters that aren't
 	// being used right now to save time
 	row.dropdownOptions = {};
-	//row.dropdownOptions.attrs = prepFilter(row.keys);
+	// row.dropdownOptions.attrs = prepFilter(row.keys);
 	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
 	// // fastFilterOptions doesn't scale for tens of thousands of cells :/
 	//	//row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
 	// //row.dropdownOptions.all = prepFilter(row.allKeys);
 	// //row.dropdownOptions.allNoUniques = prepFilter(row.allKeysNoUiques);
-	//row.dropdownOptions.all = row.dropdownOptions.attrs;
-	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; //prepFilter(row.allKeysNoUniques);
+	// row.dropdownOptions.all = row.dropdownOptions.attrs;
+	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; // prepFilter(row.allKeysNoUniques);
 
 	col.dropdownOptions = {};
-	//col.dropdownOptions.attrs = prepFilter(col.keys);
+	// col.dropdownOptions.attrs = prepFilter(col.keys);
 	col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
 	col.dropdownOptions.keyAttr = prepFilter(col.geneKeys);
-	//col.dropdownOptions.all = prepFilter(col.allKeys);
+	// col.dropdownOptions.all = prepFilter(col.allKeys);
 	col.dropdownOptions.allNoUniques = prepFilter(col.allKeysNoUniques);
 
 	dataset.viewStateConverter = createViewStateConverter(dataset);
@@ -259,7 +275,10 @@ function addViewState(dataset) {
 	// Initiate default viewState
 	let viewState = viewStateInitialiser(dataset);
 
-	const { encode, decode } = dataset.viewStateConverter;
+	const {
+		encode,
+		decode,
+	} = dataset.viewStateConverter;
 
 	// overwrite with previously encoded URI viewState, if any
 	const paths = browserHistory
@@ -282,14 +301,15 @@ function addViewState(dataset) {
 	const url = `/${paths[1]}/${paths[2]}/${paths[3]}/${paths[4]}/${viewStateURI}`;
 	browserHistory.replace(url);
 
-	// add viewState to dataset
 	dataset.viewState = viewState;
+	return dataset;
 }
 
 
 export function reduxToJSON(attrs) {
 	for (let i = 0; i < attrs.keys.length; i++) {
-		let key = attrs.keys[i], attr = attrs.attrs[key];
+		let key = attrs.keys[i],
+			attr = attrs.attrs[key];
 		const {
 			name,
 			arrayType,
@@ -339,7 +359,8 @@ function prepData(attrs) {
 		// Set attrs[k] to null early, so it can be GC'ed if necessary
 		// (had an allocation failure of a new typed array for large attrs,
 		// so this is a realistic worry)
-		const k = keys[i], attr = attrs[k];
+		const k = keys[i],
+			attr = attrs[k];
 		attrs[k] = null;
 		newAttrs[k] = convertJSONarray(attr, k);
 	}
@@ -367,7 +388,13 @@ function prepData(attrs) {
 }
 
 function originalOrderAttribute(length) {
-	let arrayType = length < (1 << 8) ? 'uint8' : (length < (1 << 16) ? 'uint16' : (length < (1 << 32) ? 'uint32' : 'float64'));
+	let arrayType = length < (1 << 8) ?
+		'uint8' :
+		length < (1 << 16) ?
+			'uint16' :
+			length < (1 << 32) ?
+				'uint32' :
+				'float64';
 	let data = new (arrayConstr(arrayType))(length);
 	let i = length;
 	while (i--) {
@@ -388,12 +415,15 @@ function originalOrderAttribute(length) {
 
 
 function prepFilter(options) {
-	let i = options.length, newOptions = new Array(i);
+	let i = options.length,
+		newOptions = new Array(i);
 	while (i--) {
 		newOptions[i] = {
 			value: options[i],
 			label: options[i],
 		};
 	}
-	return createFilterOptions({ indexStrategy, sanitizer, options: newOptions });
+	return createFilterOptions({
+		indexStrategy, sanitizer, options: newOptions,
+	});
 }

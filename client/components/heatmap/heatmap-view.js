@@ -10,7 +10,7 @@ import { Remount } from 'components/remount';
 
 import { sparkline } from 'plotters/sparkline';
 
-import { SET_VIEW_PROPS } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
 
 import { debounce } from 'lodash';
 
@@ -63,7 +63,7 @@ class MapComponent extends Component {
 			center,
 		} = val;
 		dispatch({
-			type: SET_VIEW_PROPS,
+			type: UPDATE_VIEWSTATE,
 			stateName: 'heatmap',
 			path: dataset.path,
 			viewState: {
@@ -101,7 +101,9 @@ class MapComponent extends Component {
 
 
 			const colAttr = col.attrs[hms.colAttr];
-			const colLabel = colAttr ? colAttr.name : null;
+			const colLabel = colAttr ?
+				colAttr.name :
+				null;
 			const colSettings = merge(
 				vs.col.settings,
 				{
@@ -115,7 +117,9 @@ class MapComponent extends Component {
 			const colSparkline = sparkline(colAttr, vs.col.originalIndices, hms.colMode, colSettings, colLabel);
 
 			const rowAttr = row.attrs[hms.rowAttr];
-			const rowLabel = rowAttr ? rowAttr.name : null;
+			const rowLabel = rowAttr ?
+				rowAttr.name :
+				null;
 			const rowSettings = merge(
 				vs.row.settings,
 				{

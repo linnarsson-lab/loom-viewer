@@ -140,7 +140,6 @@ export class Sparklines extends Component {
 			// one of the props that requires an update
 			// to all sparklines has changed, so we must
 			// recreate all nodes.
-			asyncPainterQueue.clear();
 			this.setState(makeSparklines(nextProps));
 		} else {
 			this.updateChangedSparklines(nextProps);
@@ -394,7 +393,8 @@ export class SparklineList extends Component {
 		} = this.props;
 
 		return (
-			<Remount>
+			<Remount
+				onUnmount={asyncPainterQueue.clear}>
 				<SparklineListMounter
 					attrs={attrs}
 					col={col}

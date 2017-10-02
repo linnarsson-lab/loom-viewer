@@ -172,7 +172,8 @@ export function oneOf(valArr) {
 	// make sure valArr isn't accidentally mutated later
 	valArr = valArr.slice();
 	// hashmap lookup is usually faster than indexOf in modern browsers
-	let valToIdx = {}, i = valArr.length;
+	let valToIdx = {},
+		i = valArr.length;
 	while(i--){
 		valToIdx[valArr[i]] = i;
 	}
@@ -223,13 +224,16 @@ export function vectorOf(patternArr){
 // Arrays in the schema are assumed to be fixed size
 // For variable sized arrays, use vectorOf()
 export function encodeArray(patternArr) {
-	let l = patternArr.length, i = l, encoderArr = [];
+	let l = patternArr.length,
+		i = l,
+		encoderArr = [];
 	while (i--) {
 		encoderArr[i] = createEncoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let i = l, retArr = new Array(l);
+			let i = l,
+				retArr = new Array(l);
 			while (i--) {
 				retArr[i] = encoderArr[i](arr[i]);
 			}
@@ -241,13 +245,16 @@ export function encodeArray(patternArr) {
 }
 
 export function decodeArray(patternArr) {
-	let l = patternArr.length, decoderArr = [], i = l;
+	let l = patternArr.length,
+		decoderArr = [],
+		i = l;
 	while (i--) {
 		decoderArr[i] = createDecoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr) {
-			let i = l, retArr = new Array(l);
+			let i = l,
+				retArr = new Array(l);
 			while (i--) {
 				retArr[i] = decoderArr[i](arr[i]);
 			}
@@ -258,13 +265,16 @@ export function decodeArray(patternArr) {
 }
 
 export function encodeVector(patternArr){
-	let l = patternArr.length, i = l, encoderArr = [];
+	let l = patternArr.length,
+		i = l,
+		encoderArr = [];
 	while (i--) {
 		encoderArr[i] = createEncoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let i = arr.length, retArr = new Array(i);
+			let i = arr.length,
+				retArr = new Array(i);
 			while (i--) {
 				retArr[i] = encoderArr[i % l](arr[i]);
 			}
@@ -276,13 +286,16 @@ export function encodeVector(patternArr){
 }
 
 export function decodeVector(patternArr) {
-	let l = patternArr.length, decoderArr = [], i = l;
+	let l = patternArr.length,
+		decoderArr = [],
+		i = l;
 	while (i--) {
 		decoderArr[i] = createDecoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr) {
-			let i = arr.length, retArr = new Array(i);
+			let i = arr.length,
+				retArr = new Array(i);
 			while (i--) {
 				retArr[i] = decoderArr[i % l](arr[i]);
 			}
@@ -306,7 +319,8 @@ export function encodeObj(schema) {
 
 	let encoder = (obj) => {
 		if (obj) {
-			let i = keys.length, retArr = new Array(i);
+			let i = keys.length,
+				retArr = new Array(i);
 			while (i--) {
 				let k = keys[i];
 				retArr[i] = _encoder[k](obj[k]);
@@ -340,9 +354,11 @@ export function decodeObj(schema) {
 
 	let decoder = (arr) => {
 		if (arr) {
-			let i = keys.length, retObj = {};
+			let i = keys.length,
+				retObj = {};
 			while (i--) {
-				let k = keys[i], decoded = _decoder[k](arr[i]);
+				let k = keys[i],
+					decoded = _decoder[k](arr[i]);
 				if (decoded !== undefined) {
 					retObj[k] = decoded;
 				}

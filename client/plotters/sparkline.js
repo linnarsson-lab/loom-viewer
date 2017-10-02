@@ -158,7 +158,7 @@ export function sparkline(attr, indices, mode, settings, label) {
 function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label) {
 	// note that this will be called after rotation, so we don't have to
 	// worry about duplicating the logic for vertical sparklines.
-	const sparkline = (context) => {
+	const _sparkline = (context) => {
 		if (range.visible) {
 
 			const {
@@ -221,7 +221,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 
 
 	if (settings.orientation !== 'vertical') {
-		return sparkline;
+		return _sparkline;
 	} else {
 		return (context) => {
 			// All of our plotting functions draw horizontally
@@ -236,7 +236,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 			context.height = t;
 
 			// draw sparkline
-			sparkline(context);
+			_sparkline(context);
 
 			context.restore();
 			t = context.width;
@@ -278,7 +278,7 @@ function clip(data, clipMin, clipMax, offset = 0) {
 
 
 
-function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
+function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor) {
 	context.fillStyle = 'white';
 	let i = 0,
 		j = i,
@@ -299,7 +299,7 @@ function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth
 	}
 }
 
-function categoriesGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
+function categoriesGrouped(context, attr, data, range, ratio, dataToColor) {
 	let i = 0;
 	// skip left-padding
 	while (!data[i]) { i++; }
@@ -321,9 +321,9 @@ function categoriesGrouped(context, attr, data, range, ratio, dataToColor, setti
 
 // Note: stackedCategoriesDirectly is functionally equivalent to categories
 
-function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
+function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor) {
 	const { height } = context;
-	//const barWidth = ratio;
+	// const barWidth = ratio;
 	let i = 0;
 	// skip left-padding
 	while (!data[i]) { i++; }
@@ -359,7 +359,10 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 
 function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
 	const { logScale } = settings;
-	const { min, max } = attr;
+	const {
+		min,
+		max,
+	} = attr;
 	let clipMin = min;
 	let clipMax = max;
 	// no need to waste time drawing empty arrays
@@ -452,7 +455,9 @@ function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
 function barConvertGroupedData(attr, data, min, max, settings) {
 	let avg = new Float32Array(data.length);
 
-	const { lowerBound, upperBound } = settings;
+	const {
+		lowerBound, upperBound,
+	} = settings;
 	let delta = max - min,
 		clipMin = min,
 		clipMax = max;
@@ -509,11 +514,15 @@ function barConvertGroupedData(attr, data, min, max, settings) {
 		clip(avg, clipMin, clipMax, clipMin);
 	}
 
-	return { iStart, min, max, clipMin, clipMax, avg };
+	return {
+		iStart, min, max, clipMin, clipMax, avg,
+	};
 }
 
 function barPaintGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
-	const { min, max } = attr;
+	const {
+		min, max,
+	} = attr;
 	// no need to waste time drawing empty arrays
 	if (max !== min) {
 		let convertedData = barConvertGroupedData(attr, data, min, max, settings);
@@ -529,7 +538,9 @@ function barPaintGrouped(context, attr, data, range, ratio, dataToColor, setting
 
 function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg } = convertedData;
+	const {
+		iStart, min, max, clipMin, clipMax, avg,
+	} = convertedData;
 
 	const barScale = height * 0.9375 / logProject(clipMax - clipMin);
 	if (barScale) {
@@ -571,19 +582,23 @@ function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataT
 
 function barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg } = convertedData;
+	const {
+		iStart, min, max, clipMin, clipMax, avg,
+	} = convertedData;
 
 	const delta = clipMax - clipMin;
 	const barScale = height * 0.9375 / delta || 0;
 
 	// because of our sorting earlier, i is guaranteed
 	// to be the first element in data that is a column
-	let i = iStart, x = i * ratio | 0;
+	let i = iStart,
+		x = i * ratio | 0;
 
 	while (i < avg.length) {
 		const barHeight = avg[i] * barScale | 0;
 		// advance while height doesn't change
-		let j = i, nextHeight = barHeight;
+		let j = i,
+			nextHeight = barHeight;
 		while (barHeight - nextHeight === 0 && ++j < avg.length) {
 			nextHeight = avg[j] * barScale | 0;
 		}
@@ -612,7 +627,9 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 		firstQ = new array(data.length),
 		thirdQ = new array(data.length);
 
-	const { logScale, lowerBound, upperBound } = settings;
+	const {
+		logScale, lowerBound, upperBound,
+	} = settings;
 	let delta = max - min,
 		clipMin = min,
 		clipMax = max;
@@ -670,7 +687,9 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 		clip(thirdQ, clipMin, clipMax, clipMin);
 	}
 
-	return { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues };
+	return {
+		iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues,
+	};
 }
 
 
@@ -682,7 +701,9 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 // - third quartile (red)
 // - max (very light grey red)
 function barPaintBoxPlot(context, attr, data, range, ratio, dataToColor, settings, label) {
-	const { min, max } = attr;
+	const {
+		min, max,
+	} = attr;
 	let convertedData = barGroupedBoxDataPrep(attr, data, min, max, settings);
 	if (settings.logScale) {
 		barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataToColor, settings, label);
@@ -693,7 +714,9 @@ function barPaintBoxPlot(context, attr, data, range, ratio, dataToColor, setting
 
 function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = convertedData;
+	const {
+		iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues,
+	} = convertedData;
 
 	const delta = logProject(clipMax - clipMin);
 
@@ -701,7 +724,8 @@ function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataT
 
 	// because of our sorting earlier, i is guaranteed
 	// to be the first element in data that is a column
-	let i = iStart, x = i * ratio | 0;
+	let i = iStart,
+		x = i * ratio | 0;
 
 	// calculate heights for avg, min, max,
 	// first quartile and third quartile
@@ -760,7 +784,9 @@ function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataT
 
 function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor, settings, label) {
 	const { height } = context;
-	const { iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues } = convertedData;
+	const {
+		iStart, min, max, clipMin, clipMax, avg, minValues, firstQ, thirdQ, maxValues,
+	} = convertedData;
 
 	const delta = clipMax - clipMin;
 
@@ -768,7 +794,8 @@ function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor
 
 	// because of our sorting earlier, i is guaranteed
 	// to be the first element in data that is a column
-	let i = iStart, x = i * ratio | 0;
+	let i = iStart,
+		x = i * ratio | 0;
 
 	// calculate heights for avg, min, max,
 	// first quartile and third quartile
@@ -874,7 +901,9 @@ function barPaintLabel(context, ratio, min, max, clipMin, clipMax) {
 }
 
 function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor, settings, label) {
-	const { min, max } = attr;
+	const {
+		min, max,
+	} = attr;
 	let clipMin = min;
 	let clipMax = max;
 	if (settings.clip) {
@@ -911,7 +940,9 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 }
 
 function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings, label) {
-	const { min, max } = attr;
+	const {
+		min, max,
+	} = attr;
 	let clipMin = min;
 	let clipMax = max;
 	if (settings.clip) {
@@ -1151,7 +1182,8 @@ function textPaintDirectly(context, range) {
 
 function nameLabelPainter(context, mode, label) {
 	textStyle(context);
-	const ratio = context.pixelRatio, labelSize = Math.max(8, 12 * ratio);
+	const ratio = context.pixelRatio,
+		labelSize = Math.max(8, 12 * ratio);
 	textSize(context, labelSize);
 	const x = 6 * ratio;
 	let y = (context.height + labelSize) * 0.5;

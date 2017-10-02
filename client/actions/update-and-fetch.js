@@ -1,15 +1,15 @@
 import { fetchGene } from './fetch-genes';
-import { SET_VIEW_PROPS } from './actionTypes';
+import { UPDATE_VIEWSTATE } from './actionTypes';
 
 // Automatically check if any of the view-state requires genes to be fetched,
 // and dispatch an action if that is the case.
 // (previously we had special code all over our components to do that, making
 // the whole thing quite brittle)
-// The `setViewProps` thunk is only required for SET_VIEW_PROPS actions that
-// might result in genes being fetched; if our action is guaranteed to not do
-// so (for example, `colorMode` settings), we can still use a direct
-// SET_VIEW_PROPS, since that has less overhead.
-export function setViewProps(dataset, action) {
+// The `updateAndFetchGenes` thunk is only required for UPDATE_VIEWSTATE
+// actions that might result in genes being fetched. If our action does
+// not involve any genes (for example, `colorMode` settings), use a direct
+// UPDATE_VIEWSTATE, since that has less overhead.
+export function updateAndFetchGenes(dataset, action) {
 	const {
 		axis,
 		sortAttrName,
@@ -69,10 +69,11 @@ export function setViewProps(dataset, action) {
 					}
 				}
 				if (scatterPlots && scatterPlots.plotSettings) {
-					for (let i = 0; i < scatterPlots.totalPlots; i++) {
-						const plot = scatterPlots.plotSettings[i];
-						appendIfUnfetchedGene(plot.x.attr);
-						appendIfUnfetchedGene(plot.y.attr);
+					const plots = Object.values(scatterPlots.plotSettings);
+					for (let i = 0; i < plots.length; i++) {
+						const plot = plots[i];
+						plot.x && appendIfUnfetchedGene(plot.x.attr);
+						plot.y && appendIfUnfetchedGene(plot.y.attr);
 						appendIfUnfetchedGene(plot.colorAttr);
 					}
 				}
@@ -96,7 +97,7 @@ export function setViewProps(dataset, action) {
 		if (geneFetchList.length) {
 			dispatch(fetchGene(dataset, geneFetchList));
 		}
-		action.type = SET_VIEW_PROPS;
+		action.type = action.type || UPDATE_VIEWSTATE;
 		dispatch(action);
 	};
 }

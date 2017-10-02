@@ -41,22 +41,24 @@ export class FlexboxContainer extends Component {
 		const { props } = this;
 
 		return (
-			mountedContainer ? (
-				<div
-					className={props.className}
-					style={props.style}
-					ref={this.flexboxContainer}>
+			mountedContainer ?
+				(
 					<div
-						style={boxStyle}>
-						{props.children}
+						className={props.className}
+						style={props.style}
+						ref={this.flexboxContainer}>
+						<div
+							style={boxStyle}>
+							{props.children}
+						</div>
 					</div>
-				</div>
-			) : (
-				<div
-					className={props.className}
-					style={props.style}
-					ref={this.flexboxContainer} />
-			)
+				) :
+				(
+					<div
+						className={props.className}
+						style={props.style}
+						ref={this.flexboxContainer} />
+				)
 		);
 	}
 }

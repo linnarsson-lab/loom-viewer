@@ -406,9 +406,9 @@ export function calcMinMax(data, start, end) {
 	if (typeof v === 'number') {
 		min = max = v;
 		while (start < i--) {
-			const v = data[i];
-			min = min < v ? min : v;
-			max = max > v ? max : v;
+			v = data[i];
+			if (v < min) { min = v; }
+			if (v > max) { max = v; }
 		}
 	}
 	return {
@@ -431,7 +431,7 @@ export function isIntegerMinMax(array) {
 		min = max = v;
 		isInt = v === (v | 0);
 		while (i--) {
-			const v = array[i];
+			v = array[i];
 			if (v < min) { min = v; }
 			if (v > max) { max = v; }
 			isInt = isInt && v === (v | 0);
@@ -571,11 +571,11 @@ export function stableSortInPlace(array, comparator) {
 	return sortFromIndices(array, findIndices(array, comparator));
 }
 
-export function stableSortedCopy(array, comparator, arrayConstr) {
-	arrayConstr = arrayConstr || Array;
+export function stableSortedCopy(array, comparator, typedArray) {
+	typedArray = typedArray || Array;
 	let indices = findIndices(array, comparator);
 	let i = array.length;
-	let sortedArray = new arrayConstr(i);
+	let sortedArray = new typedArray(i);
 	while (i--) {
 		sortedArray[i] = array[indices[i]];
 	}

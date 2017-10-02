@@ -79,22 +79,27 @@ export class NavbarView extends Component {
 				key='title'
 				eventKey={'title'}
 				disabled>
-				{isViewingDataset ? datasetTitle : 'Data Sets'}
+				{isViewingDataset ?
+					datasetTitle :
+					'Data Sets'
+				}
 			</NavItem>
 		);
 
-		const viewLinks = isViewingDataset ? views.map(
-			(view) => {
-				const link = `/dataset/${view.link}/${datasetTitle}/${viewStateURI}`;
-				return (
-					<LinkContainer to={link} key={view.link}>
-						<NavItem eventKey={view.link}>
-							{view.label}
-						</NavItem>
-					</LinkContainer>
-				);
-			}
-		) : null;
+		const viewLinks = isViewingDataset ?
+			views.map(
+				(view) => {
+					const link = `/dataset/${view.link}/${datasetTitle}/${viewStateURI}`;
+					return (
+						<LinkContainer to={link} key={view.link}>
+							<NavItem eventKey={view.link}>
+								{view.label}
+							</NavItem>
+						</LinkContainer>
+					);
+				}
+			) :
+			null;
 
 
 		const realNavBar = (
@@ -114,7 +119,11 @@ export class NavbarView extends Component {
 		);
 
 		return (
-			<DocumentTitle key='document-title' title={isViewingDataset ? datasetTitle : 'Loom'}>
+			<DocumentTitle
+				key='document-title'
+				title={isViewingDataset ?
+					datasetTitle :
+					'Loom'}>
 				<div key='main-view' className='view-vertical'>
 					<div>
 						{realNavBar}

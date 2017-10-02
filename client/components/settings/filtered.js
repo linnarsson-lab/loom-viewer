@@ -9,7 +9,7 @@ import {
 
 import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
 
 export class FilteredValues extends Component {
 	render() {
@@ -52,42 +52,44 @@ export class FilteredValues extends Component {
 					attr = attrs[filterAttrName],
 					label = `${attrNames[i]}: (${filteredVals[i].length})`;
 
-				const listGroupElements = attr ? filteredVals[i].map(
-					(filterVal) => {
-						const onFilterClick = () => {
-							dispatch({
-								type: SET_VIEW_PROPS,
-								path: dataset.path,
-								axis,
-								filterAttrName,
-								filterVal,
-							});
-						};
-						return (
-							<OverlayTooltip
-								key={filterAttrName + '_' + filterVal}
-								tooltip={`Click to remove "${filterVal}" from filter`}
-								tooltipId={`filter-${filterAttrName}_${filterVal}-tltp`}>
-								<ListGroupItem>
-									<Button
-										bsStyle='link'
-										style={{
-											fontWeight: 'bold',
-											whiteSpace: 'normal',
-											textAlign: 'left',
-											width: '100%',
-										}}
-										onClick={onFilterClick}>
+				const listGroupElements = attr ?
+					filteredVals[i].map(
+						(filterVal) => {
+							const onFilterClick = () => {
+								dispatch({
+									type: UPDATE_VIEWSTATE,
+									path: dataset.path,
+									axis,
+									filterAttrName,
+									filterVal,
+								});
+							};
+							return (
+								<OverlayTooltip
+									key={filterAttrName + '_' + filterVal}
+									tooltip={`Click to remove "${filterVal}" from filter`}
+									tooltipId={`filter-${filterAttrName}_${filterVal}-tltp`}>
+									<ListGroupItem>
+										<Button
+											bsStyle='link'
+											style={{
+												fontWeight: 'bold',
+												whiteSpace: 'normal',
+												textAlign: 'left',
+												width: '100%',
+											}}
+											onClick={onFilterClick}>
 
-										{attr.indexedVal ?
-											attr.indexedVal[filterVal] :
-											filterVal}
-									</Button>
-								</ListGroupItem>
-							</OverlayTooltip>
-						);
-					}
-				) : null;
+											{attr.indexedVal ?
+												attr.indexedVal[filterVal] :
+												filterVal}
+										</Button>
+									</ListGroupItem>
+								</OverlayTooltip>
+							);
+						}
+					) :
+					null;
 
 
 				filteredList[i] = (

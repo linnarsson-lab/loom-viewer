@@ -3,16 +3,20 @@
 
 
 const f = String.fromCharCode,
-	UriSafeCharArray = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$'.split('');
-let UriSafeReverseDict = {}, i = 65;
+	UriSafeCharArray = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~_-'.split('');
+let UriSafeReverseDict = {},
+	i = 65;
 while (i--) {
 	UriSafeReverseDict[UriSafeCharArray[i].charCodeAt(0)] = i;
 }
 
-//compress into a string that is already URI encoded
+// compress into a string that is already URI encoded
 export const compressToEncodedURIComponent = (uncompressed) => {
 	if (uncompressed === null) { return ''; }
-	let i = 0, j = 0, k = 0, value = 0,
+	let i = 0,
+		j = 0,
+		k = 0,
+		value = 0,
 		node = [3], // first node will always be initialised like this.
 		// we should never output the root anyway,
 		// so we initiate with terminating token
@@ -232,11 +236,10 @@ export const compressToEncodedURIComponent = (uncompressed) => {
 	return data.join('');
 };
 
-//decompress from an output of compressToEncodedURIComponent
+// decompress from an output of compressToEncodedURIComponent
 export const decompressFromEncodedURIComponent = (input) => {
 	if (input === null) { return ''; }
 	if (input === '') { return null; }
-	input = input.replace(/ /g, '+');
 	let dictionary = [0, 1, 2],
 		enlargeIn = 4,
 		dictSize = 4,

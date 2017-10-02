@@ -82,17 +82,19 @@ class CanvasComponent extends Component {
 				style={this.props.style}
 				ref={this.mountView}>
 				{
-					this.state.view ? (
-						<canvas
-							ref={this.mountCanvas}
-							width={this.state.width}
-							height={this.state.height}
-							style={{
-								width: '100%',
-								height: '100%',
-							}}
-						/>
-					) : null
+					this.state.view ?
+						(
+							<canvas
+								ref={this.mountCanvas}
+								width={this.state.width}
+								height={this.state.height}
+								style={{
+									width: '100%',
+									height: '100%',
+								}}
+							/>
+						) :
+						null
 				}
 			</div>
 		);

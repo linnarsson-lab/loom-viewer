@@ -19,9 +19,14 @@ import {
 // "global" array of sprite canvases.
 // Dots will be drawn in later (depends on colour settings)
 // Multiple radii; no need to draw a 256x256 image for a 8x8 dot
-const { allSprites, contexts } = (() => {
-	let i = 257, j = 8;
-	const allSprites = new Array(j), contexts = new Array(i);
+const {
+	allSprites,
+	contexts,
+} = (() => {
+	let i = 257,
+		j = 8;
+	const allSprites = new Array(j),
+		contexts = new Array(i);
 	while (j--) {
 		i = 257;
 		const _sprites = new Array(i);
@@ -33,7 +38,10 @@ const { allSprites, contexts } = (() => {
 		}
 		allSprites[j] = _sprites;
 	}
-	return { allSprites, contexts };
+	return {
+		allSprites,
+		contexts,
+	};
 })();
 
 function constrain(x, a, b) {
@@ -132,10 +140,14 @@ export function scatterPlot(attrs, indices, settings) {
 }
 
 function calcLayout(context, settings) {
-	const { min, sqrt } = Math;
+	const {
+		min, sqrt,
+	} = Math;
 	const scaleFactor = settings.scaleFactor || 50;
 
-	let { width, height, pixelRatio } = context;
+	let {
+		width, height, pixelRatio,
+	} = context;
 	const shortEdge = min(width, height);
 
 	// Suitable radius of the markers
@@ -244,7 +256,9 @@ function convertAttr(attr, indices, jitter) {
 }
 
 function maybeJitterData(xData, yData, settings, xJitter, yJitter) {
-	const { PI, random, sin, cos } = Math;
+	const {
+		PI, random, sin, cos,
+	} = Math;
 	const TAU = 2 * PI;
 	let i = xData.length;
 	if (settings.x.jitter && settings.y.jitter) {
@@ -296,7 +310,9 @@ function scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings) {
 	// *also* add a margin *before* the normalization.
 	// We also subtract the radius to avoid any points
 	// from going over the edge of the canvas.
-	const { width, height, radius } = spriteLayout;
+	const {
+		width, height, radius,
+	} = spriteLayout;
 	let xScale = ((width - 4 * radius)) / (xMax - xMin + xMargin);
 	let yScale = ((height - 4 * radius)) / (yMax - yMin + yMargin);
 	let i = xData.length;
@@ -324,10 +340,13 @@ function convertColorData(colorAttr, indices, dataToIdx) {
 }
 
 function prepareSprites(colorMode, spriteLayout) {
-	const { radius, sprites } = spriteLayout;
+	const {
+		radius, sprites,
+	} = spriteLayout;
 
 	let palette = getPalette(colorMode);
-	const spriteW = sprites[0].width, spriteH = sprites[0].height;
+	const spriteW = sprites[0].width,
+		spriteH = sprites[0].height;
 	const lineW = constrain(radius / 10, 0.125, 0.5);
 	// reset all sprites to empty circles
 	let i = sprites.length;
@@ -441,12 +460,18 @@ function sortByAxes(xy, cIdx, sprites) {
 		xy[i] = _xy[indices[i]];
 	}
 
-	return { xy, cSprites, zeros };
+	return {
+		xy, cSprites, zeros,
+	};
 }
 
 function blitSprites(context, spriteLayout, sorted) {
-	let { cSprites, zeros, xy } = sorted;
-	const { x, y, height, sprites, spriteRadius } = spriteLayout;
+	let {
+		cSprites, zeros, xy,
+	} = sorted;
+	const {
+		x, y, height, sprites, spriteRadius,
+	} = spriteLayout;
 	let zeroSprite = sprites[0],
 		_xy = 0,
 		_x = 0,
@@ -468,7 +493,9 @@ function blitSprites(context, spriteLayout, sorted) {
 }
 
 function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
-	const { labelTextSize, xLabel, yLabel, colorLabel } = labelLayout;
+	const {
+		labelTextSize, xLabel, yLabel, colorLabel,
+	} = labelLayout;
 	textStyle(context);
 	textSize(context, labelTextSize);
 
@@ -489,9 +516,13 @@ function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
 }
 
 function drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings) {
-	const { min, max } = colorAttr;
+	const {
+		min, max,
+	} = colorAttr;
 	const { labelTextSize } = labelLayout;
-	const { x, y, gradientSize } = labelLayout.colorLabel;
+	const {
+		x, y, gradientSize,
+	} = labelLayout.colorLabel;
 	const { pixelRatio } = context;
 
 	// label for min value

@@ -31,7 +31,9 @@ export class Remount extends Component {
 		// add a debouncer to minimise pointless
 		// (unmount, resize, remount)-ing of the child nodes.
 		// We default to 200 ms
-		const delay = this.props.delay !== undefined ? this.props.delay : 200;
+		const delay = this.props.delay !== undefined ?
+			this.props.delay :
+			200;
 		this.triggerResize = debounce(resizeFunc, delay);
 
 		this.state = {
@@ -63,6 +65,10 @@ export class Remount extends Component {
 			window.removeEventListener('resize', this.triggerResize);
 		}
 		this.triggerResize.cancel();
+
+		if (this.props.onUnmount){
+			this.props.onUnmount();
+		}
 	}
 
 	componentWillReceiveProps(nProps) {
@@ -85,7 +91,7 @@ export class Remount extends Component {
 			}
 		}
 
-		if (props.watchedVal !== nProps.watchedVal) {
+		if (props.watchedVal !== nProps.watchedVal && !this.state.resizing) {
 			newState.resizing = true;
 			changedState = true;
 		}
@@ -112,10 +118,20 @@ export class Remount extends Component {
 	componentDidUpdate(prevProps, prevState) {
 		// Yes, this triggers another update.
 		// That is the whole point.
-		if (!prevState.resizing && this.state.resizing) {
+		if (!prevState.resizing &&
+			this.state.resizing) {
 			this.setState(() => {
 				return { resizing: false };
 			});
+			// a callback that should trigger on unmounting
+			if (this.props.onUnmount){
+				this.props.onUnmount();
+			}
+		} else if (prevState.resizing &&
+			!this.state.resizing &&
+			this.props.onRemount){
+			// a callback that should trigger on remounting
+			this.props.onRemount();
 		}
 	}
 
@@ -150,7 +166,9 @@ export class Remount extends Component {
 	}
 
 	render() {
-		return this.state.resizing ? null : this.props.children;
+		return this.state.resizing ?
+			null :
+			this.props.children;
 	}
 }
 
@@ -162,4 +180,6 @@ Remount.propTypes = {
 	ignoreHeight: PropTypes.bool,
 	watchedVal: PropTypes.any,
 	delay: PropTypes.number,
+	onUnmount: PropTypes.func,
+	onRemount: PropTypes.func,
 };

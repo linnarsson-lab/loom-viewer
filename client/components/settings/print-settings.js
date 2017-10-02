@@ -47,8 +47,8 @@ const printCanvas = (() => {
 export class PrintSettings extends Component {
 	render() {
 		const {
- dataset, stateName, actionType, sketches 
-} = this.props;
+			dataset, stateName, actionType, sketches,
+		} = this.props;
 		const state = dataset[stateName];
 		const { printSettings } = state;
 		const handleChangeFactory = (field) => {
@@ -80,19 +80,23 @@ export class PrintSettings extends Component {
 		const showPrint = printMenuProps.value;
 		const showPrintMenu = (
 			<Button
-				bsStyle={showPrint ? 'primary' : 'default'}
-				onClick={() => { printMenuProps.onChange(!showPrint); }}
-			>
+				bsStyle={showPrint ?
+					'primary' :
+					'default'
+				}
+				onClick={() => {
+					printMenuProps.onChange(!showPrint);
+				}}>
 				Export image
 			</Button>
 		);
 
-		let orientationMenu, 
-exportTargetMenu, 
-printSizeMenu, 
-dpiMenu, 
-pixelSizeMenu, 
-saveMenu;
+		let orientationMenu,
+			exportTargetMenu,
+			printSizeMenu,
+			dpiMenu,
+			pixelSizeMenu,
+			saveMenu;
 
 		if (showPrint) {
 
@@ -163,8 +167,8 @@ saveMenu;
 			}
 
 			const {
- savePNG, saveSVG 
-} = generateExportRenderFuncs(
+				savePNG, saveSVG,
+			} = generateExportRenderFuncs(
 				exportTargetProps.value,
 				printSizeProps.value,
 				dpiProps.value,

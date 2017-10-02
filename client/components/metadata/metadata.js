@@ -18,7 +18,7 @@ import {
 	OverlayTooltip,
 } from '../settings/settings';
 
-import { SET_VIEW_PROPS } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
 
 import { createComparator } from 'js/state-comparator';
 
@@ -43,7 +43,9 @@ export class MetadataPlot extends Component {
 
 		const modes = this.props.modes || defaultModes;
 		let idx = modes.indexOf(this.props.mode);
-		const mode = idx === -1 ? 0 : idx;
+		const mode = idx === -1 ?
+			0 :
+			idx;
 
 		this.state = {
 			modes,
@@ -66,7 +68,9 @@ export class MetadataPlot extends Component {
 			// adjust current mode to new mode cycle
 			const currentMode = state.modes[state.mode];
 			let idx = modes.indexOf(currentMode);
-			const mode = idx === -1 ? 0 : idx;
+			const mode = idx === -1 ?
+				0 :
+				idx;
 			this.setState(() => {
 				return {
 					modes,
@@ -90,6 +94,11 @@ export class MetadataPlot extends Component {
 			filteredAttrs,
 		} = this.props;
 
+		const buttonStyle = {
+			cursor: modes.length > 1 ?
+				'pointer' :
+				'initial',
+		};
 		return (
 			<div className='view-vertical'>
 				<OverlayTooltip
@@ -98,7 +107,7 @@ export class MetadataPlot extends Component {
 					<Button
 						onClick={this.modeCycler}
 						bsStyle='link'
-						style={{ cursor: (modes.length > 1 ? 'pointer' : 'initial') }} >
+						style={buttonStyle} >
 						<Canvas
 							height={80}
 							paint={sparkline(attr, indices, modes[mode])}
@@ -296,7 +305,9 @@ class MetadataTable extends Component {
 								mode={
 									/* guess default category based
 									on nr of unique values */
-									uniques.length <= 20 ? 'Stacked' : 'Bars'
+									uniques.length <= 20 ?
+										'Stacked' :
+										'Bars'
 								}
 								indices={indices}
 								filterFunc={filterFunc}
@@ -363,7 +374,7 @@ export class MetadataComponent extends Component {
 		const onClickAttrFactory = (sortAttrName) => {
 			return () => {
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: UPDATE_VIEWSTATE,
 					path,
 					axis,
 					sortAttrName,
@@ -375,7 +386,7 @@ export class MetadataComponent extends Component {
 		const onClickFilterFactory = (filterAttrName, filterVal) => {
 			return () => {
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: UPDATE_VIEWSTATE,
 					path,
 					axis,
 					filterAttrName,
@@ -388,7 +399,7 @@ export class MetadataComponent extends Component {
 
 		const searchMetadata = (event) => {
 			const action = {
-				type: SET_VIEW_PROPS,
+				type: UPDATE_VIEWSTATE,
 				path,
 				stateName,
 				viewState: {

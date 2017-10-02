@@ -8,19 +8,19 @@ import {
 	Tabs,
 } from 'react-bootstrap';
 
-import { CoordinateSettings } from './coordinate-settings';
-import { ColorSettings } from './color-settings';
-import { ScaleFactorSettings } from './scalefactor-settings';
-import { popoverTest } from './popover';
+import { CoordinateSettings } from 'components/scatterplot/coordinate-settings';
+import { ColorSettings } from 'components/scatterplot/color-settings';
+import { ScaleFactorSettings } from 'components/scatterplot/scalefactor-settings';
+import { popoverTest } from 'components/scatterplot/popover';
 
-import { setViewProps } from '../../actions/set-viewprops';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
-import { FlexboxContainer } from '../flexbox-container.js';
+import { FlexboxContainer } from 'components/flexbox-container.js';
 
 import {
 	CollapsibleSettings,
 	FilteredValues,
-} from '../settings/settings';
+} from 'components/settings/settings';
 
 function filteredValuesComponent(props) {
 	const {
@@ -30,15 +30,17 @@ function filteredValuesComponent(props) {
 	} = props;
 
 	const { filter } = props.dataset.viewState[axis];
-	return filter.length ? (
-		<ListGroupItem>
-			<FilteredValues
-				dispatch={dispatch}
-				dataset={dataset}
-				axis={axis}
-				filtered={filter} />
-		</ListGroupItem>
-	) : null;
+	return filter.length ?
+		(
+			<ListGroupItem>
+				<FilteredValues
+					dispatch={dispatch}
+					dataset={dataset}
+					axis={axis}
+					filtered={filter} />
+			</ListGroupItem>
+		) :
+		null;
 }
 
 filteredValuesComponent.propTypes = {
@@ -121,15 +123,9 @@ export class ScatterPlotSidepanel extends Component {
 	constructor(...args) {
 		super(...args);
 		this.selectTab = this.selectTab.bind(this);
-	}
-
-	componentWillMount() {
-		const { props } = this;
-		this.setState( () => {
-			return {
-				filteredValues: filteredValuesComponent(props),
-			};
-		});
+		this.state = {
+			filteredValues: filteredValuesComponent(this.props),
+		};
 	}
 
 	componentWillUpdate(nextProps) {
@@ -164,7 +160,7 @@ export class ScatterPlotSidepanel extends Component {
 			// new tab
 		} else {
 			// switch to existing tab
-			dispatch(setViewProps(
+			dispatch(updateAndFetchGenes(
 				dataset,
 				{
 					stateName: axis,
@@ -204,9 +200,11 @@ export class ScatterPlotSidepanel extends Component {
 			plotSettings,
 		} = scatterPlots;
 
-		const newPlotTab = plotSettings.length < 4 ? (
-			<Tab key={'+'} title={'+'} />
-		) : null;
+		const newPlotTab = plotSettings.length < 4 ?
+			(
+				<Tab key={'+'} title={'+'} />
+			) :
+			null;
 
 		const settingsTabs = [];
 		for (let i = 0; i < totalPlots; i++) {
@@ -215,7 +213,10 @@ export class ScatterPlotSidepanel extends Component {
 				<Tab
 					key={`${i}${plotSetting.x.attr}${plotSetting.y.attr}`}
 					eventKey={i}
-					title={i === selectedPlot ? <b>{i + 1}</b> : i + 1}>
+					title={i === selectedPlot ?
+						<b>{i + 1}</b> :
+						i + 1
+					} >
 					<PlotSettingsTabContent
 						axis={axis}
 						dataset={dataset}

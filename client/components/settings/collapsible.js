@@ -97,17 +97,21 @@ export class CollapsibleSettings extends Component {
 			children,
 		} = this.props;
 
-		let _popover = popover ? (
-			<OverlayPopover
-				popover={popover}
-				popoverTitle={popoverTitle}
-				popoverId={popoverId}
-				popoverPlacement={popoverPlacement}
-				size={size} />
-		) : null;
+		let _popover = popover ?
+			(
+				<OverlayPopover
+					popover={popover}
+					popoverTitle={popoverTitle}
+					popoverId={popoverId}
+					popoverPlacement={popoverPlacement}
+					size={size} />
+			) :
+			null;
 
 		// using Button so it can be triggered by keyboard
-		let chevron = this.state.open ? 'chevron-down' : 'chevron-right';
+		let chevron = this.state.open ?
+			'chevron-down' :
+			'chevron-right';
 		let _button = (
 			<Button
 				onClick={this.toggle}
@@ -118,17 +122,21 @@ export class CollapsibleSettings extends Component {
 		);
 
 
-		let _label = tooltip ? (
-			<div>
-				<OverlayTooltip
-					placement={tooltipPlacement || 'top'}
-					tooltip={tooltip}
-					tooltipId={tooltipId}
-				>
-					{_button}
-				</OverlayTooltip> {_popover}
-			</div>
-		) : (<div>{_button} {_popover}</div>);
+		let _label = tooltip ?
+			(
+				<div>
+					<OverlayTooltip
+						placement={tooltipPlacement || 'top'}
+						tooltip={tooltip}
+						tooltipId={tooltipId}
+					>
+						{_button}
+					</OverlayTooltip> {_popover}
+				</div>
+			) :
+			(
+				<div>{_button} {_popover}</div>
+			);
 
 
 		return (

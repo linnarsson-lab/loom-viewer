@@ -10,7 +10,7 @@ import {
 	SelectGeneComponent,
 } from '../settings/settings';
 
-import { setViewProps } from '../../actions/set-viewprops';
+import { updateAndFetchGenes } from '../../actions/update-and-fetch';
 
 export class AttributeSelection extends Component {
 	constructor(...args){
@@ -29,7 +29,7 @@ export class AttributeSelection extends Component {
 					},
 				},
 			};
-			dispatch(setViewProps(dataset, action));
+			dispatch(updateAndFetchGenes(dataset, action));
 		};
 	}
 

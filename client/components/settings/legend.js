@@ -62,9 +62,8 @@ export class AttrLegend extends Component {
 
 		const showBlock = mode !== 'Bars';
 		let l = Math.min(uniques.length, 20),
-			i = l,
-			visibleData = new Array(l + (l < uniques.length ? 1 : 0));
-		while (i--) {
+			visibleData = [];
+		for (let i = 0; i < l; i++){
 
 			let {
 				val,
@@ -75,25 +74,35 @@ export class AttrLegend extends Component {
 			const cellStyle = {
 				display: 'flex',
 				cursor: 'pointer',
-				textDecoration: (filtered ? 'line-through' : null),
+				textDecoration: filtered ?
+					'line-through' :
+					null,
 			};
-			const color = filtered ? 'lightgrey' : selectColor(val);
-			let icon = showBlock ? (
-				<span style={{ color }}>██</span>
-			) : null;
+			const color = filtered ?
+				'lightgrey' :
+				selectColor(val);
+			let icon = showBlock ?
+				(
+					<span style={{ color }}>██</span>
+				) :
+				null;
 
-			let dataVal = indexedVal ? indexedVal[val] : val;
+			let dataVal = indexedVal ?
+				indexedVal[val] :
+				val;
 			if (isFloat) {
 				dataVal = dataVal.toExponential(3);
 			}
 
-			const valFilterFunc = filterFunc ? filterFunc(val) : nullFunc;
+			const valFilterFunc = filterFunc ?
+				filterFunc(val) :
+				nullFunc;
 
 			const tooltipText = filtered ?
 				`Click to remove "${dataVal}" from filter` :
 				`Filter out "${dataVal}"`;
 
-			visibleData[i] = (
+			visibleData.push(
 				<td
 					key={`${i}_${val}`}
 					style={cellStyle}>
@@ -118,17 +127,15 @@ export class AttrLegend extends Component {
 		// total datapoints minus shown
 		// datapoints
 		let rest = attr.data.length;
-		i = l;
-		while (i--) {
+		for (let i = 0; i < l; i++){
 			rest -= uniques[i].count;
 		}
 		if (rest) {
-			let icon = showBlock ? (
-				<span style={restStyle1}>□ </span>
-			) : null;
-			visibleData[l] = (
+			visibleData.push(
 				<td key={20} style={restStyle2}>
-					{icon} (other): {rest}
+					{showBlock ?
+						<span style={restStyle1}>□</span> :
+						null} (other): {rest}
 				</td>
 			);
 		}

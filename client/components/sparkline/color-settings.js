@@ -14,44 +14,14 @@ import {
 	OverlayTooltip,
 } from '../settings/settings';
 
-import { SET_VIEW_PROPS } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
 
-const boxLegend = (
-	<table>
-		<tbody>
-			<tr>
-				<td>
-					<span style={{ color: '#EECCCC' }}>██</span> <i>max column value</i>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<span style={{ color: '#EE6644' }}>██</span> <i>third quartile</i>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<span style={{ color: '#000000' }}>██</span> <i>average column value</i>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<span style={{ color: '#4444AA' }}>██</span> <i>first quartile</i>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<span style={{ color: '#666688' }}>██</span> <i>min column value</i>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-);
+import { boxLegend } from 'components/settings/boxlegend';
 
 function handleChangeFactory(dispatch, dataset, field) {
 	return (val) => {
 		dispatch({
-			type: SET_VIEW_PROPS,
+			type: UPDATE_VIEWSTATE,
 			stateName: 'sparkline',
 			path: dataset.path,
 			viewState: { sparkline: { [field]: val } },
@@ -61,22 +31,29 @@ function handleChangeFactory(dispatch, dataset, field) {
 
 export class ColorSettings extends Component {
 
-	componentWillMount() {
+	constructor(...args) {
+		super(...args);
 		const {
 			dispatch,
 			dataset,
 		} = this.props;
 
-		const geneModeOptions = ['Bars', 'Box', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle'];
+		const geneModeOptions = [
+			'Bars',
+			'Box',
+			'Heatmap',
+			'Heatmap2',
+			'Flame',
+			'Icicle',
+		];
+
 		const geneModeHC = handleChangeFactory(dispatch, dataset, 'geneMode');
 		const showLabelsHC = handleChangeFactory(dispatch, dataset, 'showLabels');
-		this.setState(() => {
-			return {
-				geneModeOptions,
-				geneModeHC,
-				showLabelsHC,
-			};
-		});
+		this.state = {
+			geneModeOptions,
+			geneModeHC,
+			showLabelsHC,
+		};
 	}
 
 	render() {
@@ -103,7 +80,7 @@ export class ColorSettings extends Component {
 			const { emphasizeNonZero } = plotSetting;
 			const emphasizeNZhc = () => {
 				dispatch({
-					type: SET_VIEW_PROPS,
+					type: UPDATE_VIEWSTATE,
 					stateName: 'col',
 					path: dataset.path,
 					viewState: {

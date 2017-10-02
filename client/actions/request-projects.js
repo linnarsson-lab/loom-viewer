@@ -7,9 +7,9 @@ localforage.config({
 });
 
 import {
-	//REQUEST_PROJECTS,
+	// REQUEST_PROJECTS,
 	REQUEST_PROJECTS_FETCH,
-	//REQUEST_PROJECTS_CACHED,
+	// REQUEST_PROJECTS_CACHED,
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	LOAD_CACHED_PROJECTS,
@@ -19,11 +19,11 @@ export const OFFLINE = 0,
 	ONLINE = 1,
 	UNKNOWN = -1;
 
-////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
 //
 // Fetch the list of projects
 //
-////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////
 
 
 // function requestProjects() {
@@ -101,42 +101,46 @@ export function requestProjects(list, fetchProjectsStatus) {
 		// Check if projects already exists in the store,
 		// and if we weren't offline last time we tried
 		// to fetch the projects
-		if (list && fetchProjectsStatus) { // we retrieve from store cache
-			return;
-		} else { // Announce we are fetching from server
+		if (!(list && fetchProjectsStatus)){ // Announce we are fetching from server
 			dispatch(requestProjectsFetch());
 			return (
 				fetch('/loom').then((response) => {
 					return response.json();
-				}).then((json) => {
-					dispatch(receiveProjects(json, list));
-				}).catch((err) => {
-					console.log('fetching projects failed with following error:');
-					console.log(err);
-					// Try loading the offline datasets,
-					// if we have not done so before
-					if (!list) {
-						console.log('attempting to load cached datasets');
-						loadProjects(dispatch);
-					}
 				})
+					.then((json) => {
+						return dispatch(receiveProjects(json, list));
+					})
+					.catch((err) => {
+						console.log('fetching projects failed with following error:');
+						console.log(err);
+						// Try loading the offline datasets,
+						// if we have not done so before
+						if (!list) {
+							console.log('attempting to load cached datasets');
+							loadProjects(dispatch);
+						}
+					})
 			);
+		} else { // we retrieve from store cache
+			return null;
 		}
 	};
 }
 
 function loadProjects(dispatch) {
-	localforage.getItem('cachedDatasets').then((cachedDatasets) => {
-		if (cachedDatasets) {
-			dispatch(loadOfflineProjects(cachedDatasets));
-		} else {
+	localforage.getItem('cachedDatasets')
+		.then((cachedDatasets) => {
+			if (cachedDatasets) {
+				dispatch(loadOfflineProjects(cachedDatasets));
+			} else {
 			// if list is empty, we have no
 			// cached datasets and fetching
 			// effectively failed.
-			throw 'no cached datasets';
-		}
-	}).catch((err) => {
-		console.log(err);
-		dispatch(requestProjectsFailed());
-	});
+				throw 'no cached datasets';
+			}
+		})
+		.catch((err) => {
+			console.log(err);
+			dispatch(requestProjectsFailed());
+		});
 }

@@ -16,79 +16,50 @@ import {
 	DropdownMenu,
 } from 'components/settings/settings';
 
-import { setViewProps } from 'actions/set-viewprops';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
 // to ensure that selected buttons don't dispatch anything.
 import { nullFunc } from 'js/util';
 
-
-function colorAttrFactory(props) {
-	const {
-		dispatch,
-		dataset,
-		axis,
-		plotNr,
-	} = props;
-
-	return (value) => {
-		let action = {
-			stateName: axis,
-			path: dataset.path,
-			viewState: {
-				[axis]: {
-					scatterPlots: {
-						plotSettings: {
-							[plotNr]: { colorAttr: value },
+function colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr){
+	const selected = mode === colorMode;
+	const onClick = selected ?
+		nullFunc :
+		(
+			() => {
+				const action = {
+					stateName: axis,
+					path,
+					viewState: {
+						[axis]: {
+							scatterPlots: {
+								plotSettings: {
+									[plotNr]: {
+										colorMode: mode,
+									},
+								},
+							},
 						},
 					},
-				},
-			},
-		};
-		dispatch(setViewProps(dataset, action));
-	};
+				};
+				dispatch(updateAndFetchGenes(dataset, action));
+			}
+		);
+
+	return (
+		<ButtonGroup key={mode}>
+			<Button
+				bsStyle={selected ?
+					'primary' :
+					'default'}
+				onClick={onClick}>
+				{mode}
+			</Button>
+		</ButtonGroup>
+	);
 }
-
-colorAttrFactory.propTypes = {
-	dispatch: PropTypes.func.isRequired,
-	dataset: PropTypes.object.isRequired,
-	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-};
-
-function colorSettingsFactory(props, colorMode) {
-	const {
-		dispatch,
-		dataset,
-		axis,
-		plotNr,
-	} = props;
-	return () => {
-		const action = {
-			stateName: axis,
-			path: dataset.path,
-			viewState: {
-				[axis]: {
-					scatterPlots: {
-						plotSettings: {
-							[plotNr]: { colorMode },
-						},
-					},
-				},
-			},
-		};
-		dispatch(setViewProps(dataset, action));
-	};
-}
-
-colorSettingsFactory.propTypes = {
-	dispatch: PropTypes.func.isRequired,
-	dataset: PropTypes.object.isRequired,
-	axis: PropTypes.string.isRequired,
-	plotNr: PropTypes.number.isRequired,
-};
 
 export class ColorSettings extends Component {
-
 	render() {
 		const { props } = this;
 
@@ -107,6 +78,9 @@ export class ColorSettings extends Component {
 		} = plotSetting;
 
 		const {
+			path,
+		} = dataset;
+		const {
 			attrs,
 			allKeysNoUniques,
 			dropdownOptions,
@@ -114,17 +88,35 @@ export class ColorSettings extends Component {
 
 		const filterOptions = dropdownOptions.allNoUniques;
 
-		const colorAttrHC = colorAttrFactory(props),
-			heatmapHC = colorSettingsFactory(props, 'Heatmap'),
-			heatmap2HC = colorSettingsFactory(props, 'Heatmap2'),
-			categoricalHC = colorSettingsFactory(props, 'Categorical');
+		const colorAttrHC = (newAttr) => {
+			const action = {
+				stateName: axis,
+				path,
+				viewState: {
+					[axis]: {
+						scatterPlots: {
+							plotSettings: {
+								[plotNr]: {
+									colorAttr: newAttr,
+								},
+							},
+						},
+					},
+				},
+			};
+			dispatch(updateAndFetchGenes(dataset, action));
+		};
+
+		const modeButtons = ['Heatmap', 'Heatmap2', 'Categorical'].map((mode) => {
+			return colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr);
+		});
 
 		let attrLegend;
 		if (attrs[colorAttr]) {
 			const filterFunc = (filterVal) => {
 				return () => {
-					dispatch(setViewProps(dataset, {
-						path: dataset.path,
+					dispatch(updateAndFetchGenes(dataset, {
+						path,
 						axis,
 						filterAttrName: colorAttr,
 						filterVal,
@@ -142,15 +134,17 @@ export class ColorSettings extends Component {
 			);
 		}
 
-		const heatmapSettings = colorMode === 'Heatmap' || colorMode === 'Heatmap2' ? (
-			<ClipDataSettings
-				dispatch={dispatch}
-				dataset={dataset}
-				axis={axis}
-				plotSetting={plotSetting}
-				plotNr={plotNr}
-				time={200} />
-		) : null;
+		const heatmapSettings = colorMode === 'Heatmap' || colorMode === 'Heatmap2' ?
+			(
+				<ClipDataSettings
+					dispatch={dispatch}
+					dataset={dataset}
+					axis={axis}
+					plotSetting={plotSetting}
+					plotNr={plotNr}
+					time={200} />
+			) :
+			null;
 
 		return (
 			<ListGroupItem>
@@ -169,27 +163,7 @@ export class ColorSettings extends Component {
 							onChange={colorAttrHC}
 						/>
 						<ButtonGroup justified>
-							<ButtonGroup>
-								<Button
-									bsStyle={colorMode === 'Heatmap' ? 'primary' : 'default'}
-									onClick={colorMode === 'Heatmap' ? nullFunc : heatmapHC}>
-									Heatmap
-								</Button>
-							</ButtonGroup>
-							<ButtonGroup>
-								<Button
-									bsStyle={colorMode === 'Heatmap2' ? 'primary' : 'default'}
-									onClick={colorMode === 'Heatmap2' ? nullFunc : heatmap2HC}>
-									Heatmap2
-								</Button>
-							</ButtonGroup>
-							<ButtonGroup>
-								<Button
-									bsStyle={colorMode === 'Categorical' ? 'primary' : 'default'}
-									onClick={colorMode === 'Categorical' ? nullFunc : categoricalHC}>
-									Categorical
-								</Button>
-							</ButtonGroup>
+							{modeButtons}
 						</ButtonGroup>
 						{heatmapSettings}
 					</div>

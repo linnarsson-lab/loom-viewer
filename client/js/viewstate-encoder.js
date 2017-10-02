@@ -73,8 +73,12 @@ export function createViewStateConverter(dataset) {
 
 	const viewStateSchema = {
 		row: {
-			order: vectorOf([{ key: oneOfRowAllKeys, asc: boolVal }]),
-			filter: vectorOf([{ attr: oneOfRowAllKeys, val: anyVal }]),
+			order: vectorOf([{
+				key: oneOfRowAllKeys, asc: boolVal,
+			}]),
+			filter: vectorOf([{
+				attr: oneOfRowAllKeys, val: anyVal,
+			}]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
 				selectedPlot: intVal,
@@ -88,8 +92,14 @@ export function createViewStateConverter(dataset) {
 			},
 		},
 		col: {
-			order: vectorOf([{ key: oneOfColAllKeys, asc: boolVal }]),
-			filter: vectorOf([{ attr: oneOfColAllKeys, val: anyVal }]),
+			order: vectorOf([{
+				key: oneOfColAllKeys,
+				asc: boolVal,
+			}]),
+			filter: vectorOf([{
+				attr: oneOfColAllKeys,
+				val: anyVal,
+			}]),
 			// indices: vectorOf(rangeVal(0, 1<<32))
 			scatterPlots: {
 				selectedPlot: intVal,
@@ -103,7 +113,9 @@ export function createViewStateConverter(dataset) {
 			},
 		},
 		heatmap: {
-			center: { lat: anyVal, lng: anyVal },
+			center: {
+				lat: anyVal, lng: anyVal,
+			},
 			colAttr: oneOfColAllKeys,
 			colMode: heatmapModes,
 			rowAttr: oneOfRowAllKeys,

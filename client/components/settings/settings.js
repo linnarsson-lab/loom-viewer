@@ -4,6 +4,8 @@ export {
 	OverlayTooltip,
 	CollapsibleSettings,
 } from './collapsible';
+export { boxLegend } from './boxlegend';
+
 export { DebouncedFormControl } from './debounced-formcontrol';
 export { DropdownMenu } from './dropdown';
 export { SelectGeneComponent } from './select-gene';
