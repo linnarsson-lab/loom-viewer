@@ -21,8 +21,10 @@ class LoomTiles(object):
 			#colormax = np.percentile(data, 99, axis=1) + 0.1
 			minFloat = np.finfo(float).eps;
 			def percentileMap(data):
-				return np.percentile(data, 99, axis=0) + minFloat;
-			self._maxes = self.ds.map([percentileMap], 0)[0]
+				return np.percentile(data, 99, axis=1) + minFloat;
+
+
+			self._maxes = self.ds.map([max], 0)[0]
 		return self._maxes
 
 	def mins(self):
@@ -438,6 +440,7 @@ _bluewhitered = np.array([[ 19,  74, 133],
 		[107,	1,  32],
 		[221, 221, 221]])
 
+
 _viridis = np.array([[68,1,84 ],
 		[68,2,86 ],
 		[69,4,87 ],
@@ -693,4 +696,4 @@ _viridis = np.array([[68,1,84 ],
 		[246,230,32 ],
 		[248,230,33 ],
 		[251,231,35 ],
-		[253,231,37]])
+		[221, 221, 221]])
