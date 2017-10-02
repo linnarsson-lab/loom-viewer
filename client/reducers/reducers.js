@@ -1,6 +1,6 @@
 // See http://rackt.org/redux/docs/basics/Reducers.html
 import { combineReducers } from 'redux';
-import { merge } from '../js/util';
+import { merge } from 'js/util';
 
 import {
 	// REQUEST_PROJECTS,
@@ -17,7 +17,7 @@ import {
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 	UPDATE_VIEWSTATE,
-} from '../actions/actionTypes';
+} from 'actions/actionTypes';
 
 import {	UNKNOWN } from 'actions/request-projects';
 

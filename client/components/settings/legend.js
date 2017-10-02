@@ -41,103 +41,107 @@ export class AttrLegend extends Component {
 			settings,
 		} = this.props;
 
-		const {
-			uniques,
-			indexedVal,
-		} = attr;
 
-		let filteredVals = {};
-		for (let i = 0; i < filteredAttrs.length; i++){
-			const filterEntry = filteredAttrs[i];
-			if (filterEntry.attr === attr.name) {
-				filteredVals[filterEntry.val] = true;
+		let visibleData;
+		if (attr) {
+			const {
+				uniques,
+				indexedVal,
+			} = attr;
+
+			let filteredVals = {};
+			for (let i = 0; i < filteredAttrs.length; i++) {
+				const filterEntry = filteredAttrs[i];
+				if (filterEntry.attr === attr.name) {
+					filteredVals[filterEntry.val] = true;
+				}
 			}
-		}
 
-		const selectColor = attrToColorFactory(attr, mode, settings);
+			const selectColor = attrToColorFactory(attr, mode, settings);
 
-		const isFloat = attr.arrayType === 'float32' ||
-			attr.arrayType === 'number' ||
-			attr.arrayType === 'float64';
+			const isFloat = attr.arrayType === 'float32' ||
+				attr.arrayType === 'number' ||
+				attr.arrayType === 'float64';
 
-		const showBlock = mode !== 'Bars';
-		let l = Math.min(uniques.length, 20),
+			const showBlock = mode !== 'Bars';
+			let l = Math.min(uniques.length, 20);
 			visibleData = [];
-		for (let i = 0; i < l; i++){
+			for (let i = 0; i < l; i++) {
 
-			let {
-				val,
-				count,
-			} = uniques[i];
+				let {
+					val,
+					count,
+				} = uniques[i];
 
-			const filtered = filteredVals[val];
-			const cellStyle = {
-				display: 'flex',
-				cursor: 'pointer',
-				textDecoration: filtered ?
-					'line-through' :
-					null,
-			};
-			const color = filtered ?
-				'lightgrey' :
-				selectColor(val);
-			let icon = showBlock ?
-				(
-					<span style={{ color }}>██</span>
-				) :
-				null;
+				const filtered = filteredVals[val];
+				const cellStyle = {
+					display: 'flex',
+					cursor: 'pointer',
+					textDecoration: filtered ?
+						'line-through' :
+						null,
+				};
+				const color = filtered ?
+					'lightgrey' :
+					selectColor(val);
+				let icon = showBlock ?
+					(
+						<span style={{ color }}>██</span>
+					) :
+					null;
 
-			let dataVal = indexedVal ?
-				indexedVal[val] :
-				val;
-			if (isFloat) {
-				dataVal = dataVal.toExponential(3);
+				let dataVal = indexedVal ?
+					indexedVal[val] :
+					val;
+				if (isFloat) {
+					dataVal = dataVal.toExponential(3);
+				}
+
+				const valFilterFunc = filterFunc ?
+					filterFunc(val) :
+					nullFunc;
+
+				const tooltipText = filtered ?
+					`Click to remove "${dataVal}" from filter` :
+					`Filter out "${dataVal}"`;
+
+				visibleData.push(
+					<td
+						key={`${i}_${val}`}
+						style={cellStyle}>
+						<OverlayTooltip
+							tooltip={tooltipText}
+							tooltipId={`filter-${i}_${val}-tltp`}>
+							<Button
+								bsStyle='link'
+								style={buttonStyle}
+								onClick={valFilterFunc} >
+								<span style={iconStyle}>{icon} {dataVal}:</span> {count}
+							</Button>
+						</OverlayTooltip>
+					</td>
+				);
 			}
 
-			const valFilterFunc = filterFunc ?
-				filterFunc(val) :
-				nullFunc;
-
-			const tooltipText = filtered ?
-				`Click to remove "${dataVal}" from filter` :
-				`Filter out "${dataVal}"`;
-
-			visibleData.push(
-				<td
-					key={`${i}_${val}`}
-					style={cellStyle}>
-					<OverlayTooltip
-						tooltip={tooltipText}
-						tooltipId={`filter-${i}_${val}-tltp`}>
-						<Button
-							bsStyle='link'
-							style={buttonStyle}
-							onClick={valFilterFunc} >
-							<span style={iconStyle}>{icon} {dataVal}:</span> {count}
-						</Button>
-					</OverlayTooltip>
-				</td>
-			);
-		}
-
-		// Sum count for remaining values.
-		// by definition, data.length is the total
-		// number of datapoints. So the remaining
-		// number of datapoints is the total
-		// total datapoints minus shown
-		// datapoints
-		let rest = attr.data.length;
-		for (let i = 0; i < l; i++){
-			rest -= uniques[i].count;
-		}
-		if (rest) {
-			visibleData.push(
-				<td key={20} style={restStyle2}>
-					{showBlock ?
-						<span style={restStyle1}>□</span> :
-						null} (other): {rest}
-				</td>
-			);
+			// Sum count for remaining values.
+			// by definition, data.length is the total
+			// number of datapoints. So the remaining
+			// number of datapoints is the total
+			// total datapoints minus shown
+			// datapoints
+			let rest = attr.data.length;
+			for (let i = 0; i < l; i++) {
+				rest -= uniques[i].count;
+			}
+			if (rest) {
+				visibleData.push(
+					<td key={20} style={restStyle2}>
+						{showBlock ?
+							<span style={restStyle1}>□</span> :
+							null} (other): {rest}
+					</td>
+				);
+			}
 		}
 
 		return (
@@ -156,7 +160,7 @@ export class AttrLegend extends Component {
 AttrLegend.propTypes = {
 	filteredAttrs: PropTypes.array.isRequired,
 	filterFunc: PropTypes.func.isRequired,
-	attr: PropTypes.object.isRequired,
+	attr: PropTypes.object,
 	mode: PropTypes.string,
 	settings: PropTypes.object,
 };

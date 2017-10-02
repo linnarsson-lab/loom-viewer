@@ -935,7 +935,13 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 	}
 
 	if (label) {
-		heatmapLabel(context, ratio, min, max, clipMin, clipMax);
+		// width of the gradient, does not include text before and after
+		const width = 20 * ratio | 0;
+		// height of the whole, textSize is smaller
+		const height = 12 * ratio | 0;
+		const x = 6 * ratio | 0;
+		const y = context.height * 0.25 + height * 0.5 | 0;
+		heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
 	}
 }
 
@@ -990,7 +996,7 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 		// height of the whole, textSize is smaller
 		const height = 12 * ratio | 0;
 		const x = 6 * ratio | 0;
-		let y = context.height * 0.25 + height * 0.5 | 0;
+		const y = context.height * 0.25 + height * 0.5 | 0;
 		heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
 	}
 }
@@ -1148,14 +1154,14 @@ function drawIcicleColumn(context, x, width, height, yOffset, dataGroup, binSize
 	}
 }
 
-function textPaintDirectly(context, range) {
-	const lineSize = (range.width / range.data.length) | 0;
+function textPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth) {
+	const lineSize = barWidth | 0;
 	// only draw if we have six pixels height per word, meaning
 	// ten pixels per line
 	const minLineSize = 8;
 	if (lineSize >= minLineSize) {
-		textSize(context, Math.min(lineSize - 2, 16));
 		textStyle(context);
+		textSize(context, ratio * Math.min(lineSize - 2, 16));
 		context.save();
 		// The default is drawing horizontally,
 		// so the text should be vertical.
@@ -1165,12 +1171,12 @@ function textPaintDirectly(context, range) {
 		// and draw at (0, 0) and translate().
 		context.translate(0, context.height);
 		context.rotate(-Math.PI / 2);
-		context.translate(-2, ((lineSize * 0.625) | 0) + range.xOffset);
+		context.translate(-2, ((lineSize * 0.625) | 0) + xOffset);
 		const rotation = Math.PI / 6;
-		range.data.forEach((label) => {
-			if (label || label === 0) {
+		data.forEach((value) => {
+			if (value || value === 0) {
 				context.rotate(rotation);
-				drawText(context, '– ' + label, 0, 0);
+				drawText(context, '– ' + value, 0, 0);
 				context.rotate(-rotation);
 			}
 			context.translate(0, lineSize);

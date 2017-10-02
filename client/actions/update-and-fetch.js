@@ -1,14 +1,22 @@
 import { fetchGene } from './fetch-genes';
 import { UPDATE_VIEWSTATE } from './actionTypes';
 
-// Automatically check if any of the view-state requires genes to be fetched,
-// and dispatch an action if that is the case.
-// (previously we had special code all over our components to do that, making
-// the whole thing quite brittle)
-// The `updateAndFetchGenes` thunk is only required for UPDATE_VIEWSTATE
-// actions that might result in genes being fetched. If our action does
-// not involve any genes (for example, `colorMode` settings), use a direct
-// UPDATE_VIEWSTATE, since that has less overhead.
+
+/**
+ * Automatically check if any of the view-state requires genes to be fetched,
+ * and dispatch an action if that is the case.
+ *
+ * (previously we had special code all over our components to do that, making
+ * the whole thing quite brittle)
+ *
+ * The `updateAndFetchGenes` thunk is only required for UPDATE_VIEWSTATE
+ * actions that might result in genes being fetched.
+ *
+ * If our action does not involve any genes (for example, `colorMode` settings),
+ * use a more direct UPDATE_VIEWSTATE, since that has less overhead.
+ * @param {*} dataset
+ * @param {*} action
+ */
 export function updateAndFetchGenes(dataset, action) {
 	const {
 		axis,

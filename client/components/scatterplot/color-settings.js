@@ -149,7 +149,7 @@ export class ColorSettings extends Component {
 		return (
 			<ListGroupItem>
 				<CollapsibleSettings
-					label={'Color'}
+					label={'Attribute Legend'}
 					tooltip={'Select attribute for coloring the points'}
 					tooltipId={'colorsttngs-tltp'}
 					popover={popoverTest}

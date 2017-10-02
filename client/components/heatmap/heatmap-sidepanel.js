@@ -21,18 +21,24 @@ import {
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
 import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
 
-function handleChangeFactory(that, field){
+function handleChangeFactory(that, axis, field){
 	return (value) => {
 		const {
 			dataset,
 			dispatch,
 		} = that.props;
 		const action = {
-			stateName: 'heatmap',
+			stateName: axis,
 			path: dataset.path,
 			viewState: {
-				heatmap: {
-					[field]: value,
+				[axis]: {
+					scatterPlots: {
+						plotSettings: {
+							0: {
+								[field]: value,
+							},
+						},
+					},
 				},
 			},
 		};
@@ -68,18 +74,18 @@ export class HeatmapSidepanel extends Component {
 			viewState,
 		} = dataset;
 
-		const hms = viewState.heatmap;
+		const colPlotSetting = viewState.col.scatterPlots.plotSettings[0];
+		const rowPlotSetting = viewState.row.scatterPlots.plotSettings[0];
 
-		const colAttrHC = handleChangeFactory(this, 'colAttr');
-		const colModeHC = handleChangeFactory(this, 'colMode');
-		const rowAttrHC = handleChangeFactory(this, 'rowAttr');
-		const rowModeHC = handleChangeFactory(this, 'rowMode');
+		const colAttrHC = handleChangeFactory(this, 'col', 'colorAttr');
+		const colModeHC = handleChangeFactory(this, 'col', 'colorMode');
+		const rowAttrHC = handleChangeFactory(this, 'row', 'colorAttr');
+		const rowModeHC = handleChangeFactory(this, 'row', 'colorMode');
 
-		const colAttr = col.attrs[hms.colAttr];
 		let colGradientSettings,
 			colLegend;
-		if (colAttr) {
-			switch (hms.colMode) {
+		if (colPlotSetting.colorAttr) {
+			switch (colPlotSetting.colorMode) {
 				case 'Heatmap':
 				case 'Heatmap2':
 				case 'Flame':
@@ -89,7 +95,7 @@ export class HeatmapSidepanel extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'col'}
-							plotSetting={viewState.col.scatterPlots.plotSettings[0]}
+							plotSetting={colPlotSetting}
 							plotNr={0}
 							time={200} />
 					);
@@ -102,26 +108,25 @@ export class HeatmapSidepanel extends Component {
 					dispatch(updateAndFetchGenes(dataset, {
 						path,
 						axis: 'col',
-						filterAttrName: hms.colAttr,
+						filterAttrName: colPlotSetting.colorAttr,
 						filterVal,
 					}));
 				};
 			};
 			colLegend = (
 				<AttrLegend
-					mode={hms.colMode}
-					attr={colAttr}
+					mode={colPlotSetting.colorMode}
+					attr={col.attrs[colPlotSetting.colorAttr]}
 					filterFunc={colLegendFunc}
 					filteredAttrs={viewState.col.filter}
 				/>
 			);
 		}
 
-		const rowAttr = row.attrs[hms.rowAttr];
 		let rowGradientSettings,
 			rowLegend;
-		if (rowAttr) {
-			switch (hms.rowMode) {
+		if (rowPlotSetting.colorAttr) {
+			switch (rowPlotSetting.colorMode) {
 				case 'Heatmap':
 				case 'Heatmap2':
 				case 'Flame':
@@ -131,7 +136,7 @@ export class HeatmapSidepanel extends Component {
 							dispatch={dispatch}
 							dataset={dataset}
 							axis={'row'}
-							plotSetting={viewState.row.scatterPlots.plotSettings[0]}
+							plotSetting={rowPlotSetting}
 							plotNr={0}
 							time={200} />
 					);
@@ -144,15 +149,15 @@ export class HeatmapSidepanel extends Component {
 						type: UPDATE_VIEWSTATE,
 						path,
 						axis: 'row',
-						filterAttrName: hms.rowAttr,
+						filterAttrName: rowPlotSetting.colorAttr,
 						filterVal,
 					});
 				};
 			};
 			rowLegend = (
 				<AttrLegend
-					mode={hms.rowMode}
-					attr={rowAttr}
+					mode={rowPlotSetting.colorMode}
+					attr={row.attrs[rowPlotSetting.colorAttr]}
 					filterFunc={rowLegendFunc}
 					filteredAttrs={viewState.row.filter}
 				/>
@@ -173,21 +178,21 @@ export class HeatmapSidepanel extends Component {
 								label={'Cell attribute or Gene to show'}>
 								<div>
 									<DropdownMenu
-										value={hms.colAttr}
+										value={colPlotSetting.colorAttr}
 										options={col.allKeysNoUniques}
 										filterOptions={col.dropdownOptions.allNoUniques}
 										onChange={colAttrHC}
 									/>
 									<label>Show as</label>
 									<DropdownMenu
-										value={hms.colMode}
+										value={colPlotSetting.colorMode}
 										options={modeNames}
 										onChange={colModeHC}
 									/>
 								</div>
 							</CollapsibleSettings>
 							{colGradientSettings}
-							{hms.colMode === 'Box' ?
+							{colPlotSetting.colorMode === 'Box' ?
 								boxLegend :
 								null
 							}
@@ -198,14 +203,14 @@ export class HeatmapSidepanel extends Component {
 								label={'Gene attribute to show'}>
 								<div>
 									<DropdownMenu
-										value={hms.rowAttr}
+										value={rowPlotSetting.colorAttr}
 										options={row.allKeysNoUniques}
 										filterOptions={row.dropdownOptions.allNoUniques}
 										onChange={rowAttrHC}
 									/>
 									<label>Show as</label>
 									<DropdownMenu
-										value={hms.rowMode}
+										value={rowPlotSetting.colorMode}
 										options={modeNames}
 										onChange={rowModeHC}
 									/>

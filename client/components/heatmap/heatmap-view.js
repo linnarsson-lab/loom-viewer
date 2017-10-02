@@ -99,13 +99,15 @@ class MapComponent extends Component {
 			const hms = vs.heatmap;
 			const { dataBounds } = hms;
 
+			const colPlotSetting = vs.col.scatterPlots.plotSettings[0];
+			const rowPlotSetting = vs.row.scatterPlots.plotSettings[0];
 
-			const colAttr = col.attrs[hms.colAttr];
+			const colAttr = col.attrs[colPlotSetting.colorAttr];
 			const colLabel = colAttr ?
 				colAttr.name :
 				null;
 			const colSettings = merge(
-				vs.col.settings,
+				colPlotSetting,
 				{
 					dataRange: [
 						dataBounds[0],
@@ -114,9 +116,9 @@ class MapComponent extends Component {
 				}
 			);
 
-			const colSparkline = sparkline(colAttr, vs.col.originalIndices, hms.colMode, colSettings, colLabel);
+			const colSparkline = sparkline(colAttr, vs.col.originalIndices, colPlotSetting.colorMode, colSettings, colLabel);
 
-			const rowAttr = row.attrs[hms.rowAttr];
+			const rowAttr = row.attrs[rowPlotSetting.colorAttr];
 			const rowLabel = rowAttr ?
 				rowAttr.name :
 				null;
@@ -130,7 +132,7 @@ class MapComponent extends Component {
 					orientation: 'vertical',
 				}
 			);
-			const rowSparkline = sparkline(rowAttr, vs.row.originalIndices, hms.rowMode, rowSettings, rowLabel);
+			const rowSparkline = sparkline(rowAttr, vs.row.originalIndices, rowPlotSetting.colorMode, rowSettings, rowLabel);
 			return (
 				<div className='view-vertical' ref={this.mountContainer}>
 					<Canvas

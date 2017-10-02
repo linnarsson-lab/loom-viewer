@@ -12,7 +12,7 @@ import {
 const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Icicle', 'Box']);
 const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Heatmap2', 'Stacked', 'Flame', 'Icicle', 'Box']);
 const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Heatmap2', 'Flame', 'Icicle', 'Box']);
-const scatterPlotModes = oneOf(['Heatmap', 'Heatmap2', 'Categorical']);
+const scatterPlotModes = heatmapModes;
 
 export function createViewStateConverter(dataset) {
 	// to avoid confusion with row and col in schema below

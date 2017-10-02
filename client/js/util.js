@@ -16,6 +16,9 @@ export function getPalette(colorMode) {
 	switch (colorMode) {
 		case 'Heatmap':
 		case 'Flame':
+		case 'Bar':
+		case 'Box':
+		case 'Text':
 			return solar256;
 		case 'Heatmap2':
 		case 'Icicle':
@@ -102,6 +105,9 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap2':
 		case 'Flame':
 		case 'Icicle':
+		case 'Box':
+		case 'Bar':
+		case 'Text':
 			let {
 				min,
 				max,
@@ -200,6 +206,10 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 		case 'Heatmap':
 		case 'Heatmap2':
 		case 'Flame':
+		case 'Icicle':
+		case 'Bar':
+		case 'Box':
+		case 'Text':
 			let {
 				min,
 				max,
