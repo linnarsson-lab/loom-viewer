@@ -19,10 +19,10 @@ import {
 	UPDATE_VIEWSTATE,
 } from '../actions/actionTypes';
 
-import {	UNKNOWN } from '../actions/request-projects';
+import {	UNKNOWN } from 'actions/request-projects';
 
-import { updateDatasetSortOrder, maybeSortIndices } from './sort-dataset';
-import { updateViewState } from './viewstate';
+import { updateDatasetSortOrder, maybeSortIndices } from 'reducers/sort-dataset';
+import { updateViewState } from 'reducers/viewstate';
 
 /**
  * `action` can optionally have "state" trees
@@ -58,8 +58,6 @@ function datasets(state, action) {
 		// merge with the state tree is enough
 		case RECEIVE_PROJECTS:
 		case LOAD_CACHED_PROJECTS:
-		case RECEIVE_DATASET:
-		case LOAD_DATASET:
 		case SEARCH_DATASETS:
 		case REQUEST_GENE_FETCH:
 		case REQUEST_GENE_FAILED:
@@ -69,8 +67,10 @@ function datasets(state, action) {
 			return maybeSortIndices(state, action);
 
 		// ===VIEW ACTIONS===
+		case RECEIVE_DATASET:
+		case LOAD_DATASET:
 		case UPDATE_VIEWSTATE:
-			return updateViewState(state, action);
+			return updateViewState(update(state, action), action);
 
 		case SORT_DATASETS:
 			return updateDatasetSortOrder(state, action.key);

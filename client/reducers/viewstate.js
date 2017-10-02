@@ -15,6 +15,10 @@ export function updateViewState(state, action) {
 	const { path } = action;
 	const dataset = state.list[path];
 
+	if (action.state){
+		merge(state, action.state);
+	}
+
 	// Update state tree with passed viewState first,
 	// since this new state might be required for
 	// sorting or filtering correctly later

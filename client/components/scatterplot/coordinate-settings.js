@@ -279,11 +279,6 @@ attrSettingsFactory.propTypes = {
 
 export class CoordinateSettings extends Component {
 
-	shouldComponentUpdate(nextProps) {
-		const { props } = this;
-		return nextProps.plotSetting !== props.plotSetting;
-	}
-
 	render() {
 		const { props } = this;
 		const quickSettings = quickSettingsFactory(props, settingsList);

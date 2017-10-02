@@ -94,10 +94,10 @@ export function updateAndFetchGenes(dataset, action) {
 	}
 
 	return (dispatch) => {
+		action.type = action.type || UPDATE_VIEWSTATE;
+		dispatch(action);
 		if (geneFetchList.length) {
 			dispatch(fetchGene(dataset, geneFetchList));
 		}
-		action.type = action.type || UPDATE_VIEWSTATE;
-		dispatch(action);
 	};
 }

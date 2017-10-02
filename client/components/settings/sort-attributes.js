@@ -11,11 +11,6 @@ export class SortAttributeComponent extends Component {
 		this.onChange = this.onChange.bind(this);
 	}
 
-	shouldComponentUpdate(nextProps) {
-		return nextProps.dataset.viewState[nextProps.axis].order !==
-			this.props.dataset.viewState[this.props.axis].order;
-	}
-
 	onChange(value){
 		const { props } = this;
 

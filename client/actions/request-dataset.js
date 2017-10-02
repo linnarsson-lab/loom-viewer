@@ -217,11 +217,7 @@ function dataSetAction(type, path, dataset, dispatch) {
 	// add conversion functions (compressor, toJSON)
 	addFunctions(dataset);
 
-	// Initiate viewState. This includes reading and
-	// writing URI-encoded state, which requires
-	// viewStateConverter, so this must
-	// be called after functions are added.
-	addViewState(dataset);
+	dataset.viewState = {};
 	const action = {
 		type,
 		path,
@@ -230,6 +226,7 @@ function dataSetAction(type, path, dataset, dispatch) {
 				[path]: dataset,
 			},
 		},
+		viewState: prepareViewState(dataset),
 	};
 	dispatch(updateAndFetchGenes(dataset, action));
 }
@@ -271,7 +268,14 @@ function addFunctions(dataset) {
 
 }
 
-function addViewState(dataset) {
+/**
+ * Initiate viewState. This includes reading and
+ *  writing URI-encoded state, which requires
+ * `viewStateConverter`, so this must
+ * be called after functions are added.
+ * @param {*} dataset
+ */
+function prepareViewState(dataset) {
 	// Initiate default viewState
 	let viewState = viewStateInitialiser(dataset);
 
@@ -301,8 +305,7 @@ function addViewState(dataset) {
 	const url = `/${paths[1]}/${paths[2]}/${paths[3]}/${paths[4]}/${viewStateURI}`;
 	browserHistory.replace(url);
 
-	dataset.viewState = viewState;
-	return dataset;
+	return viewState;
 }
 
 
