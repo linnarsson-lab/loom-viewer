@@ -66,12 +66,23 @@ export class AttrLegend extends Component {
 			const showBlock = mode !== 'Bars';
 			let l = Math.min(uniques.length, 20);
 			visibleData = [];
+
+			const sortedUniques = uniques
+				.slice(0, l)
+				.sort((a, b) => {
+					return a.val < b.val ?
+						-1 :
+						a.val > b.val ?
+							1 :
+							0;
+				});
+
 			for (let i = 0; i < l; i++) {
 
 				let {
 					val,
 					count,
-				} = uniques[i];
+				} = sortedUniques[i];
 
 				const filtered = filteredVals[val];
 				const cellStyle = {
@@ -93,6 +104,7 @@ export class AttrLegend extends Component {
 				let dataVal = indexedVal ?
 					indexedVal[val] :
 					val;
+
 				if (isFloat) {
 					dataVal = dataVal.toExponential(3);
 				}

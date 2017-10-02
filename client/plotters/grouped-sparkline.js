@@ -22,8 +22,17 @@ export function groupedSparkline(indices, groupAttr) {
 			let other = [];
 			let vals = {};
 			let maxGroups = Math.min(uniques.length, 20);
+			const sortedUniques = uniques
+				.slice(0, maxGroups)
+				.sort((a, b) => {
+					return a.val < b.val ?
+						-1 :
+						a.val > b.val ?
+							1 :
+							0;
+				});
 			for (let i = 0; i < maxGroups; i++) {
-				const v = uniques[i].val;
+				const v = sortedUniques[i].val;
 				vals[v] = i;
 				groupedIndices.push([]);
 				labels.push(indexedVal ? indexedVal[v] : v);
