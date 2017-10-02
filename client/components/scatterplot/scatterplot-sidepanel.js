@@ -22,34 +22,6 @@ import {
 	FilteredValues,
 } from 'components/settings/settings';
 
-function filteredValuesComponent(props) {
-	const {
-		axis,
-		dataset,
-		dispatch,
-	} = props;
-
-	const { filter } = props.dataset.viewState[axis];
-	return filter.length ?
-		(
-			<ListGroupItem>
-				<FilteredValues
-					dispatch={dispatch}
-					dataset={dataset}
-					axis={axis}
-					filtered={filter} />
-			</ListGroupItem>
-		) :
-		null;
-}
-
-filteredValuesComponent.propTypes = {
-	dispatch: PropTypes.func.isRequired,
-	dataset: PropTypes.object.isRequired,
-	axis: PropTypes.string.isRequired,
-	filter: PropTypes.array,
-};
-
 class PlotSettingsTabContent extends Component {
 
 	shouldComponentUpdate(nextProps) {
@@ -62,11 +34,24 @@ class PlotSettingsTabContent extends Component {
 			axis,
 			dataset,
 			dispatch,
-			filteredValues,
 			plotSetting,
 			plotNr,
 		} = this.props;
 		const { scaleFactor } = plotSetting;
+
+		const { filter } = this.props.dataset.viewState[axis];
+		const filteredValues = 	filter.length ?
+			(
+				<ListGroupItem>
+					<FilteredValues
+						dispatch={dispatch}
+						dataset={dataset}
+						axis={axis}
+						filtered={filter} />
+				</ListGroupItem>
+			) :
+			null;
+
 		return (
 			<ListGroup>
 				<CoordinateSettings
@@ -123,30 +108,6 @@ export class ScatterPlotSidepanel extends Component {
 	constructor(...args) {
 		super(...args);
 		this.selectTab = this.selectTab.bind(this);
-		this.state = {
-			filteredValues: filteredValuesComponent(this.props),
-		};
-	}
-
-	componentWillUpdate(nextProps) {
-		let {
-			filteredValues,
-		} = this.state;
-
-		const {
-			axis,
-			dataset,
-		} = nextProps;
-
-		if (dataset.viewState[axis].filter !==
-			this.props.dataset.viewState[axis].filter) {
-
-			filteredValues = filteredValuesComponent(nextProps);
-			this.setState(() => {
-				return { filteredValues };
-			});
-		}
-
 	}
 
 	selectTab(key) {
@@ -178,10 +139,6 @@ export class ScatterPlotSidepanel extends Component {
 	}
 
 	render() {
-		const {
-			filteredValues,
-		} = this.state;
-
 		const {
 			dispatch,
 			dataset,
@@ -221,7 +178,6 @@ export class ScatterPlotSidepanel extends Component {
 						axis={axis}
 						dataset={dataset}
 						dispatch={dispatch}
-						filteredValues={filteredValues}
 						plotSetting={plotSetting}
 						plotNr={i}
 						selectedPlot={selectedPlot} />

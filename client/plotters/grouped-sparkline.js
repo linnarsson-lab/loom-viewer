@@ -61,17 +61,25 @@ export function groupedSparkline(indices, groupAttr) {
 		for (let i = 0; i < groupedIndices.length; i++) {
 			const indx = groupedIndices[i];
 			// only label leftmost sparkline
-			let _label = (labelGroups && i) ? labels[i] :
-				labelGroups ? label + '   ' + labels[i] :
-					!i ? label : '';
+			let _label = (labelGroups && i) ?
+				labels[i] :
+				labelGroups ?
+					label + '   ' + labels[i] :
+					!i ?
+						label :
+						'';
 			sparklines.push(sparkline(attr, indx, mode, settings, _label));
 			lengths.push(indx.length);
 		}
 		return (context) => {
+
 			const {
 				width,
+				height,
 				pixelRatio,
 			} = context;
+			context.clearRect(0, 0, width, height);
+
 			const gapWidth = (4 * pixelRatio) | 0;
 			const gaps = (sparklines.length - 2) * gapWidth | 0;
 			const baseWidth = width - gaps | 0;
