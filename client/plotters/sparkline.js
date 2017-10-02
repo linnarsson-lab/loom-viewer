@@ -67,7 +67,6 @@ function selectPlotter(mode) {
 		case 'Box':
 			return boxPaint;
 		case 'Heatmap':
-		case 'Heatmap2':
 			return heatMapPainter;
 		case 'Flame':
 			return flameMapPainter;

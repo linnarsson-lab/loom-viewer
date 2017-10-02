@@ -107,7 +107,7 @@ export class ColorSettings extends Component {
 			dispatch(updateAndFetchGenes(dataset, action));
 		};
 
-		const modeButtons = ['Heatmap', 'Heatmap2', 'Categorical'].map((mode) => {
+		const modeButtons = ['Heatmap', 'Categorical'].map((mode) => {
 			return colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr);
 		});
 
@@ -134,7 +134,7 @@ export class ColorSettings extends Component {
 			);
 		}
 
-		const heatmapSettings = colorMode === 'Heatmap' || colorMode === 'Heatmap2' ?
+		const heatmapSettings = colorMode !== 'Categorical' ?
 			(
 				<ClipDataSettings
 					dispatch={dispatch}

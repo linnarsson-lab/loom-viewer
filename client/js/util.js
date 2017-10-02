@@ -7,9 +7,8 @@ export function nullFunc(){}
 
 import * as colorLUT from './colors';
 const {
-	solar256,
-	YlGnBu256,
 	category20,
+	viridis,
 } = colorLUT;
 
 export function getPalette(colorMode) {
@@ -19,10 +18,8 @@ export function getPalette(colorMode) {
 		case 'Bar':
 		case 'Box':
 		case 'Text':
-			return solar256;
-		case 'Heatmap2':
 		case 'Icicle':
-			return YlGnBu256;
+			return viridis;
 		case 'Categorical':
 		case 'Stacked':
 			return category20;
@@ -102,7 +99,6 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 				}
 			);
 		case 'Heatmap':
-		case 'Heatmap2':
 		case 'Flame':
 		case 'Icicle':
 		case 'Box':
@@ -204,7 +200,6 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 				}
 			);
 		case 'Heatmap':
-		case 'Heatmap2':
 		case 'Flame':
 		case 'Icicle':
 		case 'Bar':

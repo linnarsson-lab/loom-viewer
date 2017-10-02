@@ -131,7 +131,7 @@ export function scatterPlot(attrs, indices, settings) {
 		drawLabels(context, xAttr, yAttr, colorAttr, labelLayout);
 
 		// Heatmap scale, if necessary
-		if (colorMode === 'Heatmap' || colorMode === 'Heatmap2') {
+		if (colorMode === 'Heatmap') {
 			drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings);
 		}
 

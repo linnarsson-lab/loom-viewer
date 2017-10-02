@@ -28,7 +28,6 @@ const defaultModes = [
 	'Bars',
 	'Box',
 	'Heatmap',
-	'Heatmap2',
 	'Flame',
 	'Icicle',
 	'Categorical',

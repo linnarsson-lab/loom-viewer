@@ -53,7 +53,6 @@ const modeNames = [
 	'Categorical',
 	'Stacked',
 	'Heatmap',
-	'Heatmap2',
 	'Flame',
 	'Icicle',
 ];
@@ -87,7 +86,6 @@ export class HeatmapSidepanel extends Component {
 		if (colPlotSetting.colorAttr) {
 			switch (colPlotSetting.colorMode) {
 				case 'Heatmap':
-				case 'Heatmap2':
 				case 'Flame':
 				case 'Icicle':
 					colGradientSettings = (
@@ -128,7 +126,6 @@ export class HeatmapSidepanel extends Component {
 		if (rowPlotSetting.colorAttr) {
 			switch (rowPlotSetting.colorMode) {
 				case 'Heatmap':
-				case 'Heatmap2':
 				case 'Flame':
 				case 'Icicle':
 					rowGradientSettings = (

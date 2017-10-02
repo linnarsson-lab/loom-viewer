@@ -42,7 +42,6 @@ export class ColorSettings extends Component {
 			'Bars',
 			'Box',
 			'Heatmap',
-			'Heatmap2',
 			'Flame',
 			'Icicle',
 		];
