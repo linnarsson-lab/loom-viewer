@@ -13,7 +13,7 @@ import { ColorSettings } from 'components/scatterplot/color-settings';
 import { ScaleFactorSettings } from 'components/scatterplot/scalefactor-settings';
 import { popoverTest } from 'components/scatterplot/popover';
 
-import { updateAndFetchGenes } from 'actions/update-and-fetch';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 import { FlexboxContainer } from 'components/flexbox-container.js';
 
@@ -117,25 +117,54 @@ export class ScatterPlotSidepanel extends Component {
 			axis,
 		} = this.props;
 
-		if (key === '+') {
-			// new tab
-		} else {
-			// switch to existing tab
-			dispatch(updateAndFetchGenes(
-				dataset,
-				{
-					stateName: axis,
-					path: dataset.path,
-					viewState: {
-						[axis]: {
-							scatterPlots: {
-								selectedPlot: key,
-							},
-						},
-					},
+		let {
+			plotSettings,
+			totalPlots,
+			selectedPlot,
+		} = dataset.viewState[axis].scatterPlots;
+
+		let newScatterPlots = {};
+		switch(key){
+			case '+':
+				// new plot, if less than four plots
+				if (totalPlots < 4){
+					// copy the settings of the currently selected plot
+					newScatterPlots.plotSettings =  {
+						[totalPlots]: plotSettings[selectedPlot],
+					};
+					// select new plot
+					newScatterPlots.selectedPlot = totalPlots;
+					// increase total plots
+					newScatterPlots.totalPlots = totalPlots+1;
 				}
-			));
+				break;
+			case '-':
+				// remove plot if more than one plot
+				if (totalPlots > 1){
+					newScatterPlots.totalPlots = totalPlots-1;
+					// if removed plot was selected, select previous plot
+					newScatterPlots.selectedPlot = (selectedPlot > totalPlots-2) ?
+						totalPlots-2:
+						selectedPlot;
+				}
+				break;
+			default:
+				// switch to existing plot
+				newScatterPlots.selectedPlot = key;
 		}
+
+		// the base action
+		let action = {
+			type: UPDATE_VIEWSTATE,
+			stateName: axis,
+			path: dataset.path,
+			viewState: {
+				[axis]: {
+					scatterPlots: newScatterPlots,
+				},
+			},
+		};
+		dispatch(action);
 	}
 
 	render() {
@@ -157,13 +186,14 @@ export class ScatterPlotSidepanel extends Component {
 			plotSettings,
 		} = scatterPlots;
 
-		const newPlotTab = plotSettings.length < 4 ?
-			(
-				<Tab key={'+'} title={'+'} />
-			) :
-			null;
+		let settingsTabs = [(
+			<Tab
+				key={'-'}
+				eventKey={'-'}
+				title={'-'}
+				disabled={totalPlots < 2} />
+		)];
 
-		const settingsTabs = [];
 		for (let i = 0; i < totalPlots; i++) {
 			let plotSetting = plotSettings[i];
 			settingsTabs.push(
@@ -184,6 +214,14 @@ export class ScatterPlotSidepanel extends Component {
 				</Tab >
 			);
 		}
+
+		settingsTabs.push(
+			<Tab
+				key={'+'}
+				title={'+'}
+				eventKey={'+'}
+				disabled={totalPlots >= 4} />
+		);
 		return (
 			<FlexboxContainer
 				className={className}
@@ -195,9 +233,7 @@ export class ScatterPlotSidepanel extends Component {
 					activeKey={selectedPlot}
 					onSelect={this.selectTab}
 					id={`scatterPlot-${axis}`}>
-					<Tab title={'Settings'} disabled />
 					{settingsTabs}
-					{newPlotTab}
 				</Tabs>
 			</FlexboxContainer>
 		);

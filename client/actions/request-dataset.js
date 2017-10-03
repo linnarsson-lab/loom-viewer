@@ -39,7 +39,7 @@ import {
 	RECEIVE_DATASET,
 	REQUEST_DATASET_FAILED,
 	LOAD_DATASET,
-} from './actionTypes';
+} from './action-types';
 
 // //////////////////////////////////////////////////////////////////////////////
 //

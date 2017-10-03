@@ -14,7 +14,7 @@ import {
 	OverlayTooltip,
 } from '../settings/settings';
 
-import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/action-types';
 
 import { boxLegend } from 'components/settings/boxlegend';
 

@@ -1,5 +1,5 @@
 import { fetchGene } from './fetch-genes';
-import { UPDATE_VIEWSTATE } from './actionTypes';
+import { UPDATE_VIEWSTATE } from './action-types';
 
 
 /**

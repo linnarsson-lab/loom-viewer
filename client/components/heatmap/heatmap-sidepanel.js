@@ -19,7 +19,7 @@ import {
 } from 'components/settings/settings';
 
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
-import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 function handleChangeFactory(that, axis, field){
 	return (value) => {

@@ -4,7 +4,7 @@ import {
 	REQUEST_GENE_FETCH,
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
-} from './actionTypes';
+} from './action-types';
 
 import { disjointArrays, convertJSONarray } from '../js/util';
 

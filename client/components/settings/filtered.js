@@ -9,7 +9,7 @@ import {
 
 import { CollapsibleSettings, OverlayTooltip } from './collapsible';
 
-import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/action-types';
 
 export class FilteredValues extends Component {
 	render() {

@@ -10,7 +10,7 @@ import { Remount } from 'components/remount';
 
 import { sparkline } from 'plotters/sparkline';
 
-import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 import { debounce } from 'lodash';
 

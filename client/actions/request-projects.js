@@ -13,7 +13,7 @@ import {
 	REQUEST_PROJECTS_FAILED,
 	RECEIVE_PROJECTS,
 	LOAD_CACHED_PROJECTS,
-} from './actionTypes';
+} from './action-types';
 
 export const OFFLINE = 0,
 	ONLINE = 1,

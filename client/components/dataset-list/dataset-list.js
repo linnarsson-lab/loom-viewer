@@ -16,7 +16,7 @@ import {
 	CollapsibleSettings,
 } from '../settings/settings.js';
 
-import { SEARCH_DATASETS, SORT_DATASETS } from '../../actions/actionTypes';
+import { SEARCH_DATASETS, SORT_DATASETS } from '../../actions/action-types';
 import {
 	requestProjects,
 	OFFLINE,

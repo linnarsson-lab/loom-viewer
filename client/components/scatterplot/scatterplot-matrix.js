@@ -6,7 +6,7 @@ import { scatterPlot } from 'plotters/scatterplot';
 import { Canvas } from 'components/canvas';
 import { Remount } from 'components/remount';
 
-import { UPDATE_VIEWSTATE } from 'actions/actionTypes';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 // See if an individual attr has changed -
 // this may happen as the result of a gene

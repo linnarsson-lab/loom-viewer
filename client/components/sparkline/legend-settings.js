@@ -13,7 +13,7 @@ import {
 	AttrLegend,
 } from '../settings/settings';
 
-import { UPDATE_VIEWSTATE } from '../../actions/actionTypes';
+import { UPDATE_VIEWSTATE } from '../../actions/action-types';
 
 export class LegendSettings extends Component {
 	constructor(...args) {

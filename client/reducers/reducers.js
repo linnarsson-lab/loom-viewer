@@ -17,7 +17,7 @@ import {
 	REQUEST_GENE_FAILED,
 	RECEIVE_GENE,
 	UPDATE_VIEWSTATE,
-} from 'actions/actionTypes';
+} from 'actions/action-types';
 
 import {	UNKNOWN } from 'actions/request-projects';
 
