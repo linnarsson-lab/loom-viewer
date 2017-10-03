@@ -257,15 +257,20 @@ class MetadataTable extends Component {
 				data,
 				indexedVal,
 				arrayType,
+				allUnique,
 				uniques,
 				uniqueVal,
 			} = attr;
 
 			if (uniqueVal !== undefined) { // only one value
 				tableRow.val = (
-					<span>{uniqueVal}</span>
+					<span>{indexedVal && indexedVal[uniqueVal] !== undefined ?
+						indexedVal[uniqueVal] :
+						uniqueVal}
+					</span>
 				);
-			} else if (attr.allUnique) { // every value is unique
+			} else if (allUnique && arrayType === 'string') {
+				// every value is unique and we're dealing with strings
 				let list = data[indices[0]];
 				const l = Math.min(data.length, 5);
 				if (indexedVal) {
@@ -304,7 +309,7 @@ class MetadataTable extends Component {
 								mode={
 									/* guess default category based
 									on nr of unique values */
-									uniques.length <= 20 ?
+									!allUnique && uniques.length <= 20 ?
 										'Stacked' :
 										'Bars'
 								}
