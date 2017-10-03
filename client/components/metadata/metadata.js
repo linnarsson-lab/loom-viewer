@@ -311,7 +311,7 @@ class MetadataTable extends Component {
 									on nr of unique values */
 									!allUnique && uniques.length <= 20 ?
 										'Stacked' :
-										'Bars'
+										'Box'
 								}
 								indices={indices}
 								filterFunc={filterFunc}
