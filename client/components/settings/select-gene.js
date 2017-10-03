@@ -30,6 +30,9 @@ function stringToLowerCaseWords(text) {
 }
 
 // filter out undefined values
+// TODO: Figure out how it's possible to receive
+// undefined genes in the first place - it shouldn't
+// be possible.
 function arrayToLowerCase(strings){
 	let lowerCase = [];
 
