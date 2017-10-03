@@ -7,6 +7,8 @@ import {
 	ButtonGroup,
 } from 'react-bootstrap';
 
+import { Canvas } from 'components/canvas';
+
 import { popoverTest } from 'components/scatterplot/popover';
 
 import {
@@ -18,10 +20,35 @@ import {
 
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
-// to ensure that selected buttons don't dispatch anything.
-import { nullFunc } from 'js/util';
+import {
+	// To ensure that selected buttons don't dispatch anything.
+	nullFunc,
+	// To generate gradients for buttons
+	getPalette,
+} from 'js/util';
 
-function colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr){
+
+function palettePainter(palette){
+	return (context) => {
+		const {
+			width,
+			height,
+		} = context;
+		const l = palette.length;
+		const factor = width / l;
+		for(let i = 0; i < l; i++){
+			const x0 = i * factor | 0;
+			const x1 = (i+1) * factor | 0;
+			context.fillStyle = palette[i];
+			context.fillRect(x0, 0, x1-x0, height);
+		}
+	};
+}
+
+const categoriesPainter = palettePainter(getPalette('Categorical'));
+const heatmapPainter = palettePainter(getPalette('Heatmap'));
+
+function colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr, selectedPlot){
 	const selected = mode === colorMode;
 	const onClick = selected ?
 		nullFunc :
@@ -46,14 +73,21 @@ function colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr)
 			}
 		);
 
+	const buttonPainter = (mode === 'Categorical' || mode === 'Stacked') ?
+		categoriesPainter :
+		heatmapPainter;
+
 	return (
-		<ButtonGroup key={mode}>
+		<ButtonGroup key={`${plotNr}-${mode}`}>
 			<Button
 				bsStyle={selected ?
 					'primary' :
 					'default'}
 				onClick={onClick}>
-				{mode}
+				<Canvas
+					paint={buttonPainter}
+					height={30}
+					watchedVal={plotNr === selectedPlot} />
 			</Button>
 		</ButtonGroup>
 	);
@@ -70,6 +104,7 @@ export class ColorSettings extends Component {
 			settings,
 			plotNr,
 			plotSetting,
+			selectedPlot,
 		} = props;
 
 		const {
@@ -108,7 +143,7 @@ export class ColorSettings extends Component {
 		};
 
 		const modeButtons = ['Heatmap', 'Categorical'].map((mode) => {
-			return colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr);
+			return colorModeButton(mode, dataset, dispatch, colorMode, axis, path, plotNr, selectedPlot);
 		});
 
 		let attrLegend;
@@ -180,4 +215,5 @@ ColorSettings.propTypes = {
 	axis: PropTypes.string.isRequired,
 	plotSetting: PropTypes.object.isRequired,
 	plotNr: PropTypes.number.isRequired,
+	selectedPlot: PropTypes.number.isRequired,
 };

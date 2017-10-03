@@ -36,6 +36,7 @@ class PlotSettingsTabContent extends Component {
 			dispatch,
 			plotSetting,
 			plotNr,
+			selectedPlot,
 		} = this.props;
 		const { scaleFactor } = plotSetting;
 
@@ -87,6 +88,7 @@ class PlotSettingsTabContent extends Component {
 					axis={axis}
 					plotSetting={plotSetting}
 					plotNr={plotNr}
+					selectedPlot={selectedPlot}
 				/>
 				{filteredValues}
 			</ListGroup>
