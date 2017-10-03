@@ -29,6 +29,19 @@ function stringToLowerCaseWords(text) {
 	return words;
 }
 
+// filter out undefined values
+function arrayToLowerCase(strings){
+	let lowerCase = [];
+
+	for(let i = 0; i < strings.length; i++){
+		let string = strings[i];
+		if (string){
+			lowerCase.push(string.toLowerCase());
+		}
+	}
+	return lowerCase;
+}
+
 /**
  * Filters out strings in `words` that do not have an
  * associated row number in the passed `rowDict`.
@@ -119,10 +132,7 @@ export class SelectGeneComponent extends Component {
 			dropdownOptions,
 		} = this.props.dataset.col;
 
-		const lowerCase = this.props.selectedGenes
-			.map((gene) => {
-				return gene.toLowerCase();
-			});
+		const lowerCase = arrayToLowerCase(this.props.selectedGenes);
 
 		const selectedGenes = filterWords(lowerCase, geneToRowLowerCase, rowToGenes);
 		const selectedGenesText = selectedGenes.length ?
