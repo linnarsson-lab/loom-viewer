@@ -651,28 +651,28 @@ if __name__ == '__main__':
 		# loom expand
 		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name.")
 		expand_parser.add_argument("file", help="Loom input file")
-		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
+		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
+		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", action='store_true')
+		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", action='store_true')
+		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
 
 		# loom expand all loom files in a project
 		expand_parser = subparsers.add_parser('expand-project', help="Expand all loom files in given project of the datasets folder to compressed pickle/json files for better server performance.")
 		expand_parser.add_argument("project", help="Project directory name")
-		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
-		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
+		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
+		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
+		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", action='store_true')
+		expand_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", action='store_true')
+		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
 
 		# loom expand all datasets
 		expand_all_parser = subparsers.add_parser('expand-all', help="Expand all loom files in the data folder for better server performance")
-		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", type=bool, default=False)
-		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", type=bool, default=False)
+		expand_all_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
+		expand_all_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
+		expand_all_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", action='store_true')
+		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", action='store_true')
+		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
 
 		fix_rows_parser = subparsers.add_parser('fix-rows', help="Fix broken row expansion")
 
@@ -695,8 +695,8 @@ if __name__ == '__main__':
 		loom_parser.add_argument('--chunks', help='Chunk tile size, i.e. "--chunks 10" (defaults to 64)', type=int, default=64)
 		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
 		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Default: 4', type=int, default=4)
-		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', type=bool, default=False)
-		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to True', type=bool, default=True)
+		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', action='store_true')
+		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to False', action='store_true')
 
 		# loom from-cef
 		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
