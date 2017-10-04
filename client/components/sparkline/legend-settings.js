@@ -15,20 +15,32 @@ import {
 
 import { UPDATE_VIEWSTATE } from '../../actions/action-types';
 
+const colModeOptions = [
+	'Bars',
+	'Box',
+	'Categorical',
+	'Stacked',
+	'Heatmap',
+	'Flame',
+	'Icicle',
+];
+
+
 export class LegendSettings extends Component {
 	constructor(...args) {
 		super(...args);
 
 		const {
-			dispatch,
 			dataset,
+			dispatch,
 		} = this.props;
+		const { path } = dataset;
 
-		const colAttrHC = (val) => {
+		this.colAttrHC = (val) => {
 			dispatch({
 				type: UPDATE_VIEWSTATE,
 				stateName: 'sparkline',
-				path: dataset.path,
+				path,
 				viewState: {
 					sparkline: {
 						colAttr: val,
@@ -37,25 +49,17 @@ export class LegendSettings extends Component {
 			});
 		};
 
-		const colModeHC = (val) => {
+		this.colModeHC = (val) => {
 			dispatch({
 				type: UPDATE_VIEWSTATE,
 				stateName: 'sparkline',
-				path: dataset.path,
+				path,
 				viewState: {
 					sparkline: {
 						colMode: val,
 					},
 				},
 			});
-		};
-
-		const colModeOptions = ['Bars', 'Box', 'Categorical', 'Stacked', 'Heatmap', 'Flame', 'Icicle'];
-
-		this.state = {
-			colAttrHC,
-			colModeHC,
-			colModeOptions,
 		};
 	}
 
@@ -68,12 +72,6 @@ export class LegendSettings extends Component {
 			groupBy,
 			legendData,
 		} = this.props;
-
-		const {
-			colAttrHC,
-			colModeOptions,
-			colModeHC,
-		} = this.state;
 
 		const {
 			col,
@@ -133,9 +131,8 @@ export class LegendSettings extends Component {
 							<div style={{ flex: 5 }}>
 								<DropdownMenu
 									value={colAttr}
-									options={col.keysNoUniques}
-									filterOptions={col.dropdownOptions.attrsNoUniques}
-									onChange={colAttrHC}
+									options={col.dropdownOptions.attrsNoUniques}
+									onChange={this.colAttrHC}
 								/>
 							</div>
 							<Button
@@ -149,7 +146,7 @@ export class LegendSettings extends Component {
 						<DropdownMenu
 							value={colMode}
 							options={colModeOptions}
-							onChange={colModeHC}
+							onChange={this.colModeHC}
 						/>
 					</div>
 				</CollapsibleSettings>

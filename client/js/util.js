@@ -28,6 +28,13 @@ export function getPalette(colorMode) {
 	}
 }
 
+export function constrain(x, a, b) {
+	return x < a ? a :
+		x > b ? b :
+			x;
+}
+
+
 function blackColor() {
 	return 'black';
 }

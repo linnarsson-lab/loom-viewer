@@ -1,19 +1,21 @@
 import {
-	clipRange,
-	getPalette,
+	arraySubset,
+	attrSubset,
 	attrToColorFactory,
 	attrToColorIndexFactory,
-	rndNorm,
-	attrSubset,
-	arraySubset,
+	clipRange,
+	constrain,
+	getPalette,
 	logProject,
 	logProjectArray,
+	nullFunc,
+	rndNorm,
 } from '../js/util';
 
 import {
+	drawText,
 	textSize,
 	textStyle,
-	drawText,
 } from './canvas';
 
 // "global" array of sprite canvases.
@@ -44,20 +46,12 @@ const {
 	};
 })();
 
-function constrain(x, a, b) {
-	return x < a ? a :
-		x > b ? b :
-			x;
-}
-
-function noopPainter(){}
-
 const { log2 } = Math;
 
 export function scatterPlot(attrs, indices, settings) {
 	// only render if all required settings are supplied
 	if (!(indices && settings)){
-		return noopPainter;
+		return nullFunc;
 	}
 
 	const xAttr = attrs[settings.x.attr],
@@ -66,7 +60,7 @@ export function scatterPlot(attrs, indices, settings) {
 
 	// only render if all required data is supplied
 	if (!(xAttr && yAttr && colorAttr && indices)) {
-		return noopPainter;
+		return nullFunc;
 	}
 
 	let {

@@ -11,9 +11,9 @@ import {
 	attrSubset,
 	attrToColorFactory,
 	logProject,
+	nullFunc,
 } from '../js/util';
 
-const noop = () => { };
 
 const categoriesPainter = {
 	directly: categoriesDirectly,
@@ -52,7 +52,7 @@ const icicleMapPainter = {
 
 const textPaint = {
 	directly: textPaintDirectly,
-	grouped: noop,
+	grouped: nullFunc,
 };
 
 
@@ -151,7 +151,7 @@ export function sparkline(attr, indices, mode, settings, label) {
 		const dataToColor = attrToColorFactory(attr, mode, settings);
 		return sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label);
 	}
-	return noop;
+	return nullFunc;
 }
 
 function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label) {
