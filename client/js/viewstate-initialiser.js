@@ -49,7 +49,7 @@ export function viewStateInitialiser(dataset) {
 		sparkline: {
 			colAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
 			colMode: 'Stacked',
-			geneMode: 'Bars',
+			geneMode: 'Box',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
 			showLabels: true,
 			groupBy: false,
