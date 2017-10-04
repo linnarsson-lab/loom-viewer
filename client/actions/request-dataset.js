@@ -120,9 +120,9 @@ function fetchDataset(datasets, path, dispatch) {
 				return localforage.setItem(path, dataset);
 			})
 			.then((dataset) => {
-			// dataSetAction() adds viewState, functions and
-			//
-			// dispatch fully initialised dataset to redux store
+				// dataSetAction() adds viewState, functions and
+				//
+				// dispatch fully initialised dataset to redux store
 				dataSetAction(RECEIVE_DATASET, path, dataset, dispatch);
 
 				// We want to separate the list metadata from
@@ -131,12 +131,12 @@ function fetchDataset(datasets, path, dispatch) {
 				return localforage.getItem('cachedDatasets');
 			})
 			.then((list) => {
-			// Because redux is immutable, we don't have to
-			// worry about the previous dispatch overwriting
-			// `datasets[path]`.
-			// However, we do have to check if the dataset was
-			// already loaded, because in that case dataset[path]
-			// will now include all attributes.
+				// Because redux is immutable, we don't have to
+				// worry about the previous dispatch overwriting
+				// `datasets[path]`.
+				// However, we do have to check if the dataset was
+				// already loaded, because in that case dataset[path]
+				// will now include all attributes.
 				if (list && !list[path]) {
 					list[path] = oldMetaData;
 					return localforage.setItem('cachedDatasets', list);
@@ -144,8 +144,8 @@ function fetchDataset(datasets, path, dispatch) {
 				return null;
 			})
 			.catch((err) => {
-			// Or, if fetch request failed, dispatch
-			// an action to set the error flag
+				// Or, if fetch request failed, dispatch
+				// an action to set the error flag
 				console.log(err);
 				dispatch({
 					type: REQUEST_DATASET_FAILED,
@@ -238,30 +238,24 @@ function addFunctions(dataset) {
 	} = dataset;
 	// Creating fastFilterOptions is a very slow operation,
 	// which is why we do it once and re-use the results.
-	// Also, I've commented out the filters that aren't
-	// being used right now to save time
-	row.dropdownOptions = {};
-	// row.dropdownOptions.attrs = prepFilter(row.keys);
-	row.dropdownOptions.attrsNoUniques = prepFilter(row.keysNoUniques);
-	// // fastFilterOptions doesn't scale for tens of thousands of cells :/
-	//	//row.dropdownOptions.keyAttr = prepFilter(row.cellKeys);
-	// //row.dropdownOptions.all = prepFilter(row.allKeys);
-	// //row.dropdownOptions.allNoUniques = prepFilter(row.allKeysNoUiques);
-	// row.dropdownOptions.all = row.dropdownOptions.attrs;
-	row.dropdownOptions.allNoUniques = row.dropdownOptions.attrsNoUniques; // prepFilter(row.allKeysNoUniques);
 
-	col.dropdownOptions = {};
-	// col.dropdownOptions.attrs = prepFilter(col.keys);
-	col.dropdownOptions.attrsNoUniques = prepFilter(col.keysNoUniques);
-	col.dropdownOptions.keyAttr = prepFilter(col.geneKeys);
-	// col.dropdownOptions.all = prepFilter(col.allKeys);
-	col.dropdownOptions.allNoUniques = prepFilter(col.allKeysNoUniques);
+	const rowAttrsNoUniques = prepFilter(row.keysNoUniques);
+	row.dropdownOptions = {
+		attrsNoUniques: rowAttrsNoUniques,
+		allNoUniques: rowAttrsNoUniques,
+	};
+
+	col.dropdownOptions = {
+		attrsNoUniques: prepFilter(col.keysNoUniques),
+		keyAttr: prepFilter(col.geneKeys),
+		allNoUniques: prepFilter(col.allKeysNoUniques),
+	};
 
 	dataset.viewStateConverter = createViewStateConverter(dataset);
 
 	// redux tools trips over gigantic typed arrays,
 	// so we need to add a custom serialiser for the attributes
-	if (process.env.NODE_ENV !== 'production') {
+	if(process.env.NODE_ENV !== 'production') {
 		reduxToJSON(col);
 		reduxToJSON(row);
 	}
@@ -269,12 +263,12 @@ function addFunctions(dataset) {
 }
 
 /**
- * Initiate viewState. This includes reading and
- *  writing URI-encoded state, which requires
- * `viewStateConverter`, so this must
- * be called after functions are added.
- * @param {*} dataset
- */
+	 * Initiate viewState. This includes reading and
+	 *  writing URI-encoded state, which requires
+	 * `viewStateConverter`, so this must
+	 * be called after functions are added.
+	 * @param {*} dataset
+	 */
 function prepareViewState(dataset) {
 	// Initiate default viewState
 	let viewState = viewStateInitialiser(dataset);
@@ -284,7 +278,7 @@ function prepareViewState(dataset) {
 		decode,
 	} = dataset.viewStateConverter;
 
-	// overwrite with previously encoded URI viewState, if any
+		// overwrite with previously encoded URI viewState, if any
 	const paths = browserHistory
 		.getCurrentLocation()
 		.pathname
@@ -426,7 +420,10 @@ function prepFilter(options) {
 			label: options[i],
 		};
 	}
-	return createFilterOptions({
-		indexStrategy, sanitizer, options: newOptions,
-	});
+	return {
+		options: newOptions,
+		fastFilterOptions: createFilterOptions({
+			indexStrategy, sanitizer, options: newOptions,
+		}),
+	};
 }

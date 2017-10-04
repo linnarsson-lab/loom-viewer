@@ -140,7 +140,6 @@ class MapComponent extends Component {
 						height={sparklineHeight}
 						paint={colSparkline}
 						style={{ marginRight: (sparklineHeight + 'px') }}
-						ignoreResize
 					/>
 					<div className='view'>
 						<div style={heatmapStyle}>
@@ -152,7 +151,6 @@ class MapComponent extends Component {
 							width={sparklineHeight}
 							height={heatmapHeight}
 							paint={rowSparkline}
-							ignoreResize
 						/>
 					</div>
 				</div >

@@ -9,38 +9,26 @@ export class DropdownMenu extends Component {
 	constructor(...args) {
 		super(...args);
 
-		this.handleChange = (selectValue) => {
-			if (selectValue !== undefined && selectValue !== null) {
-				this.props.onChange(selectValue.value);
-				this.setState(() => {
-					return selectValue;
-				});
-			}
-		};
+		this.handleChange = this.handleChange.bind(this);
 
 		const {
 			options,
-			filterOptions,
 			value,
 		} = this.props;
 
-		let newOptions = options.map((option) => {
-			return {
-				value: option,
-				label: option,
+		this.state = options instanceof Array ?
+			{
+				options,
+				filterOptions: createFilterOptions({ options }),
+				value,
+				label: value,
+			} :
+			{
+				options: options.options,
+				filterOptions: options.filterOptions,
+				value,
+				label: value,
 			};
-		});
-
-		this.state = {
-			options: newOptions,
-			filterOptions: (
-				!filterOptions && options.length > 100 ?
-					createFilterOptions({ options: newOptions }) :
-					filterOptions
-			),
-			value,
-			label: value,
-		};
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -51,6 +39,15 @@ export class DropdownMenu extends Component {
 					value: value,
 					label: value,
 				};
+			});
+		}
+	}
+
+	handleChange(selectValue){
+		if (selectValue !== undefined && selectValue !== null) {
+			this.props.onChange(selectValue.value);
+			this.setState(() => {
+				return selectValue;
 			});
 		}
 	}
@@ -87,8 +84,13 @@ DropdownMenu.propTypes = {
 		PropTypes.arrayOf(PropTypes.string),
 		PropTypes.string,
 	]),
-	options: PropTypes.array.isRequired,
-	filterOptions: PropTypes.func,
+	options: PropTypes.oneOfType([
+		PropTypes.arrayOf(PropTypes.string),
+		PropTypes.shape({
+			options: PropTypes.array.isRequired,
+			filterOptions: PropTypes.func.isRequired,
+		}),
+	]).isRequired,
 	onChange: PropTypes.func.isRequired,
 	clearable: PropTypes.bool,
 	style: PropTypes.object,

@@ -229,8 +229,7 @@ function attrSettingsFactory(props, attrAxis) {
 					<DropdownMenu
 						key={selectedPlot}
 						value={attrData.attr}
-						options={allKeysNoUniques}
-						filterOptions={filterOptions}
+						options={dropdownOptions.allNoUniques}
 						onChange={attrHC}
 					/>
 				</div>

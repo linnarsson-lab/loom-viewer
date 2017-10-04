@@ -193,8 +193,7 @@ export class ColorSettings extends Component {
 					<div>
 						<DropdownMenu
 							value={colorAttr}
-							options={allKeysNoUniques}
-							filterOptions={filterOptions}
+							options={dropdownOptions.allNoUniques}
 							onChange={colorAttrHC}
 						/>
 						<ButtonGroup justified>

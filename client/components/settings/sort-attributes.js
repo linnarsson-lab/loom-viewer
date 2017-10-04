@@ -44,8 +44,7 @@ export class SortAttributeComponent extends Component {
 			<DropdownMenu
 				key={'dropdown'}
 				value={order[0].key}
-				options={allKeysNoUniques}
-				filterOptions={dropdownOptions.allNoUniques}
+				options={dropdownOptions.allNoUniques}
 				onChange={this.onChange} />
 		)];
 		for (let i = 0; i < Math.min(order.length, 5); i++) {

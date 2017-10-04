@@ -176,8 +176,7 @@ export class HeatmapSidepanel extends Component {
 								<div>
 									<DropdownMenu
 										value={colPlotSetting.colorAttr}
-										options={col.allKeysNoUniques}
-										filterOptions={col.dropdownOptions.allNoUniques}
+										options={col.dropdownOptions.allNoUniques}
 										onChange={colAttrHC}
 									/>
 									<label>Show as</label>
@@ -201,8 +200,7 @@ export class HeatmapSidepanel extends Component {
 								<div>
 									<DropdownMenu
 										value={rowPlotSetting.colorAttr}
-										options={row.allKeysNoUniques}
-										filterOptions={row.dropdownOptions.allNoUniques}
+										options={row.dropdownOptions.allNoUniques}
 										onChange={rowAttrHC}
 									/>
 									<label>Show as</label>

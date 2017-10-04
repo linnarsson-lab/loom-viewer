@@ -29,6 +29,13 @@ function handleChangeFactory(dispatch, dataset, field) {
 	};
 }
 
+const geneModeOptions = [
+	'Bars',
+	'Box',
+	'Heatmap',
+	'Flame',
+	'Icicle',
+];
 export class ColorSettings extends Component {
 
 	constructor(...args) {
@@ -38,18 +45,11 @@ export class ColorSettings extends Component {
 			dataset,
 		} = this.props;
 
-		const geneModeOptions = [
-			'Bars',
-			'Box',
-			'Heatmap',
-			'Flame',
-			'Icicle',
-		];
+
 
 		const geneModeHC = handleChangeFactory(dispatch, dataset, 'geneMode');
 		const showLabelsHC = handleChangeFactory(dispatch, dataset, 'showLabels');
 		this.state = {
-			geneModeOptions,
 			geneModeHC,
 			showLabelsHC,
 		};
@@ -57,7 +57,6 @@ export class ColorSettings extends Component {
 
 	render() {
 		const {
-			geneModeOptions,
 			geneModeHC,
 			showLabelsHC,
 		} = this.state;
