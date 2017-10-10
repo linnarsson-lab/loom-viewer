@@ -1,7 +1,7 @@
 // You'd be surprised how often I need this.
 // I hope webpack puts it at top level...
 
-export function nullFunc(){}
+export function nullFunc() { }
 
 // === Color handling ===
 
@@ -561,33 +561,71 @@ export function firstMatchingKey(obj, keyList) {
 
 /**
  * - `array`: array to be sorted
- * - `comparator`: comparison closure that takes *indices* i and j,
- *   and compares `array[i]` to `array[j]`. To ensure stability, it
- *   should always end with `i - j` as the last comparison .
+ * - `compareFunc`: optional comparison callback that will be given
+ *   *indices* i and j. This can be used to create callbacks that
+ *   do more complex comparisons on objects in the array, and more
+ *   importantly *other arrays*
+ *   To ensure stability it should always end with `i - j`
+ *   as the last sort key.
  *
  * Example:
- * ```
- *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
- *  let comparator = (i, j) => {
- *    let vi = array[i].n, vj = array[j].n;
- *    return vi < vj ? -1 :
- *      vi > vj ? 1 :
- *        i - j;
- *  };
- *  stableSortInPlace(array, comparator);
- *  // ==> [{n:0, s: "a"}, {n:1, s: "b"}, {n:1, s: "a"}]
- * ```
+ *
+ *    let array = [
+ *      {label: 'b', value: 1},
+ *      {label: 'a', value: 1},
+ *      {label: 'c', value: 0}
+ *    ];
+ *    const compareFunc = (i, j) => {
+ *      let vi = array[i].value,
+ *        vj = array[j].value;
+ *      return vi < vj ? -1 :
+ *        vi > vj ? 1 :
+ *          i - j;
+ *    };
+ *    sortInPlace(array, compareFunc);
+ *    // ==> [
+ *    //   {label: "c", value:0},
+ *    //   {label: "b", value:1},
+ *    //   {label: "a", value:1}
+ *    // ]
+ *
+ * @param {*[]} array
+ * @param {indexCompareFunction} [compareFunc]
  */
-
-export function stableSortInPlace(array, comparator) {
-	return sortFromIndices(array, findIndices(array, comparator));
+export function sortInPlace(array, compareFunc) {
+	return sortFromIndices(array, findIndices(array, compareFunc));
 }
 
-export function stableSortedCopy(array, comparator, typedArray) {
-	typedArray = typedArray || Array;
-	let indices = findIndices(array, comparator);
+/**
+ * @param {*[]} array
+ * @param {indexCompareFunction} [compareFunc]
+ * @returns {*[]} sortedArray
+ */
+export function sortedCopy(array, compareFunc) {
+	let indices = findIndices(array, compareFunc);
 	let i = array.length;
-	let sortedArray = new typedArray(i);
+	// make sure we use the same type of array
+	let sortedArray = new Object.getPrototypeOf(array).constructor(i);
+	// unrolled 16-decrement loop was benchmarked
+	// as the fastest way to copy data over.
+	while (i - 16 > 0) {
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+		sortedArray[--i] = array[indices[i]];
+	}
 	while (i--) {
 		sortedArray[i] = array[indices[i]];
 	}
@@ -595,33 +633,63 @@ export function stableSortedCopy(array, comparator, typedArray) {
 }
 
 /**
- * Finds the index of the value that *should* be stored
- * at each array position (that is: `array[i]` should have
- * the value at `array[indices[i]]`)
- *
+ * Creates a compare function for sorting a set of *indices*
+ * based on lexicographical comparison of the array values
+ * @param {*[]} array
+ * @returns {indexCompareFunction}
+ */
+function baseCompareFunc(array) {
+	return (i, j) => {
+		let vi = array[i],
+			vj = array[j];
+		return vi < vj ?
+			-1 :
+			vi > vj ?
+				1 :
+				i - j; // the part that makes this a stable sort
+	};
+}
+
+/**
  * - `array`: array to find indices for.
- * - `comparator`: comparison closure that takes *index* i and j,
+ * - `compareFunc`: comparison closure that takes _indices_ i and j,
  *   and compares values at `array[i]` to `array[j]` in some way.
- *   To force stability, end comparison chain with with `i - j`.
+ *   To force stability, use `i - j` as last sort key.
+ *
+ * Finds the indices of the values that *should* be stored
+ * at each array position (that is: `array[i]` should have
+ * the value at `array[indices[i]]`).
+ *
+ * Returns the smallest typed array that can contain all indices
  *
  * Example:
- * ```
- *  let array = [{n: 1, s: "b"}, {n: 1, s: "a"}, {n:0, s: "a"}];
- *  let comparator = (i, j) => {
- *    let vi = array[i].n, vj = array[j].n;
- *    return vi < vj ? -1 :
- *      vi > vj ? 1 :
- *        i - j;
- *  };
- *  findIndices(array, comparator);
- *  // ==> [2, 0, 1]
- * ```
+ *
+ *    let array = [
+ *      {label: 'b', value: 1},
+ *      {label: 'a', value: 1},
+ *      {label: 'c', value: 0}
+ *    ];
+ *    const compareFunc = (i, j) => {
+ *      let vi = array[i].n, vj = array[j].n;
+ *      return vi < vj ? -1 :
+ *        vi > vj ? 1 :
+ *          i - j;
+ *    };
+ *    findIndices(array, compareFunc);
+ *    // ==> [2, 0, 1]
+ *
+ * @param {*[]} array
+ * @param {indexCompareFunction} [compareFunc]
  */
-export function findIndices(array, comparator) {
+export function findIndices(array, compareFunc) {
 	// Assumes we don't have to worry about sorting more than
 	// 4 billion elements; uses the smallest fitting typed array
 	// for smaller input sizes.
-	const indicesConstr = array.length < 256 ? Uint8Array : array.length < 65535 ? Uint16Array : Uint32Array;
+	const indicesConstr = array.length < 256 ?
+		Uint8Array :
+		array.length < 65535 ?
+			Uint16Array :
+			Uint32Array;
 	let i = array.length,
 		indices = new indicesConstr(i);
 	// unrolled 16-decrement loop was benchmarked as the fastest
@@ -646,28 +714,38 @@ export function findIndices(array, comparator) {
 	while (i--) {
 		indices[i] = i;
 	}
+	if (typeof compareFunc !== 'function') {
+		compareFunc = baseCompareFunc(array);
+	}
 	// after sorting, `indices[i]` gives the index from where
 	// `array[i]` should take the value from, so
 	// `array[i]` should have the value at `array[indices[i]]`
-	return indices.sort(comparator);
+	return indices.sort(compareFunc);
 }
 
 /**
- * Effectively: `sorted array[i] = array[indices[i]]`
+ * - `array`: data to be sorted in-place
+ * - `indices`: indices from where the value should _come from_,
+ *   that is:  `sorted array[i] = array[indices[i]]`
+ *    (`indices` is sorted in-place as a side effect).
  *
  * `indices` must contain each index of `array`, and each
  * index must be present only once! In other words:
  * indices must contain all integers in the range
  * `[0, array.length-1]`.
  *
- * This function does *not* check for valid input!
- *
  * Example:
+ *
+ *     let array = ['a', 'b', 'c', 'd', 'e' ],
+ *       indices = [1, 2, 0, 4, 3]
+ *     sortFromIndices(array, indices)
+ *     // ==> array: ['b', 'c', 'a', 'e', 'd' ],
+ *     //     indices: [0, 1, 2, 3, 4]
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
  * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
- * @param {[]} array - data to be sorted in-place
- * @param {number[]} indices - indices from where the value
- * should *come from*
+ *
+ * @param {*[]} array
+ * @param {number[]} indices
  */
 export function sortFromIndices(array, indices) {
 	// there might be multiple cycles, so we must
@@ -678,7 +756,7 @@ export function sortFromIndices(array, indices) {
 		// the "wrong" position
 		if (k !== indices[k]) {
 			// create vacancy to use "half-swaps" trick
-			// Thank you Andrei Alexandrescu
+			// Thank you Andrei Alexandrescu :)
 			let v0 = array[k];
 			let i = k;
 			let j = indices[k];
@@ -700,6 +778,17 @@ export function sortFromIndices(array, indices) {
 	}
 	return array;
 }
+
+/**
+ * A compare function to pass to `indices.sort()`, see [the TypedArray.prototype.sort() API](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort).
+ * @param {number} i
+ * @param {number} j
+ */
+function indexCompareFunction(i, j) {
+	// dummy function for intellisense callback
+	return i - j;
+}
+
 
 export function attrSubset(attr, indices, i0, i1) {
 	return arraySubset(attr.data, attr.arrayType, indices, i0, i1);
