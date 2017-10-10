@@ -28,7 +28,7 @@ class MapComponent extends Component {
 
 	mountContainer(el){
 		if (el) {
-			const sparklineHeight = 80 / (window.devicePixelRatio || 1) | 0;
+			const sparklineHeight = 80;
 			let heatmapWidth = el.clientWidth - sparklineHeight - 20;
 			let heatmapHeight = el.clientHeight - sparklineHeight - 20;
 			const heatmapStyle = {
