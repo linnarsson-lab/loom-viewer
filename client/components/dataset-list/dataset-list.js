@@ -24,7 +24,7 @@ import {
 } from '../../actions/request-projects';
 
 import Fuse from 'fuse.js';
-import { stableSortInPlace } from '../../js/util';
+import { sortInPlace } from '../../js/util';
 
 const centerTextStyle = {
 	textAlign: 'center',
@@ -456,15 +456,13 @@ class SearchDataSetViewComponent extends Component {
 
 	prepareProjects(list) {
 		// Convert to array sorted by dataset creation date
-		list = Object
-			.keys(list)
-			.map((key) => {
-				return list[key];
-			});
-
-		stableSortInPlace(list, (i, j) => {
-			let vi = list[i].creationDate;
-			let vj = list[j].creationDate;
+		let arrayList = Object.values(list);
+		let creationDates = arrayList.map((dataset) => {
+			return dataset.creationDate;
+		});
+		const comparator = (i, j) => {
+			let vi = creationDates[i];
+			let vj = creationDates[j];
 			return (
 				vi < vj ?
 					-1 :
@@ -472,15 +470,17 @@ class SearchDataSetViewComponent extends Component {
 						1 :
 						i - j
 			);
-		});
+		};
+
+		sortInPlace(arrayList, comparator);
 
 
 		let projectNames = [],
 			projectLists = [],
 			projectListsFiltered = [];
-		let i = list.length;
+		let i = arrayList.length;
 		while (i--) {
-			const dataset = list[i];
+			const dataset = arrayList[i];
 			const { project } = dataset;
 			let j = projectNames.indexOf(project);
 			if (j === -1) {
@@ -521,7 +521,7 @@ class SearchDataSetViewComponent extends Component {
 						i - j
 			);
 		};
-		stableSortInPlace(list, comparator);
+		sortInPlace(list, comparator);
 		if (!search) {
 			// if there is no search, filtered is
 			// just a sorted version of list.
