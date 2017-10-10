@@ -11,24 +11,33 @@ export class DropdownMenu extends Component {
 
 		this.handleChange = this.handleChange.bind(this);
 
-		const {
+		let {
 			options,
 			value,
 		} = this.props;
 
-		this.state = options instanceof Array ?
-			{
+		if (options instanceof Array) {
+			options = options.map((option) => {
+				return {
+					label: option,
+					value: option,
+				};
+			});
+			this.state = {
 				options,
 				filterOptions: createFilterOptions({ options }),
 				value,
 				label: value,
-			} :
-			{
+			};
+		} else {
+			this.state = {
 				options: options.options,
-				filterOptions: options.filterOptions,
+				filterOptions: options.fastFilterOptions,
 				value,
 				label: value,
 			};
+		}
+
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -43,7 +52,7 @@ export class DropdownMenu extends Component {
 		}
 	}
 
-	handleChange(selectValue){
+	handleChange(selectValue) {
 		if (selectValue !== undefined && selectValue !== null) {
 			this.props.onChange(selectValue.value);
 			this.setState(() => {
