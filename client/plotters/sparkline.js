@@ -151,6 +151,7 @@ export function sparkline(attr, indices, mode, settings, label) {
 		const dataToColor = attrToColorFactory(attr, mode, settings);
 		return sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label);
 	}
+	// return empty plotter if no attr was provided
 	return nullFunc;
 }
 
@@ -166,23 +167,44 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				leftRounded,
 				rightRounded,
 			} = range;
-			// We need to find the effective number of pixels
-			// covered by the whole range; left and right
-			// fractions are rounded in such a way that partial
-			// coverage equals full coverage. Because range.left,
-			// range.right and range.total are already rounded to
-			// reflect this, the following equation is true:
-			//   "range width"/context.width = range.total/range.unrounded
-			// where range width is the covered nr of pixels.
+
+			/*
+			We need to find the effective number of pixels covered
+			by the whole range. left and right fractions are rounded
+			in such a way that partial coverage equals full coverage.
+			Because range.left, range.right and range.total are
+			already rounded to reflect this, the following equations
+			are true:
+
+				"range width" / context.width =
+					range.total / range.unrounded
+
+				"range width" =
+					context.width * range.total / range.unrounded
+
+				"range width" / range.total =
+					context.width / range.unrounded
+
+			("range width" is the covered nr of pixels.)
+			*/
 
 			const ratio = (context.pixelRatio > 1 ? context.pixelRatio | 0 : 1);
 
-			// Therefore, the columns should have a width of:
-			//   barWidth = ratio * range.width / range.total
-			//            = ratio * context.width / range.unrounded
+			/*
+			Therefore, the columns of an individual data point
+			should  have a width of:
+
+				"data width" =
+					"range width" / range.total =
+					context.width / range.unrounded
+
+			Given that:
+				groupSize =
+					"column width in pixels" / "data width" =
+			*/
 			const groupSize = ratio * unrounded / context.width;
 
-			// If barWidth is < 1, we have multiple data points per pixel.
+			// If groupSize is > 1, we have multiple data points per pixel.
 			// Otherwise, we have one (or less) data points per pixel.
 			// We use separate plotters for both, to keep the functions simple
 			// and hopefully easier to optimise for the JIT compiler.
@@ -201,8 +223,8 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// part of it times barWidth
 				// If left < 0, it is -left * barWidth
 				const leftFrac = left < 0 ? -left : leftRounded - left;
-				const barWidth = ratio * context.width / unrounded;
-				const xOffset = (leftFrac * barWidth) | 0;
+				const barWidth = context.width / unrounded;
+				const xOffset = leftFrac * context.width / unrounded | 0;
 				// copy relevant subset of data
 				const i0 = leftRounded < 0 ? 0 : leftRounded;
 				const i1 = rightRounded > attr.data.length ? attr.data.length : rightRounded;
@@ -279,22 +301,25 @@ function clip(data, clipMin, clipMax, offset = 0) {
 
 function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth, dataToColor) {
 	context.fillStyle = 'white';
-	let i = 0,
+	let x = xOffset | 0,
+		i = 0,
 		j = i,
 		color = dataToColor(data[i] || 0),
 		nextColor = color;
 	while (i < data.length) {
-		// advance while value doesn't change
-		while (color === nextColor && ++j < data.length) {
+		// advance while value doesn't change,
+		// minimum 1 (to show last value)
+		while (++j < data.length && color === nextColor) {
 			nextColor = dataToColor(data[j] || 0);
 		}
+
 		context.fillStyle = color;
 		// force to pixel grid
-		const x = ratio * (xOffset + i * barWidth) | 0;
-		const roundedWidth = (ratio * (xOffset + j * barWidth) | 0) - x;
-		context.fillRect(x, 0, roundedWidth, context.height);
+		const xNext = (xOffset + j * barWidth) | 0;
+		context.fillRect(x, 0, xNext - x, context.height);
 		i = j;
 		color = nextColor;
+		x = xNext;
 	}
 }
 
@@ -340,7 +365,7 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 			color = dataToColor(barSlice[j] || 0),
 			nextColor = color;
 		while (j < l) {
-			while (color === nextColor && k < barSlice.length) {
+			while (++k < barSlice.length && color === nextColor) {
 				nextColor = dataToColor(barSlice[++k] || 0);
 			}
 
@@ -400,15 +425,16 @@ function barPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth, 
 function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 	context.fillStyle = '#000000';
 	let i = 0,
+		j = 0,
 		x = xOffset | 0,
 		barHeight = logProject(data[i]) * barScale | 0,
-		j = i,
 		nextHeight = barHeight;
 	while (i < data.length) {
 		// advance while height doesn't change
-		while (barHeight === nextHeight && ++j < data.length) {
+		while (++j < data.length && barHeight === nextHeight) {
 			nextHeight = logProject(data[j]) * barScale | 0;
 		}
+
 		const xNext = (xOffset + j * barWidth) | 0;
 
 		// zero values are an extremely common case,
@@ -436,9 +462,10 @@ function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
 		j = i,
 		nextHeight = barHeight;
 	while (i < data.length) {
-		while (barHeight === nextHeight && ++j < data.length) {
+		while (++j < data.length && barHeight === nextHeight) {
 			nextHeight = data[j] * barScale | 0;
 		}
+
 		const xNext = (xOffset + j * barWidth) | 0;
 
 		if (barHeight) {
@@ -553,7 +580,7 @@ function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataT
 		while (i < avg.length) {
 
 			// advance while height doesn't change
-			while (barHeight - nextHeight === 0 && ++j < avg.length) {
+			while (++j < avg.length && barHeight - nextHeight === 0) {
 				nextHeight = logProject(avg[j]) * barScale | 0;
 			}
 
@@ -598,7 +625,7 @@ function barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor
 		// advance while height doesn't change
 		let j = i,
 			nextHeight = barHeight;
-		while (barHeight - nextHeight === 0 && ++j < avg.length) {
+		while (++j < avg.length && barHeight - nextHeight === 0) {
 			nextHeight = avg[j] * barScale | 0;
 		}
 		// We advanced j-i steps
@@ -743,7 +770,7 @@ function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataT
 	while (i < avg.length) {
 		// advance while height doesn't change
 		let j = i;
-		while (difference === 0 && ++j < avg.length) {
+		while (++j < avg.length && difference === 0) {
 			nextHeight = logProject(avg[j]) * barScale | 0;
 			nextMin = logProject(minValues[j]) * barScale | 0;
 			nextMax = logProject(maxValues[j]) * barScale | 0;
@@ -813,7 +840,7 @@ function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor
 	while (i < avg.length) {
 		// advance while height doesn't change
 		let j = i;
-		while (difference === 0 && ++j < avg.length) {
+		while (++j < avg.length && difference === 0) {
 			nextHeight = avg[j] * barScale | 0;
 			nextMin = minValues[j] * barScale | 0;
 			nextMax = maxValues[j] * barScale | 0;
@@ -922,7 +949,7 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 		x = xOffset | 0;
 	while (i < data.length) {
 		// advance while colour value doesn't change
-		while (color === nextColor && ++j < data.length) {
+		while (++j < data.length && color === nextColor) {
 			nextColor = dataToColor(data[j] || 0);
 		}
 		const xNext = xOffset + j * barWidth | 0;
@@ -962,31 +989,39 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 
 	let i = data.length;
 	while (data[--i]) {/* */ }
+
 	let dataGroup = data[++i],
 		sum = 0;
-	for (let j = 0; j < dataGroup.length; j++) {
-		sum += dataGroup[j];
-	}
-	let color = dataToColor(sum / dataGroup.length || 0),
-		nextColor = color,
-		j = i,
-		x = i * ratio | 0;
-	while (i < data.length) {
-		// advance while colour value doesn't change
-		while (color === nextColor && ++j < data.length) {
-			dataGroup = data[j];
-			sum = 0;
-			for (let k = 0; k < dataGroup.length; k++) {
-				sum += dataGroup[k];
-			}
-			nextColor = dataToColor(sum / dataGroup.length || 0);
+
+	if (dataGroup){
+		for (let j = 0; j < dataGroup.length; j++) {
+			sum += dataGroup[j];
 		}
-		const xNext = j * ratio | 0;
-		context.fillStyle = color;
-		context.fillRect(x, 0, xNext - x, context.height);
-		i = j;
-		color = nextColor;
-		x = xNext;
+
+		let color = dataToColor(sum / dataGroup.length || 0),
+			nextColor = color,
+			j = i,
+			x = i * ratio | 0;
+
+		while (i < data.length) {
+		// advance while colour value doesn't change
+			while (++j < data.length && color === nextColor) {
+				dataGroup = data[j];
+				if (dataGroup){
+					sum = 0;
+					for (let k = 0; k < dataGroup.length; k++) {
+						sum += dataGroup[k];
+					}
+					nextColor = dataToColor(sum / dataGroup.length || 0);
+				}
+			}
+			const xNext = j * ratio | 0;
+			context.fillStyle = color;
+			context.fillRect(x, 0, xNext - x, context.height);
+			i = j;
+			color = nextColor;
+			x = xNext;
+		}
 	}
 
 	if (label) {
@@ -1063,13 +1098,13 @@ function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToCo
 	const l = dataGroup.length;
 	const spareTile = binSize - l;
 	let j = 0,
-		k = j,
+		k = 0,
 		val = dataGroup[j],
 		nextVal = val,
 		y = (height * (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (val === nextVal && ++k < l) {
+		while (++k < l && val === nextVal) {
 			nextVal = dataGroup[k];
 		}
 		yNext = (height * (k + spareTile) / binSize) | 0;
@@ -1135,15 +1170,16 @@ function drawIcicleColumn(context, x, width, height, yOffset, dataGroup, binSize
 	const l = dataGroup.length;
 	const spareTile = binSize - l;
 	let j = 0,
-		k = j,
+		k = 0,
 		val = dataGroup[j],
 		nextVal = val,
 		y = height * (1 - (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (val === nextVal && ++k < l) {
+		while (++k < l && val === nextVal) {
 			nextVal = dataGroup[k];
 		}
+
 		yNext = height * (1 - (k + spareTile) / binSize) | 0;
 		context.fillStyle = dataToColor(val || 0);
 		context.fillRect(x, yNext + yOffset, width, y - yNext);
@@ -1160,7 +1196,10 @@ function textPaintDirectly(context, attr, data, range, ratio, xOffset, barWidth)
 	const minLineSize = 8;
 	if (lineSize >= minLineSize) {
 		textStyle(context);
-		textSize(context, ratio * Math.min(lineSize - 2, 16));
+
+		let size = Math.min(lineSize - 2, 16);
+		size = Math.min(size * ratio, lineSize - ratio);
+		textSize(context, size);
 		context.save();
 		// The default is drawing horizontally,
 		// so the text should be vertical.
