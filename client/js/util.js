@@ -378,30 +378,33 @@ export function countElements(array, start, end) {
 }
 
 export function findMostCommon(array, start, end) {
-	start = start > 0 ? start : 0;
-	end = end < array.length ? end : array.length;
-	let i = 0,
-		j = 0,
-		sorted = array.slice(start, end).sort(),
-		val = sorted[i],
-		mv = val,
-		mc = 1;
-	// linearly run through the array, count unique values
-	while (val !== null && val !== undefined) {
+	let mv;
+	if(array && start < array.length && end > 0){
+		start = start > 0 ? start : 0;
+		end = end < array.length ? end : array.length;
+		let i = 0,
+			j = 0,
+			sorted = array.slice(start, end).sort(),
+			val = sorted[i],
+			mc = 1;
+		mv = val;
+		// linearly run through the array, count unique values
+		while (val !== null && val !== undefined) {
 
 		// keep going until a different value is found
-		while (sorted[j + 1024] === val) { j += 1024; }
-		while (sorted[j + 256] === val) { j += 256; }
-		while (sorted[j + 64] === val) { j += 64; }
-		while (sorted[j + 8] === val) { j += 8; }
-		while (sorted[j] === val) { j++; }
+			while (sorted[j + 1024] === val) { j += 1024; }
+			while (sorted[j + 256] === val) { j += 256; }
+			while (sorted[j + 64] === val) { j += 64; }
+			while (sorted[j + 8] === val) { j += 8; }
+			while (sorted[j] === val) { j++; }
 
-		if (j - i > mc) {
-			mv = val;
-			mc = j - i;
+			if (j - i > mc) {
+				mv = val;
+				mc = j - i;
+			}
+			i = j;
+			val = sorted[j];
 		}
-		i = j;
-		val = sorted[j];
 	}
 	return mv;
 }
