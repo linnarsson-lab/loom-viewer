@@ -318,8 +318,8 @@ function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth
 	while (i < data.length) {
 		// advance while value doesn't change,
 		// minimum 1 (to show last value)
-		while (j < data.length && color === nextColor) {
-			nextColor = dataToColor(data[++j]);
+		while (color === nextColor && ++j < data.length) {
+			nextColor = dataToColor(data[j]);
 		}
 
 		context.fillStyle = color;
@@ -335,13 +335,13 @@ function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth
 function categoriesGrouped(context, attr, data, range, ratio, dataToColor) {
 	let i = 0;
 	// skip left-padding
-	while (!data[i]) { i++; }
+	while (!data[i] && i < data.length) { i++; }
 	let j = i,
-		color = dataToColor(findMostCommon(data[i] || 0)),
+		color = dataToColor(findMostCommon(data[i])),
 		nextColor = color;
 	while (i < data.length) {
-		while (color === nextColor && j < data.length) {
-			nextColor = dataToColor(findMostCommon(data[++j] || 0));
+		while (color === nextColor && ++j < data.length) {
+			nextColor = dataToColor(findMostCommon(data[j]));
 		}
 		context.fillStyle = color;
 		const x = i * ratio | 0;
@@ -371,11 +371,11 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 
 		let j = 0,
 			k = 0,
-			color = dataToColor(barSlice[j] || 0),
+			color = dataToColor(barSlice[j]),
 			nextColor = color;
 		while (j < l) {
-			while (k < barSlice.length && color === nextColor) {
-				nextColor = dataToColor(barSlice[++k] || 0);
+			while (color === nextColor && ++k < barSlice.length) {
+				nextColor = dataToColor(barSlice[k]);
 			}
 
 			const y = (height * j / l) | 0;
@@ -440,8 +440,8 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 		nextHeight = barHeight;
 	while (i < data.length) {
 		// advance while height doesn't change
-		while (j < data.length && barHeight === nextHeight) {
-			nextHeight = logProject(data[++j]) * barScale | 0;
+		while (barHeight === nextHeight && ++j < data.length) {
+			nextHeight = logProject(data[j]) * barScale | 0;
 		}
 
 		const xNext = (xOffset + j * barWidth) | 0;
@@ -471,8 +471,8 @@ function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
 		j = i,
 		nextHeight = barHeight;
 	while (i < data.length) {
-		while (j < data.length && barHeight === nextHeight) {
-			nextHeight = data[++j] * barScale | 0;
+		while (barHeight === nextHeight && ++j < data.length) {
+			nextHeight = data[j] * barScale | 0;
 		}
 
 		const xNext = (xOffset + j * barWidth) | 0;
@@ -589,8 +589,8 @@ function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataT
 		while (i < avg.length) {
 
 			// advance while height doesn't change
-			while (j < avg.length && barHeight - nextHeight === 0) {
-				nextHeight = logProject(avg[++j]) * barScale | 0;
+			while (barHeight - nextHeight === 0 && ++j < avg.length) {
+				nextHeight = logProject(avg[j]) * barScale | 0;
 			}
 
 			// We advanced j-i steps
@@ -634,8 +634,8 @@ function barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor
 		// advance while height doesn't change
 		let j = i,
 			nextHeight = barHeight;
-		while (j < avg.length && barHeight - nextHeight === 0) {
-			nextHeight = avg[++j] * barScale | 0;
+		while (barHeight - nextHeight === 0 && ++j < avg.length) {
+			nextHeight = avg[j] * barScale | 0;
 		}
 		// We advanced j-i steps
 		const xNext = j * ratio | 0;
@@ -779,8 +779,8 @@ function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataT
 	while (i < avg.length) {
 		// advance while height doesn't change
 		let j = i;
-		while (j < avg.length && difference === 0) {
-			nextHeight = logProject(avg[++j]) * barScale | 0;
+		while (difference === 0 && ++j < avg.length) {
+			nextHeight = logProject(avg[j]) * barScale | 0;
 			nextMin = logProject(minValues[j]) * barScale | 0;
 			nextMax = logProject(maxValues[j]) * barScale | 0;
 			nextFQ = logProject(firstQ[j]) * barScale | 0;
@@ -848,13 +848,13 @@ function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor
 		difference = 0;
 	while (i < avg.length) {
 		// advance while height doesn't change
-		let j = i+1;
-		while (j < avg.length && difference === 0) {
+		let j = i;
+		while (difference === 0 && ++j < avg.length) {
 			nextHeight = avg[j] * barScale | 0;
 			nextMin = minValues[j] * barScale | 0;
 			nextMax = maxValues[j] * barScale | 0;
 			nextFQ = firstQ[j] * barScale | 0;
-			nextTQ = thirdQ[j++] * barScale | 0;
+			nextTQ = thirdQ[j] * barScale | 0;
 
 			// if any of these values are different, difference is non-zero
 			// subtraction + OR masking is probably faster
@@ -958,8 +958,8 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 		x = xOffset | 0;
 	while (i < data.length) {
 		// advance while colour value doesn't change
-		while (j < data.length && color === nextColor) {
-			nextColor = dataToColor(data[++j] || 0);
+		while (color === nextColor && ++j < data.length) {
+			nextColor = dataToColor(data[j] || 0);
 		}
 		const xNext = xOffset + j * barWidth | 0;
 		context.fillStyle = color;
@@ -1014,8 +1014,8 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 
 		while (i < data.length) {
 			// advance while colour value doesn't change
-			while (j < data.length && color === nextColor) {
-				dataGroup = data[++j];
+			while (color === nextColor && ++j < data.length) {
+				dataGroup = data[j];
 				if (dataGroup) {
 					sum = 0;
 					for (let k = 0; k < dataGroup.length; k++) {
@@ -1111,8 +1111,8 @@ function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToCo
 		y = (height * (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (k < l && val === nextVal) {
-			nextVal = dataGroup[++k];
+		while (val === nextVal && ++k < l) {
+			nextVal = dataGroup[k];
 		}
 		yNext = (height * (k + spareTile) / binSize) | 0;
 		context.fillStyle = dataToColor(val || 0);
@@ -1183,8 +1183,8 @@ function drawIcicleColumn(context, x, width, height, yOffset, dataGroup, binSize
 		y = height * (1 - (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (k < l && val === nextVal) {
-			nextVal = dataGroup[++k];
+		while (val === nextVal && ++k < l) {
+			nextVal = dataGroup[k];
 		}
 
 		yNext = height * (1 - (k + spareTile) / binSize) | 0;
