@@ -2,16 +2,16 @@
 
 We recently split `loompy` into [a pure python package](https://github.com/linnarsson-lab/loompy) and a viewer.
 
-This repository is the viewer part, but the documentation still mentions `loompy` here and there.
+This repository is the viewer part, but the documentation still mentions `loompy`.
 
 # Loom
 
 Loom is
 
-* Loom, a web app for browsing large single-cell RNA-seq datasets
+* `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
 * `.loom`, an efficient file format for large omics datasets
-* `loom`, a command-line tool for manipulating `.loom` files.
 * `loompy`, a Python library for creating and working with data in `.loom` format.
+* [deprecated] `loom`, a command-line tool for manipulating `.loom` files.
 
 
 ## Installation
