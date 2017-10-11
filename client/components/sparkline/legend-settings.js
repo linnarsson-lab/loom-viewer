@@ -11,9 +11,9 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	AttrLegend,
-} from '../settings/settings';
+} from '../settings';
 
-import { UPDATE_VIEWSTATE } from '../../actions/action-types';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 const colModeOptions = [
 	'Bars',

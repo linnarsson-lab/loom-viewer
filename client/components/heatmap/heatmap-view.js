@@ -205,15 +205,17 @@ HeatmapComponent.propTypes = {
 	dispatch: PropTypes.func.isRequired,
 };
 
-export const HeatmapViewInitialiser = function (props) {
-	return (
-		<ViewInitialiser
-			View={HeatmapComponent}
-			dispatch={props.dispatch}
-			params={props.params}
-			datasets={props.datasets} />
-	);
-};
+export class HeatmapViewInitialiser extends Component {
+	render(){
+		return (
+			<ViewInitialiser
+				View={HeatmapComponent}
+				dispatch={this.props.dispatch}
+				params={this.props.params}
+				datasets={this.props.datasets} />
+		);
+	}
+}
 
 HeatmapViewInitialiser.propTypes = {
 	params: PropTypes.object.isRequired,

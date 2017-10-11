@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
@@ -17,7 +17,7 @@ import { nullFunc } from 'js/util';
 const sparklineHeight = 40;
 
 
-class Legend extends Component {
+class Legend extends PureComponent {
 	render() {
 		const {
 			width,
@@ -128,7 +128,7 @@ function makeCanvas(gene, containerWidth, painters, idx) {
 	);
 }
 
-export class Sparklines extends Component {
+export class Sparklines extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.updateChangedSparklines = this.updateChangedSparklines.bind(this);
@@ -214,7 +214,6 @@ export class Sparklines extends Component {
 	}
 }
 
-
 Sparklines.propTypes = {
 	groupedPainter: PropTypes.func.isRequired,
 	containerWidth: PropTypes.number.isRequired,
@@ -225,7 +224,7 @@ Sparklines.propTypes = {
 	showLabels: PropTypes.bool.isRequired,
 };
 
-class SparklineListMounter extends Component {
+class SparklineListMounter extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.sparklineContainer = this.sparklineContainer.bind(this);
@@ -318,7 +317,9 @@ class SparklineListMounter extends Component {
 		}
 		else {
 			return (
-				<div className='view centred' ref={this.sparklineContainer}>
+				<div
+					ref={this.sparklineContainer}
+					className='view centred'>
 					Initialising sparklines
 				</div>
 			);
@@ -341,7 +342,7 @@ SparklineListMounter.propTypes = {
 	showLabels: PropTypes.bool.isRequired,
 };
 
-export class SparklineList extends Component {
+export class SparklineList extends PureComponent {
 	constructor(...args) {
 		super(...args);
 

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Glyphicon } from 'react-bootstrap';
 import { DropdownMenu } from './dropdown';
 
-import { updateAndFetchGenes } from '../../actions/update-and-fetch';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
 export class SortAttributeComponent extends Component {
 	constructor(...args) {

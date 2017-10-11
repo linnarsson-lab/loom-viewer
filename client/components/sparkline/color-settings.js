@@ -12,9 +12,9 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	OverlayTooltip,
-} from '../settings/settings';
+} from '../settings';
 
-import { UPDATE_VIEWSTATE } from '../../actions/action-types';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 import { boxLegend } from 'components/settings/boxlegend';
 

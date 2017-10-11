@@ -23,12 +23,10 @@ import {
 // Multiple radii; no need to draw a 256x256 image for a 8x8 dot
 const {
 	allSprites,
-	contexts,
 } = (() => {
 	let i = 257,
 		j = 8;
-	const allSprites = new Array(j),
-		contexts = new Array(i);
+	const allSprites = new Array(j);
 	while (j--) {
 		i = 257;
 		const _sprites = new Array(i);
@@ -42,7 +40,6 @@ const {
 	}
 	return {
 		allSprites,
-		contexts,
 	};
 })();
 
@@ -50,7 +47,7 @@ const { log2 } = Math;
 
 export function scatterPlot(attrs, indices, settings) {
 	// only render if all required settings are supplied
-	if (!(indices && settings)){
+	if (!(indices && settings)) {
 		return nullFunc;
 	}
 
@@ -82,7 +79,7 @@ export function scatterPlot(attrs, indices, settings) {
 		// ==================================================
 		// == Prepare Palette & pre-render dots to sprites ==
 		// ==================================================
-		prepareSprites(colorMode, spriteLayout);
+		const imgData = prepareSprites(colorMode, spriteLayout);
 
 		// =====================================
 		// == Convert x, y to pixel positions ==
@@ -107,7 +104,7 @@ export function scatterPlot(attrs, indices, settings) {
 		// Sort so that we render zero values first, and then from back-to-front.
 		// This has to be done after jittering to maintain the tiling behaviour
 		// that is desired.
-		const sorted = sortByAxes(xy, cIdx, spriteLayout.sprites);
+		const sorted = sortByAxes(xy, cIdx, imgData);
 
 		// ============================
 		// == blit sprites to canvas ==
@@ -116,7 +113,7 @@ export function scatterPlot(attrs, indices, settings) {
 		// Now that we converted the coordinates, prepared the sprites
 		// and the colour indices to look them up, we can blit them
 		// to the canvas.
-		blitSprites(context, spriteLayout, sorted);
+		blitSprites(context, spriteLayout, sorted, imgData);
 
 		// =================
 		// == draw labels ==
@@ -151,7 +148,7 @@ function calcLayout(context, settings) {
 
 	let spriteIdx = 0,
 		spriteRadius = 2;
-	while (spriteRadius < radius+1) {
+	while (spriteRadius < radius + 1) {
 		spriteIdx++;
 		spriteRadius = 2 << spriteIdx;
 	}
@@ -335,43 +332,63 @@ function convertColorData(colorAttr, indices, dataToIdx) {
 
 function prepareSprites(colorMode, spriteLayout) {
 	const {
-		radius, sprites,
+		radius,
+		sprites,
 	} = spriteLayout;
 
-	let palette = getPalette(colorMode);
+	const palette = getPalette(colorMode);
+	let imgData = new Array(sprites.length);
+
+	// sprite dimensions and line thickness
 	const spriteW = sprites[0].width,
-		spriteH = sprites[0].height;
-	const lineW = constrain(radius / 10, 0.125, 0.5);
-	// reset all sprites to empty circles
-	let i = sprites.length;
-	while (i--) {
-		let ctx = sprites[i].getContext('2d');
-		ctx.save();
-		ctx.clearRect(0, 0, spriteW, spriteH);
-		ctx.beginPath();
-		ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
-		ctx.closePath();
-		ctx.globalAlpha = 0.3;
-		ctx.strokeStyle = 'black';
-		ctx.lineWidth = lineW;
-		ctx.stroke();
-		ctx.restore();
-		contexts[i] = ctx;
-	}
-	// fill the _sprites that have a palette
+		spriteH = sprites[0].height,
+		lineW = constrain(radius / 10, 0.125, 0.5);
+
+	// first circle is always the empty circle
+	let sprite0 = sprites[0],
+		ctx0 = sprite0.getContext('2d');
+	emptyCircle(ctx0, radius, spriteW, spriteH, lineW);
+	imgData[0] = ctx0.getImageData(0, 0, spriteW, spriteH).data;
+
+	// reset all sprites with a palette
 	// note the prefix decrement to skip index zero
-	i = palette.length;
-	while (--i) {
-		let ctx = contexts[i];
-		ctx.save();
-		ctx.globalAlpha = 0.5;
-		ctx.fillStyle = palette[i];
-		ctx.fill();
-		ctx.restore();
+	for (let i = 1; i < palette.length; i++) {
+		let ctx = sprites[i].getContext('2d');
+		emptyCircle(ctx, radius, spriteW, spriteH, lineW);
+		fillCircle(ctx, palette[i]);
+		imgData[i] = ctx.getImageData(0, 0, spriteW, spriteH).data;
 	}
+
+	// all circles outside of our palette are empty too
+	for (let i = palette.length; i < sprites.length; i++){
+		// let ctx = sprites[i].getContext('2d');
+		// just copy the zero sprite, which is faster
+		// ctx.drawImage(sprite0, 0, 0);
+		imgData[i] = imgData[0];// ctx.getImageData(0, 0, spriteW, spriteH);
+	}
+
+	return imgData;
 }
 
-function sortByAxes(xy, cIdx, sprites) {
+function emptyCircle(ctx, radius, spriteW, spriteH, lineW) {
+	ctx.clearRect(0, 0, spriteW, spriteH);
+	ctx.beginPath();
+	ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
+	ctx.closePath();
+	ctx.globalAlpha = 0.3125;
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = lineW;
+	ctx.stroke();
+	return ctx;
+}
+
+function fillCircle(ctx, fillColor) {
+	ctx.globalAlpha = 0.5;
+	ctx.fillStyle = fillColor;
+	ctx.fill();
+}
+
+function sortByAxes(xy, cIdx, imgData) {
 
 	// Note that at this point xy contains the x,y coordinates
 	// packed as 0x YYYY XXXX, so sorting by that value
@@ -406,27 +423,27 @@ function sortByAxes(xy, cIdx, sprites) {
 	// Yes, it's disgusting.
 	// Yes, it actually is faster (at the time of writing)
 	i = l; // no need to copy _sprites for zero values
-	let cSprites = new Array(l);
+	let spriteImgData = new Array(l);
 	while (i - 16 > 0) {
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
-		cSprites[--i] = sprites[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
+		spriteImgData[--i] = imgData[cIdx[indices[i]]];
 	}
 	while (i--) {
-		cSprites[i] = sprites[cIdx[indices[i]]];
+		spriteImgData[i] = imgData[cIdx[indices[i]]];
 	}
 
 	let _xy = xy;
@@ -455,35 +472,60 @@ function sortByAxes(xy, cIdx, sprites) {
 	}
 
 	return {
-		xy, cSprites, zeros,
+		xy, spriteImgData, zeros,
 	};
 }
 
-function blitSprites(context, spriteLayout, sorted) {
+function blitSprites(context, spriteLayout, sorted, imgData) {
 	let {
-		cSprites, zeros, xy,
+		spriteImgData,
+		zeros,
+		xy,
 	} = sorted;
+
 	const {
-		x, y, height, sprites, spriteRadius,
+		x,
+		y,
+		height,
+		sprites,
+		spriteRadius,
 	} = spriteLayout;
-	let zeroSprite = sprites[0],
+
+	const {
+		width,
+	} = context;
+
+	const spriteW = sprites[0].width,
+		spriteH = sprites[0].height;
+	const canvasData = context.getImageData(0, 0, width, context.height),
+		cData = canvasData.data;
+
+	// set pixel values in canvas image data to white
+	cData.fill(255);
+
+
+	let zeroSprite = imgData[0],
 		_xy = 0,
 		_x = 0,
 		_y = 0,
-		i = cSprites.length - zeros;
+		i = spriteImgData.length - zeros;
 	// draw zero values first
 	while (zeros--) {
 		_xy = xy[i + zeros];
 		_x = x + (_xy & 0xFFFF) - spriteRadius | 0;
 		_y = y + (height - (_xy >>> 16)) - spriteRadius | 0;
-		context.drawImage(zeroSprite, _x, _y);
+		drawImgData(zeroSprite, cData, _x, _y, spriteW, spriteH, width);
 	}
 	while (i--) {
 		_xy = xy[i];
 		_x = x + (_xy & 0xFFFF) - spriteRadius | 0;
 		_y = y + (height - (_xy >>> 16)) - spriteRadius | 0;
-		context.drawImage(cSprites[i], _x, _y);
+		drawImgData(spriteImgData[i], cData, _x, _y, spriteW, spriteH, width);
+		// context.drawImage(spriteImgData[i], _x, _y);
 	}
+
+	// put imagedata back on the canvas
+	context.putImageData(canvasData, 0, 0);
 }
 
 function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
@@ -507,6 +549,32 @@ function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
 	context.textAlign = 'end';
 	drawText(context, colorAttr.name, colorLabel.x - labelTextSize * 6 - 5 | 0, colorLabel.y);
 	context.textAlign = 'start';
+}
+
+function drawImgData(imgData, tData, x, y, imgW, imgH, tW){
+	// all of our sprites are in-bounds
+	// if (x+imgW > 0 && x+imgW < tW && y+imgH > 0 && y+imgH < tH)
+
+	for (let yi = 0; yi < imgH; yi++) {
+		for (let xi = 0; xi < imgW; xi++) {
+			let imgIdx = (xi + yi * imgW) << 2,
+				tIdx = (xi + x + (yi + y)*tW) << 2;
+			// alpha - we skip drawing if the pixel is transparent.
+			let a = imgData[imgIdx + 3];
+			if (a === 0) {
+				continue;
+			}
+			// alpha is a byte, so in the range [0,256).
+			// We introduce a tiny bias towards the newer pixel,
+			// to replace /255 with /256, which can be written as
+			// >>8, which is faster
+			a++;
+			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx++]*a)>>>8;
+			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx++]*a)>>>8;
+			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx]*a)>>>8;
+			tData[tIdx] = 255;
+		}
+	}
 }
 
 function drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings) {

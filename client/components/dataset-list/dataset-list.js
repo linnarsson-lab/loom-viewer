@@ -9,22 +9,22 @@ import {
 	Glyphicon,
 } from 'react-bootstrap';
 
-import { SortableTable } from '../sortabletable';
+import { SortableTable } from 'components/sortabletable';
 
 import {
 	DebouncedFormControl,
 	CollapsibleSettings,
-} from '../settings/settings.js';
+} from 'components/settings';
 
-import { SEARCH_DATASETS, SORT_DATASETS } from '../../actions/action-types';
+import { SEARCH_DATASETS, SORT_DATASETS } from 'actions/action-types';
 import {
 	requestProjects,
 	OFFLINE,
 	UNKNOWN,
-} from '../../actions/request-projects';
+} from 'actions/request-projects';
 
 import Fuse from 'fuse.js';
-import { sortInPlace } from '../../js/util';
+import { sortInPlace } from 'js/util';
 
 const centerTextStyle = {
 	textAlign: 'center',
@@ -553,7 +553,7 @@ class SearchDataSetViewComponent extends Component {
 				if (query) {
 					const fuse = new Fuse(filtered, {
 						keys: [key],
-						treshold: 0.05,
+						threshold: 0.05,
 						shouldSort: true,
 					});
 					filtered = fuse.search(query);
@@ -563,7 +563,7 @@ class SearchDataSetViewComponent extends Component {
 			if (search.all && filtered.length) {
 				const options = {
 					keys,
-					treshold: 0.05,
+					threshold: 0.05,
 					shouldSort: true,
 				};
 				const fuse = new Fuse(filtered, options);

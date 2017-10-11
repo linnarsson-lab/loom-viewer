@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -9,7 +9,7 @@ import { AsyncPainter } from 'plotters/async-painter';
 
 // Mounts a canvas and gets its context,
 // then passes this context to the AsyncPainter.
-class CanvasComponent extends Component {
+class CanvasComponent extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.mountView = this.mountView.bind(this);
@@ -117,7 +117,7 @@ CanvasComponent.propTypes = {
  *
  * Expects a `paint` function that takes a `context` to draw on. After the canvas is mounted, this paint function will be called _once_. Pixel dimensions are stored in context.width, context.height and context.pixelRatio, making it possible for paint functions to depend on canvas size. Whenever the paint function or the canvas size changes it will  call this paint function, passing the canvas context
  */
-export class Canvas extends Component {
+export class Canvas extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.AsyncPainter = new AsyncPainter(this.props.paint, null);

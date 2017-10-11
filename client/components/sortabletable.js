@@ -84,57 +84,64 @@ export class SortableTable extends Component {
 
 
 		let dataRows = [];
-		for (let i = 0; i < data.length; i++) {
-			let rowCells = [];
-			for (let j = 0; j < columns.length; j++) {
-				const {
-					dataStyle,
-					key,
-					keys,
-					mergeRows,
-				} = columns[j];
-				const cell = mapToCell(data[i], key, keys);
-				let rowSpan = 1;
-				if (mergeRows) {
-					if (isEqual(cell, mapToCell(data[i - 1], key, keys))) {
-						continue;
-					} else {
-						while (isEqual(cell, mapToCell(data[i + rowSpan], key, keys))) { rowSpan++; }
+		if (data) {
+			for (let i = 0; i < data.length; i++) {
+				let rowCells = [];
+				for (let j = 0; j < columns.length; j++) {
+					const {
+						dataStyle,
+						key,
+						keys,
+						mergeRows,
+					} = columns[j];
+					const cell = mapToCell(data[i], key, keys);
+					let rowSpan = 1;
+					if (mergeRows) {
+						if (isEqual(cell, mapToCell(data[i - 1], key, keys))) {
+							continue;
+						} else {
+							while (isEqual(cell, mapToCell(data[i + rowSpan], key, keys))) { rowSpan++; }
+						}
 					}
+					rowCells.push(
+						<td
+							style={dataStyle}
+							rowSpan={rowSpan}
+							key={keys ? keys.join(' ') : key} >
+							{cell}
+						</td>
+					);
 				}
-				rowCells.push(
-					<td
-						style={dataStyle}
-						rowSpan={rowSpan}
-						key={keys ? keys.join(' ') : key} >
-						{cell}
-					</td>
-				);
+				dataRows.push(<tr key={data[i].rowKey} >{rowCells}</tr>);
 			}
-			dataRows.push(<tr key={data[i].rowKey} >{rowCells}</tr>);
 		}
 
-		return (
-			<Table
-				striped={striped}
-				bordered={bordered}
-				condensed={condensed}
-				hover={hover}
-				responsive={responsive}
-				style={{ width: '100%' }}>
-				<thead>
-					{headerRows}
-				</thead>
-				<tbody>
-					{dataRows}
-				</tbody>
-			</Table>
-		);
+		const tableHeader = headerRows.length ?
+			<thead>{headerRows}</thead> :
+			null;
+		const tableRows = dataRows.length ?
+			<tbody>{dataRows}</tbody> :
+			null;
+
+		return tableHeader || tableRows ?
+			(
+				<Table
+					striped={striped}
+					bordered={bordered}
+					condensed={condensed}
+					hover={hover}
+					responsive={responsive}
+					style={{ width: '100%' }}>
+					{tableHeader}
+					{tableRows}
+				</Table>
+			) :
+			null;
 	}
 }
 
 SortableTable.propTypes = {
-	data: PropTypes.array.isRequired,
+	data: PropTypes.array,
 	columns: PropTypes.array.isRequired,
 	// Indicates to the table by which of the columns,
 	// if any, the data is sorted and whether it is

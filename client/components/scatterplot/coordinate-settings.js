@@ -12,7 +12,7 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	OverlayTooltip,
-} from 'components/settings/settings';
+} from 'components/settings';
 
 import { popoverTest } from 'components/scatterplot/popover';
 

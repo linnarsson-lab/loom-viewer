@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-import { MetadataComponent } from './metadata';
+import { MetadataComponent } from 'components/metadata/metadata';
 
-import { ViewInitialiser } from '../view-initialiser';
+import { ViewInitialiser } from 'components/view-initialiser';
 
 class CellMDComponent extends Component {
 	render() {
@@ -21,7 +21,6 @@ class CellMDComponent extends Component {
 				attributes={attrs}
 				attrKeys={keys}
 				axis={'col'}
-				mdName={'Cell'}
 				stateName={'cellMD'}
 				dispatch={dispatch}
 				dataset={dataset}

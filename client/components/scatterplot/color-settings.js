@@ -16,7 +16,7 @@ import {
 	ClipDataSettings,
 	CollapsibleSettings,
 	DropdownMenu,
-} from 'components/settings/settings';
+} from 'components/settings';
 
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
 

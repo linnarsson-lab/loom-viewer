@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -16,7 +16,7 @@ import {
 	DropdownMenu,
 	// PrintSettings,
 	boxLegend,
-} from 'components/settings/settings';
+} from 'components/settings';
 
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
 import { UPDATE_VIEWSTATE } from 'actions/action-types';
@@ -57,7 +57,7 @@ const modeNames = [
 	'Icicle',
 ];
 
-export class HeatmapSidepanel extends Component {
+export class HeatmapSidepanel extends PureComponent {
 	render() {
 		const {
 			dispatch,

@@ -5,7 +5,7 @@ import Slider from 'rc-slider';
 
 import { debounce } from 'lodash';
 
-import { UPDATE_VIEWSTATE } from '../../actions/action-types';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 
 function scaleFactorHandleChangeFactory(props){

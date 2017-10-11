@@ -8,9 +8,9 @@ import {
 import {
 	CollapsibleSettings,
 	SelectGeneComponent,
-} from '../settings/settings';
+} from '../settings';
 
-import { updateAndFetchGenes } from '../../actions/update-and-fetch';
+import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
 export class AttributeSelection extends Component {
 	constructor(...args){

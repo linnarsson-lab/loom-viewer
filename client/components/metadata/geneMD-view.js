@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import { MetadataComponent } from './metadata';
 
-import { ViewInitialiser } from '../view-initialiser';
+import { ViewInitialiser } from 'components/view-initialiser';
 
 class GeneMDComponent extends Component {
 	render() {
@@ -21,7 +21,6 @@ class GeneMDComponent extends Component {
 				attributes={attrs}
 				attrKeys={keys}
 				axis={'row'}
-				mdName={'Gene'}
 				stateName={'geneMD'}
 				dispatch={dispatch}
 				dataset={dataset}

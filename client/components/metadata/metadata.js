@@ -2,21 +2,25 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
+import { Remount } from 'components/remount';
+
 import {
 	Glyphicon,
 	Button,
 } from 'react-bootstrap';
 
 import { SortableTable } from 'components/sortabletable';
-import { Canvas } from 'components/canvas';
-
-import { sparkline } from 'plotters/sparkline';
 
 import {
 	DebouncedFormControl,
-	AttrLegend,
 	OverlayTooltip,
-} from '../settings/settings';
+} from 'components/settings';
+
+import {
+	MetadataPlot,
+} from 'components/metadata/metadata-plot';
+
+import { asyncPainterQueue } from 'plotters/async-painter';
 
 import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
@@ -24,120 +28,9 @@ import { createComparator } from 'js/state-comparator';
 
 import Fuse from 'fuse.js';
 
-const defaultModes = [
-	'Bars',
-	'Box',
-	'Heatmap',
-	'Flame',
-	'Icicle',
-	'Categorical',
-	'Stacked',
-];
-
-export class MetadataPlot extends Component {
-	constructor(...args) {
-		super(...args);
-
-		this.modeCycler = this.modeCycler.bind(this);
-
-		const modes = this.props.modes || defaultModes;
-		let idx = modes.indexOf(this.props.mode);
-		const mode = idx === -1 ?
-			0 :
-			idx;
-
-		this.state = {
-			modes,
-			mode,
-		};
-	}
-
-	modeCycler(){
-		const mode = (this.state.mode + 1) % this.state.modes.length;
-		this.setState(() => {
-			return { mode };
-		});
-	}
-
-	componentWillReceiveProps(nextProps){
-		const { state } = this;
-		if (state.modes !== nextProps.modes){
-			// switch to new modes
-			const modes = nextProps.modes || defaultModes;
-			// adjust current mode to new mode cycle
-			const currentMode = state.modes[state.mode];
-			let idx = modes.indexOf(currentMode);
-			const mode = idx === -1 ?
-				0 :
-				idx;
-			this.setState(() => {
-				return {
-					modes,
-					mode,
-				};
-			});
-		}
-	}
-
-	render() {
-
-		const {
-			modes,
-			mode,
-		} = this.state;
-
-		const {
-			attr,
-			indices,
-			filterFunc,
-			filteredAttrs,
-		} = this.props;
-
-		const buttonStyle = {
-			cursor: modes.length > 1 ?
-				'pointer' :
-				'initial',
-		};
-		return (
-			<div className='view-vertical'>
-				<OverlayTooltip
-					tooltip={`Click to cycle trough plot modes for "${attr.name}". Currently ${modes[mode]}`}
-					tooltipId={`${attr.name.replace(/\s+/g, '-').toLowerCase()}-plt-tltp`}>
-					<Button
-						onClick={this.modeCycler}
-						bsStyle='link'
-						style={buttonStyle} >
-						<Canvas
-							height={80}
-							paint={sparkline(attr, indices, modes[mode])}
-							ignoreHeight />
-					</Button>
-				</OverlayTooltip>
-				<AttrLegend
-					mode={modes[mode]}
-					filterFunc={filterFunc}
-					attr={attr}
-					filteredAttrs={filteredAttrs}
-				/>
-			</div>
-		);
-	}
-}
-
-MetadataPlot.propTypes = {
-	attr: PropTypes.object.isRequired,
-	indices: TypedArrayProp.any,
-	mode: PropTypes.string,
-	modes: PropTypes.arrayOf(PropTypes.string),
-	filteredAttrs: PropTypes.array.isRequired,
-	filterFunc: PropTypes.func.isRequired,
-};
-
 const samePropMetadataTable = createComparator({
 	attrKeys: 'array',
-	searchField: 'node',
 	searchVal: 'string',
-	sortOrderList: 'array',
 	indices: 'array',
 	filteredAttrs: 'array',
 	onClickAttrFactory: 'func',
@@ -165,7 +58,7 @@ class MetadataTable extends Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		if (!samePropMetadataTable(nextProps, this.props)){
+		if (!samePropMetadataTable(nextProps, this.props)) {
 			const {
 				columns,
 				tableData,
@@ -183,35 +76,25 @@ class MetadataTable extends Component {
 		const {
 			attributes,
 			attrKeys,
-			searchField,
 			searchVal,
-			sortOrderList,
 			indices,
 			filteredAttrs,
 			onClickAttrFactory,
 			onClickFilterFactory,
 		} = props;
 
-		const sortOrderStyle = {
-			fontWeight: 'normal',
-			fontStyle: 'italic',
-			verticalAlign: 'middle',
-		};
 		const columns = [
 			{
-				headers: ['ATTRIBUTE', searchField],
 				key: 'name',
 				dataStyle: {
-					width: '10%',
+					width: '15%',
 					fontWeight: 'bold',
 				},
 			},
 			{
-				headers: ['DATA', sortOrderList],
-				headerStyles: [{}, sortOrderStyle],
 				key: 'val',
 				dataStyle: {
-					width: '90%',
+					width: '85%',
 					fontStyle: 'italic',
 				},
 			},
@@ -224,7 +107,7 @@ class MetadataTable extends Component {
 			});
 			const fuse = new Fuse(filteredKeys, {
 				keys: ['val'],
-				treshold: 0.2,
+				threshold: 0.2,
 				shouldSort: true,
 			});
 			filteredKeys = fuse.search(searchVal).map((obj) => { return obj.val; });
@@ -275,12 +158,12 @@ class MetadataTable extends Component {
 				const l = Math.min(data.length, 5);
 				if (indexedVal) {
 					list = indexedVal[list];
-					for (let i = 1; i < l; i++) {
-						list += `, ${indexedVal[data[indices[i]]]}`;
+					for (let j = 1; j < l; j++) {
+						list += `, ${indexedVal[data[indices[j]]]}`;
 					}
 				} else {
-					for (let i = 1; i < l; i++) {
-						list += `, ${data[indices[i]]}`;
+					for (let j = 1; j < l; j++) {
+						list += `, ${data[indices[j]]}`;
 					}
 				}
 				if (l < data.length) {
@@ -349,9 +232,7 @@ class MetadataTable extends Component {
 MetadataTable.propTypes = {
 	attributes: PropTypes.object.isRequired,
 	attrKeys: PropTypes.array.isRequired,
-	searchField: PropTypes.node.isRequired,
 	searchVal: PropTypes.string.isRequired,
-	sortOrderList: PropTypes.array.isRequired,
 	filteredAttrs: PropTypes.array.isRequired,
 	indices: TypedArrayProp.any,
 	dispatch: PropTypes.func.isRequired,
@@ -359,6 +240,200 @@ MetadataTable.propTypes = {
 	onClickFilterFactory: PropTypes.func.isRequired,
 };
 
+class MetadataTableMounter extends Component {
+	// given that this component will only be rendered
+	// after the dataset has been fetched, and that the
+	// dataset is immutable, we might as well pre-process
+	// everything and store it in the state
+	constructor(...args) {
+		super(...args);
+
+		this.tableContainer = this.tableContainer.bind(this);
+
+		const {
+			dispatch,
+			dataset,
+			stateName,
+			axis,
+		} = this.props;
+		const path = dataset.path;
+
+		const { searchVal } = dataset.viewState[stateName];
+
+		const searchMetadata = (event) => {
+			const action = {
+				type: UPDATE_VIEWSTATE,
+				path,
+				stateName,
+				viewState: {
+					[stateName]: {
+						searchVal: event.target.value || '',
+					},
+				},
+			};
+			dispatch(action);
+		};
+
+		const { order } = dataset.viewState[axis];
+
+		const searchField = updateSearchField(searchVal, searchMetadata);
+		const sortOrderList = updateSortOrderList(order);
+		this.state = {
+			searchVal,
+			searchMetadata,
+			searchField,
+			order,
+			sortOrderList,
+			header: updateHeader(searchField, sortOrderList),
+		};
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const {
+			dataset,
+			stateName,
+			axis,
+		} = nextProps;
+
+		const {
+			searchVal,
+			searchMetadata,
+			order,
+			searchField,
+			sortOrderList,
+		} = this.state;
+
+		const newSearchVal = dataset.viewState[stateName].searchVal;
+		const newOrder = dataset.viewState[axis].order;
+
+		let newState = {
+				searchField,
+				sortOrderList,
+			},
+			stateChanged = false;
+
+		if (newSearchVal !== searchVal) {
+			newState.searchField = updateSearchField(newSearchVal, searchMetadata);
+			newState.searchVal = newSearchVal;
+			stateChanged = true;
+		}
+
+		if (newOrder !== order) {
+			newState.sortOrderList = updateSortOrderList(order);
+			newState.order = newOrder;
+			stateChanged = true;
+		}
+
+		if (stateChanged) {
+			newState.header = updateHeader(newState.searchField, newState.sortOrderList);
+			this.setState(newState);
+		}
+	}
+
+	tableContainer(div){
+		if (div) {
+			const containerWidth = div.clientWidth - 20;
+			const containerHeight = div.clientHeight - 20;
+			const headerHeight = 100;
+			const headerStyle = {
+				display: 'flex',
+				flex: '0 0 auto',
+				minWidth: `${containerWidth}px`,
+				maxWidth: `${containerWidth}px`,
+				minHeight: `${headerHeight}px`,
+				maxHeight: `${headerHeight}px`,
+				overflowX: 'hidden',
+				overflowY: 'scroll',
+			};
+			const tableStyle = {
+				display: 'flex',
+				flex: '0 0 auto',
+				minWidth: `${containerWidth}px`,
+				maxWidth: `${containerWidth}px`,
+				minHeight: `${containerHeight - headerHeight}px`,
+				maxHeight: `${containerHeight - headerHeight}px`,
+				overflowX: 'hidden',
+				overflowY: 'hidden',
+			};
+			this.setState(() => {
+				return {
+					mountedContainer: div,
+					containerWidth,
+					containerHeight,
+					headerHeight,
+					headerStyle,
+					tableStyle,
+				};
+			});
+		}
+	}
+
+	render() {
+		const { props } = this;
+
+		const {
+			header,
+			headerStyle,
+			mountedContainer,
+			tableStyle,
+		} = this.state;
+
+		if (mountedContainer){
+			return (
+				<div
+					ref={this.tableContainer}
+					className='view-vertical'
+					style={{
+						overflowX: 'hidden',
+						overflowY: 'hidden',
+						minHeight: 0,
+						margin: '1em 3em 1em 3em',
+					}}>
+					<div style={{ headerStyle }}>
+						{header}
+					</div>
+					<div style={{
+						overflowY: 'scroll',
+					}}>
+						<div style={{ tableStyle }}>
+							<MetadataTable
+								attributes={props.attributes}
+								attrKeys={props.attrKeys}
+								searchVal={props.searchVal}
+								indices={props.indices}
+								filteredAttrs={props.filteredAttrs}
+								dispatch={props.dispatch}
+								onClickAttrFactory={props.onClickAttrFactory}
+								onClickFilterFactory={props.onClickFilterFactory} />
+						</div>
+					</div>
+				</div>
+			);
+		} else {
+			return (
+				<div
+					ref={this.tableContainer}
+					className='view-vertical centred'>
+					Initialising Metadata Table
+				</div>
+			);
+		}
+	}
+}
+
+MetadataTableMounter.propTypes = {
+	attributes: PropTypes.object.isRequired,
+	attrKeys: PropTypes.array.isRequired,
+	searchVal: PropTypes.string.isRequired,
+	filteredAttrs: PropTypes.array.isRequired,
+	indices: TypedArrayProp.any,
+	dispatch: PropTypes.func.isRequired,
+	dataset: PropTypes.object.isRequired,
+	axis: PropTypes.string.isRequired,
+	stateName: PropTypes.string.isRequired,
+	onClickAttrFactory: PropTypes.func.isRequired,
+	onClickFilterFactory: PropTypes.func.isRequired,
+};
 
 export class MetadataComponent extends Component {
 	// given that this component will only be rendered
@@ -373,6 +448,7 @@ export class MetadataComponent extends Component {
 			stateName,
 			axis,
 		} = this.props;
+
 		const path = dataset.path;
 
 		const onClickAttrFactory = (sortAttrName) => {
@@ -399,97 +475,10 @@ export class MetadataComponent extends Component {
 			};
 		};
 
-		const { searchVal } = dataset.viewState[stateName];
-
-		const searchMetadata = (event) => {
-			const action = {
-				type: UPDATE_VIEWSTATE,
-				path,
-				stateName,
-				viewState: {
-					[stateName]: {
-						searchVal: event.target.value || '',
-					},
-				},
-			};
-			dispatch(action);
-		};
-
-		const { order } = dataset.viewState[axis];
-
 		this.state = {
 			onClickAttrFactory,
 			onClickFilterFactory,
-			searchVal,
-			searchMetadata,
-			searchField: this.updateSearchField(searchVal, searchMetadata),
-			order,
-			sortOrderList: this.updateSortOrderList(order),
 		};
-	}
-
-	componentWillReceiveProps(nextProps) {
-		const {
-			dataset,
-			stateName,
-			axis,
-		} = nextProps;
-
-		const {
-			searchVal,
-			searchMetadata,
-			order,
-		} = this.state;
-
-		const newSearchVal = dataset.viewState[stateName].searchVal;
-		const newOrder = dataset.viewState[axis].order;
-
-		let newState = {},
-			stateChanged = false;
-
-		if (newSearchVal !== searchVal) {
-			newState.searchField = this.updateSearchField(newSearchVal, searchMetadata);
-			newState.searchVal = newSearchVal;
-			stateChanged = true;
-		}
-
-		if (newOrder !== order) {
-			newState.sortOrderList = this.updateSortOrderList(order);
-			newState.order = newOrder;
-			stateChanged = true;
-		}
-
-		if (stateChanged) {
-			this.setState(newState);
-		}
-	}
-
-	updateSearchField(searchVal, searchMetadata) {
-		return (
-			<DebouncedFormControl
-				type='text'
-				onChange={searchMetadata}
-				value={searchVal}
-				time={500}
-			/>
-		);
-	}
-
-	updateSortOrderList(order) {
-		let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
-		for (let i = 0; i < Math.min(order.length, 4); i++) {
-			const val = order[i];
-			sortOrderList.push(
-				<span key={i + 1}>
-					&nbsp;&nbsp;&nbsp;
-					{val.key}
-					<Glyphicon
-						glyph={val.asc ?
-							'sort-by-attributes' : 'sort-by-attributes-alt'} />
-				</span>
-			);
-		}
-		return sortOrderList;
 	}
 
 	render() {
@@ -501,42 +490,33 @@ export class MetadataComponent extends Component {
 			attrKeys,
 			axis,
 			stateName,
-			mdName,
 		} = this.props;
 
+		const { indices } = dataset.viewState[axis];
 		const filteredAttrs = dataset.viewState[axis].filter;
+		const { searchVal } = dataset.viewState[stateName];
 
 		const {
 			onClickAttrFactory,
 			onClickFilterFactory,
-			searchField,
-			sortOrderList,
 		} = this.state;
 
-		const { searchVal } = dataset.viewState[stateName];
-
-		const { indices } = dataset.viewState[axis];
-
 		return (
-			<div
-				className='view-vertical'
-				style={{
-					margin: '1em 3em 1em 3em',
-					overflowX: 'hidden',
-				}}>
-				<h1>{mdName} Metadata: {dataset.project}/{dataset.title}</h1>
-				<MetadataTable
+			<Remount
+				onUnmount={asyncPainterQueue.clear}>
+				<MetadataTableMounter
 					attributes={attributes}
 					attrKeys={attrKeys}
-					searchField={searchField}
 					searchVal={searchVal}
-					sortOrderList={sortOrderList}
 					indices={indices}
 					filteredAttrs={filteredAttrs}
 					dispatch={dispatch}
+					dataset={dataset}
+					axis={axis}
+					stateName={stateName}
 					onClickAttrFactory={onClickAttrFactory}
 					onClickFilterFactory={onClickFilterFactory} />
-			</div>
+			</Remount>
 		);
 	}
 }
@@ -546,7 +526,61 @@ MetadataComponent.propTypes = {
 	attrKeys: PropTypes.array.isRequired,
 	axis: PropTypes.string.isRequired,
 	stateName: PropTypes.string.isRequired,
-	mdName: PropTypes.string.isRequired,
 	dataset: PropTypes.object.isRequired,
 	dispatch: PropTypes.func.isRequired,
 };
+
+function updateSearchField(searchVal, searchMetadata) {
+	return (
+		<DebouncedFormControl
+			type='text'
+			onChange={searchMetadata}
+			value={searchVal}
+			time={200}
+		/>
+	);
+}
+
+function updateSortOrderList(order) {
+	let sortOrderList = [<span key={'sortLabel'} style={{ fontWeight: 'bold' }}>{'Order by:'}</span>];
+	for (let i = 0; i < Math.min(order.length, 4); i++) {
+		const val = order[i];
+		sortOrderList.push(
+			<span key={i + 1}>
+				&nbsp;&nbsp;&nbsp;
+				{val.key}
+				<Glyphicon
+					glyph={val.asc ?
+						'sort-by-attributes' : 'sort-by-attributes-alt'} />
+			</span>
+		);
+	}
+	return sortOrderList;
+}
+
+function updateHeader(searchField, sortOrderList) {
+	const columns = [
+		{
+			headers: ['ATTRIBUTE', searchField],
+			headerStyles: [{}, {
+				width: '15%',
+			}],
+		},
+		{
+			headers: ['DATA', sortOrderList],
+			headerStyles: [{}, {
+				fontWeight: 'normal',
+				fontStyle: 'italic',
+				verticalAlign: 'middle',
+				width: '85%',
+			}],
+		},
+	];
+	return (
+		<SortableTable
+			columns={columns}
+			condensed
+			hover
+		/>
+	);
+}

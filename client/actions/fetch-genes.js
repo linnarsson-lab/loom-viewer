@@ -6,7 +6,7 @@ import {
 	RECEIVE_GENE,
 } from './action-types';
 
-import { disjointArrays, convertJSONarray } from '../js/util';
+import { disjointArrays, convertJSONarray } from 'js/util';
 
 import localforage from 'localforage';
 import 'localforage-getitems';

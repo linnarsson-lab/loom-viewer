@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -20,9 +20,9 @@ import { FlexboxContainer } from 'components/flexbox-container.js';
 import {
 	CollapsibleSettings,
 	FilteredValues,
-} from 'components/settings/settings';
+} from 'components/settings';
 
-class PlotSettingsTabContent extends Component {
+class PlotSettingsTabContent extends PureComponent {
 
 	shouldComponentUpdate(nextProps) {
 		// No need to touch the dom if the contents are hidden anyway
@@ -106,7 +106,7 @@ PlotSettingsTabContent.propTypes = {
 	selectedPlot: PropTypes.number.isRequired,
 };
 
-export class ScatterPlotSidepanel extends Component {
+export class ScatterPlotSidepanel extends PureComponent {
 	constructor(...args) {
 		super(...args);
 		this.selectTab = this.selectTab.bind(this);

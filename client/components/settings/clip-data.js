@@ -7,7 +7,7 @@ import {
 } from 'react-bootstrap';
 import { Range } from 'rc-slider';
 
-import { UPDATE_VIEWSTATE } from '../../actions/action-types';
+import { UPDATE_VIEWSTATE } from 'actions/action-types';
 
 import {
 	OverlayTooltip,
