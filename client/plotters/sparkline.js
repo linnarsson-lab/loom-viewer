@@ -168,39 +168,37 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				rightRounded,
 			} = range;
 
-			/*
-			We need to find the effective number of pixels covered
-			by the whole range. left and right fractions are rounded
-			in such a way that partial coverage equals full coverage.
-			Because range.left, range.right and range.total are
-			already rounded to reflect this, the following equations
-			are true:
-
-				"range width" / context.width =
-					range.total / range.unrounded
-
-				"range width" =
-					context.width * range.total / range.unrounded
-
-				"range width" / range.total =
-					context.width / range.unrounded
-
-			("range width" is the covered nr of pixels.)
-			*/
-
 			const ratio = (context.pixelRatio > 1 ? context.pixelRatio | 0 : 1);
 
 			/*
-			Therefore, the columns of an individual data point
-			should  have a width of:
+				We need to find the effective number of pixels covered
+				by the whole range. left and right fractions are rounded
+				in such a way that partial coverage equals full coverage.
+				Because range.left, range.right and range.total are
+				already rounded to reflect this, the following equations
+				are true:
 
-				"data width" =
+					"range width" / context.width =
+						range.total / range.unrounded
+
+					"range width" =
+						context.width * range.total / range.unrounded
+
 					"range width" / range.total =
-					context.width / range.unrounded
+						context.width / range.unrounded
 
-			Given that:
-				groupSize =
-					"column width in pixels" / "data width" =
+				("range width" is the covered nr of pixels.)
+
+				Therefore, the columns of an individual data point
+				should  have a width of:
+
+					"data width" =
+						"range width" / range.total =
+						context.width / range.unrounded
+
+				Given that:
+					groupSize =
+						"column width in pixels" / "data width" =
 			*/
 			const groupSize = ratio * unrounded / context.width;
 
@@ -215,6 +213,13 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				const data = groupAttr(attr, indices, range, mode, ratio * unrounded, context.width);
 				plot.grouped(context, attr, data, range, ratio, dataToColor, settings, label);
 			} else {
+				const leftFrac = left < 0 ?
+					-left :
+					leftRounded - left;
+				const barWidth = context.width / unrounded;
+				const xOffset = leftFrac * context.width / unrounded | 0;
+
+				// copy relevant subset of data
 				// data is an unpadded selection of the visible data
 				// We also include an xOffset (negative) and a barWidth
 				// xOffset is the total pixels by which the first bar
@@ -222,14 +227,18 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 				// If left = [0, data.length), then this is the fraction
 				// part of it times barWidth
 				// If left < 0, it is -left * barWidth
-				const leftFrac = left < 0 ? -left : leftRounded - left;
-				const barWidth = context.width / unrounded;
-				const xOffset = leftFrac * context.width / unrounded | 0;
-				// copy relevant subset of data
-				const i0 = leftRounded < 0 ? 0 : leftRounded;
-				const i1 = rightRounded > attr.data.length ? attr.data.length : rightRounded;
-				const indexedText = mode === 'Text' && attr.indexedVal !== undefined;
-				const data = indexedText ? attrIndexedSubset(attr, indices, i0, i1) : attrSubset(attr, indices, i0, i1);
+
+				const i0 = leftRounded < 0 ?
+					0 :
+					leftRounded;
+
+				const i1 = rightRounded > attr.data.length ?
+					attr.data.length :
+					rightRounded;
+
+				const data = mode === 'Text' && attr.indexedVal !== undefined ?
+					attrIndexedSubset(attr, indices, i0, i1) :
+					attrSubset(attr, indices, i0, i1);
 
 				// xOffset is the lef-padding in pixels, after which we can
 				// simply draw the passed data from left to right, with barWidth
@@ -309,8 +318,8 @@ function categoriesDirectly(context, attr, data, range, ratio, xOffset, barWidth
 	while (i < data.length) {
 		// advance while value doesn't change,
 		// minimum 1 (to show last value)
-		while (++j < data.length && color === nextColor) {
-			nextColor = dataToColor(data[j] || 0);
+		while (j < data.length && color === nextColor) {
+			nextColor = dataToColor(data[++j]);
 		}
 
 		context.fillStyle = color;
@@ -331,8 +340,8 @@ function categoriesGrouped(context, attr, data, range, ratio, dataToColor) {
 		color = dataToColor(findMostCommon(data[i] || 0)),
 		nextColor = color;
 	while (i < data.length) {
-		while (color === nextColor && ++j < data.length) {
-			nextColor = dataToColor(findMostCommon(data[j] || 0));
+		while (color === nextColor && j < data.length) {
+			nextColor = dataToColor(findMostCommon(data[++j] || 0));
 		}
 		context.fillStyle = color;
 		const x = i * ratio | 0;
@@ -365,7 +374,7 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 			color = dataToColor(barSlice[j] || 0),
 			nextColor = color;
 		while (j < l) {
-			while (++k < barSlice.length && color === nextColor) {
+			while (k < barSlice.length && color === nextColor) {
 				nextColor = dataToColor(barSlice[++k] || 0);
 			}
 
@@ -431,8 +440,8 @@ function barPaintDirectlyLog(context, data, xOffset, barScale, barWidth) {
 		nextHeight = barHeight;
 	while (i < data.length) {
 		// advance while height doesn't change
-		while (++j < data.length && barHeight === nextHeight) {
-			nextHeight = logProject(data[j]) * barScale | 0;
+		while (j < data.length && barHeight === nextHeight) {
+			nextHeight = logProject(data[++j]) * barScale | 0;
 		}
 
 		const xNext = (xOffset + j * barWidth) | 0;
@@ -462,8 +471,8 @@ function barPaintDirectlyLinear(context, data, xOffset, barScale, barWidth) {
 		j = i,
 		nextHeight = barHeight;
 	while (i < data.length) {
-		while (++j < data.length && barHeight === nextHeight) {
-			nextHeight = data[j] * barScale | 0;
+		while (j < data.length && barHeight === nextHeight) {
+			nextHeight = data[++j] * barScale | 0;
 		}
 
 		const xNext = (xOffset + j * barWidth) | 0;
@@ -580,8 +589,8 @@ function barPaintGroupedLogProjected(context, convertedData, range, ratio, dataT
 		while (i < avg.length) {
 
 			// advance while height doesn't change
-			while (++j < avg.length && barHeight - nextHeight === 0) {
-				nextHeight = logProject(avg[j]) * barScale | 0;
+			while (j < avg.length && barHeight - nextHeight === 0) {
+				nextHeight = logProject(avg[++j]) * barScale | 0;
 			}
 
 			// We advanced j-i steps
@@ -625,8 +634,8 @@ function barPaintGroupedLinear(context, convertedData, range, ratio, dataToColor
 		// advance while height doesn't change
 		let j = i,
 			nextHeight = barHeight;
-		while (++j < avg.length && barHeight - nextHeight === 0) {
-			nextHeight = avg[j] * barScale | 0;
+		while (j < avg.length && barHeight - nextHeight === 0) {
+			nextHeight = avg[++j] * barScale | 0;
 		}
 		// We advanced j-i steps
 		const xNext = j * ratio | 0;
@@ -770,8 +779,8 @@ function barPaintBoxPlotLogProjected(context, convertedData, range, ratio, dataT
 	while (i < avg.length) {
 		// advance while height doesn't change
 		let j = i;
-		while (++j < avg.length && difference === 0) {
-			nextHeight = logProject(avg[j]) * barScale | 0;
+		while (j < avg.length && difference === 0) {
+			nextHeight = logProject(avg[++j]) * barScale | 0;
 			nextMin = logProject(minValues[j]) * barScale | 0;
 			nextMax = logProject(maxValues[j]) * barScale | 0;
 			nextFQ = logProject(firstQ[j]) * barScale | 0;
@@ -839,13 +848,13 @@ function barPaintBoxPlotLinear(context, convertedData, range, ratio, dataToColor
 		difference = 0;
 	while (i < avg.length) {
 		// advance while height doesn't change
-		let j = i;
-		while (++j < avg.length && difference === 0) {
+		let j = i+1;
+		while (j < avg.length && difference === 0) {
 			nextHeight = avg[j] * barScale | 0;
 			nextMin = minValues[j] * barScale | 0;
 			nextMax = maxValues[j] * barScale | 0;
 			nextFQ = firstQ[j] * barScale | 0;
-			nextTQ = thirdQ[j] * barScale | 0;
+			nextTQ = thirdQ[j++] * barScale | 0;
 
 			// if any of these values are different, difference is non-zero
 			// subtraction + OR masking is probably faster
@@ -949,8 +958,8 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 		x = xOffset | 0;
 	while (i < data.length) {
 		// advance while colour value doesn't change
-		while (++j < data.length && color === nextColor) {
-			nextColor = dataToColor(data[j] || 0);
+		while (j < data.length && color === nextColor) {
+			nextColor = dataToColor(data[++j] || 0);
 		}
 		const xNext = xOffset + j * barWidth | 0;
 		context.fillStyle = color;
@@ -967,7 +976,7 @@ function heatMapDirectly(context, attr, data, range, ratio, xOffset, barWidth, d
 		const height = 12 * ratio | 0;
 		const x = 6 * ratio | 0;
 		const y = context.height * 0.25 + height * 0.5 | 0;
-		heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
+		heatMapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
 	}
 }
 
@@ -993,7 +1002,7 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 	let dataGroup = data[++i],
 		sum = 0;
 
-	if (dataGroup){
+	if (dataGroup) {
 		for (let j = 0; j < dataGroup.length; j++) {
 			sum += dataGroup[j];
 		}
@@ -1004,10 +1013,10 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 			x = i * ratio | 0;
 
 		while (i < data.length) {
-		// advance while colour value doesn't change
-			while (++j < data.length && color === nextColor) {
-				dataGroup = data[j];
-				if (dataGroup){
+			// advance while colour value doesn't change
+			while (j < data.length && color === nextColor) {
+				dataGroup = data[++j];
+				if (dataGroup) {
 					sum = 0;
 					for (let k = 0; k < dataGroup.length; k++) {
 						sum += dataGroup[k];
@@ -1031,11 +1040,11 @@ function heatMapGrouped(context, attr, data, range, ratio, dataToColor, settings
 		const height = 12 * ratio | 0;
 		const x = 6 * ratio | 0;
 		const y = context.height * 0.25 + height * 0.5 | 0;
-		heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
+		heatMapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings);
 	}
 }
 
-function heatmapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings) {
+function heatMapLabel(context, x, y, width, height, dataToColor, min, max, clipMin, clipMax, settings) {
 	// label for min and max values,
 	// avoid trailing zeros on integer values
 	const lblMin = min !== (min | 0) ?
@@ -1059,21 +1068,19 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 	const maxColumnValueHeight = emphasizeNonZero ? context.height - flameHeight : 0;
 
 	// Because of rounding, our bins can come in two sizes.
-	// For small data sets this is a problem, because plotting
-	// a gradient for two or three cells gives a very result.
-	// to fix this, we always make the gradient as large as
+	// For small data sets this is a problem.
+	// To fix this, we always make the gradient as large as
 	// the largest bin size.
 	// If necessary, we'll pad it with a zero value.
 	let binSize = 0;
 	let i = data.length;
 	while (data[--i]) {
-		// while we're at it, sort the data for later
 		let l = data[i].length;
 		if (l > binSize) {
 			binSize = l;
 		}
 	}
-
+	// i starts at -1 because of the previous while loop
 	while (data[++i]) {
 		const x = i * ratio | 0;
 		const x1 = (i + 1) * ratio | 0;
@@ -1104,8 +1111,8 @@ function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToCo
 		y = (height * (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (++k < l && val === nextVal) {
-			nextVal = dataGroup[k];
+		while (k < l && val === nextVal) {
+			nextVal = dataGroup[++k];
 		}
 		yNext = (height * (k + spareTile) / binSize) | 0;
 		context.fillStyle = dataToColor(val || 0);
@@ -1176,8 +1183,8 @@ function drawIcicleColumn(context, x, width, height, yOffset, dataGroup, binSize
 		y = height * (1 - (j + spareTile) / binSize) | 0,
 		yNext = y;
 	while (j < l) {
-		while (++k < l && val === nextVal) {
-			nextVal = dataGroup[k];
+		while (k < l && val === nextVal) {
+			nextVal = dataGroup[++k];
 		}
 
 		yNext = height * (1 - (k + spareTile) / binSize) | 0;
