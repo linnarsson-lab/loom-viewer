@@ -59,6 +59,9 @@ class MetadataTable extends Component {
 
 	componentWillReceiveProps(nextProps) {
 		if (!samePropMetadataTable(nextProps, this.props)) {
+			// no need to keep rendering if
+			// everything will change anyway
+			asyncPainterQueue.clear();
 			const {
 				columns,
 				tableData,

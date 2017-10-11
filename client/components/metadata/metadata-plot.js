@@ -33,8 +33,10 @@ export class MetadataPlot extends Component {
 
 		this.modeCycler = this.modeCycler.bind(this);
 
-		const modes = this.props.modes || defaultModes;
-		let idx = modes.indexOf(this.props.mode);
+		const { props } = this;
+
+		const modes = props.modes || defaultModes;
+		let idx = modes.indexOf(props.mode);
 		const mode = idx === -1 ?
 			0 :
 			idx;
@@ -43,28 +45,36 @@ export class MetadataPlot extends Component {
 			modes,
 			mode,
 			paint: modes.map((mode) => {
-				return sparkline(this.props.attr, this.props.indices, mode);
+				const logScale =
+					mode === 'Heatmap' ||
+					mode === 'Flame' ||
+					mode === 'Icicle';
+				return sparkline(props.attr, props.indices, mode, { logScale });
 			}),
 		};
 	}
 
-	modeCycler(){
+	modeCycler() {
 		const mode = (this.state.mode + 1) % this.state.modes.length;
 		this.setState(() => {
 			return { mode };
 		});
 	}
 
-	componentWillReceiveProps(nextProps){
+	componentWillReceiveProps(nextProps) {
 		const {
 			attr,
 			indices,
 		} = nextProps;
 		const modes = nextProps.modes || defaultModes;
-		if (this.props.indices !== indices){
+		if (this.props.indices !== indices) {
 			const newState = {
 				paint: modes.map((mode) => {
-					return sparkline(attr, indices, mode);
+					const logScale =
+						mode === 'Heatmap' ||
+						mode === 'Flame' ||
+						mode === 'Icicle';
+					return sparkline(attr, indices, mode, { logScale });
 				}),
 			};
 			this.setState(() => {
