@@ -35,9 +35,9 @@ export function viewStateInitialiser(dataset) {
 	return {
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10']),
+			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10', '(original order)']),
 			colMode: 'Stacked',
-			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded']),
+			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded', '(original order)']),
 			rowMode: 'Stacked',
 			zoom: 8,
 			zoomRange,
@@ -47,7 +47,7 @@ export function viewStateInitialiser(dataset) {
 		},
 
 		sparkline: {
-			colAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
+			colAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
 			colMode: 'Stacked',
 			geneMode: 'Box',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
@@ -70,17 +70,17 @@ export function viewStateInitialiser(dataset) {
 				plotSettings: {
 					0: {
 						x: {
-							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1']),
+							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
 						y: {
-							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2']),
+							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
-						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10']),
-						colorMode: 'Categorical',
+						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
+						colorMode: 'Stacked',
 						logScale: true,
 						clip: false,
 						lowerBound: 0,
@@ -104,17 +104,17 @@ export function viewStateInitialiser(dataset) {
 				plotSettings: {
 					0: {
 						x: {
-							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1']),
+							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
 						y: {
-							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2']),
+							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
-						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded']),
-						colorMode: 'Categorical',
+						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded', '(original order)']),
+						colorMode: 'Stacked',
 						logScale: true,
 						clip: false,
 						lowerBound: 0,
