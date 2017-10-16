@@ -3,6 +3,16 @@
 
 export function nullFunc() { }
 
+// test if we are on a little endian or big endian architecture
+
+export const isLittleEndian = (function () {
+	let t16 = new Uint16Array(1);
+	let t8 = new Uint8Array(t16.buffer);
+	t8[1] = 0xFF;
+	return t16[0] === 0xFF00;
+})();
+
+
 // === Color handling ===
 
 import * as colorLUT from './colors';
@@ -290,11 +300,17 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 
 /**
  * Crude visual approximation of a normal curve.
- * Returns random value between (-0.5, 0.5)
+ * Returns an array of random values between (-0.5, 0.5)
  */
-const { random } = Math;
-export function rndNorm() {
-	return (random() + random() - random() - random()) * 0.25;
+export function rndNormArray(length) {
+	let source = new Uint8Array(Math.min(length*4, 65536)),
+		returnValues = new Float32Array(length);
+	window.crypto.getRandomValues(source);
+	for(let i = 0; i < length; i++){
+		let i4 = (i*4)%(source.length-3);
+		returnValues[i] = (source[i4] + source[i4+1] - source[i4+2] - source[i4+3]) * 0.0009765625; // 0.0009765625 = 1 / (4 * 256)
+	}
+	return returnValues;
 }
 
 // https://blogs.msdn.microsoft.com/jeuge/2005/06/08/bit-fiddling-3/
