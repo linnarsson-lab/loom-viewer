@@ -24,11 +24,6 @@ import {
 
 class PlotSettingsTabContent extends PureComponent {
 
-	shouldComponentUpdate(nextProps) {
-		// No need to touch the dom if the contents are hidden anyway
-		return nextProps.plotNr === nextProps.selectedPlot;
-	}
-
 	render() {
 		const {
 			axis,
@@ -77,8 +72,7 @@ class PlotSettingsTabContent extends PureComponent {
 								dataset={dataset}
 								axis={axis}
 								plotNr={plotNr}
-								scaleFactor={scaleFactor}
-								time={200} />
+								scaleFactor={scaleFactor} />
 						</div>
 					</CollapsibleSettings>
 				</ListGroupItem>
