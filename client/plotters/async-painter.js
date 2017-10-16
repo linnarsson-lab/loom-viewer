@@ -63,14 +63,14 @@ function startNow() {
 }
 
 /**
- * Put `idlePainter` in front of queue if not already
+ * Put `asyncPainter` in front of queue if not already
  * in there, otherwise bump it to the front.
  * Start the queue if not running already.
 */
-function push(idlePainter) {
-	let idx = asyncPainters.indexOf(idlePainter);
+function push(asyncPainter) {
+	let idx = asyncPainters.indexOf(asyncPainter);
 	if (idx === -1) {
-		asyncPainters.push(idlePainter);
+		asyncPainters.push(asyncPainter);
 	} else {
 		// bump painter to front.
 		let t = asyncPainters[idx];
@@ -83,12 +83,12 @@ function push(idlePainter) {
 }
 
 /**
- * Put `idlePainter` in back fo queue if not already
+ * Put `asyncPainter` in back fo queue if not already
  * in queue. Start the queue if not running already.
 */
-function unshift(idlePainter) {
-	if (asyncPainters.indexOf(idlePainter) === -1) {
-		asyncPainters.unshift(idlePainter);
+function unshift(asyncPainter) {
+	if (asyncPainters.indexOf(asyncPainter) === -1) {
+		asyncPainters.unshift(asyncPainter);
 	}
 	start();
 }
@@ -101,13 +101,13 @@ function isEmpty() {
 }
 
 /**
- * Remove an `idlePainter` from the
+ * Remove an `asyncPainter` from the
  * Returns index it had in the queue, or `-1` if not
  * in the queue at all.
- * @param {*} idlePainter
+ * @param {*} asyncPainter
  */
-function remove(idlePainter) {
-	let idx = asyncPainters.indexOf(idlePainter);
+function remove(asyncPainter) {
+	let idx = asyncPainters.indexOf(asyncPainter);
 	if (idx === -1) {
 		asyncPainters.splice(idx);
 	}
@@ -133,11 +133,11 @@ function clear() {
 
 /**
  * Set a new time the queue gets to render
- * between frames (in millis)
- * @param {number} newMaxTime
+ * between frames (in milliseconds)
+ * @param {number} milliseconds
  */
-function setMaxTime(newMaxTime) {
-	maxTime = newMaxTime;
+function setMaxTime(milliseconds) {
+	maxTime = milliseconds;
 }
 
 
@@ -180,7 +180,7 @@ AsyncPainter.prototype.draw = function () {
 	if (!this.rendered && this.paint && this.context) {
 		if (!this.running) {
 			this.running = true;
-			// indicate that we are rendering a new idlePainter
+			// indicate that we are rendering a new asyncPainter
 			let size = Math.min(this.context.height / 3 | 0, 20);
 			let height = Math.min(size + this.context.height / 3 | 0, 40);
 			textSize(this.context, size);
@@ -200,7 +200,7 @@ AsyncPainter.prototype.draw = function () {
 AsyncPainter.prototype.enqueue = function () {
 	if (!this.rendered && !this.running && this.paint && this.context) {
 		this.running = true;
-		// indicate that we are rendering a new idlePainter
+		// indicate that we are rendering a new asyncPainter
 		let size = Math.min(this.context.height / 3 | 0, 20);
 		let height = Math.min(size + this.context.height / 3 | 0, 40);
 		textSize(this.context, size);
