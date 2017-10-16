@@ -1,10 +1,6 @@
 import 'whatwg-fetch';
 
 import localforage from 'localforage';
-localforage.config({
-	name: 'Loom',
-	storeName: 'datasets',
-});
 
 import {
 	// REQUEST_PROJECTS,
@@ -140,7 +136,7 @@ function loadProjects(dispatch) {
 			}
 		})
 		.catch((err) => {
-			console.log(err);
+			console.log('Loading projects failed:', err, { err });
 			dispatch(requestProjectsFailed());
 		});
 }

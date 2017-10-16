@@ -21,5 +21,14 @@ import './css/bootstrap-theme.css';
 // Custom loom CSS
 import './css/loom.css';
 
+// Set up localforage configuration once
+import localforage from 'localforage';
+localforage.config({
+	name: 'Loom',
+	storeName: 'datasets',
+	driver: [localforage.INDEXEDDB,
+		localforage.WEBSQL,
+		localforage.LOCALSTORAGE],
+});
 import Routes from './components/routes';
 render(Routes, document.getElementById('react-root'));

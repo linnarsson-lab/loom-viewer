@@ -7,10 +7,6 @@ const indexStrategy = new PrefixIndexStrategy();
 const sanitizer = new LowerCaseSanitizer();
 
 import localforage from 'localforage';
-localforage.config({
-	name: 'Loom',
-	storeName: 'datasets',
-});
 
 import {
 	merge,
@@ -117,7 +113,11 @@ function fetchDataset(datasets, path, dispatch) {
 				// fetch it again. This has to be done before adding
 				// functions to the dataset, since localforage cannot
 				// store those. We also want to avoid caching viewState
-				return localforage.setItem(path, dataset);
+				return localforage.setItem(path, dataset)
+					.catch((err) => {
+						console.log('Caching dataset failed:', err, { err });
+						return dataset;
+					});
 			})
 			.then((dataset) => {
 				// dataSetAction() adds viewState, functions and
@@ -139,14 +139,17 @@ function fetchDataset(datasets, path, dispatch) {
 				// will now include all attributes.
 				if (list && !list[path]) {
 					list[path] = oldMetaData;
-					return localforage.setItem('cachedDatasets', list);
+					return localforage.setItem('cachedDatasets', list)
+						.catch((err) => {
+							console.log('Updating cached datasets list failed:', err, { err });
+						});
 				}
 				return null;
 			})
 			.catch((err) => {
 				// Or, if fetch request failed, dispatch
 				// an action to set the error flag
-				console.log(err);
+				console.log('Fetch failed:', err, { err });
 				dispatch({
 					type: REQUEST_DATASET_FAILED,
 					datasetName: path,

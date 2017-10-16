@@ -12,11 +12,6 @@ import localforage from 'localforage';
 import 'localforage-getitems';
 import 'localforage-setitems';
 
-localforage.config({
-	name: 'Loom',
-	storeName: 'datasets',
-});
-
 // =======================================================
 // Fetch a row of values for a single gene for a dataset
 // =======================================================
@@ -151,7 +146,7 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 			})
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch((err) => {
-				console.log({ err }, err);
+				console.log('Requesting genes failed:', { err }, err);
 				dispatch(requestGenesFailed(_fetchGeneNames, path, title));
 			});
 	}
@@ -166,7 +161,11 @@ function cacheGenes(genes, path) {
 		items[path + '/' + key] = gene;
 	}
 	console.log('caching genes: ', keys);
-	return localforage.setItems(items);
+	return localforage.setItems(items)
+		.catch((err) => {
+			console.log('caching genes failed:', err, { err });
+		})
+	;
 }
 
 function requestGenesFetch(genes, path) {
