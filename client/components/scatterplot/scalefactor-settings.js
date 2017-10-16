@@ -53,12 +53,11 @@ export class ScaleFactorSettings extends Component {
 						40: '2x',
 						60: '3x',
 						80: '4x',
-						100: '2.5x',
+						100: '5x',
 					}}
 					min={1}
 					max={100}
 					defaultValue={scaleFactor}
-					onChange={scaleFactorHC}
 					onAfterChange={scaleFactorHC} />
 			</div>
 		);
