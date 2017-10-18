@@ -1,22 +1,29 @@
-# Warning: somewhat outdated documentation
+# Warning: heavily outdated documentation
 
 We recently split `loompy` into [a pure python package](https://github.com/linnarsson-lab/loompy) and a viewer.
 
 This repository is the viewer part, but the documentation still mentions `loompy`.
 
+Furthermore, the documentation has not really changed since the beginning, and a lot has changed. Now that the code is public we'll try to update the docs soon
+
 # Loom
 
 Loom is
 
-* `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
 * `.loom`, an efficient file format for large omics datasets
 * `loompy`, a Python library for creating and working with data in `.loom` format.
 * [deprecated] `loom`, a command-line tool for manipulating `.loom` files.
+* `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
 
 
 ## Installation
 
+This describes two ways to install loom - from source or through pip.
+
+### Installing through pip
+
 1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
+
 2. Install Loom:
 
 ```bash
@@ -27,6 +34,21 @@ Tip: Loom is updated often. To ensure you have the latest version, do this:
 
 ```bash
 pip install -U loom-viewer
+```
+
+### Installing from source
+
+1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
+
+2. Install [node.js](https://nodejs.org/en/)
+
+3. Clone this repository
+
+4. Open a terminal in the newly created `loom-viewer` folder, and run:
+
+```bash
+npm install
+./build
 ```
 
 ## Getting started
