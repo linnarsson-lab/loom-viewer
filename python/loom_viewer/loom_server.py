@@ -248,11 +248,11 @@ def send_static(path):
 
 @app.route('/')
 @app.route('/index.html')
-@app.route('/dataset/')
 @cache(expires=604800)
 def send_indexjs():
 	return app.send_static_file('index.html')
 
+@app.route('/dataset/')
 @app.route('/dataset/<path:path>')
 @cache(expires=None)
 def catch_all(path):
