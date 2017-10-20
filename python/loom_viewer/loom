@@ -249,7 +249,7 @@ def connect_loom(dataset_path, filename):
 	return None
 
 def tile_command(dataset_path, filename):
-	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
@@ -297,7 +297,7 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
 		return
-	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
@@ -346,7 +346,7 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
 		return
-	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
@@ -371,7 +371,7 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 				logging.error(e)
 
 def fix_rows_command(dataset_path):
-	projects = [x for x in os.listdir(dataset_path) if not x.startswith(".")]
+	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
