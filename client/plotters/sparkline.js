@@ -1095,7 +1095,7 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 
 	if (emphasizeNonZero) {
 		// slightly separate the heatMap from the flame-map with a faded strip
-		context.fillStyle = 'white';
+		context.fillStyle = 'darkslategrey';
 		context.fillRect(0, flameHeight, context.width, ratio | 0);
 	}
 }
