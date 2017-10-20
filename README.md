@@ -53,7 +53,7 @@ npm install
 
 ## Getting started
 
-### The Loom browser
+### The Loom viewer
 
 Open your terminal, and type
 
@@ -61,7 +61,25 @@ Open your terminal, and type
 loom
 ```
 
-To learn more about the Loom browser, read the [Loom Guide](docs/loom_browser.md).
+It will automatically open your default browser, and likely show a message that our usage of `fetch` is (somehow) broken on Safari (bug #121). The real reason is that the local server looks for loom files in `loom-datasets` and did not find any.
+
+### Where the viewer looks for Loom files
+
+The first time you run `loom`, a `loom-datasets` folder will be created in your home folder. This is where the Loom viewer looks for Loom files by default. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The project folders then store the loom files:
+
+```bash
+loom-datasets/
+├── #Project 1 (folder)
+│   ├── # dataset1.loom (loom file)
+│   └── # dataset2.loom (loom file)
+└── #Project 2 (folder)
+    ├── # dataset1.loom (loom file)
+    └── # dataset2.loom (loom file)
+```
+
+Either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](https://loom.linnarssonlab.org/), then place it in the appropriate project folder
+
+To learn more about the Loom browser, ~~read the [Loom Guide](docs/loom_browser.md)~~ ask Job, until he takes the time to write out that guide.
 
 ### The `loom` command-line tool
 
