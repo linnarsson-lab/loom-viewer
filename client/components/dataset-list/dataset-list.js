@@ -65,7 +65,7 @@ function handleSearchChangeFactory(field, dispatch) {
 
 class DatasetList extends Component {
 
-	constructor(...args){
+	constructor(...args) {
 		super(...args);
 
 		const { dispatch } = this.props;
@@ -286,7 +286,7 @@ class DatasetList extends Component {
 
 			const fullLength = fullDatasetList.length;
 			let projectLabel = `${project} (${filteredList.length}/` +
-			`${fullLength} dataset${fullLength === 1 ? '' : 's'})`;
+				`${fullLength} dataset${fullLength === 1 ? '' : 's'})`;
 			return (
 				<CollapsibleSettings
 					key={project}
@@ -410,7 +410,7 @@ class SearchDataSetViewComponent extends Component {
 		}
 	}
 
-	componentWillMount(){
+	componentWillMount() {
 		const {
 			dispatch,
 			list,
@@ -626,18 +626,24 @@ class SearchDataSetViewComponent extends Component {
 		} else {
 			datasetList = fetchProjectsStatus === UNKNOWN ?
 				(
-					<div className='view centred'>
-						<div>
+					<div className='view-vertical'>
+						<div className='view centred'>
 							<h2>Downloading list of available datasets...</h2>
 						</div>
-						<div>
-							<p>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</p>
+						<div className='view centred'>
+							<h3>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</h3>
 						</div>
 					</div>
 				) :
 				(
-					<div className='view centred'>
-						<h2>Fetch failed, checking IndexedDB cache</h2>
+					<div className='view-vertical'>
+						<div className='view centred'>
+							<h2>Fetch failed, checking IndexedDB cache</h2>
+						</div>
+						<div className='view centred'>
+							<h3>(If you see this while running the viewer locally, the loom-viewer probably failed to find any loom files in the loom dataset folder)
+							</h3>
+						</div>
 					</div>
 				);
 		}

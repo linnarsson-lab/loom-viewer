@@ -65,6 +65,9 @@ class LoomCache(object):
 		Read access will be allowed if the credentials are valid, or if there is no auth.txt file
 		in the project directory. Write access will only be allowed if the credentials match
 		an existing auth.txt file (with 'w' flag for the user).
+
+		Returns:
+			True (authorised) or False (not authorised).
 		"""
 		users = {}
 		authfile = os.path.join(self.dataset_path, project, "auth.txt")
@@ -87,40 +90,45 @@ class LoomCache(object):
 				return True
 		return False
 
+	def is_project(self, project, username=None, password=None):
+		return not project.startswith(".") and os.path.isdir(os.path.join(self.dataset_path, project)) and self.authorize(project, username, password)
+
 	def list_datasets(self, username=None, password=None):
 		"""
 		Return a list of (project, filename) tuples for loom files cached locally.
 		"""
-		projects = [x for x in os.listdir(self.dataset_path) if not x.startswith(".")]
+		root = self.dataset_path
+		# list of all non-hidden folders in root dataset folder
+		projects = [x for x in os.listdir(root) if self.is_project(x)]
+
 		result = []
 		for project in projects:
-			if self.authorize(project, username, password):
-				for filename in os.listdir(os.path.join(self.dataset_path, project)):
-					if filename.endswith(".loom"):
-						key = project + "/" + filename
-						list_entry = self.list_entries.get(key)
-						# if list_entry is cached and the file has not changed, use
-						# cached list_entry, else recreate list_entry from loom file
-						# (also, note that we don't update pickled files - that must
-						#  be done manually when uploading a changed loom file!)
-						if list_entry is None or self.format_last_mod(project, filename) != list_entry["lastModified"]:
+			for filename in os.listdir(os.path.join(self.dataset_path, project)):
+				if filename.endswith(".loom"):
+					key = project + "/" + filename
+					list_entry = self.list_entries.get(key)
+					# if list_entry is cached and the file has not changed, use
+					# cached list_entry, else recreate list_entry from loom file
+					# (also, note that we don't update pickled files - that must
+					#  be done manually when uploading a changed loom file!)
+					if list_entry is None or self.format_last_mod(project, filename) != list_entry["lastModified"]:
 
-							path = self.get_absolute_path(project, filename, username, password)
-							md_filename = '%s.file_md.json.gzip' % (path)
-							if os.path.isfile(md_filename):
-								logging.debug('Loading metadata from %s' % (md_filename))
-								list_entry = json.loads(load_compressed_json(md_filename))
-							else:
-								logging.debug('%s does not exist, using hdf5 fallback' % (md_filename))
-								ds = self.connect_dataset_locally(project, filename, username, password)
-								if ds is None:
-									continue
-								print("Outdated list-entry for " + key +", updating cache")
-								list_entry = self.make_list_entry(project, filename, ds)
+						path = self.get_absolute_path(project, filename, username, password)
+						md_filename = '%s.file_md.json.gzip' % (path)
+						if os.path.isfile(md_filename):
+							logging.debug('Loading metadata from %s' % (md_filename))
+							list_entry = json.loads(load_compressed_json(md_filename))
+						else:
+							logging.debug('%s does not exist, using hdf5 fallback' % (md_filename))
+							ds = self.connect_dataset_locally(project, filename, username, password)
+							if ds is None:
+								continue
+							print("Outdated list-entry for " + key +", updating cache")
+							list_entry = self.make_list_entry(project, filename, ds)
 
-							self.list_entries[key] = list_entry
+						self.list_entries[key] = list_entry
 
-						result.append(list_entry)
+					result.append(list_entry)
 		return result
 
 	def make_list_entry(self, project, filename, ds):

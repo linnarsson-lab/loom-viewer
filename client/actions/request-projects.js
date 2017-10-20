@@ -60,7 +60,6 @@ function loadOfflineProjects(list) {
 }
 
 function receiveProjects(json, prevList) {
-
 	// convert json array to dictionary
 	let list = {};
 	let i = json.length;
@@ -88,6 +87,7 @@ function receiveProjects(json, prevList) {
 	};
 }
 
+
 // Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
 // Though its insides are different, you would use it just like any other action creator:
 // store.dispatch(requestProjects(...))
@@ -97,13 +97,16 @@ export function requestProjects(list, fetchProjectsStatus) {
 		// Check if projects already exists in the store,
 		// and if we weren't offline last time we tried
 		// to fetch the projects
-		if (!(list && fetchProjectsStatus)){ // Announce we are fetching from server
+		if (!(list && fetchProjectsStatus)) { // Announce we are fetching from server
 			dispatch(requestProjectsFetch());
 			return (
 				fetch('/loom').then((response) => {
 					return response.json();
 				})
 					.then((json) => {
+						if (typeof json === 'string') {
+							throw json;
+						}
 						return dispatch(receiveProjects(json, list));
 					})
 					.catch((err) => {
@@ -129,9 +132,9 @@ function loadProjects(dispatch) {
 			if (cachedDatasets) {
 				dispatch(loadOfflineProjects(cachedDatasets));
 			} else {
-			// if list is empty, we have no
-			// cached datasets and fetching
-			// effectively failed.
+				// if list is empty, we have no
+				// cached datasets and fetching
+				// effectively failed.
 				throw 'no cached datasets';
 			}
 		})

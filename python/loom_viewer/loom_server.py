@@ -273,8 +273,10 @@ def get_auth(request):
 @cache(expires=None)
 def send_dataset_list():
 	(u, p) = get_auth(request)
-	result = json.dumps(app.cache.list_datasets(u, p))
-	return flask.Response(result, mimetype="application/json")
+	dataset_list = app.cache.list_datasets(u, p)
+	if len(dataset_list) is 0:
+		dataset_list = "No Projects or Loom files in dataset folder!"
+	return flask.Response(json.dumps(dataset_list), mimetype="application/json")
 
 # Info for a single dataset
 @app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
