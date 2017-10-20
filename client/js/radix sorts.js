@@ -1,501 +1,775 @@
-// Radix sort for Uint32, adapted from  Victor J. Duvanenko, taken from
-// https://duvanenko.tech.blog/2017/06/15/faster-sorting-in-javascript/
+/*
+By Job van der Zwan, CC0 2017
 
-const totalBins = 256;
-const byteSize = 8;
-function radixUint32(input) {
-	const length = input.length;
+Inspired by Malte Skarupke's ska_sort[0], I wanted to see if radixSort sort is
+also faster in JavaScript.
 
-	let output = new Uint32Array(length);
 
-	const arrayConstr = length < 256 ?
-		Uint8Array :
-		length < (1<<16) ?
-			Uint16Array :
-			length < (1<<32) ?
-				Uint32Array :
-				Float64Array;
-	let count = new arrayConstr(totalBins);
-	let output_has_result = false;
+(Also, turns out I'm too dumb to implement ska_sort, so I used the more
+simple LSB radixSort sort instead. It is based on an implementation by
+Victor J. Duvanenko, but cleaned up to remove a lot of redundancies,
+updated for ES6, and making use of TypedArrays for better performance.
+If someone else could give a ska sort implemention a try, to see if
+it might do even better, that would be awesome!)
 
-	let bitMask = 255;
-	let shiftRightAmount = 0;
+For large uniform distributions, radixSort sort beats the built-in sort.
+I haven't tested other types of inputs. See benchmarks here:
 
-	let startOfBin = new arrayConstr(totalBins);
-	let endOfBin = new arrayConstr(totalBins);
+https://run.perf.zone/view/radixSort-sorts-for-typed-arrays-v2-1507847259416
 
-	// end processing digits when all the mask bits have
-	// been processed and shifted out, leaving no bits
-	// set in the bitMask
-	while (bitMask !== 0){
-		count.fill(0);
-		let idx = 0;
-		// Scan the array and count the number of times each digit appears
-		for (let i = 0; i < length; i++){
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			count[idx]++;
-		}
+https://run.perf.zone/view/radixSort-sort-32-bit-int-with-plain-array-test-1507850042653
 
-		startOfBin[0] = endOfBin[0] = 0;
-		for (let i = 1; i < totalBins; i++){
-			startOfBin[i] = endOfBin[i] = startOfBin[i - 1] + count[i - 1];
-		}
+I hope that for the typed arrays at least, this speed boost is temporary:
+with the right algorithm, the built-in sort should be able to be faster
+than these, due to better memory access and other reductions in overhead.
 
-		for (let i = 0; i < length; i++){
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			output[endOfBin[idx]++] = input[i];
-		}
+This particular implementation returns a new array, and does not mutate
+the original array. It's actually less work; LSB radix sort is not
+in-place anyway.
 
-		bitMask <<= byteSize;
-		shiftRightAmount += byteSize;
-		output_has_result = !output_has_result;
+TODO: implement and benchmark a Float64 version (and faux-Uint64 version)
+This will just be like Uint32, but reading out two 32-bit values at a
+time and making 8 passes to cover all bytes.
 
-		// swap input and output arrays
-		[input, output] = [output, input];
+PS: Skarupke mentions other radixSort sort implementations implementing a
+Uint32 radixSort sort that makes three passes in 10-11-11 bit chunks. I have
+implemented and tested this[1], but it turns out to be even slower than
+the built-in version. Probably due to the large count buffer needed.
+
+[0] https://probablydance.com/2016/12/27/i-wrote-a-faster-sorting-algorithm/
+
+[1] https://run.perf.zone/view/radixSort-sort-variants-for-Uint32Array-1507830151297
+*/
+
+// Needed for radixSortFloat64
+// import {
+// 	isLittleEndian,
+// } from 'js/util';
+
+const isLittleEndian = (function () {
+	let t16 = new Uint16Array(1);
+	let t8 = new Uint8Array(t16.buffer);
+	t8[1] = 0xFF;
+	return t16[0] === 0xFF00;
+})();
+/**
+ * Returns a sorted array. Leaves original array untouched.
+ *
+ * Expects 8-bit unsigned integers.
+ *
+ * "Works" on all arrays, but "incorrect" values will be
+ * sorted by their coerced unsigned 8-bit integer equivalent,
+ * that is: by sorting `value & 0xFF` (returned array will
+ * have original values).
+ * @param {number[]} input
+ * @param {arrayConstr=} outputConstr
+ */
+function radixSortUint8(input, outputConstr) {
+	const arrayConstr = input.length < (1 << 16) ?
+		Uint16Array :
+		Uint32Array;
+	let count = new arrayConstr(256);
+
+	// Count number of occurrences of each byte value
+	for (let i = 0; i < input.length; i++) {
+		count[input[i] & 0xFF]++;
+	}
+	// Convert count to sum of previous counts.
+	// This lets us directly copy values to their
+	// correct position later
+	let t = 0,
+		sum = 0;
+	for (let i = 0; i < 256; i++) {
+		t = count[i];
+		count[i] = sum;
+		sum += t;
 	}
 
-	if (output_has_result){
-		input.set(output);
+	// Ensure that the output is the same array type as the input.
+	// Imagine we pass a Uint32Array that we want to sort based
+	// on the lower 8 bits (hey, it could happen...). In that case,
+	// we want to avoid coercing the values on copy, so we
+	// cannot blindly use a Uint8Array for the output.
+	outputConstr = outputConstr || Object.getPrototypeOf(input).constructor;
+	let output = new outputConstr(input.length);
+
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		output[count[val & 0xFF]++] = val;
+	}
+
+	return output;
+}
+
+/**
+ * Sorts an array of Int8 values. "Works" on all arrays,
+ * but incorrect values will be coerced into and sorted
+ * as if they are 8-bit signed integers.
+ * @param {number[]} input
+ * @param {arrayConstr=} outputConstr
+ */
+function radixSortInt8(input, outputConstr) {
+	const inputConstr = Object.getPrototypeOf(input).constructor;
+	if (inputConstr === Uint8ClampedArray) {
+		// We want to avoid Uint8ClampedArray from messing up our
+		// adjustment below, so we turn it into a Uint8Array view
+		input = new Uint8Array(input.buffer);
+	} else if (inputConstr === Array){
+		// If we have a plain array as input, we might
+		// have strings or other objects in the array
+		// which would interact funnily with the `+= 80`
+		// below. So we coerce the values to numbers first.
+		// Surprisingly, for some strings this works out:
+		//   Uint8Array.from(["80", "1e4", "257"]);
+		// ==> Uint8Array(3) [80, 16, 1]
+		input = Uint8Array.from(input);
+	}
+
+	for (let i = 0; i < input.length; i++) {
+		input[i] += 0x80;
+	}
+	const output = radixSortUint8(input, outputConstr || inputConstr);
+
+	// If the passed input was an Array, it was turned into a
+	// copy anyway, so we did not override the original input.
+	// In that case there is no point in wasting time on a copy
+	// that will be thrown away.
+	if (inputConstr !== Array){
+		for (let i = 0; i < input.length; i++) {
+			input[i] -= 0x80;
+		}
+	}
+
+	return output;
+}
+
+/**
+ * Sorts an array of Uint16 values. "Works" on all arrays,
+ * but incorrect values will be sorted by their coerced
+ * unsigned 16-bit integer equivalent, that is: `value & 0xFFFF`.
+ *
+ * The returned array contains the original values.
+ * @param {number[]} input
+ */
+function radixSortUint16(input, inputConstr) {
+	const arrayConstr = input.length < (1 << 16) ?
+		Uint16Array :
+		Uint32Array;
+	let count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256);
+
+	// count all bytes in one pass
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		count1[val & 0xFF]++;
+		count2[((val >> 8) & 0xFF)]++;
+	}
+
+	// convert count to sum of previous counts
+	// this lets us directly copy values to their
+	// correct position later
+	let t = 0,
+		sum1 = 0,
+		sum2 = 0;
+	for (let i = 0; i < 256; i++) {
+		t = count1[i];
+		count1[i] = sum1;
+		sum1 += t;
+		t = count2[i];
+		count2[i] = sum2;
+		sum2 += t;
+	}
+
+	inputConstr = inputConstr || Object.getPrototypeOf(input).constructor;
+	let output = new inputConstr(input.length);
+	// first pass
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		output[count1[val & 0xFF]++] = val;
+	}
+	// second pass
+	for (let i = 0; i < input.length; i++) {
+		let val = output[i];
+		input[count2[(val >> 8) & 0xFF]++] = val;
 	}
 
 	return input;
 }
 
-// Sorts a Float64Array by it's bitmask-and 0xFFFFFFFF value
-function radix32Float64(input) {
-	const length = input.length;
+/**
+ * Sorts an array of Int16 values. "Works" on all arrays,
+ * but incorrect values will be coerced into 16-bit numbers.
+ * @param {number[]} input
+ */
+function radixSortInt16(input) {
+	const isInt16 = input instanceof Int16Array;
+	let bufferView = isInt16 ?
+		input.buffer :
+		(Int16Array.from(input)).buffer;
+	let uinput = new Uint16Array(bufferView);
 
-	let output = new Float64Array(length);
-
-	const arrayConstr = length < 256 ?
-		Uint8Array :
-		length < (1<<16) ?
-			Uint16Array :
-			length < (1<<32) ?
-				Uint32Array :
-				Float64Array;
-	let count = new arrayConstr(totalBins);
-	let output_has_result = false;
-
-	let bitMask = 255;
-	let shiftRightAmount = 0;
-
-	let startOfBin = new arrayConstr(totalBins);
-	let endOfBin = new arrayConstr(totalBins);
-
-	// end processing digits when all the mask bits have
-	// been processed and shifted out, leaving no bits
-	// set in the bitMask
-	while (bitMask !== 0){
-		count.fill(0);
-		let idx = 0;
-		// Scan the array and count the number of times each digit appears
-		for (let i = 0; i < length; i++){
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			count[idx]++;
-		}
-
-		startOfBin[0] = endOfBin[0] = 0;
-		for (let i = 1; i < totalBins; i++){
-			startOfBin[i] = endOfBin[i] = startOfBin[i - 1] + count[i - 1];
-		}
-
-		for (let i = 0; i < length; i++){
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			output[endOfBin[idx]++] = input[i];
-		}
-
-		bitMask <<= byteSize;
-		shiftRightAmount += byteSize;
-		output_has_result = !output_has_result;
-
-		// swap input and output arrays
-		[input, output] = [output, input];
+	for (let i = 0; i < uinput.length; i++) {
+		uinput[i] += 0x8000;
 	}
 
-	if (output_has_result){
-		input.set(output);
+	radixSortUint16(uinput);
+
+	for (let i = 0; i < uinput.length; i++) {
+		uinput[i] -= 0x8000;
+	}
+
+	if (!isInt16) {
+		for (let i = 0; i < input.length; i++) {
+			input[i] = uinput[i];
+		}
+	}
+	return input;
+}
+
+
+/**
+ * Sorts an array of Uint32 values. "Works" on all arrays,
+ * but incorrect values will be sorted by their coerced
+ * unsigned 32-bit integer equivalent, that is: `value & 0xFFFFFFFF`.
+ *
+ * The returned array contains the original values.
+ * @param {number[]} input
+ */
+function radixSortUint32(input) {
+	const arrayConstr = input.length < (1 << 16) ?
+		Uint16Array :
+		Uint32Array;
+	let count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256),
+		count3 = new arrayConstr(256),
+		count4 = new arrayConstr(256);
+
+	let output = new (Object.getPrototypeOf(input).constructor)(input.length);
+
+	// count all bytes in one pass
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		count1[val & 0xFF]++;
+		count2[((val >> 8) & 0xFF)]++;
+		count3[((val >> 16) & 0xFF)]++;
+		count4[((val >> 24) & 0xFF)]++;
+	}
+
+	// convert count to sum of previous counts
+	// this lets us directly copy values to their
+	// correct position later
+	for (let j = 0; j < 4; j++) {
+		let t = 0,
+			sum1 = 0,
+			sum2 = 0,
+			sum3 = 0,
+			sum4 = 0;
+		for (let i = 0; i < 256; i++) {
+			t = count1[i];
+			count1[i] = sum1;
+			sum1 += t;
+			t = count1[i];
+			count2[i] = sum2;
+			sum2 += t;
+			t = count1[i];
+			count3[i] = sum3;
+			sum3 += t;
+			t = count4[i];
+			count4[i] = sum4;
+			sum4 += t;
+		}
+	}
+
+	// Note that doubles can store all integers up to  2⁵³,
+	// so if we make `output` a Float64Array we could do some
+	// nasty hacks with storing information in the upper 10 bits,
+	// because we leave the actual valued being copied untouched.
+	// Just saying.
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		output[count1[val & 0xFF]++] = val;
+	}
+	for (let i = 0; i < input.length; i++) {
+		let val = output[i];
+		input[count2[((val >> 8) & 0xFF)]++] = val;
+	}
+	for (let i = 0; i < input.length; i++) {
+		let val = input[i];
+		output[count3[((val >> 16) & 0xFF)]++] = val;
+	}
+	for (let i = 0; i < input.length; i++) {
+		let val = output[i];
+		input[count4[((val >> 24) & 0xFF)]++] = val;
 	}
 
 	return input;
 }
+
+/**
+ * Sorts an array of Int32 values. "Works" on all arrays,
+ * but incorrect values will be coerced into 32-bit numbers.
+ * @param {number[]} input
+ */
+function radixSortInt32(input) {
+	const isInt32Array = input instanceof Int32Array;
+	// Make use of ArrayBuffer to "reinterpret cast"
+	// the Int32Array as a Uint32Array. If it is a plain
+	// array, we first have to convert it to Int32 values
+	let bufferView = isInt32Array ?
+		input.buffer :
+		Int32Array.from(input).buffer;
+	let uinput = new Uint32Array(bufferView);
+
+	// adjust to positive nrs
+	for (let i = 0; i < uinput.length; i++) {
+		uinput[i] += 0x80000000;
+	}
+
+	// Re-use radixSortUint32
+	radixSortUint32(uinput);
+
+	// Adjust back to signed nrs
+	for (let i = 0; i < uinput.length; i++) {
+		uinput[i] -= 0x80000000;
+	}
+
+	// for plain arrays, fake in-place behaviour
+	if (!isInt32Array) {
+		for (let i = 0; i < input.length; i++) {
+			input[i] = uinput[i];
+		}
+	}
+
+	return input;
+}
+
+/**
+ * Sorts an array of Int32 values. "Works" on all arrays,
+ * but incorrect values will be coerced into Float32 numbers.
+ * @param {number[]} input
+ */
+function radixSortFloat32(input) {
+	const isFloat32Array = input instanceof Float32Array;
+	// Make use of ArrayBuffer to "reinterpret cast"
+	// the Float32 as a Uint32Array. If it is a plain
+	// array, we first have to convert it to Float32 values
+	let bufferView = isFloat32Array ?
+		input.buffer :
+		(Float32Array.from(input)).buffer;
+	let uinput = new Uint32Array(bufferView);
+
+	// Similar to radixSortInt32, but uses a more complicated trick
+	// See: http://stereopsis.com/radixSort.html
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i] & 0x80000000) {
+			uinput[i] ^= 0xFFFFFFFF;
+		} else {
+			uinput[i] ^= 0x80000000;
+		}
+	}
+
+	// Re-use radixSortUint32
+	radixSortUint32(uinput);
+
+	// Adjust back to original floating point nrs
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i] & 0x80000000) {
+			uinput[i] ^= 0x80000000;
+		} else {
+			uinput[i] ^= 0xFFFFFFFF;
+		}
+	}
+
+	if (!isFloat32Array) {
+		let floatTemp = new Float32Array(uinput.buffer);
+		for (let i = 0; i < input.length; i++) {
+			input[i] = floatTemp[i];
+		}
+	}
+
+	return input;
+}
+
+/**
+ * Sorts a Uint32Array as if it contained "Uint64" values,
+ * simulated by merging two values from the array.
+ * The endianness is the same as the endianness of the
+ * environment (this is required to make it possible to implement
+ * a Float64 radix).
+ *
+ * "Works" on all arrays TypedArrays that contain multiples of 8
+ * bytes. Plain arrays are not supported.
+ * @param {number[]} input
+ */
+const radixSortUint64 = isLittleEndian ?
+	radixSortUint64LE :
+	radixSortUint64BE;
+
+function radixSortUint64LE(input) {
+	// We shift seventeen instead of sixteen bits,
+	// because we're using two Uint32 values as
+	// one, thus only count half as many "total" values
+	const arrayConstr = input.length < (1 << 17) ?
+		Uint16Array :
+		Uint32Array;
+	let count0 = new arrayConstr(256),
+		count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256),
+		count3 = new arrayConstr(256),
+		count4 = new arrayConstr(256),
+		count5 = new arrayConstr(256),
+		count6 = new arrayConstr(256),
+		count7 = new arrayConstr(256),
+		count = [
+			count0,
+			count1,
+			count2,
+			count3,
+			count4,
+			count5,
+			count6,
+			count7,
+		];
+
+	// count all bytes in one pass
+	for (let i = 0; i < input.length; i += 2) {
+		let val = input[i + 1];
+		count0[val & 0xFF]++;
+		count1[((val >> 8) & 0xFF)]++;
+		count2[((val >> 16) & 0xFF)]++;
+		count3[((val >> 24) & 0xFF)]++;
+		val = input[i];
+		count4[val & 0xFF]++;
+		count5[((val >> 8) & 0xFF)]++;
+		count6[((val >> 16) & 0xFF)]++;
+		count7[((val >> 24) & 0xFF)]++;
+	}
+
+	for (let j = 0; j < 8; j++) {
+		let t = 0,
+			sum = 0,
+			count_j = count[j];
+		for (let i = 0; i < 256; i++) {
+			t = count_j[i];
+			count_j[i] = sum;
+			sum += t;
+		}
+	}
+
+
+	let output = new (Object.getPrototypeOf(input).constructor)(input.length);
+
+	// Lower 32 bits
+	for (let j = 0; j < 4; j++) {
+		let count_j = count[j],
+			shiftRight = j << 3;
+		for (let i = 0; i < input.length; i++) {
+			let val2 = input[i++],
+				val = input[i],
+				idx = (count_j[(val >> shiftRight) & 0xFF]++) * 2;
+			output[idx++] = val;
+			output[idx] = val2;
+		}
+		count_j = count[++j];
+		shiftRight = j << 3;
+		for (let i = 0; i < output.length; i++) {
+			let val2 = output[i++],
+				val = output[i],
+				idx = (count_j[(val >> shiftRight) & 0xFF]++) * 2;
+			input[idx++] = val;
+			input[idx] = val2;
+		}
+	}
+	// Upper 32 bits
+	for (let j = 0; j < 4; j++) {
+		let count_j = count[j],
+			shiftRight = j << 3;
+		for (let i = 0; i < input.length; i++) {
+			let val2 = input[i++],
+				val = input[i],
+				idx = (count_j[(val2 >> shiftRight) & 0xFF]++) * 2;
+			output[idx++] = val;
+			output[idx] = val2;
+		}
+		count_j = count[++j];
+		shiftRight = j << 3;
+		for (let i = 0; i < output.length; i++) {
+			let val2 = output[i++],
+				val = output[i],
+				idx = (count_j[(val2 >> shiftRight) & 0xFF]++) * 2;
+			input[idx++] = val;
+			input[idx] = val2;
+		}
+	}
+	return input;
+}
+
+function radixSortUint64BE(input) {
+	// We shift seventeen instead of sixteen bits,
+	// because we're using two Uint32 values as
+	// one, thus only count half as many "total" values
+	const arrayConstr = input.length < (1 << 17) ?
+		Uint16Array :
+		Uint32Array;
+	let count0 = new arrayConstr(256),
+		count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256),
+		count3 = new arrayConstr(256),
+		count4 = new arrayConstr(256),
+		count5 = new arrayConstr(256),
+		count6 = new arrayConstr(256),
+		count7 = new arrayConstr(256),
+		count = [
+			count0,
+			count1,
+			count2,
+			count3,
+			count4,
+			count5,
+			count6,
+			count7,
+		];
+
+	// count all bytes in one pass
+	for (let i = 0; i < input.length; i += 2) {
+		let val = input[i];
+		count0[val & 0xFF]++;
+		count1[((val >> 8) & 0xFF)]++;
+		count2[((val >> 16) & 0xFF)]++;
+		count3[((val >> 24) & 0xFF)]++;
+		val = input[i + 1];
+		count4[val & 0xFF]++;
+		count5[((val >> 8) & 0xFF)]++;
+		count6[((val >> 16) & 0xFF)]++;
+		count7[((val >> 24) & 0xFF)]++;
+	}
+
+	for (let j = 0; j < 8; j++) {
+		let t = 0,
+			sum = 0,
+			count_j = count[j];
+		for (let i = 0; i < 256; i++) {
+			t = count_j[i];
+			count_j[i] = sum;
+			sum += t;
+		}
+	}
+
+
+	let output = new (Object.getPrototypeOf(input).constructor)(input.length);
+
+	// Lower 32 bits
+	for (let j = 0; j < 4; j++) {
+		let count_j = count[j],
+			shiftRight = j << 3;
+		for (let i = 0; i < input.length; i++) {
+			let val = input[i++],
+				val2 = input[i],
+				idx = (count_j[(val >> shiftRight) & 0xFF]++) * 2;
+			output[idx++] = val;
+			output[idx] = val2;
+		}
+		count_j = count[++j];
+		shiftRight = j << 3;
+		for (let i = 0; i < output.length; i++) {
+			let val = output[i++],
+				val2 = output[i],
+				idx = (count_j[(val >> shiftRight) & 0xFF]++) * 2;
+			input[idx++] = val;
+			input[idx] = val2;
+		}
+	}
+	// Upper 32 bits
+	for (let j = 0; j < 4; j++) {
+		let count_j = count[j],
+			shiftRight = j << 3;
+		for (let i = 0; i < input.length; i++) {
+			let val = input[i++],
+				val2 = input[i],
+				idx = (count_j[(val2 >> shiftRight) & 0xFF]++) * 2;
+			output[idx++] = val;
+			output[idx] = val2;
+		}
+		count_j = count[++j];
+		shiftRight = j << 3;
+		for (let i = 0; i < output.length; i++) {
+			let val = output[i++],
+				val2 = output[i],
+				idx = (count_j[(val2 >> shiftRight) & 0xFF]++) * 2;
+			input[idx++] = val;
+			input[idx] = val2;
+		}
+	}
+	return input;
+}
+
+const radixSortFloat64 = isLittleEndian ?
+	radixSortFloat64LE :
+	radixSortFloat64BE;
+
+function radixSortFloat64LE(input) {
+	const isFloat64Array = input instanceof Float64Array;
+	let bufferView = isFloat64Array ?
+		input.buffer :
+		Float64Array.from(input).buffer;
+
+	let uinput = new Uint32Array(bufferView);
+
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i + 1] & 0x80000000) {
+			uinput[i] ^= 0xFFFFFFFF;
+			uinput[++i] ^= 0xFFFFFFFF;
+		} else {
+			uinput[i] ^= 0x80000000;
+			uinput[++i] ^= 0x80000000;
+		}
+	}
+
+	radixSortUint64LE(uinput);
+
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i + 1] & 0x80000000) {
+			uinput[i] ^= 0x80000000;
+			uinput[++i] ^= 0x80000000;
+		} else {
+			uinput[i] ^= 0xFFFFFFFF;
+			uinput[++i] ^= 0xFFFFFFFF;
+		}
+	}
+
+	if (!isFloat64Array) {
+		let floatTemp = new Float64Array(uinput.buffer);
+		for (let i = 0; i < input.length; i++) {
+			input[i] = floatTemp[i];
+		}
+	}
+	return input;
+}
+
+function radixSortFloat64BE(input) {
+	const isFloat64Array = input instanceof Float64Array;
+	let bufferView = isFloat64Array ?
+		input.buffer :
+		Float64Array.from(input).buffer;
+
+	let uinput = new Uint32Array(bufferView);
+
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i] & 0x80000000) {
+			uinput[i] ^= 0xFFFFFFFF;
+			uinput[++i] ^= 0xFFFFFFFF;
+		} else {
+			uinput[i] ^= 0x80000000;
+			uinput[++i] ^= 0x80000000;
+		}
+	}
+
+	radixSortUint64BE(uinput);
+
+	for (let i = 0; i < uinput.length; i++) {
+		if (uinput[i] & 0x80000000) {
+			uinput[i] ^= 0x80000000;
+			uinput[++i] ^= 0x80000000;
+		} else {
+			uinput[i] ^= 0xFFFFFFFF;
+			uinput[++i] ^= 0xFFFFFFFF;
+		}
+	}
+
+	if (!isFloat64Array) {
+		let floatTemp = new Float64Array(uinput.buffer);
+		for (let i = 0; i < input.length; i++) {
+			input[i] = floatTemp[i];
+		}
+	}
+	return input;
+}
+
+/**
+ * Fisher-Yates shuffle all elements in an array
+ * @param {[]} array
+ */
+function shuffle(array) {
+	let i = array.length;
+	while (i--) {
+		// random swap
+		let t = array[i];
+		let j = Math.random() * i | 0;
+		array[i] = array[j];
+		array[j] = t;
+	}
+	return array;
+}
+
+/**
+ * Method to test if a passed array is sorted properly.
+ * Alternatively, pass an array constructor of any
+ * type (Array or one of the TypedArrays) to see if
+ * the sort function returns the right values and the
+ * right type of array.
+ *
+ * Returns true on a failed test
+ * @param {number[] | arrayConstr} arrayConstr
+ * @param {sortFunc} sortFunc
+ * @param {boolean} testReturnedArrayType
+ */
+function testSort(arrayConstr, sortFunction, testReturnedArrayType) {
+	let testArray = new arrayConstr(10000);
+	for (let i = 0; i < testArray.length; i++) {
+		// TypedArrays truncate, so this works out fine
+		testArray[i] = (0x100000000 * Math.random());
+	}
+
+	let verifyArray = testArray.slice(0).sort(compareFunc);
+	let sortedArray = sortFunction(testArray);
+
+	// check if the returned array has the
+	// same array type as the input array
+	if (testReturnedArrayType) {
+		const sConstr = Object.getPrototypeOf(sortedArray).constructor,
+			tConstr = Object.getPrototypeOf(testArray).constructor;
+		if (sConstr !== tConstr) {
+			console.log(`Sort function returns ${sConstr}, expected ${tConstr}`);
+			return true;
+		}
+
+	}
+
+	//
+	for (let i = 0; i < testArray.length; i++) {
+		if (testArray[i] !== verifyArray[i]) {
+			console.log(`Test[${i}]: ${testArray[i]}, verify[${i}]: ${verifyArray[i]}`);
+			return true;
+		}
+	}
+	console.log(`All elements are the correct values, and are in the correct position. ${testReturnedArrayType ? 'Returned array type is equal to input array' : 'Returned array type not verified'}`);
+	return false;
+}
+
+
+/**
+ * Function that sorts an array in-place
+ * @param {[]} array
+ */
+function sortFunc(array) {
+	// dummy function for JSdoc
+	return array.sort(compareFunc);
+}
+
+/**
+ * @param {number} a
+ * @param {number} b
+ */
+function compareFunc(a, b) {
+	return a - b;
+}
+
+// dummy value for JSdoc
+const arrayConstr = Array;
 
 /*
 
-TODO: Figure out why the above breaks scatterplot
-
-import {
-	arraySubset,
-	attrSubset,
-	attrToColorFactory,
-	attrToColorIndexFactory,
-	clipRange,
-	constrain,
-	getPalette,
-	logProject,
-	logProjectArray,
-	nullFunc,
-	rndNorm,
-} from '../js/util';
-
-import {
-	drawText,
-	textSize,
-	textStyle,
-} from './canvas';
-
-// "global" array of sprite canvases.
-// Dots will be drawn in later (depends on colour settings)
-// Multiple radii; no need to draw a 256x256 image for a 8x8 dot
-const {
-	allSprites,
-	contexts,
-} = (() => {
-	let i = 257,
-		j = 8;
-	const allSprites = new Array(j),
-		contexts = new Array(i);
-	while (j--) {
-		i = 257;
-		const _sprites = new Array(i);
-		while (i--) {
-			_sprites[i] = document.createElement('canvas');
-			_sprites[i].id = `dot_sprite_${j}_${i}`;
-			_sprites[i].width = 4 << j;
-			_sprites[i].height = 4 << j;
-		}
-		allSprites[j] = _sprites;
-	}
-	return {
-		allSprites,
-		contexts,
-	};
-})();
-
-const { log2 } = Math;
-
-export function scatterPlot(attrs, indices, settings) {
-	// only render if all required settings are supplied
-	if (!(indices && settings)) {
-		return nullFunc;
-	}
-
-	const xAttr = attrs[settings.x.attr],
-		yAttr = attrs[settings.y.attr],
-		colorAttr = attrs[settings.colorAttr];
-
-	// only render if all required data is supplied
-	if (!(xAttr && yAttr && colorAttr && indices)) {
-		return nullFunc;
-	}
-
-	let {
-		colorMode,
-	} = settings;
-	const dataToIdx = attrToColorIndexFactory(colorAttr, colorMode, settings);
-
-	return (context) => {
-		context.save();
-
-		// Erase previous paint
-		context.clearRect(0, 0, context.width, context.height);
-
-		const {
-			spriteLayout,
-			labelLayout,
-		} = calcLayout(context, settings);
-
-		// ==================================================
-		// == Prepare Palette & pre-render dots to sprites ==
-		// ==================================================
-		prepareSprites(colorMode, spriteLayout);
-
-		// =====================================
-		// == Convert x, y to pixel positions ==
-		// =====================================
-
-		// Avoid accidentally mutating source arrays.
-		// Arrays of (indexed) strings are converted to
-		// numerical arrays representing the twenty most
-		// common strings as categories, plus one "other"
-		// for all remaining values
-		let xy = convertCoordinates(xAttr, yAttr, indices, spriteLayout, settings);
-		// ======================================================
-		// == Convert color data to lookup indices for sprites ==
-		// ======================================================
-
-		let { cIdx } = convertColorData(colorAttr, indices, dataToIdx);
-
-		// ==============================
-		// == Sort for tiling purposes ==
-		// ==============================
-
-		// Sort so that we render zero values first, and then from back-to-front.
-		// This has to be done after jittering to maintain the tiling behaviour
-		// that is desired.
-		const sorted = sortByAxes(xy, cIdx, spriteLayout.sprites);
-
-		// ============================
-		// == blit sprites to canvas ==
-		// ============================
-
-		// Now that we converted the coordinates, prepared the sprites
-		// and the colour indices to look them up, we can blit them
-		// to the canvas.
-		blitSprites(context, spriteLayout, sorted);
-
-		// =================
-		// == draw labels ==
-		// =================
-
-		drawLabels(context, xAttr, yAttr, colorAttr, labelLayout);
-
-		// Heatmap scale, if necessary
-		if (colorMode === 'Heatmap') {
-			drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings);
-		}
-
-		context.restore();
-	};
-}
-
-function calcLayout(context, settings) {
-	const {
-		min, sqrt,
-	} = Math;
-	const scaleFactor = settings.scaleFactor || 50;
-
-	let {
-		width, height, pixelRatio,
-	} = context;
-	const shortEdge = min(width, height);
-
-	// Suitable radius of the markers
-	// - smaller canvas size -> smaller points
-	let radius = log2(shortEdge) * scaleFactor / 50 * pixelRatio | 0;
-	radius = constrain(radius, 1, 254);
-
-	let spriteIdx = 0,
-		spriteRadius = 2;
-	while (spriteRadius < radius + 1) {
-		spriteIdx++;
-		spriteRadius = 2 << spriteIdx;
-	}
-	const sprites = allSprites[spriteIdx];
-
-	let labelTextSize = constrain(sqrt(shortEdge), 12, 64) * pixelRatio * 0.75 | 0;
-	let labelMargin = (labelTextSize * 1.8) | 0;
-
-	const spriteLayout = {
-		x: labelMargin,
-		y: 0,
-		width: width - labelMargin - radius * 2,
-		height: height - labelMargin - radius * 2,
-		radius,
-		spriteRadius,
-		sprites,
-	};
-
-	const xLabel = {
-		x: labelMargin * 1.5 | 0,
-		y: height - labelTextSize | 0,
-	};
-	// yLabel will be translated and rotated so (x,y) origin
-	// will point to lower left
-	const yLabel = {
-		x: labelMargin * 1.5 | 0,
-		y: labelTextSize | 0,
-	};
-
-	const gradientSize = constrain(shortEdge / 10, 16, 256 * context.pixelRatio) | 0;
-	const labelOffset = labelTextSize * 3 | 0;
-
-	const colorLabel = {
-		x: (width - gradientSize - labelOffset) | 0,
-		y: height - labelTextSize | 0,
-		gradientSize,
-		width: 0, // width of heatmap scale, if plotted
-	};
-
-	return {
-		spriteLayout,
-		labelLayout: {
-			labelTextSize,
-			xLabel,
-			yLabel,
-			colorLabel,
-		},
-	};
-}
-
-function convertCoordinates(xAttr, yAttr, indices, spriteLayout, settings) {
-	// For small value ranges (happens with PCA a lot),
-	// jittering needs to be scaled down
-	let xDelta = xAttr.max - xAttr.min,
-		xJitter = 1,
-		yDelta = yAttr.max - yAttr.min,
-		yJitter = 1;
-
-	if (xDelta / xJitter < 8) {
-		xJitter = ((log2(xDelta) * 8) | 0) / 32;
-	}
-	if (yDelta / yJitter < 8) {
-		yJitter = ((log2(yDelta) * 8) | 0) / 32;
-	}
-
-	// If we have an string array, convert it
-	// to numbers as a form of categorization.
-	// Similarly, if we need to jitter the data
-	// we must ensure the data array is a floating
-	// point typed array, not an integer array.
-	let xData = convertAttr(xAttr, indices, settings.x.jitter);
-	let yData = convertAttr(yAttr, indices, settings.y.jitter);
-	// Jitter if requested
-	maybeJitterData(xData, yData, settings, xJitter, yJitter);
-	// Scale to screen dimensions with margins
-	return scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings);
-}
-
-function convertAttr(attr, indices, jitter) {
-	// In practice, having text data that is not indexed
-	// only happens if all strings are unique,
-	// so it's kind of pointless
-	if (attr.arrayType === 'string' && !attr.indexedVal) {
-		let i = indices.length;
-		let retVal = new Float32Array(i);
-		while (i--) {
-			retVal[i] = indices[i] + 1;
-		}
-		return retVal;
-	}
-	// If we jitter later, we need to return a float32,
-	// Otherwise we can keep the more compact typed arrays
-	// if our data is integers
-	const convertedType = jitter ? 'float32' : attr.arrayType;
-	return arraySubset(attr.data, convertedType, indices);
-}
-
-function maybeJitterData(xData, yData, settings, xJitter, yJitter) {
-	const {
-		PI, random, sin, cos,
-	} = Math;
-	const TAU = 2 * PI;
-	let i = xData.length;
-	if (settings.x.jitter && settings.y.jitter) {
-		// if jittering both axes, do so in a
-		// circle around the data
-		while (i--) {
-			const r = rndNorm();
-			const t = TAU * random();
-			xData[i] += xJitter * r * sin(t);
-			yData[i] += yJitter * r * cos(t);
-		}
-	} else if (settings.x.jitter) {
-		while (i--) {
-			xData[i] += xJitter * rndNorm();
-		}
-	} else if (settings.y.jitter) {
-		while (i--) {
-			yData[i] += yJitter * rndNorm();
-		}
-	}
-}
-
-// returns a uint32 array `xy` that contains y and x bitpacked into it,
-// as `((y & 0xFFFF)<<16) + (x & 0xFFFF)`. Supposedly faster than using
-// separate uint16 arrays. Also sorts a bit quicker.
-function scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings) {
-	let xMin = xAttr.min,
-		xMax = xAttr.max,
-		yMin = yAttr.min,
-		yMax = yAttr.max;
-
-	if (settings.x.logScale) {
-		logProjectArray(xData);
-		xMin = logProject(xMin);
-		xMax = logProject(xMax);
-	}
-	if (settings.y.logScale) {
-		logProjectArray(yData);
-		yMin = logProject(yMin);
-		yMax = logProject(yMax);
-	}
-
-	const xMargin = (xMax - xMin) * 0.0625;
-	const yMargin = (yMax - yMin) * 0.0625;
-
-	let xy = new Uint32Array(xData.length);
-	// we add xMargin/yMargin in the divisor here
-	// (and compensate further on with 0.5) to
-	// *also* add a margin *before* the normalization.
-	// We also subtract the radius to avoid any points
-	// from going over the edge of the canvas.
-	const {
-		width, height, radius,
-	} = spriteLayout;
-	let xScale = ((width - 4 * radius)) / (xMax - xMin + xMargin);
-	let yScale = ((height - 4 * radius)) / (yMax - yMin + yMargin);
-	let i = xData.length;
-	while (i--) {
-		let x = (xData[i] - xMin + 0.5 * xMargin) * xScale + 2 * radius;
-		let y = (yData[i] - yMin + 0.5 * yMargin) * yScale + 2 * radius;
-		// packing x and y into one 32-bit integer is currently faster
-		// than using two arrays. As long as our screen dimension do
-		// not exceed 32k pixels in either dimension we should be fine
-		xy[i] = ((y & 0x7FFF) << 16) + (x & 0x7FFF);
-	}
-	return xy;
-}
-
-function convertColorData(colorAttr, indices, dataToIdx) {
-	const colData = attrSubset(colorAttr, indices);
-	// Largest palettes are 256 entries in size,
-	// so we can safely Uint8Array for cIdx
-	let cIdx = new Uint8Array(colData.length);
-	let i = cIdx.length;
-	while (i--) {
-		cIdx[i] = dataToIdx(colData[i]);
-	}
-	return { cIdx };
-}
-
-function prepareSprites(colorMode, spriteLayout) {
-	const {
-		radius, sprites,
-	} = spriteLayout;
-
-	let palette = getPalette(colorMode);
-	const spriteW = sprites[0].width,
-		spriteH = sprites[0].height;
-	const lineW = constrain(radius / 10, 0.125, 0.5);
-	// reset all sprites to empty circles
-	let i = sprites.length;
-	while (i--) {
-		let ctx = sprites[i].getContext('2d');
-		ctx.save();
-		ctx.clearRect(0, 0, spriteW, spriteH);
-		ctx.beginPath();
-		ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
-		ctx.closePath();
-		ctx.globalAlpha = 0.3;
-		ctx.strokeStyle = 'black';
-		ctx.lineWidth = lineW;
-		ctx.stroke();
-		ctx.restore();
-		contexts[i] = ctx;
-	}
-	// fill the _sprites that have a palette
-	// note the prefix decrement to skip index zero
-	i = palette.length;
-	while (--i) {
-		let ctx = contexts[i];
-		ctx.save();
-		ctx.globalAlpha = 0.5;
-		ctx.fillStyle = palette[i];
-		ctx.fill();
-		ctx.restore();
-	}
-}
+TODO: Figure out why the following breaks scatterplot
 
 function sortByAxes(xy, cIdx, sprites) {
 
@@ -559,190 +833,4 @@ function sortByAxes(xy, cIdx, sprites) {
 		zeros,
 	};
 }
-
-// Sorts a Float64Array by it's bitmask-and 0xFFFFFFFF value
-function radix32Float64(input) {
-	const totalBins = 256;
-	const byteSize = 8;
-	const length = input.length;
-
-	let output = new Float64Array(length);
-
-	const arrayConstr = length < 256 ?
-		Uint8Array :
-		length < (1 << 16) ?
-			Uint16Array :
-			length < (1 << 32) ?
-				Uint32Array :
-				Float64Array;
-	let count = new arrayConstr(totalBins);
-	let output_has_result = false;
-
-	let bitMask = 255;
-	let shiftRightAmount = 0;
-
-	let startOfBin = new arrayConstr(totalBins);
-	let endOfBin = new arrayConstr(totalBins);
-
-	// end processing digits when all the mask bits have
-	// been processed and shifted out, leaving no bits
-	// set in the bitMask
-	while (bitMask !== 0) {
-		count.fill(0);
-		let idx = 0;
-		// Scan the array and count the number of times each digit appears
-		for (let i = 0; i < length; i++) {
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			count[idx]++;
-		}
-
-		startOfBin[0] = endOfBin[0] = 0;
-		for (let i = 1; i < totalBins; i++) {
-			startOfBin[i] = endOfBin[i] = startOfBin[i - 1] + count[i - 1];
-		}
-
-		for (let i = 0; i < length; i++) {
-			idx = (input[i] & bitMask) >>> shiftRightAmount;
-			output[endOfBin[idx]++] = input[i];
-		}
-
-		bitMask <<= byteSize;
-		shiftRightAmount += byteSize;
-		output_has_result = !output_has_result;
-
-		// swap input and output arrays
-		[input, output] = [output, input];
-	}
-
-	if (output_has_result) {
-		input.set(output);
-	}
-
-	return input;
-}
-
-function blitSprites(context, spriteLayout, sorted) {
-	const {
-		x,
-		y,
-		height,
-		sprites,
-		spriteRadius,
-	} = spriteLayout;
-
-	let {
-		cSprites,
-		zeros,
-		xy,
-	} = sorted;
-
-	let zeroSprite = sprites[0],
-		_xy = 0,
-		_x = 0,
-		_y = 0,
-		i = cSprites.length - zeros;
-	// draw zero values first
-	while (zeros--) {
-		_xy = xy[i + zeros];
-		// Even though xy is a Float64, bitmasking and
-		// shifting forces it to a 32-bit uint value.
-		_x = x + (_xy & 0x7FFF) - spriteRadius | 0;
-		_y = y + (height - ((_xy >>> 16) & 0x7FFF)) - spriteRadius | 0;
-		context.drawImage(zeroSprite, _x, _y);
-	}
-	while (i--) {
-		_xy = xy[i];
-		_x = x + (_xy & 0x7FFF) - spriteRadius | 0;
-		_y = y + (height - ((_xy >>> 16) & 0x7FFF)) - spriteRadius | 0;
-		context.drawImage(cSprites[i], _x, _y);
-	}
-}
-
-function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
-	const {
-		labelTextSize, xLabel, yLabel, colorLabel,
-	} = labelLayout;
-	textStyle(context);
-	textSize(context, labelTextSize);
-
-	// X attribute name
-	drawText(context, xAttr.name, xLabel.x, xLabel.y);
-
-	// Y attribute name
-	context.translate(0, context.height);
-	context.rotate(-Math.PI / 2);
-	drawText(context, yAttr.name, yLabel.x, yLabel.y);
-	context.rotate(Math.PI / 2);
-	context.translate(0, -context.height);
-
-	// Color attribute name
-	context.textAlign = 'end';
-	drawText(context, colorAttr.name, colorLabel.x - labelTextSize * 6 - 5 | 0, colorLabel.y);
-	context.textAlign = 'start';
-}
-
-function drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings) {
-	const {
-		min, max,
-	} = colorAttr;
-	const { labelTextSize } = labelLayout;
-	const {
-		x, y, gradientSize,
-	} = labelLayout.colorLabel;
-	const { pixelRatio } = context;
-
-	// label for min value
-	const lblMin = min !== (min | 0) ? min.toExponential(2) : min | 0;
-	context.textAlign = 'end';
-	drawText(context, lblMin, (x - 5) | 0, y);
-
-	// label for max value
-	const lblMax = max !== (max | 0) ? max.toExponential(2) : max | 0;
-	context.textAlign = 'start';
-	drawText(context, lblMax, (x + gradientSize + 5) | 0, y);
-
-	// border for colour gradient
-	const cY = (y - labelTextSize) | 0;
-	context.fillRect(
-		x - pixelRatio,
-		cY - pixelRatio,
-		gradientSize + 2 * pixelRatio,
-		labelTextSize * 1.25 + 2 * pixelRatio
-	);
-
-	const range = clipRange(colorAttr, settings);
-	const cDelta = colorAttr.max - colorAttr.min;
-	// draw clipping points, if required
-	if (range.min !== range.clipMin) {
-		const clipMin = settings.logScale ? Math.pow(2, range.clipMin) : range.clipMin;
-		const clipMinX = ((clipMin - range.min) * gradientSize / cDelta) | 0;
-		context.fillRect(
-			x + clipMinX,
-			cY - pixelRatio * 3,
-			pixelRatio | 0,
-			labelTextSize * 1.25 + 6 * pixelRatio | 0
-		);
-	}
-	if (range.max !== range.clipMax) {
-		const clipMax = settings.logScale ? Math.pow(2, range.clipMax) : range.clipMax;
-		const clipMaxX = ((clipMax - range.min) * gradientSize / cDelta) | 0;
-		context.fillRect(
-			x + clipMaxX,
-			cY - pixelRatio * 3,
-			pixelRatio,
-			labelTextSize * 1.25 + 6 * pixelRatio | 0
-		);
-	}
-	// colour gradient
-	const cScaleFactor = cDelta / gradientSize;
-	const valToColor = attrToColorFactory(colorAttr, colorMode, settings);
-	let i = gradientSize;
-	while (i--) {
-		context.fillStyle = valToColor(colorAttr.min + i * cScaleFactor);
-		context.fillRect(x + i, cY, 1, labelTextSize * 1.25 | 0);
-	}
-}
-
-
-
 */
