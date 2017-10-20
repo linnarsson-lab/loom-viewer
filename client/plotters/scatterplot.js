@@ -6,17 +6,18 @@ import {
 	clipRange,
 	constrain,
 	getPalette,
+	isLittleEndian,
 	logProject,
 	logProjectArray,
 	nullFunc,
-	rndNorm,
-} from '../js/util';
+	rndNormArray,
+} from 'js/util';
 
 import {
 	drawText,
 	textSize,
 	textStyle,
-} from './canvas';
+} from 'plotters/canvas';
 
 // "global" array of sprite canvases.
 // Dots will be drawn in later (depends on colour settings)
@@ -25,7 +26,7 @@ const {
 	allSprites,
 } = (() => {
 	let i = 257,
-		j = 8;
+		j = 6;
 	const allSprites = new Array(j);
 	while (j--) {
 		i = 257;
@@ -144,7 +145,7 @@ function calcLayout(context, settings) {
 	// Suitable radius of the markers
 	// - smaller canvas size -> smaller points
 	let radius = log2(shortEdge) * scaleFactor / 50 * pixelRatio | 0;
-	radius = constrain(radius, 1, 254);
+	radius = constrain(radius, 1, 62);
 
 	let spriteIdx = 0,
 		spriteRadius = 2;
@@ -248,26 +249,29 @@ function convertAttr(attr, indices, jitter) {
 
 function maybeJitterData(xData, yData, settings, xJitter, yJitter) {
 	const {
-		PI, random, sin, cos,
+		PI, sin, cos,
 	} = Math;
 	const TAU = 2 * PI;
 	let i = xData.length;
 	if (settings.x.jitter && settings.y.jitter) {
 		// if jittering both axes, do so in a
 		// circle around the data
+		const randomness = rndNormArray(i<<1);
 		while (i--) {
-			const r = rndNorm();
-			const t = TAU * random();
+			const r = randomness[(i<<1) + 1];
+			const t = TAU *randomness[i<<1];
 			xData[i] += xJitter * r * sin(t);
 			yData[i] += yJitter * r * cos(t);
 		}
 	} else if (settings.x.jitter) {
+		const randomness = rndNormArray(i);
 		while (i--) {
-			xData[i] += xJitter * rndNorm();
+			xData[i] += xJitter * randomness[i];
 		}
 	} else if (settings.y.jitter) {
+		const randomness = rndNormArray(i);
 		while (i--) {
-			yData[i] += yJitter * rndNorm();
+			yData[i] += yJitter * randomness[i];
 		}
 	}
 }
@@ -360,7 +364,7 @@ function prepareSprites(colorMode, spriteLayout) {
 	}
 
 	// all circles outside of our palette are empty too
-	for (let i = palette.length; i < sprites.length; i++){
+	for (let i = palette.length; i < sprites.length; i++) {
 		// let ctx = sprites[i].getContext('2d');
 		// just copy the zero sprite, which is faster
 		// ctx.drawImage(sprite0, 0, 0);
@@ -375,7 +379,7 @@ function emptyCircle(ctx, radius, spriteW, spriteH, lineW) {
 	ctx.beginPath();
 	ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
 	ctx.closePath();
-	ctx.globalAlpha = 0.3125;
+	ctx.globalAlpha = 0.25;
 	ctx.strokeStyle = 'black';
 	ctx.lineWidth = lineW;
 	ctx.stroke();
@@ -383,10 +387,21 @@ function emptyCircle(ctx, radius, spriteW, spriteH, lineW) {
 }
 
 function fillCircle(ctx, fillColor) {
-	ctx.globalAlpha = 0.5;
 	ctx.fillStyle = fillColor;
+	ctx.globalAlpha = 0.5;
 	ctx.fill();
 }
+
+// Turns out tSNE almost never overlaps, even with rounding to pixels.
+//
+// Given a transparency level (0 = transparent, 255 = opaque), it makes no
+// sense to draw sprites on the same spot if the bottom ones are not even
+// visible. This is a look-up table to determine how many layers of stacked
+// sprites will be visible at most.
+// const cullSprites = [0, 255, 191, 155, 132, 116, 103, 93, 85, 79, 73, 69, 64, 61, 58, 55, 52, 51, 48, 46, 44, 43, 41, 40, 38, 37, 36, 35, 34, 33, 32, 31, 30, 30, 29, 28, 28, 26, 26, 26, 25, 25, 25, 24, 23, 23, 22, 22, 22, 21, 21, 21, 20, 20, 19, 19, 18, 18, 18, 18, 18, 17, 17, 17, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
+// // For our current lowest alpha of 0.3125 (79),
+// // we need to draw at most 13 sprites).
+// const maxVisibleStack = cullSprites[0.5 * 256 | 0];
 
 function sortByAxes(xy, cIdx, imgData) {
 
@@ -401,14 +416,18 @@ function sortByAxes(xy, cIdx, imgData) {
 	const l = cIdx.length;
 	let i = l,
 		zeros = 0,
-		indices = new Uint32Array(l),
+		indices = new (l < (1 << 16) ?
+			Uint16Array :
+			Uint32Array)(l),
 		compVal = new Uint32Array(l);
 	while (i--) {
 		indices[i] = i;
-		if (cIdx[i]) {
-			compVal[i] = xy[i];
-		} else {
-			compVal[i] = 0x7FFFFFFF;
+		compVal[i] = xy[i];
+		// if zero-value, we set the most significant bit  to ensure
+		// zero values go to the end of the array. (we assume that all
+		// y-values are smaller than 0x7FFF, or 32767 pixels)
+		if (!cIdx[i]) {
+			compVal[i] += 0x80000000;
 			zeros++;
 		}
 	}
@@ -417,13 +436,15 @@ function sortByAxes(xy, cIdx, imgData) {
 		return compVal[a] - compVal[b];
 	});
 
+	// skip zero-values; no need to copy their sprite
+	// since we draw all of them at once later
+	i = l - zeros;
 
 	// loop unrolling.
 	// Yes, like in C.
 	// Yes, it's disgusting.
-	// Yes, it actually is faster (at the time of writing)
-	i = l; // no need to copy _sprites for zero values
-	let spriteImgData = new Array(l);
+	// Yes, it actually is benchmarked as being faster (at the time of writing)
+	let spriteImgData = new Array(i);
 	while (i - 16 > 0) {
 		spriteImgData[--i] = imgData[cIdx[indices[i]]];
 		spriteImgData[--i] = imgData[cIdx[indices[i]]];
@@ -447,7 +468,7 @@ function sortByAxes(xy, cIdx, imgData) {
 	}
 
 	let _xy = xy;
-	xy = compVal; // reuse compVal, reduce GC pressure
+	xy = compVal; // re-use compVal to reduce GC pressure a bit
 	i = l;
 	while (i - 16 > 0) {
 		xy[--i] = _xy[indices[i]];
@@ -472,7 +493,9 @@ function sortByAxes(xy, cIdx, imgData) {
 	}
 
 	return {
-		xy, spriteImgData, zeros,
+		xy,
+		spriteImgData,
+		zeros,
 	};
 }
 
@@ -503,15 +526,15 @@ function blitSprites(context, spriteLayout, sorted, imgData) {
 	// set pixel values in canvas image data to white
 	cData.fill(255);
 
-
 	let zeroSprite = imgData[0],
 		_xy = 0,
 		_x = 0,
 		_y = 0,
-		i = spriteImgData.length - zeros;
+		i = xy.length;
+
 	// draw zero values first
-	while (zeros--) {
-		_xy = xy[i + zeros];
+	while (i-- > xy.length-zeros) {
+		_xy = xy[i];
 		_x = x + (_xy & 0xFFFF) - spriteRadius | 0;
 		_y = y + (height - (_xy >>> 16)) - spriteRadius | 0;
 		drawImgData(zeroSprite, cData, _x, _y, spriteW, spriteH, width);
@@ -551,31 +574,86 @@ function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
 	context.textAlign = 'start';
 }
 
-function drawImgData(imgData, tData, x, y, imgW, imgH, tW){
+const drawImgData = isLittleEndian ?
+	drawImgDataLE :
+	drawImgDataBE;
+
+// Optimised for Little Endian layout
+function drawImgDataLE(imgData, tData, x, y, imgW, imgH, tW) {
 	// all of our sprites are in-bounds
 	// if (x+imgW > 0 && x+imgW < tW && y+imgH > 0 && y+imgH < tH)
 
+	// Use 32-bit views (faster than 4x 8-bit array access)
+	const imgData32 = new Uint32Array(imgData.buffer);
+	const tData32 = new Uint32Array(tData.buffer);
 	for (let yi = 0; yi < imgH; yi++) {
 		for (let xi = 0; xi < imgW; xi++) {
-			let imgIdx = (xi + yi * imgW) << 2,
-				tIdx = (xi + x + (yi + y)*tW) << 2;
-			// alpha - we skip drawing if the pixel is transparent.
-			let a = imgData[imgIdx + 3];
-			if (a === 0) {
+
+			let imgIdx = xi + yi * imgW;
+
+			let ci = imgData32[imgIdx],
+				ai = ci & 0xFF000000;
+			// skip transparent pixels.
+			if (ai === 0) {
 				continue;
 			}
+			let tIdx = x + xi + (yi + y) * tW,
+				ct = tData32[tIdx];
 			// alpha is a byte, so in the range [0,256).
 			// We introduce a tiny bias towards the newer pixel,
 			// to replace /255 with /256, which can be written as
 			// >>8, which is faster
-			a++;
-			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx++]*a)>>>8;
-			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx++]*a)>>>8;
-			tData[tIdx] = (tData[tIdx++]*(256-a) + imgData[imgIdx]*a)>>>8;
-			tData[tIdx] = 255;
+			ai = (ai >>> 24) + 1;
+			const at = 256 - ai;
+			tData32[tIdx] =
+				0xFF000000 +
+				// RGB
+				((ct & 0xFF0000) * at + (ci & 0xFF0000) * ai >>> 8 & 0xFF0000) +
+				((ct & 0xFF00) * at + (ci & 0xFF00) * ai >>> 8 & 0xFF00) +
+				((ct & 0xFF) * at + (ci & 0xFF) * ai >>> 8 & 0xFF);
 		}
 	}
 }
+
+// optimised for Big Endian layout
+function drawImgDataBE(imgData, tData, x, y, imgW, imgH, tW) {
+	// all of our sprites are in-bounds
+	// if (x+imgW > 0 && x+imgW < tW && y+imgH > 0 && y+imgH < tH)
+
+	// Use 32-bit views (faster than 4x 8-bit array access)
+	const imgData32 = new Uint32Array(imgData.buffer);
+	const tData32 = new Uint32Array(tData.buffer);
+	for (let yi = 0; yi < imgH; yi++) {
+		for (let xi = 0; xi < imgW; xi++) {
+
+			let imgIdx = xi + yi * imgW;
+
+			let ci = imgData32[imgIdx],
+				ai = ci & 0xFF;
+			// skip transparent pixels.
+			if (ai === 0) {
+				continue;
+			}
+
+			let tIdx = x + xi + (yi + y) * tW,
+				ct = tData32[tIdx];
+			// alpha is a byte, so in the range [0,256).
+			// We introduce a tiny bias towards the newer pixel,
+			// to replace /255 with /256, which can be written as
+			// >>8, which is faster
+			const at = 256 - ++ai;
+
+			tData32[tIdx] =
+				// alpha
+				0xFF +
+				// RGB
+				((ct & 0xFF000000) * at + (ci & 0xFF000000) * ai >>> 8 & 0xFF000000) +
+				((ct & 0xFF0000) * at + (ci & 0xFF0000) * ai >>> 8 & 0xFF0000) +
+				((ct & 0xFF00) * at + (ci & 0xFF00) * ai >>> 8 & 0xFF00);
+		}
+	}
+}
+
 
 function drawHeatmapScale(context, colorAttr, labelLayout, colorMode, settings) {
 	const {
