@@ -1,9 +1,8 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-
-// webpack needs the trailing slash for output.publicPath
-const PUBLIC_PATH = 'http://localhost:8003/';
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const CssoWebpackPlugin = require('csso-webpack-plugin').default;
 
 module.exports = {
 	entry: {
@@ -13,31 +12,32 @@ module.exports = {
 		path: path.join(__dirname, './python/loom_viewer'),
 		filename: '[name].[hash].js',
 		sourceMapFilename: '[name].[hash].map',
-		publicPath: PUBLIC_PATH,
 	},
 	module: {
-		loaders: [
+		rules: [
 			{
 				test: /\.css$/,
-				use: [
-					'style-loader',
-					'css-loader',
-				],
+				use: ExtractTextPlugin.extract({
+					fallback: 'style-loader',
+					use: 'css-loader',
+				}),
 			},
 			{
 				test: /\.(png|jpg|gif)$/,
 				loader: 'file-loader',
 				options: {
-					publicPath: PUBLIC_PATH,
-					name: 'static/images/[name]-[hash].[ext]',
+					name: '[name]-[hash].[ext]',
+					outputPath: 'static/',
+					publicPath: '/',
 				},
 			},
 			{
 				test: /\.(svg|eot|ttf|woff|woff2)$/,
 				loader: 'file-loader',
 				options: {
-					publicPath: PUBLIC_PATH,
-					name: 'static/fonts/[name]-[hash].[ext]',
+					name: '[name]-[hash].[ext]',
+					outputPath: 'static/',
+					publicPath: '/',
 				},
 			},
 			{
@@ -53,6 +53,8 @@ module.exports = {
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
+		new ExtractTextPlugin('/static/styles-[contenthash].css'),
+		new CssoWebpackPlugin(),
 		new HtmlWebpackPlugin({
 			template: path.join(__dirname + '/client/index.html'),
 			filename: 'index.html',

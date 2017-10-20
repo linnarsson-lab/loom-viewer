@@ -1,10 +1,8 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-
-// webpack needs the trailing slash for output.publicPath
-const PUBLIC_PATH = 'http://localhost:8003/';
-
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const CssoWebpackPlugin = require('csso-webpack-plugin').default;
 
 const uglifySettings = {
 	mangle: {
@@ -52,42 +50,30 @@ module.exports = {
 		sourceMapFilename: '[name].[hash].map',
 	},
 	module: {
-		loaders: [
+		rules: [
 			{
 				test: /\.css$/,
-				use: [
-					{
-						loader: 'style-loader',
-						options: {
-							publicPath: PUBLIC_PATH,
-							minimize: true,
-							sourceMap: false,
-						},
-					},
-					{
-						loader: 'css-loader',
-						options: {
-							publicPath: PUBLIC_PATH,
-							minimize: true,
-							sourceMap: false,
-						},
-					},
-				],
+				use: ExtractTextPlugin.extract({
+					fallback: 'style-loader',
+					use: 'css-loader',
+				}),
 			},
 			{
 				test: /\.(png|jpg|gif)$/,
 				loader: 'file-loader',
 				options: {
-					publicPath: PUBLIC_PATH,
-					name: 'static/images/[name]-[hash].[ext]',
+					name: '[name]-[hash].[ext]',
+					outputPath: 'static/',
+					publicPath: '/',
 				},
 			},
 			{
 				test: /\.(svg|eot|ttf|woff|woff2)$/,
 				loader: 'file-loader',
 				options: {
-					publicPath: PUBLIC_PATH,
-					name: 'static/fonts/[name]-[hash].[ext]',
+					name: '[name]-[hash].[ext]',
+					outputPath: 'static/',
+					publicPath: '/',
 				},
 			},
 			{
@@ -104,6 +90,8 @@ module.exports = {
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
 		new webpack.optimize.UglifyJsPlugin(uglifySettings),
+		new ExtractTextPlugin('/static/styles-[contenthash].css'),
+		new CssoWebpackPlugin(),
 		new HtmlWebpackPlugin({
 			template: path.join(__dirname + '/client/index.html'),
 			filename: 'index.html',

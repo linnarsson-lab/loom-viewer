@@ -1,11 +1,20 @@
 #! /bin/bash
 
-./build deploy
+echo ""
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo "!! Don't forget to update _version.py before deploying !!"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo ""
+./build prod
 build_status=$?
 if [ $build_status == 0 ]; then
   cd python
-  echo "Don't forget to update _version.py before deploying!'"
-  echo "Submitting to PyPi"
+  echo ""
+  echo "============================================================"
+  echo "                   Submitting to PyPi"
+  echo " (Did you remember to update _version.py before deploying?)"
+  echo "============================================================"
+  echo ""
   python setup.py sdist upload -r pypi
   cd ..
   echo ""
