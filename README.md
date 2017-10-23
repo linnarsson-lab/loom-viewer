@@ -15,19 +15,18 @@ This repository is the viewer part.
 
 ## Installation
 
-1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
+**Mac and Linux**: you can choose to install through PyPi, or build `loom-viewer` from source. 
 
-From here on out, you can choose to install through `pip`, or build `loom-viewer` from source. 
-
-**Windows users:** for now, the only tested option is to build from source. For that you need a terminal that supports `git` and `bash` - We suggest using [cmdr](http://cmder.net/) to ease this process. You may want also to add Anaconda installation directly to your system PATH variable, so that you can run any Python scripts by simply typing `python`. See [this SO question](https://stackoverflow.com/a/4621277/3211791).
+**Windows users:** for now, the least hacky (but still hacky) option is to build from source. To ease this process we suggest using [cmdr](http://cmder.net/) for a nicer terminal experience. You may want also to add the Anaconda installation directory to your system PATH variable, so that you can run any Python scripts by simply typing `python`. If you only installed Anaconda for this purpose and do not have any other Python installation you should be fine.
 
 ### Installing through pip
 
+1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
 
 2. Install Loom:
 
 ```bash
-pip install loom-viewer
+pip install loompy loom-viewer
 ```
 
 Tip: Loom is updated often. To ensure you have the latest version, do this:
@@ -38,16 +37,29 @@ pip install -U loom-viewer
 
 ### Installing from source
 
-1. Install [node.js](https://nodejs.org/en/)
+1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
 
-2. Clone this repository
+2. If you haven't already, install [`loompy`](https://github.com/linnarsson-lab/loompy), either from source or through PyPI:
 
-3. Open a terminal in the newly created `loom-viewer` folder, and run:
+```bash
+pip install loompy
+```
+3. Install [node.js](https://nodejs.org/en/)
+
+4. Clone this repository with git
+
+5. Open a terminal in the newly created `loom-viewer` folder, and install all required node packages:
 
 ```bash
 npm install
+```
+
+6. Run the build script. On Mac/Linux:
+
+```bash
 ./build
 ```
+On Windows, double-click (or type) `build.bat`.
 
 ## Getting started
 
@@ -57,33 +69,23 @@ To open the viewer, run the `loom` tool without any arguments. This will default
 
 **Mac and Linux:**
 
-After installation, open your terminal, and type:
+After installation, to run the `loom` tool you can simply open a terminal and type:
 
 ```bash
 loom
 ```
 
-**Windows:** enter the folder where you cloned the `loom-viewer` repository and type:
+**Windows:** 
 
-```bash
-cd python\loom_viewer
-python loom
-```
-(this assumes you added the Anaconda installation directory to your path)
+To start the server, and provided you added Anaconda to your path, you can double-click `loom.bat` in the `loom-viewer` directory. This is just a micro-script that reads `python.exe .\python\loom_viewer\loom`
 
-Alternatively, create a shortcut: right click on your desktop -> `New` -> `Shortcut`. On the line, type:
-
-```powershell
-<path to Anaconda installation>\python.exe <path to cloned `loom-viewer` repo>\python\loom_viewer\loom
-```
-
-Click `Next`, name the shortcut `Loom Viewer`, and finish the wizard. You can now double click this shortcut to start running the server and open the viewer.
+We use that `loom.bat` file to "fake" the `loom` CLI tool, so you have to be in the root folder of the `loom-viewer` repo to use it. Maybe some day we'll figure out how to properly package this as a CLI app in Windows (any suggestions are welcome!).
 
 ### Where the server looks for Loom files
 
 The first time you run `loom`, a `loom-datasets` folder will be created in your home folder. You can also explicitly point the `loom` tool to a different path with the following flag: `--dataset-path <your path here>`
 
-This is where the `loom-viewer` server looks for Loom files by default. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The project folders then store the loom files:
+By default, the `loom-datasets` folder is where the `loom-viewer` server looks for Loom files. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The loom files are then stored in the project folders:
 
 ```bash
 loom-datasets/
@@ -95,10 +97,7 @@ loom-datasets/
     └── # dataset2.loom (loom file)
 ```
 
-So to get started, either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](https://loom.linnarssonlab.org/), then place it in the appropriate project folder.
-
-
-Say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
+So to get started, either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](https://loom.linnarssonlab.org/), then place it in the appropriate project folder. For example, say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
 
 ```bash
 loom-datasets/
@@ -106,7 +105,7 @@ loom-datasets/
     └── cortex.loom
 ```
 
-The resulting view should be something like:
+When we star the loom server and open `localhost:8003`, the resulting view should be something like:
 
 ![image](https://user-images.githubusercontent.com/259840/31838214-075f1cde-b5dc-11e7-898e-6c7fca4ba8ea.png)
 
@@ -140,9 +139,9 @@ The output should look similar to this:
 2017-10-20 21:15:03,335 - INFO -     Expanding rows (stored in /home/job/loom-datasets/Published/cortex.loom.rows subfolder)
 ```
 
-As you might have guessed, the `loom tile` and `loom expand` commands will automatically search all projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged!
+Note: the `loom tile` and `loom expand` commands will automatically search _all_ projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged!
 
-Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. Meaning that if you abort gene expansion halfway, the unexpanded genes will not be added if you try again. To force that, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes. Alternatively, delete the subfolder in question.
+Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. Meaning that if you abort gene expansion halfway, the unexpanded genes will not be added if you try again. To force that, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes, even the previously expanded ones. Alternatively, delete the subfolder in question.
 
 ### Other uses of the `loom` command-line tool
 
@@ -151,3 +150,11 @@ To learn more about the `loom` tool, open your terminal, and type:
 ```bash
 loom --help
 ```
+
+**NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all` and `tile` are supported. Consider all other commands deprecated (some are actually broken at the moment). They originated from before the `loompy`/`loom-viewer` split and will be removed soon. 
+
+For help with individual commands, just type:
+
+```bash
+loom [command] --help
+
