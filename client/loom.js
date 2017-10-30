@@ -13,8 +13,6 @@ import 'react-virtualized-select/styles.css';
 // rc-slider
 import 'rc-slider/assets/index.css';
 
-// Modified for crisp zoom
-// import './css/leaflet_crisp.css';
 // Required for react-bootstrap
 import './css/bootstrap.css';
 import './css/bootstrap-theme.css';

@@ -29,6 +29,7 @@ export class Heatmap extends Component {
 					maxZoom: zoomRange[2],
 					crs: L.CRS.Simple,
 					attributionControl: false,
+					preferCanvas: true,
 				}
 			);
 
@@ -41,6 +42,8 @@ export class Heatmap extends Component {
 					continuousWorld: false,
 					noWrap: true,
 					attribution: '',
+					/* override the default CSS with our crisp upscaling one */
+					className: 'crisp-image',
 				}
 			).addTo(map);
 
