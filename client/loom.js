@@ -13,10 +13,15 @@ import 'react-virtualized-select/styles.css';
 // rc-slider
 import 'rc-slider/assets/index.css';
 
+// Modified leaflet.css that does not include the images
+// for layer controls, which we don't use anyway
+import 'css/leaflet.css';
+
 // Required for react-bootstrap
 import './css/bootstrap.css';
 import './css/bootstrap-theme.css';
-// Custom loom CSS
+
+// Custom loom CSS, includes crispness override for leaflet
 import './css/loom.css';
 
 // Set up localforage configuration once
@@ -28,5 +33,6 @@ localforage.config({
 		localforage.WEBSQL,
 		localforage.LOCALSTORAGE],
 });
+
 import Routes from './components/routes';
 render(Routes, document.getElementById('react-root'));
