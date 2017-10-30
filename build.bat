@@ -29,6 +29,7 @@ IF /i "%1"=="prod" (
     echo.
     cd .\python
     move .\loom_viewer\index.html .\loom_viewer\static\index.html
+    copy .\client\images\favicon.ico .\python\loom_viewer\static\favicon.ico
     python setup.py install --force
     cd ..
 ) ELSE (

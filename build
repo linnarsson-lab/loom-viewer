@@ -45,6 +45,7 @@ if [ $build_status == 0 ]; then
   # template, and have the resulting index.html be put in the right folders.
   # Yes, this is an ugly hack around my incompetence, but it works - Job
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico
 
   cd python
   echo ""
