@@ -59,7 +59,8 @@ def np_to_list(vals):
 			vals = np.around(vals, 8)
 			# if there are _some_ integers, convert them
 			# (arrays will likely have many zero values,
-			# so this could still save a bit of space)
+			# so this could still save a bit of space in
+			# our JSON text file output)
 			vals = vals.tolist()
 			if np.any(safe_conversion):
 				for i in range(len(vals)):
@@ -241,6 +242,12 @@ compress.init_app(app)
 @cache(expires=604800)
 def send_static(path):
 	return flask.send_from_directory('/static', path)
+
+
+@app.route('/favicon.ico')
+@cache(expires=604800)
+def send_static(path):
+	return app.send_static_file('favicon.ico')
 
 #
 # Catch-all for the react-router endpoints
