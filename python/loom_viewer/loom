@@ -4,231 +4,16 @@ import sys
 import os
 import argparse
 import logging
-import requests
-from shutil import rmtree
 import warnings
 
-try:
-	from urllib.parse import urlparse
-except ImportError:
-	from urlparse import urlparse
-from progressbar import FileTransferSpeed, Percentage, Bar, ETA, ProgressBar
 import loompy
-from loom_viewer import start_server, np_to_list, JSON_array, LoomTiles
+from loom_viewer import start_server, LoomTiles, LoomExpand
 
-from io import StringIO
-import pandas as pd
 import numpy as np
-import gzip
-import json
-import time
 
 import timeit
 import random
 
-
-################
-# EXPAND FILE #
-################
-
-"""
-	Methods for extracting data as zipped json files for fast access.
-	Note that Deep Zoom handles expansion on its own.
-"""
-
-def save_compressed_json(filename, data):
-		with gzip.open(filename=filename, mode="wt", compresslevel=6) as f:
-			json.dump(data, f)
-
-
-def expand_md(ds, dataset_path, project, filename, truncate=False):
-	"""
-	Generate object containing list entry metadata
-	"""
-	md_filename = '%s.file_md.json.gzip' % (ds.filename)
-
-	if os.path.isfile(md_filename):
-		if not truncate:
-			#logging.info('  Metadata already expanded (truncate not set)')
-			return
-		else:
-			#logging.info('  Removing previously expanded metadata (truncate set)')
-			os.remove(md_filename)
-
-	logging.info("    Expanding metada (stored as %s.file_md.json.gzip)" % filename)
-	title = ds.attrs.get("title", filename)
-	descr = ds.attrs.get("description", "")
-	url = ds.attrs.get("url", "")
-	doi = ds.attrs.get("doi", "")
-	# get arbitrary col/row attribute, they're all lists
-	# of equal size. The length equals total cells/genes
-	total_cells = ds.shape[1]
-	total_genes = ds.shape[0]
-	# default to last_modified for older files that do
-	# not have a creation_date field
-	last_mod = format_last_mod(dataset_path, project, filename)
-	creation_date = ds.attrs.get("creation_date", last_mod)
-	md_data = {
-		"project": project,
-		"filename": filename,
-		"dataset": filename,
-		"title": filename,
-		"description": descr,
-		"url":url,
-		"doi": doi,
-		"creationDate": creation_date,
-		"lastModified": last_mod,
-		"totalCells": total_cells,
-		"totalGenes": total_genes,
-	}
-	save_compressed_json(md_filename, md_data)
-
-def format_last_mod(dataset_path, project, filename):
-	"""
-	Returns the last time the file was modified as a string,
-	formatted year/month/day hour:minute:second
-	"""
-	path = os.path.join(dataset_path, project, filename)
-	mtime = time.gmtime(os.path.getmtime(path))
-	return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
-
-# Includes attributes
-def expand_attrs(ds, project, filename, truncate=False):
-
-	attrs_name = '%s.attrs.json.gzip' % (ds.filename)
-
-	if os.path.isfile(attrs_name):
-		if not truncate:
-			#logging.info('  Attributes already expanded (truncate not set)')
-			return
-		else:
-			#logging.info('  Removing previously expanded attributes (truncate set)')
-			os.remove(attrs_name)
-
-	logging.info("    Expanding attributes (stored as %s.attrs.json.gzip)" % filename)
-	tile_data = LoomTiles(ds)
-	dims = tile_data.dz_dimensions()
-	rowAttrs = { key: JSON_array(arr) for (key, arr) in ds.row_attrs.items() }
-	colAttrs = { key: JSON_array(arr) for (key, arr) in ds.col_attrs.items() }
-	fileinfo = {
-		"project": project,
-		"filename": filename,
-		"dataset": ds.filename,
-		"shape": ds.shape,
-		"zoomRange": tile_data.dz_zoom_range(),
-		"fullZoomHeight": dims[1],
-		"fullZoomWidth": dims[0],
-		"rowAttrs": rowAttrs,
-		"colAttrs": colAttrs
-	}
-	save_compressed_json(attrs_name, fileinfo)
-
-def expand_rows(ds, truncate=False):
-
-	row_dir = '%s.rows' % ( ds.filename )
-
-	if os.path.isdir(row_dir):
-		if not truncate:
-			#logging.info('  Rows already expanded (truncate not set)')
-			return
-		else:
-			#logging.info('  Removing previously expanded rows (truncate set)')
-			rmtree(row_dir)
-
-	try:
-		os.makedirs(row_dir, exist_ok=True)
-	except OSError as exception:
-		# if the error was that the directory already
-		# exists, ignore it, since that is expected.
-		if exception.errno != errno.EEXIST:
-			raise
-
-	logging.info("    Expanding rows (stored in %s subfolder)" % row_dir)
-
-	# 64 is the default chunk size, so probably the most cache
-	# friendly option to batch over
-	total_rows = ds.shape[0]
-	i = 0
-	while i+64 < total_rows:
-		row64 = ds[i:i+64,:]
-		for j in range(64):
-			row = {'idx': i+j, 'data': JSON_array(row64[j])}
-			row_file_name = '%s/%06d.json.gzip' % (row_dir, i+j)
-			save_compressed_json(row_file_name, row)
-		i += 64
-	while i < total_rows:
-		row = {'idx': i, 'data': JSON_array(ds[i,:])}
-		row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
-		save_compressed_json(row_file_name, row)
-		i += 1
-
-def expand_rows_fix(ds):
-
-	row_dir = '%s.rows' % ( ds.filename )
-
-	if os.path.isdir(row_dir):
-		# Fixing only makes sense if the rows were already expanded
-		logging.info("    Fixing expanded rows (stored in %s subfolder)" % row_dir)
-
-		total_rows = ds.shape[0]
-		remainder = total_rows % 64
-		for i in range(total_rows - remainder, total_rows):
-			row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
-			if os.path.isfile(row_file_name):
-				logging.info("    Replacing old %06d.json.gzip" % i)
-				os.remove(row_file_name)
-			# Fix new row
-			row = {'idx': i, 'data': JSON_array(ds[i,:])}
-			save_compressed_json(row_file_name, row)
-
-	else:
-		expand_rows(ds, False)
-
-
-def expand_columns(ds, truncate=False):
-
-	col_dir = '%s.cols' % ( ds.filename )
-
-	if os.path.isdir(col_dir):
-		if not truncate:
-			#logging.info('  Columns already expanded (truncate not set)')
-			return
-		else:
-			#logging.info('  Removing previously expanded columns (truncate set)')
-			rmtree(col_dir)
-
-	try:
-		os.makedirs(col_dir, exist_ok=True)
-	except OSError as exception:
-		# if the error was that the directory already
-		# exists, ignore it, since that is expected.
-		if exception.errno != errno.EEXIST:
-			raise
-
-	logging.info("  Expanding columns (stored in %s subfolder)" % col_dir)
-
-	total_cols = ds.shape[1]
-	i = 0
-	while i+64 < total_cols:
-		col64 = ds[:, i:i+64]
-		for j in range(64):
-			# Transpose it into a row, so that it
-			# will get converted to a list properly
-			data = JSON_array(col64[:, j].transpose())
-			col = {'idx': i, 'data': data}
-			col_file_name = '%s/%06d.json.gzip' % (col_dir, i+j)
-			save_compressed_json(col_file_name, col)
-		i += 64
-	while i < total_cols:
-		data = JSON_array(ds[:, i].transpose())
-		col = {'idx': i, 'data': data}
-		col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
-		save_compressed_json(col_file_name, col)
-		i += 1
-
-###################
-# ARGUMENT PARSER #
-###################
 
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):
@@ -236,108 +21,122 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.stderr.write('\nerror: %s\n' % message)
 		sys.exit(2)
 
-def connect_loom(dataset_path, filename):
-	if os.path.exists(filename):
-		logging.info("  Connecting to %s locally" % filename)
-		return loompy.connect(filename)
-	full_path = os.path.join(dataset_path, filename)
-	#logging.info("  Looking for %s" % full_path )
-	if os.path.exists(full_path):
-		logging.info("  Connecting to %s at full path" % filename)
-		return loompy.connect(full_path)
-	logging.warn("  Could not find %s" % filename)
+def connect_loom(file_path):
+	if os.path.exists(file_path):
+		logging.info("  Connecting to %s" % file_path)
+		return loompy.connect(file_path)
+	logging.warn("  Could not find %s" % file_path)
 	return None
 
-def tile_command(dataset_path, filename):
+def list_filename_matches(dataset_path, filename):
+	logging.info('Looking for Loom files matching %s' % filename)
 	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
 	logging.info('Found %i projects' % len(projects))
+	matching_files = []
 	for project in projects:
 		project_path = os.path.join(dataset_path, project)
 		logging.info('Entering project %s' % project_path)
-		if os.path.exists(os.path.join(project_path, filename)):
-			ds = None
-			try:
-				ds = connect_loom(project_path, filename)
-				if ds == None:
-					raise warnings.warn("Could not connect to %s" % filename)
-			except Exception as e:
-				logging.error(e)
-				return
-			try:
-				logging.info("    Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
-				tiles = LoomTiles(ds)
-				tiles.prepare_heatmap()
-			except Exception as e:
-				logging.error(e)
+		if os.path.exists(project_path):
+			project_files = os.listdir(project_path)
+			file_path = os.path.join(project_path, filename)
+			if os.path.isfile(file_path):
+				logging.info('  Found a matching Loom file')
+				matching_files.append((project, filename, file_path))
+	return matching_files
 
-def tile_project_command(dataset_path, project):
+def list_project_files(dataset_path, project):
+	logging.info('Listing all Loom files in %s' % project)
 	project_path = os.path.join(dataset_path, project)
-	logging.info('Entering project %s' % project_path)
-	project_files = os.listdir(project_path)
-	loom_files = [filename for filename in project_files if filename.endswith(".loom")]
-	logging.info('Found %i loom files' % len(loom_files))
-	for filename in loom_files:
-		if os.path.exists(os.path.join(project_path, filename)):
-			ds = None
-			try:
-				ds = connect_loom(project_path, filename)
-				if ds == None:
-					raise warnings.warn("Could not connect to %s" % filename)
-			except Exception as e:
-				logging.error(e)
-				return
-			try:
-				logging.info("    Precomputing heatmap tiles (stored in %s.tiles subfolder)" % filename)
-				tiles = LoomTiles(ds)
-				tiles.prepare_heatmap()
-			except Exception as e:
-				logging.error(e)
+	if os.path.exists(project_path):
+		project_files = os.listdir(project_path)
+		loom_files = [(project, filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")]
+
+		total_loom_files = len(loom_files)
+		if total_loom_files is 0:
+			logging.info("No loom files found in %s folder" % project)
+		elif total_loom_files is 1:
+			logging.info("Found 1 loom file")
+		else:
+			logging.info("Found %i loom files" % total_loom_files)
+
+		return loom_files
+	else:
+		raise warnings.warn("%s is not a path to a Project folder!" % project_path)
+
+def tile_command(dataset_path, filename, truncate):
+	loom_files = list_filename_matches(dataset_path, filename)
+	for project, filename, file_path in loom_files:
+		ds = None
+		try:
+			ds = connect_loom(file_path)
+			if ds == None:
+				raise warnings.warn("Could not connect to %s" % file_path)
+		except Exception as e:
+			logging.error(e)
+			return
+		try:
+			logging.info("    Precomputing heatmap tiles, stored in subfolder:\n    %s.tiles" % file_path)
+			tiles = LoomTiles(ds)
+			tiles.prepare_heatmap(truncate)
+		except Exception as e:
+			logging.error(e)
+
+def tile_project_command(dataset_path, project, truncate):
+	loom_files = list_project_files(dataset_path, project)
+	for _, filename, file_path in loom_files:
+		ds = None
+		try:
+			ds = connect_loom(file_path)
+			if ds == None:
+				raise warnings.warn("Could not connect to %s" % file_path)
+		except Exception as e:
+			logging.error(e)
+			return
+		try:
+			logging.info("    Precomputing %s heatmap tiles, stored in subfolder:\n    %s.tiles" % filename, file_path)
+			tiles = LoomTiles(ds)
+			tiles.prepare_heatmap(truncate)
+		except Exception as e:
+			logging.error(e)
 
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
 		return
-	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
-	logging.info('Found %i projects' % len(projects))
-	for project in projects:
-		project_path = os.path.join(dataset_path, project)
-		logging.info('Entering project %s' % project_path)
-		file_path = os.path.join(project_path, filename)
-		if os.path.exists(file_path):
-			try:
-				ds = connect_loom(project_path, filename)
-				if ds == None:
-					raise warnings.warn("Could not connect to %s" % filename)
-				if metadata:
-					expand_md(ds, dataset_path, project, filename, truncate)
-				if attributes:
-					expand_attrs(ds, project, filename, truncate)
-				if rows:
-					expand_rows(ds, truncate)
-				if cols:
-					expand_columns(ds, truncate)
-			except Exception as e:
-				logging.error(e)
+	loom_files = list_filename_matches(dataset_path, filename)
+	for project, _, file_path in loom_files:
+		try:
+			ds = connect_loom(file_path)
+			if ds == None:
+				raise warnings.warn("Could not connect to %s" % file_path)
+			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
+			if metadata:
+				expand.metadata(truncate)
+			if attributes:
+				expand.attributes(truncate)
+			if rows:
+				expand.rows(truncate)
+			if cols:
+				expand.columns(truncate)
+		except Exception as e:
+			logging.error(e)
 
 def expand_project_command(dataset_path, project, truncate, metadata, attributes, rows, cols):
-	project_path = os.path.join(dataset_path, project)
-	logging.info('Entering project %s' % project_path)
-	project_files = os.listdir(project_path)
-	loom_files = [filename for filename in project_files if filename.endswith(".loom")]
-	logging.info('Found %i loom files' % len(loom_files))
-	for filename in loom_files:
+	loom_files = list_project_files(dataset_path, project)
+	for _, filename, file_path in loom_files:
 		try:
-			ds = connect_loom(project_path, filename)
+			ds = connect_loom(file_path)
 			if ds == None:
-				raise warnings.warn("Could not connect to %s" % filename)
+				raise warnings.warn("Could not connect to %s" % file_path)
+			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
 			if metadata:
-				expand_md(ds, dataset_path, project, filename, truncate)
+				expand.metadata(truncate)
 			if attributes:
-				expand_attrs(ds, project, filename, truncate)
+				expand.attributes(truncate)
 			if rows:
-				expand_rows(ds, truncate)
+				expand.rows(truncate)
 			if cols:
-				expand_columns(ds, truncate)
+				expand.columns(truncate)
 		except Exception as e:
 			logging.error(e)
 
@@ -346,170 +145,28 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
 		return
+	logging.info('Searching for projects in %s' % dataset_path)
 	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
-	logging.info('Found %i projects' % len(projects))
+	logging.info('  Found %i projects' % len(projects))
 	for project in projects:
-		project_path = os.path.join(dataset_path, project)
-		logging.info('Entering project %s' % project_path)
-		project_files = os.listdir(project_path)
-		loom_files = [filename for filename in project_files if filename.endswith(".loom")]
-		logging.info('Found %i loom files' % len(loom_files))
-		for filename in loom_files:
+		logging.info('Entering project %s' % project)
+		loom_files = list_project_files(dataset_path, project)
+		for _, filename, file_path in loom_files:
 			try:
-				ds = connect_loom(project_path, filename)
+				ds = connect_loom(file_path)
 				if ds == None:
-					raise warnings.warn("Could not connect to %s" % filename)
+					raise warnings.warn("Could not connect to %s" % file_path)
+				expand = LoomExpand(ds, dataset_path, project, filename, file_path)
 				if metadata:
-					expand_md(ds, dataset_path, project, filename, truncate)
+					expand.metadata(truncate)
 				if attributes:
-					expand_attrs(ds, project, filename, truncate)
+					expand.attributes(truncate)
 				if rows:
-					expand_rows(ds, truncate)
+					expand.rows(truncate)
 				if cols:
-					expand_columns(ds, truncate)
+					expand.columns(truncate)
 			except Exception as e:
 				logging.error(e)
-
-def fix_rows_command(dataset_path):
-	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
-	logging.info('Found %i projects' % len(projects))
-	for project in projects:
-		project_path = os.path.join(dataset_path, project)
-		logging.info('Entering project %s' % project_path)
-		project_files = os.listdir(project_path)
-		loom_files = [filename for filename in project_files if filename.endswith(".loom")]
-		logging.info('Found %i loom files' % len(loom_files))
-		for filename in loom_files:
-			try:
-				ds = connect_loom(project_path, filename)
-				if ds == None:
-					raise warnings.warn("Could not connect to %s" % filename)
-				expand_rows_fix(ds)
-			except Exception as e:
-				logging.error(e)
-
-def stats_command(dataset_path, filename):
-	ds = connect_loom(dataset_path, filename)
-	if ds == None:
-		logging.error("File not found")
-		sys.exit(1)
-	logging.info("Computing statistics")
-	ds.compute_stats( )
-
-def project_command(dataset_path, filename, perplexity):
-	ds = connect_loom(dataset_path, filename)
-	if ds == None:
-		logging.error("File not found")
-		sys.exit(1)
-	logging.info("Projecting to 2D")
-	ds.project_to_2d(axis=2, perplexity=perplexity)
-
-def backspin_command(dataset_path, filename, n_genes, levels):
-	ds = connect_loom(dataset_path, filename)
-	if ds == None:
-		logging.error("File not found")
-		sys.exit(1)
-	ds.feature_selection(n_genes)
-	ds.backspin(numLevels=levels)
-	logging.info("Permuting rows")
-	ds.permute(np.argsort(ds.row_attrs['BackSPIN_level_%i_group' % levels]),axis=0)
-	logging.info("Permuting columns")
-	ds.permute(np.argsort(ds.col_attrs['BackSPIN_level_%i_group' % levels]),axis=1)
-
-def list_command(dataset_path, server, username, password):
-	if server != None:
-		try:
-			if server.startswith("http://"):
-				url = server + "/loom"
-			else:
-				url = "http://" + server + "/loom"
-
-			logging.info(url)
-			response = requests.get(url , stream=True, auth=(username, password))
-
-			if not response.ok:
-				logging.error("Server error: " + str(response.status_code))
-				sys.exit(1)
-			ds_list = response.json()
-		except requests.ConnectionError:
-			logging.error("Connection with the server could not be established")
-			sys.exit(1)
-		except requests.Timeout:
-			logging.error("Connection timed out")
-			sys.exit(1)
-		except requests.TooManyRedirects:
-			logging.error("Too many redirects")
-			sys.exit(1)
-	else:
-		cache = loompy.LoomCache(dataset_path)
-		ds_list = cache.list_datasets(username, password)
-
-	datasets = {}
-	for ds in ds_list:
-		if not datasets.has_key(ds["project"]):
-			datasets[ds["project"]] = [ds["filename"]]
-		else:
-			datasets[ds["project"]].append(ds["filename"])
-	for p in datasets.keys():
-		print(p + ":")
-		for f in datasets[p]:
-			print("   " + f)
-
-def clone_command(dataset_path, project, url, username, password):
-	url_parts = urlparse(url)
-	if project == None and len(url_parts.path.split("/")) < 3:
-		logging.error("Project name was not given and URL did not include a project name")
-		sys.exit(1)
-	if project == None:
-		temp = url_parts.path.split("/")
-		if len(temp) != 4 or temp[1] != "clone":
-			logging.error("Could not infer project name from URL (try with --project flag)")
-			sys.exit(1)
-		(_, _, project, fname) = temp
-		project = project + "@" + url_parts.netloc.split(":")[0]
-	else:
-		fname = url_parts.path.split("/")[-1]
-	if not fname.endswith(".loom"):
-		logging.error("Not a valid .loom filename: " + fname)
-		sys.exit(1)
-	projdir = os.path.join(dataset_path, project)
-	if not os.path.exists(projdir):
-		os.mkdir(projdir)
-	fpath = os.path.join(projdir, fname)
-
-	logging.info("Cloning from " + url)
-	logging.info("Cloning to " + fpath)
-	try:
-		response = requests.get(url, stream=True, auth=(username, password))
-
-		if not response.ok:
-			if response.status_code == 404:
-				logging.warn("File not found")
-				sys.exit(1)
-			else:
-				logging.error("Server error: " + str(response.status_code))
-				sys.exit(1)
-		total_bytes = int(response.headers.get('content-length'))
-
-		widgets = [fname, ": ", Percentage(), ' ', Bar(), ' ', ETA(), ' ', FileTransferSpeed()]
-		pbar = ProgressBar(widgets=widgets, maxval=total_bytes).start()
-		i = 1024
-		with open(fpath, 'wb') as f:
-			for block in response.iter_content(1024):
-				pbar.update(min(i, total_bytes))
-				i += 1024
-				f.write(block)
-		pbar.finish()
-
-	except requests.ConnectionError:
-		logging.error("Connection with the server could not be established")
-		sys.exit(1)
-	except requests.Timeout:
-		logging.error("Connection timed out")
-		sys.exit(1)
-	except requests.TooManyRedirects:
-		logging.error("Too many redirects")
-		sys.exit(1)
 
 def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chunk_cache, compression_opts, shuffle, fletcher32):
 	if project != None:
@@ -526,43 +183,6 @@ def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chu
 	logging.info("Converting %s to %s" % (infile, outfile))
 	logging.info("dtype: %s, chunks size: %s, chunk cache: %s, compression: %s, shuffle: %s, fletcher32: %s" % (dtype, chunks, chunk_cache, compression_opts, shuffle, fletcher32))
 	loompy.create_from_loom(infile, outfile, chunks, chunk_cache, dtype, compression_opts, shuffle, fletcher32)
-
-
-def fromcef_command(dataset_path, infile, outfile, project):
-	if project != None:
-		outfile = os.path.join(dataset_path, project, outfile)
-	logging.info("Converting %s to %s" % (infile, outfile))
-	loompy.create_from_cef(infile, outfile)
-
-def fromcellranger_command(dataset_path, infolder, outfile, project):
-	if project != None:
-		outfile = os.path.join(dataset_path, project, outfile)
-	logging.info("Converting %s to %s" % (infolder, outfile))
-	loompy.create_from_cellranger(infile, outfile)
-
-def csv_to_dict(s):
-	stringFile = StringIO.StringIO(s)
-	data = pd.DataFrame.from_csv(stringFile, sep=",", parse_dates=False, index_col=None)
-	dataDict = data.to_dict(orient="list")
-	return {key: np.array(dataDict[key]) for key in dataDict}
-
-def fromsql_command(dataset_path, outfile, project, row_attrs, col_attrs, sql, txid):
-	if project != None:
-		outfile = os.path.join(dataset_path, project, outfile)
-	logging.info("Creating " + outfile + " from SQL")
-
-	with open(row_csv, 'r') as rf:
-		row_attrs = csv_to_dict(rf.read())
-
-	with open(col_csv, 'r') as cf:
-		col_attrs = csv_to_dict(cf.read())
-
-	pipeline = loompy.LoomPipeline()
-	logging("Uploading row and col attrs to SQL")
-	pipeline.upload(project, filename, transcriptome, col_attrs, row_attrs)
-	logging("Creating loom file from SQL")
-	pipeline.create_loom(dataset_path, project, filename, transcriptome)
-	logging("Done")
 
 def benchmark_command(infile):
 	logging.info("Benchmarking %s random row access, 10 x 100" % infile)
@@ -603,6 +223,7 @@ if __name__ == '__main__':
 		parser = VerboseArgParser(description='Loom command-line tool.')
 		parser.add_argument('--debug', action="store_true")
 		parser.add_argument('--dataset-path', help="Path to datasets directory (default: %s)" % def_dir , default=def_dir)
+
 		subparsers = parser.add_subparsers(title="subcommands", dest="command")
 
 		# loom version
@@ -613,36 +234,9 @@ if __name__ == '__main__':
 		server_parser.add_argument('--show-browser', help="Automatically launch browser", action="store_true")
 		server_parser.add_argument('-p','--port', help="Port", type=int, default=80)
 
-		# loom list
-		list_parser = subparsers.add_parser('list', help="List datasets")
-		list_parser.add_argument('--server', help="Remote server hostname")
-		list_parser.add_argument('-u','--username', help="Username")
-		list_parser.add_argument('-p','--password', help="Password")
-
-		# loom put
-		put_parser = subparsers.add_parser('put', help="Submit dataset to remote server")
-		put_parser.add_argument("file", help="Loom file to upload")
-		put_parser.add_argument('--project', help="Project name", required=True)
-		put_parser.add_argument('--server', help="Remote server hostname", required=True)
-		put_parser.add_argument('-u','--username', help="Username")
-		put_parser.add_argument('-p','--password', help="Password")
-
-		# loom clone
-		clone_parser = subparsers.add_parser('clone', help="Clone a remote dataset")
-		clone_parser.add_argument("url", help="URL of the loom file to clone")
-		clone_parser.add_argument('--project', help="Project name")
-		clone_parser.add_argument('-u','--username', help="Username")
-		clone_parser.add_argument('-p','--password', help="Password")
-
-		# loom tsne
-		tsne_parser = subparsers.add_parser('tsne', help="Compute t-SNE projection to 2D")
-		tsne_parser.add_argument("file", help="Loom input file")
-		tsne_parser.add_argument('--perplexity', help="Perplexity", type=int, default=20)
-
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
 		tile_parser.add_argument("file", help="Loom input file")
-
 
 		# loom tile all within project
 		tile_parser = subparsers.add_parser('tile-project', help="Precompute heatmap tiles for all loom files in a project")
@@ -674,17 +268,6 @@ if __name__ == '__main__':
 		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", action='store_true')
 		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
 
-		fix_rows_parser = subparsers.add_parser('fix-rows', help="Fix broken row expansion")
-
-		# loom stats
-		stats_parser = subparsers.add_parser('stats', help="Compute standard aggregate statistics")
-		stats_parser.add_argument("file", help="Loom input file")
-
-		# loom backspin
-		backspin_parser = subparsers.add_parser('backspin', help="Perform clustering using BackSPIN")
-		backspin_parser.add_argument("file", help="Loom input file")
-		backspin_parser.add_argument('-n','--n-genes', help="Number of genes to use for clustering", type=int, default=500)
-		backspin_parser.add_argument('-l','--levels', help="Number of levels", type=int, default=2)
 
 		# loom from-loom
 		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of various settings on performance")
@@ -698,29 +281,8 @@ if __name__ == '__main__':
 		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', action='store_true')
 		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to False', action='store_true')
 
-		# loom from-cef
-		cef_parser = subparsers.add_parser('from-cef', help="Create loom file from data in CEF format")
-		cef_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
-		cef_parser.add_argument('-i','--infile', help="Name of input file in CEF format", required=True)
-		cef_parser.add_argument('--project', help="Project name")
-
-		# loom from-cellranger
-		cellranger_parser = subparsers.add_parser('from-cellranger', help="Create loom file from data in cellranger format")
-		cellranger_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
-		cellranger_parser.add_argument('-i','--infolder', help="Folder containing the cellranger files", required=True)
-		cellranger_parser.add_argument('--project', help="Project name")
-
-		# loom from-sql
-		sql_parser = subparsers.add_parser('from-sql')
-		sql_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
-		sql_parser.add_argument('-c','--col-attrs', help="Column (cell) attributes CSV file", required=True)
-		sql_parser.add_argument('-r','--row-attrs', help="Row (gene) attributes CSV file")
-		sql_parser.add_argument('-s','--sql', help="SQL server hostname", required=True)
-		sql_parser.add_argument('-t','--transcriptome', help="Transcriptome", required=True)
-		sql_parser.add_argument('--project', help="Project name")
-
 		# loom benchmark
-		benchmark_parser = subparsers.add_parser('benchmark', help="Benchmark random row access")
+		benchmark_parser = subparsers.add_parser('benchmark', help="Benchmark random row access. Can be useful when testing the effects of  various chunk tile size and cache size settings")
 		benchmark_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
 
 		args = parser.parse_args()
@@ -737,16 +299,8 @@ if __name__ == '__main__':
 	if args.command == "version":
 		print("loom v" + str(loompy.__version__))
 		sys.exit(0)
-	if args.command == "list":
-		list_command(args.dataset_path, args.server, args.username, args.password)
-	elif args.command == "clone":
-		clone_command(args.dataset_path, args.project, args.url, args.username, args.password)
 	elif args.command == "server":
 		start_server(args.dataset_path, args.show_browser, args.port, args.debug)
-	elif args.command == "stats":
-		stats_command(args.dataset_path, args.file)
-	elif args.command == "tsne":
-		tsne_command(args.dataset_path, args.file, args.perplexity)
 	elif args.command == "tile":
 		tile_command(args.dataset_path, args.file)
 	elif args.command == "tile-project":
@@ -757,17 +311,7 @@ if __name__ == '__main__':
 		expand_project_command(args.dataset_path, args.project, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "expand-all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "fix-rows":
-		fix_rows_command(args.dataset_path)
-	elif args.command == "backspin:":
-		backspin_command(args.dataset_path, args.file, args.n_genes, args.levels)
 	elif args.command == "from-loom":
 		fromloom_command(args.dataset_path, args.infile, args.outfile, args.project, args.dtype, args.chunks, args.chunk_cache, args.compression_opts, args.shuffle, args.fletcher32)
-	elif args.command == "from-cef":
-		fromcef_command(args.dataset_path, args.infile, args.outfile, args.project)
-	elif args.command == "from-cellranger":
-		fromcellranger_command(args.dataset_path, args.infolder, args.outfile, args.project)
-	elif args.command == "from-sql":
-		fromsql_command(args.dataset_path, args.outfile, args.project, args.row_attrs, args.col_attrs, args.sql, args.transcriptome)
 	elif args.command == "benchmark":
 		benchmark_command(args.infile)

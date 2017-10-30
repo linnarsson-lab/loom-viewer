@@ -39,6 +39,7 @@ class LoomCache(object):
 	Represents loom files in the local dataset directory
 	"""
 
+	__slots__ = ['dataset_path', 'looms', 'list_entries']
 	def __init__(self, dataset_path):
 		"""
 		Create a LoomCache object that will cache loom files (on demand)
