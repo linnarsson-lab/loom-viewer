@@ -246,7 +246,7 @@ def send_static(path):
 
 @app.route('/favicon.ico')
 @cache(expires=604800)
-def send_static(path):
+def send_favicon():
 	return app.send_static_file('favicon.ico')
 
 #
