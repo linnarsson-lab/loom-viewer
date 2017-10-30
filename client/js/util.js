@@ -609,7 +609,7 @@ export function firstMatchingKey(obj, keyList) {
  *    // ]
  *
  * @param {*[]} array
- * @param {indexCompareFunction} [compareFunc]
+ * @param {{(i:number, j:number)=> number}=} compareFunc
  */
 export function sortInPlace(array, compareFunc) {
 	return sortFromIndices(array, findIndices(array, compareFunc));
@@ -617,7 +617,7 @@ export function sortInPlace(array, compareFunc) {
 
 /**
  * @param {*[]} array
- * @param {indexCompareFunction} [compareFunc]
+ * @param {{(i:number, j:number)=> number}=} compareFunc
  * @returns {*[]} sortedArray
  */
 export function sortedCopy(array, compareFunc) {
@@ -655,7 +655,7 @@ export function sortedCopy(array, compareFunc) {
  * Creates a compare function for sorting a set of *indices*
  * based on lexicographical comparison of the array values
  * @param {*[]} array
- * @returns {indexCompareFunction}
+ * @returns {{(i:number, j:number)=> number}}
  */
 function baseCompareFunc(array) {
 	return (i, j) => {
@@ -698,7 +698,7 @@ function baseCompareFunc(array) {
  *    // ==> [2, 0, 1]
  *
  * @param {*[]} array
- * @param {indexCompareFunction} [compareFunc]
+ * @param {{(i:number, j:number)=> number}=} compareFunc
  */
 export function findIndices(array, compareFunc) {
 	// Assumes we don't have to worry about sorting more than
@@ -797,17 +797,6 @@ export function sortFromIndices(array, indices) {
 	}
 	return array;
 }
-
-/**
- * A compare function to pass to `indices.sort()`, see [the TypedArray.prototype.sort() API](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/sort).
- * @param {number} i
- * @param {number} j
- */
-function indexCompareFunction(i, j) {
-	// dummy function for intellisense callback
-	return i - j;
-}
-
 
 export function attrSubset(attr, indices, i0, i1) {
 	return arraySubset(attr.data, attr.arrayType, indices, i0, i1);
