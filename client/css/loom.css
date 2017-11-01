@@ -108,6 +108,14 @@ div::-webkit-scrollbar-thumb {
   background: #AAAAAA;
 }
 
+div{
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+.scroll{
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
 h1 {
   font-size: 1.7em;
   margin-top: 0.5em;
