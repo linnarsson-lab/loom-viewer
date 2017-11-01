@@ -109,3 +109,6 @@ target/
 *.loom
 
 *.mypy_cache/
+
+# NPM package lock
+package-lock.json
