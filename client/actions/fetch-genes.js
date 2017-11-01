@@ -53,51 +53,6 @@ export function fetchGene(dataset, genes) {
 			// they are being fetched
 			dispatch(requestGenesFetch(unfetched, path, title));
 
-			const dispatchCachedGenes = (retrievedGenes) => {
-				let cachedNames = [],
-					cachedGenes = {},
-					keys = Object.keys(retrievedGenes) ;
-				for (let i = 0; i < keys.length; i++) {
-					let gene = retrievedGenes[keys[i]];
-					// each key that is uncached returns as an
-					// undefined entry in this array
-					if (gene) {
-						cachedGenes[gene.name] = gene;
-						cachedNames.push(gene.name);
-					}
-				}
-				if (cachedNames.length) {
-					// the overlapping names are the cached names
-					cachedNames = disjointArrays(cachedNames, unfetched);
-					console.log('loaded cached genes: ', cachedNames);
-					dispatch(receiveGenes(cachedGenes, cachedNames, path));
-				}
-				return unfetched;
-			};
-
-			const fetchUncached = (uncachedGenes) => {
-				// To avoid memory overhead issues (this has crashed
-				// the browser in testing), we shouldn't make the
-				// individual fetches *too* big. After a bit of testing
-				// I guesstimate that for 50k cells, we want to fetch
-				// at most 10 rows at once.
-				const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
-				let fetchGeneNames = [];
-				let fetchRows = [];
-				for (let i = 0; i < uncachedGenes.length; i++) {
-					const gene = uncachedGenes[i];
-					const row = geneToRow[gene];
-					// Only fetch genes that are part of the dataset
-					if (row !== undefined) {
-						fetchGeneNames.push(gene);
-						fetchRows.push(row);
-					}
-				}
-				if (fetchRows.length > 0) {
-					_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
-				}
-			};
-
 			let cacheKeys = new Array(unfetched.length);
 			for (let i = 0; i < unfetched.length; i++) {
 				cacheKeys[i] = path + '/' + unfetched[i];
@@ -105,9 +60,50 @@ export function fetchGene(dataset, genes) {
 			// try loading from cache
 			localforage.getItems(cacheKeys)
 				// store all genes retrieved from cache
-				.then(dispatchCachedGenes)
+				.then((retrievedGenes) => {
+					let cachedNames = [],
+						cachedGenes = {},
+						keys = Object.keys(retrievedGenes) ;
+					for (let i = 0; i < keys.length; i++) {
+						let gene = retrievedGenes[keys[i]];
+						// each key that is uncached returns as an
+						// undefined entry in this array
+						if (gene) {
+							cachedGenes[gene.name] = gene;
+							cachedNames.push(gene.name);
+						}
+					}
+					if (cachedNames.length) {
+						// the overlapping names are the cached names
+						cachedNames = disjointArrays(cachedNames, unfetched);
+						console.log('loaded cached genes: ', cachedNames);
+						dispatch(receiveGenes(cachedGenes, cachedNames, path));
+					}
+					return unfetched;
+				})
 				// fetch remaining genes
-				.then(fetchUncached);
+				.then((uncachedGenes) => {
+					// To avoid memory overhead issues (this has crashed
+					// the browser in testing), we shouldn't make the
+					// individual fetches *too* big. After a bit of testing
+					// I guesstimate that for 50k cells, we want to fetch
+					// at most 10 rows at once.
+					const rowsPerFetch = ((1000000 / dataset.totalCols) | 0) || 1;
+					let fetchGeneNames = [];
+					let fetchRows = [];
+					for (let i = 0; i < uncachedGenes.length; i++) {
+						const gene = uncachedGenes[i];
+						const row = geneToRow[gene];
+						// Only fetch genes that are part of the dataset
+						if (row !== undefined) {
+							fetchGeneNames.push(gene);
+							fetchRows.push(row);
+						}
+					}
+					if (fetchRows.length > 0) {
+						_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
+					}
+				});
 		};
 	}
 }
