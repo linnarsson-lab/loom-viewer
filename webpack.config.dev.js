@@ -54,7 +54,10 @@ module.exports = {
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
 		new ExtractTextPlugin('/static/styles-[contenthash].css'),
-		new CssoWebpackPlugin(),
+		new CssoWebpackPlugin({
+			sourceMap: true,
+			restructure: false,
+		}),
 		new HtmlWebpackPlugin({
 			template: path.join(__dirname + '/client/index.html'),
 			filename: 'index.html',
