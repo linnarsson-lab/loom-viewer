@@ -32,11 +32,11 @@ class LoomTiles(object):
 			self._mins = self.ds.map([min], 0)[0]
 		return self._mins
 
-	def prepare_heatmap(self):
+	def prepare_heatmap(self, truncate):
 		if self.ds._file.__contains__("tiles"):
 			logging.info("    Removing deprecated tile pyramid, use h5repack to reclaim space")
 			del self.ds._file['tiles']
-		self.dz_get_zoom_tile(0, 0, 8)
+		self.dz_get_zoom_tile(0, 0, 8, truncate)
 		logging.info("    done")
 
 	def dz_zoom_range(self):
@@ -119,7 +119,7 @@ class LoomTiles(object):
 		return temp[0::2, 0::2]
 
 	# Returns a submatrix scaled to 0-255 range
-	def dz_get_zoom_tile(self, x, y, z):
+	def dz_get_zoom_tile(self, x, y, z, truncate):
 		"""
 		Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
 
@@ -173,13 +173,13 @@ class LoomTiles(object):
 
 		if z < zmid:
 			# Get the four less zoomed-out tiles required to make this tile
-			tl = self.dz_get_zoom_tile(x*2,y*2,z+1)
-			tr = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1)
-			bl = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1)
-			br = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1)
+			tl = self.dz_get_zoom_tile(x*2,y*2,z+1, truncate)
+			tr = self.dz_get_zoom_tile(x*2 + 1,y*2,z+1, truncate)
+			bl = self.dz_get_zoom_tile(x*2,y*2 + 1,z+1, truncate)
+			br = self.dz_get_zoom_tile(x*2+1,y*2+1,z+1, truncate)
 			# merge into zoomed out tiles
 			tile = self.dz_merge_tile(tl, tr, bl, br)
-			self.dz_save_tile(x, y, z, tile, truncate=False)
+			self.dz_save_tile(x, y, z, tile, truncate)
 			return tile
 
 _viridis = np.array([[68,1,84 ],

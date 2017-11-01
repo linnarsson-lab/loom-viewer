@@ -237,10 +237,12 @@ if __name__ == '__main__':
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
 		tile_parser.add_argument("file", help="Loom input file")
+		tile_parser.add_argument("-t", "--truncate", help="Remove previously expanded tiles if present (False by default)", action='store_true')
 
 		# loom tile all within project
 		tile_parser = subparsers.add_parser('tile-project', help="Precompute heatmap tiles for all loom files in a project")
 		tile_parser.add_argument("project", help="Project directory name")
+		tile_parser.add_argument("-t", "--truncate", help="Remove previously expanded tiles if present (False by default)", action='store_true')
 
 		# loom expand
 		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name.")
@@ -302,9 +304,9 @@ if __name__ == '__main__':
 	elif args.command == "server":
 		start_server(args.dataset_path, args.show_browser, args.port, args.debug)
 	elif args.command == "tile":
-		tile_command(args.dataset_path, args.file)
+		tile_command(args.dataset_path, args.file, args.truncate)
 	elif args.command == "tile-project":
-		tile_project_command(args.dataset_path, args.project)
+		tile_project_command(args.dataset_path, args.project, args.truncate)
 	elif args.command == "expand":
 		expand_command(args.dataset_path, args.file, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "expand-project":
