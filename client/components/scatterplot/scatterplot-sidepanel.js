@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -22,7 +22,7 @@ import {
 	FilteredValues,
 } from 'components/settings';
 
-class PlotSettingsTabContent extends PureComponent {
+class PlotSettingsTabContent extends Component {
 
 	render() {
 		const {
@@ -100,7 +100,7 @@ PlotSettingsTabContent.propTypes = {
 	selectedPlot: PropTypes.number.isRequired,
 };
 
-export class ScatterPlotSidepanel extends PureComponent {
+export class ScatterPlotSidepanel extends Component {
 	constructor(...args) {
 		super(...args);
 		this.selectTab = this.selectTab.bind(this);

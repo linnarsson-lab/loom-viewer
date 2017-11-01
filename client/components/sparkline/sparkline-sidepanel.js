@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'; import PropTypes from 'prop-types';
+import React, { Component } from 'react'; import PropTypes from 'prop-types';
 
 import {
 	Panel,
@@ -18,7 +18,7 @@ import {
 	SortAttributeComponent,
 } from 'components/settings';
 
-export class SparklineSidepanel extends PureComponent {
+export class SparklineSidepanel extends Component {
 
 	render() {
 		const {
