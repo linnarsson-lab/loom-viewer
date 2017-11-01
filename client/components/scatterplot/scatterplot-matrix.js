@@ -13,22 +13,23 @@ import { UPDATE_VIEWSTATE } from 'actions/action-types';
 // being fetched or retrieved from cache
 function changedAttrs(oldAttrs, newAttrs, settings) {
 
-	if (!(oldAttrs, newAttrs, settings)) {
+	if (!(oldAttrs && newAttrs && settings)) {
 		return false;
 	}
 
 	const {
 		x,
 		y,
+		colorAttr,
 	} = settings;
 
 	const xAttr = oldAttrs[x.attr],
 		yAttr = oldAttrs[y.attr],
-		colorAttr = oldAttrs[settings.colorAttr],
+		oldColorAttr = oldAttrs[colorAttr],
 		newXAttr = newAttrs[x.attr],
 		newYAttr = newAttrs[y.attr],
-		newColorAttr = newAttrs[settings.colorAttr];
-	return colorAttr !== newColorAttr ||
+		newColorAttr = newAttrs[colorAttr];
+	return oldColorAttr !== newColorAttr ||
 		xAttr !== newXAttr ||
 		yAttr !== newYAttr;
 }
