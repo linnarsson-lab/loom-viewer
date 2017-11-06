@@ -105,9 +105,6 @@ docs/_build/
 # PyBuilder
 target/
 
-# Loom files
-*.loom
-
 *.mypy_cache/
 
 # NPM package lock

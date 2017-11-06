@@ -829,6 +829,40 @@ export function indexedSubset(data, indices, i0, i1, indexedVal) {
 	return selection;
 }
 
+export function extractStringArray(attr){
+	const { data } = attr;
+	if (attr.arrayType === 'string'){
+		if (attr.indexedVal){
+			return indexedToStringArray(data, attr.indexedVal);
+		} else {
+			let retArray = [];
+			for (let i = 0; i < data.length; i++){
+				// make sure the returned strings are not 'undefined' or 'null'
+				const str = data[i];
+				retArray.push(str !== undefined || str !== null ? str : '');
+			}
+			return retArray;
+		}
+	} else {
+		let retArray = [];
+		for (let i = 0; i < data.length; i++){
+			// make sure the returned strings are not 'undefined' or 'null'
+			const str = data[i];
+			retArray.push(str !== undefined || str !== null ? str + '' : '');
+		}
+		return retArray;
+	}
+}
+
+export function indexedToStringArray(data, indexedVal){
+	let retVal = [];
+	for (let i = 0; i < data.length; i++){
+		const str = indexedVal[data[i]];
+		retVal.push(str ? str : '');
+	}
+	return retVal;
+}
+
 export function arrayConstr(arrayType) {
 	switch (arrayType) {
 		case 'float32':

@@ -50,7 +50,6 @@
         "prefer-arrow-callback": "error",
         "no-self-compare": "error",
         "no-sequences": "error",
-        "no-implicit-coercion": "error",
         "no-extra-bind": "error",
         "no-extra-label": "error",
         "no-floating-decimal": "error",

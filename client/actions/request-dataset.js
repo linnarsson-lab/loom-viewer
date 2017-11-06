@@ -9,10 +9,12 @@ const sanitizer = new LowerCaseSanitizer();
 import localforage from 'localforage';
 
 import {
+	arrayConstr,
+	convertJSONarray,
+	extractStringArray,
+	firstMatchingKey,
 	merge,
 	mergeInPlace,
-	convertJSONarray,
-	arrayConstr,
 } from 'js/util';
 
 import { createViewStateConverter } from 'js/viewstate-encoder';
@@ -170,9 +172,9 @@ function convertToDataSet(data, dataset) {
 	row.allKeys = row.keys.concat(row.cellKeys);
 	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
-	col.geneKeys = row.attrs.Gene ?
-		row.attrs.Gene.data.slice() :
-		[];
+	const rowKey  = firstMatchingKey(row.attrs, ['Gene', 'Genes', 'gene', 'genes', '(original order)']);
+
+	col.geneKeys = extractStringArray(row.attrs[rowKey]);
 	col.rowToGenes = new Array(col.geneKeys.length);
 	col.geneToRow = {};
 	col.geneToRowLowerCase = {};
@@ -258,7 +260,7 @@ function addFunctions(dataset) {
 
 	// redux tools trips over gigantic typed arrays,
 	// so we need to add a custom serialiser for the attributes
-	if(process.env.NODE_ENV !== 'production') {
+	if (process.env.NODE_ENV !== 'production') {
 		reduxToJSON(col);
 		reduxToJSON(row);
 	}
@@ -281,7 +283,7 @@ function prepareViewState(dataset) {
 		decode,
 	} = dataset.viewStateConverter;
 
-		// overwrite with previously encoded URI viewState, if any
+	// overwrite with previously encoded URI viewState, if any
 	const paths = browserHistory
 		.getCurrentLocation()
 		.pathname
