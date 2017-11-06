@@ -303,12 +303,12 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
  * Returns an array of random values between (-0.5, 0.5)
  */
 export function rndNormArray(length) {
-	let source = new Uint8Array(Math.min(length*4, 65536)),
+	let source = new Uint8Array(Math.min(length * 4, 65536)),
 		returnValues = new Float32Array(length);
 	window.crypto.getRandomValues(source);
-	for(let i = 0; i < length; i++){
-		let i4 = (i*4)%(source.length-3);
-		returnValues[i] = (source[i4] + source[i4+1] - source[i4+2] - source[i4+3]) * 0.0009765625; // 0.0009765625 = 1 / (4 * 256)
+	for (let i = 0; i < length; i++) {
+		let i4 = (i * 4) % (source.length - 3);
+		returnValues[i] = (source[i4] + source[i4 + 1] - source[i4 + 2] - source[i4 + 3]) * 0.0009765625; // 0.0009765625 = 1 / (4 * 256)
 	}
 	return returnValues;
 }
@@ -375,6 +375,10 @@ export function countElements(array, start, end) {
 	while (val !== sentinel) {
 
 		// keep going until a different value is found
+		while (j - 1024 > start && sorted[j - 1024] === val) { j -= 1024; }
+		while (j - 256 > start && sorted[j - 256] === val) { j -= 256; }
+		while (j - 64 > start && sorted[j - 64] === val) { j -= 64; }
+		while (j - 8 > start && sorted[j - 8] === val) { j -= 8; }
 		while (j > start && sorted[j] === val) { j--; }
 
 		uniques.push({
@@ -395,7 +399,7 @@ export function countElements(array, start, end) {
 
 export function findMostCommon(array, start, end) {
 	let mv;
-	if(array && start < array.length && end > 0){
+	if (array && start < array.length && end > 0) {
 		start = start > 0 ? start : 0;
 		end = end < array.length ? end : array.length;
 		let i = 0,
@@ -407,7 +411,7 @@ export function findMostCommon(array, start, end) {
 		// linearly run through the array, count unique values
 		while (val !== null && val !== undefined) {
 
-		// keep going until a different value is found
+			// keep going until a different value is found
 			while (sorted[j + 1024] === val) { j += 1024; }
 			while (sorted[j + 256] === val) { j += 256; }
 			while (sorted[j + 64] === val) { j += 64; }
@@ -653,11 +657,24 @@ export function sortedCopy(array, compareFunc) {
 
 /**
  * Creates a compare function for sorting a set of *indices*
- * based on lexicographical comparison of the array values
+ * based on lexicographical comparison of the array values.
  * @param {*[]} array
  * @returns {{(i:number, j:number)=> number}}
  */
-function baseCompareFunc(array) {
+function makeCompareFunc(array) {
+	isTypedArray(array) || typeof array[0] === 'number' ?
+		makeNumberCompareFunc(array) :
+		makeBaseCompareFunc(array);
+}
+
+/**
+ * Creates a compare function for sorting a set of *indices*
+ * based on lexicographical comparison of the array values.
+ * Uses comparisons.
+ * @param {*[]} array
+ * @returns {{(i:number, j:number)=> number}}
+ */
+function makeBaseCompareFunc(array) {
 	return (i, j) => {
 		let vi = array[i],
 			vj = array[j];
@@ -666,6 +683,19 @@ function baseCompareFunc(array) {
 			vi > vj ?
 				1 :
 				i - j; // the part that makes this a stable sort
+	};
+}
+
+/**
+ * Creates a compare function for sorting a set of *indices*
+ * based on lexicographical comparison of the array values.
+ * Uses subtraction, expects passed array to contain only numbers
+ * @param {*[]} array
+ * @returns {{(i:number, j:number)=> number}}
+ */
+function makeNumberCompareFunc(array) {
+	return (i, j) => {
+		return (+array[i]) - (+array[j]) || i - j;
 	};
 }
 
@@ -734,7 +764,7 @@ export function findIndices(array, compareFunc) {
 		indices[i] = i;
 	}
 	if (typeof compareFunc !== 'function') {
-		compareFunc = baseCompareFunc(array);
+		compareFunc = makeCompareFunc(array);
 	}
 	// after sorting, `indices[i]` gives the index from where
 	// `array[i]` should take the value from, so
@@ -829,14 +859,14 @@ export function indexedSubset(data, indices, i0, i1, indexedVal) {
 	return selection;
 }
 
-export function extractStringArray(attr){
+export function extractStringArray(attr) {
 	const { data } = attr;
-	if (attr.arrayType === 'string'){
-		if (attr.indexedVal){
+	if (attr.arrayType === 'string') {
+		if (attr.indexedVal) {
 			return indexedToStringArray(data, attr.indexedVal);
 		} else {
 			let retArray = [];
-			for (let i = 0; i < data.length; i++){
+			for (let i = 0; i < data.length; i++) {
 				// make sure the returned strings are not 'undefined' or 'null'
 				const str = data[i];
 				retArray.push(str !== undefined || str !== null ? str : '');
@@ -845,7 +875,7 @@ export function extractStringArray(attr){
 		}
 	} else {
 		let retArray = [];
-		for (let i = 0; i < data.length; i++){
+		for (let i = 0; i < data.length; i++) {
 			// make sure the returned strings are not 'undefined' or 'null'
 			const str = data[i];
 			retArray.push(str !== undefined || str !== null ? str + '' : '');
@@ -854,9 +884,9 @@ export function extractStringArray(attr){
 	}
 }
 
-export function indexedToStringArray(data, indexedVal){
+export function indexedToStringArray(data, indexedVal) {
 	let retVal = [];
-	for (let i = 0; i < data.length; i++){
+	for (let i = 0; i < data.length; i++) {
 		const str = indexedVal[data[i]];
 		retVal.push(str ? str : '');
 	}
