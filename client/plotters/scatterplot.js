@@ -416,9 +416,6 @@ function sortByAxes(xy, cIdx, imgData) {
 	const l = cIdx.length;
 	let i = l,
 		zeros = 0,
-		indices = new (l < (1 << 16) ?
-			Uint16Array :
-			Uint32Array)(l),
 		compVal = new Uint32Array(l);
 	while (i--) {
 		indices[i] = i;
@@ -432,9 +429,7 @@ function sortByAxes(xy, cIdx, imgData) {
 		}
 	}
 
-	indices.sort((a, b) => {
-		return compVal[a] - compVal[b];
-	});
+	let indices = sortedUint32Indices(compVal);
 
 	// skip zero-values; no need to copy their sprite
 	// since we draw all of them at once later
@@ -497,6 +492,72 @@ function sortByAxes(xy, cIdx, imgData) {
 		spriteImgData,
 		zeros,
 	};
+}
+
+/**
+ * Returns the sorted indices for an array of Uint32 values. 
+ * "Works" on all arrays, but incorrect values will be sorted by their coerced
+ * unsigned 32-bit integer equivalent, that is: `value & 0xFFFFFFFF`.
+ * @param {number[]} input
+ */
+function sortedUint32Indices(input) {
+	const start = 0,
+		end = input.length,
+		length = end - start;
+	let arrayConstr = length < (1 << 16) ? Uint16Array : Uint32Array,
+		count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256),
+		count3 = new arrayConstr(256),
+		count4 = new arrayConstr(256),
+		count = [count1, count2, count3, count4];
+	// count all bytes in one pass
+	for (let i = start; i < end; i++) {
+		let val = input[i];
+		count1[val & 0xFF]++;
+		count2[(val >>> 8) & 0xFF]++;
+		count3[(val >>> 16) & 0xFF]++;
+		count4[(val >>> 24) & 0xFF]++;
+	}
+
+	// convert count to sum of previous counts
+	// this lets us directly copy values to their
+	// correct position later
+	for (let j = 0; j < 4; j++) {
+		let t = 0,
+			sum = 0,
+			_count = count[j];
+		for (let i = 0; i < 256; i++) {
+			t = _count[i];
+			_count[i] = sum;
+			sum += t;
+		}
+	}
+
+	arrayConstr = end < (1 << 16) ? Uint16Array : Uint32Array;
+	let indices = new arrayConstr(length);
+	for (let i = 0; i < length; i++) {
+		indices[i] = i + start;
+	}
+
+	let indices2 = new arrayConstr(length);
+	for (let i = start; i < end; i++) {
+		let val = input[indices[i]];
+		indices2[count1[val & 0xFF]++] = i;
+	}
+	for (let i = start; i < end; i++) {
+		let val = input[indices2[i]];
+		indices[count2[(val >> 8) & 0xFF]++] = i;
+	}
+	for (let i = start; i < end; i++) {
+		let val = input[indices[i]];
+		indices2[count3[(val >> 16) & 0xFF]++] = i;
+	}
+	for (let i = start; i < end; i++) {
+		let val = input[indices2[i]];
+		indices[count4[(val >> 24) & 0xFF]++] = i;
+	}
+
+	return indices;
 }
 
 function blitSprites(context, spriteLayout, sorted, imgData) {
