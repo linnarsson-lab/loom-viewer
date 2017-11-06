@@ -418,7 +418,6 @@ function sortByAxes(xy, cIdx, imgData) {
 		zeros = 0,
 		compVal = new Uint32Array(l);
 	while (i--) {
-		indices[i] = i;
 		compVal[i] = xy[i];
 		// if zero-value, we set the most significant bit  to ensure
 		// zero values go to the end of the array. (we assume that all
