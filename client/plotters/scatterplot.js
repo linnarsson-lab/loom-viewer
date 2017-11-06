@@ -422,8 +422,11 @@ function sortByAxes(xy, cIdx, imgData) {
 		// if zero-value, we set the most significant bit  to ensure
 		// zero values go to the end of the array. (we assume that all
 		// y-values are smaller than 0x7FFF, or 32767 pixels)
+		// We still sort them by x and y; radix sort is constant
+		// time anyway, and it might be _slightly_ more cache
+		// friendly when copying sprite data to the imageData array
 		if (!cIdx[i]) {
-			compVal[i] += 0x80000000;
+			compVal[i] |= 0x80000000;
 			zeros++;
 		}
 	}
@@ -500,17 +503,22 @@ function sortByAxes(xy, cIdx, imgData) {
  * @param {number[]} input
  */
 function sortedUint32Indices(input) {
-	const start = 0,
-		end = input.length,
-		length = end - start;
+	const length = input.length;
 	let arrayConstr = length < (1 << 16) ? Uint16Array : Uint32Array,
 		count1 = new arrayConstr(256),
 		count2 = new arrayConstr(256),
 		count3 = new arrayConstr(256),
 		count4 = new arrayConstr(256),
-		count = [count1, count2, count3, count4];
+		count = [count1, count2, count3, count4],
+		indices = new arrayConstr(length),
+		indices2 = new arrayConstr(length);
+
+	for (let i = 0; i < length; i++) {
+		indices[i] = i;
+	}
+
 	// count all bytes in one pass
-	for (let i = start; i < end; i++) {
+	for (let i = 0; i < length; i++) {
 		let val = input[i];
 		count1[val & 0xFF]++;
 		count2[(val >>> 8) & 0xFF]++;
@@ -532,28 +540,25 @@ function sortedUint32Indices(input) {
 		}
 	}
 
-	arrayConstr = end < (1 << 16) ? Uint16Array : Uint32Array;
-	let indices = new arrayConstr(length);
 	for (let i = 0; i < length; i++) {
-		indices[i] = i + start;
+		let j = indices[i];
+		let val = input[j];
+		indices2[count1[val & 0xFF]++] = j;
 	}
-
-	let indices2 = new arrayConstr(length);
-	for (let i = start; i < end; i++) {
-		let val = input[indices[i]];
-		indices2[count1[val & 0xFF]++] = i;
+	for (let i = 0; i < length; i++) {
+		let j = indices2[i];
+		let val = input[j];
+		indices[count2[(val >>> 8) & 0xFF]++] = j;
 	}
-	for (let i = start; i < end; i++) {
-		let val = input[indices2[i]];
-		indices[count2[(val >> 8) & 0xFF]++] = i;
+	for (let i = 0; i < length; i++) {
+		let j = indices[i];
+		let val = input[j];
+		indices2[count3[(val >>> 16) & 0xFF]++] = j;
 	}
-	for (let i = start; i < end; i++) {
-		let val = input[indices[i]];
-		indices2[count3[(val >> 16) & 0xFF]++] = i;
-	}
-	for (let i = start; i < end; i++) {
-		let val = input[indices2[i]];
-		indices[count4[(val >> 24) & 0xFF]++] = i;
+	for (let i = 0; i < length; i++) {
+		let j = indices2[i];
+		let val = input[j];
+		indices[count4[(val >>> 24) & 0xFF]++] = j;
 	}
 
 	return indices;
