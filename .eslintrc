@@ -36,9 +36,15 @@
                 }
             }
         ],
-        "object-curly-spacing": ["error", "always"],
+        "object-curly-spacing": [
+            "error",
+            "always"
+        ],
         "no-unmodified-loop-condition": "error",
-        "one-var-declaration-per-line": ["error", "always"],
+        "one-var-declaration-per-line": [
+            "error",
+            "always"
+        ],
         "yoda": "error",
         "arrow-body-style": [
             "error",
@@ -149,5 +155,10 @@
             "never"
         ],
         "react/jsx-no-comment-textnodes": "error"
+    },
+    "settings": {
+        "import/resolver": {
+            "babel-module": {}
+        }
     }
 }

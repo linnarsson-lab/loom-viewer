@@ -21,7 +21,7 @@ const uglifySettings = {
 		conditionals: true,
 		comparisons: true,
 		evaluate: true,
-		booleans: true,
+		booleans: false,
 		loops: true,
 		unused: true,
 		toplevel: true,
