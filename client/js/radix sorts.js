@@ -114,7 +114,7 @@ function radixSortInt8(input, outputConstr) {
 		// We want to avoid Uint8ClampedArray from messing up our
 		// adjustment below, so we turn it into a Uint8Array view
 		input = new Uint8Array(input.buffer);
-	} else if (inputConstr === Array){
+	} else if (inputConstr === Array) {
 		// If we have a plain array as input, we might
 		// have strings or other objects in the array
 		// which would interact funnily with the `+= 80`
@@ -134,7 +134,7 @@ function radixSortInt8(input, outputConstr) {
 	// copy anyway, so we did not override the original input.
 	// In that case there is no point in wasting time on a copy
 	// that will be thrown away.
-	if (inputConstr !== Array){
+	if (inputConstr !== Array) {
 		for (let i = 0; i < input.length; i++) {
 			input[i] -= 0x80;
 		}
@@ -227,10 +227,32 @@ function radixSortInt16(input) {
 }
 
 
+/*
+Note that radixSortUint32 returns the original values; it only
+coerces the value when determining sort order.
+
+Also note: doubles can store every integer values less than
+54 bits in size. So there is room for some nasty bitpacking
+hacks storing information in the upper 11 bits.
+
+I have actually used this to pack x, y pixel positions (both 16 bits)
+and sprite index (11 bits), sort all of that in one go, then extract
+the information to blit sprites.
+
+Using a single Float64Array turns out to be a LOT faster
+than sorting JavaScript objects with a custom compare function.
+Combining it with this radix sort on top of that feels like
+entering hyperspeed.
+*/
+
 /**
  * Sorts an array of Uint32 values. "Works" on all arrays,
  * but incorrect values will be sorted by their coerced
  * unsigned 32-bit integer equivalent, that is: `value & 0xFFFFFFFF`.
+ *
+ * Can sort at most 2^53 values. To be clear,
+ * a Uint8Array of 2^53 values is about 8 petabytes,
+ * so I don't think this something to worry about any time soon
  *
  * The returned array contains the original values.
  * @param {number[]} input
@@ -238,21 +260,23 @@ function radixSortInt16(input) {
 function radixSortUint32(input) {
 	const arrayConstr = input.length < (1 << 16) ?
 		Uint16Array :
-		Uint32Array;
-	let count1 = new arrayConstr(256),
+		input.length < 0x100000000 ?
+			Uint32Array :
+			Float64Array,
+		count1 = new arrayConstr(256),
 		count2 = new arrayConstr(256),
 		count3 = new arrayConstr(256),
-		count4 = new arrayConstr(256);
+		count4 = new arrayConstr(256),
+		count = [count1, count2, count3, count4];
 
-	let output = new (Object.getPrototypeOf(input).constructor)(input.length);
 
 	// count all bytes in one pass
 	for (let i = 0; i < input.length; i++) {
 		let val = input[i];
-		count1[val & 0xFF]++;
-		count2[((val >> 8) & 0xFF)]++;
-		count3[((val >> 16) & 0xFF)]++;
-		count4[((val >> 24) & 0xFF)]++;
+		++count1[val & 0xFF];
+		++count2[((val >>> 8) & 0xFF)];
+		++count3[((val >>> 16) & 0xFF)];
+		++count4[((val >>> 24) & 0xFF)];
 	}
 
 	// convert count to sum of previous counts
@@ -260,49 +284,37 @@ function radixSortUint32(input) {
 	// correct position later
 	for (let j = 0; j < 4; j++) {
 		let t = 0,
-			sum1 = 0,
-			sum2 = 0,
-			sum3 = 0,
-			sum4 = 0;
+			sum = 0,
+			_count = count[j];
 		for (let i = 0; i < 256; i++) {
-			t = count1[i];
-			count1[i] = sum1;
-			sum1 += t;
-			t = count1[i];
-			count2[i] = sum2;
-			sum2 += t;
-			t = count1[i];
-			count3[i] = sum3;
-			sum3 += t;
-			t = count4[i];
-			count4[i] = sum4;
-			sum4 += t;
+			t = _count[i];
+			_count[i] = sum;
+			sum += t;
 		}
 	}
 
-	// Note that doubles can store all integers up to  2⁵³,
-	// so if we make `output` a Float64Array we could do some
-	// nasty hacks with storing information in the upper 10 bits,
-	// because we leave the actual valued being copied untouched.
-	// Just saying.
+	let outputConstr = Object.getPrototypeOf(input).constructor,
+		output1 = new outputConstr(input.length),
+		output2 = new outputConstr(input.length);
+
 	for (let i = 0; i < input.length; i++) {
 		let val = input[i];
-		output[count1[val & 0xFF]++] = val;
+		output1[count1[val & 0xFF]++] = val;
 	}
 	for (let i = 0; i < input.length; i++) {
-		let val = output[i];
-		input[count2[((val >> 8) & 0xFF)]++] = val;
+		let val = output1[i];
+		output2[count2[(val >>> 8) & 0xFF]++] = val;
 	}
 	for (let i = 0; i < input.length; i++) {
-		let val = input[i];
-		output[count3[((val >> 16) & 0xFF)]++] = val;
+		let val = output2[i];
+		output1[count3[(val >>> 16) & 0xFF]++] = val;
 	}
 	for (let i = 0; i < input.length; i++) {
-		let val = output[i];
-		input[count4[((val >> 24) & 0xFF)]++] = val;
+		let val = output1[i];
+		output2[count4[(val >>> 24) & 0xFF]++] = val;
 	}
 
-	return input;
+	return output2;
 }
 
 /**
@@ -766,6 +778,68 @@ function compareFunc(a, b) {
 
 // dummy value for JSdoc
 const arrayConstr = Array;
+
+(input) {
+	const length = input.length;
+	let arrayConstr = length < (1 << 16) ? Uint16Array : Uint32Array,
+		count1 = new arrayConstr(256),
+		count2 = new arrayConstr(256),
+		count3 = new arrayConstr(256),
+		count4 = new arrayConstr(256),
+		count = [count1, count2, count3, count4],
+		indices = new arrayConstr(length),
+		indices2 = new arrayConstr(length);
+
+	for (let i = 0; i < length; i++) {
+		indices[i] = i;
+	}
+
+	// count all bytes in one pass
+	for (let i = 0; i < length; i++) {
+		let val = input[i];
+		count1[val & 0xFF]++;
+		count2[(val >>> 8) & 0xFF]++;
+		count3[(val >>> 16) & 0xFF]++;
+		count4[(val >>> 24) & 0xFF]++;
+	}
+
+	// convert count to sum of previous counts
+	// this lets us directly copy values to their
+	// correct position later
+	for (let j = 0; j < 4; j++) {
+		let t = 0,
+			sum = 0,
+			_count = count[j];
+		for (let i = 0; i < 256; i++) {
+			t = _count[i];
+			_count[i] = sum;
+			sum += t;
+		}
+	}
+
+	for (let i = 0; i < length; i++) {
+		let j = indices[i];
+		let val = input[j];
+		indices2[count1[val & 0xFF]++] = j;
+	}
+	for (let i = 0; i < length; i++) {
+		let j = indices2[i];
+		let val = input[j];
+		indices[count2[(val >>> 8) & 0xFF]++] = j;
+	}
+	for (let i = 0; i < length; i++) {
+		let j = indices[i];
+		let val = input[j];
+		indices2[count3[(val >>> 16) & 0xFF]++] = j;
+	}
+	for (let i = 0; i < length; i++) {
+		let j = indices2[i];
+		let val = input[j];
+		indices[count4[(val >>> 24) & 0xFF]++] = j;
+	}
+
+	return indices;
+}
 
 /*
 
