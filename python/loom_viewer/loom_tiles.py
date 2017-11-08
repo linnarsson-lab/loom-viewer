@@ -19,17 +19,43 @@ class LoomTiles(object):
 	def maxes(self):
 		if self._maxes is None:
 			#colormax = np.percentile(data, 99, axis=1) + 0.1
-			minFloat = np.finfo(float).eps;
-			def percentileMap(data):
-				return np.percentile(data, 99, axis=1) + minFloat;
+			#minFloat = np.finfo(float).eps;
+			#def percentileMap(data):
+			#	return np.percentile(data, 99, axis=1) + minFloat;
 
+			# Prefer using numpy's built-in method for finding the
+			# max values faster
+			#self._maxes = self.ds.map([max], 0)[0]
 
-			self._maxes = self.ds.map([max], 0)[0]
+			print('\n  calculating & caching max values', end='', flush=True)
+			rows = self.ds.shape[0]
+			_maxes = np.zeros(rows)
+			ix = 0
+			while ix < rows:
+				rows_per_chunk = min(rows - ix, 64)
+				chunk = self.ds[ix:ix+rows_per_chunk, :]
+				_maxes[ix:ix+rows_per_chunk] = np.nanmax(chunk, axis=1)
+				ix += rows_per_chunk
+				print('.', end='', flush=True)
+			self._maxes = _maxes
+			print(' done\n')
 		return self._maxes
 
 	def mins(self):
 		if self._mins is None:
-			self._mins = self.ds.map([min], 0)[0]
+			# self._mins = self.ds.map([min], 0)[0]
+			print('\n  calculating & caching min values', end='', flush=True)
+			rows = self.ds.shape[0]
+			_mins = np.zeros(rows)
+			ix = 0
+			while ix < rows:
+				rows_per_chunk = min(rows - ix, 64)
+				chunk = self.ds[ix:ix+rows_per_chunk, :]
+				_mins[ix:ix+rows_per_chunk] = np.nanmin(chunk, axis=1)
+				ix += rows_per_chunk
+				print('.', end='', flush=True)
+			self._mins = _mins
+			print(' done\n')
 		return self._mins
 
 	def prepare_heatmap(self, truncate):
@@ -97,16 +123,21 @@ class LoomTiles(object):
 			if exception.errno != errno.EEXIST:
 				raise
 
-		if os.path.isfile(tilepath) and not truncate:
-			return scipy.misc.imread(tilepath, mode='P')
-		else:
-			img = self.dz_tile_to_image(x, y, z, tile)
-			# save to file, overwriting the old one
-			with open(tilepath, 'wb') as img_io:
-				#logging.info("saving %s" % tilepath)
-				print('.', end='', flush=True)
-				img.save(img_io, 'PNG', compress_level=4)
-			return img
+		if os.path.isfile(tilepath):
+			if truncate:
+				# remove old file
+				os.remove(tilepath)
+			else:
+				# load old file instead of generating new image
+				return scipy.misc.imread(tilepath, mode='P')
+
+		img = self.dz_tile_to_image(x, y, z, tile)
+		# save to file
+		with open(tilepath, 'wb') as img_io:
+			#logging.info("saving %s" % tilepath)
+			print('.', end='', flush=True)
+			img.save(img_io, 'PNG', compress_level=4)
+		return img
 
 
 
@@ -116,7 +147,71 @@ class LoomTiles(object):
 		temp[0:256, 256:512] = tr
 		temp[256:512, 0:256] = bl
 		temp[256:512, 256:512] = br
-		return temp[0::2, 0::2]
+
+		# various strategies of aggregating values for
+		# zoomed out tiles, each with their own trade-offs
+
+		# Pick top-left of four pixels
+		# fastest, large systematic bias,
+		# does not preserve structure very well
+		# return temp[0::2, 0::2]
+
+		# Average of four
+		# biased towards whatever bias the value distribution has
+		# (typically towards zero)
+		# Preserves structures better
+		# temp2 = temp[0::2, 0::2]
+		# temp2 += temp[1::2, 0::2]
+		# temp2 += temp[0::2, 1::2]
+		# temp2 += temp[1::2, 1::2]
+		# temp2 *= 0.25
+		# return temp2
+
+		# Max value
+		# Makes everything too bright,
+		# completely destroys noise profile
+		# tl = temp[0::2, 0::2]
+		# tr = temp[1::2, 0::2]
+		# bl = temp[0::2, 1::2]
+		# br = temp[1::2, 1::2]
+		# tl = np.fmax(tl, tr, out=tl)
+		# bl = np.fmax(bl, br, out=bl)
+		# np.fmax(tl, bl, out=tl)
+		# return tl
+
+		# Max value per column, average per row
+		# an almost happy medium of the previous two,
+		# still introduces too much brightness per zoom level
+		# tl = temp[0::2, 0::2]
+		# tr = temp[1::2, 0::2]
+		# bl = temp[0::2, 1::2]
+		# br = temp[1::2, 1::2]
+		# tl = np.fmax(tl, tr, out=tl)
+		# bl = np.fmax(bl, br, out=bl)
+		# tl += bl
+		# tl *= 0.5
+		# return tl
+
+		# Max-biased value per column, average per row
+		# Looks like a good trade-off, introduces
+		# a little brightness, but not much
+		# could be tweaked with different weights
+		tl = temp[0::2, 0::2]
+		tr = temp[1::2, 0::2]
+		bl = temp[0::2, 1::2]
+		br = temp[1::2, 1::2]
+		# this is a weighed average, with the higher value 3:1
+		tmax = np.fmax(tl, tr)
+		tmax += tmax
+		tmax += tl
+		tmax += tr
+		bmax = np.fmax(bl, br)
+		bmax += bmax
+		bmax += bl
+		bmax += br
+		tmax += bmax
+		tmax *= 0.125
+		return tmax
 
 	# Returns a submatrix scaled to 0-255 range
 	def dz_get_zoom_tile(self, x, y, z, truncate):
@@ -158,16 +253,31 @@ class LoomTiles(object):
 			if maxes.shape[0] < 256:
 				maxes = np.pad(maxes, (0, 256 - maxes.shape[0]), 'constant', constant_values=0)
 				mins = np.pad(mins, (0, 256 - mins.shape[0]), 'constant', constant_values=0)
-			# tile = (np.log2(tile.transpose()-mins+1)/np.log2(maxes-mins+1)*255).transpose()
+
+			# Human readable version of code below:
+			# We add one because we want a log2 curve,
+			# but keep zero values equal to zero, and
+			# log2(0 + 1) = 0.
+			#
+			# p = np.log2(1 + tile.transpose() - mins)
+			# q = np.log2(1 + maxes - mins)*255
+			# tile = (p/q).transpose()
+
 			mins = mins - 1
 			maxes = maxes - mins
+			# avoid allocating new arrays as much as we can
 			np.log2(maxes, maxes)
-			np.log2(tile.transpose()-mins, tile)
-			# avoid intermediate arrays as much as we can
-			tile /= maxes
-			tile *= 255
+			# replace zero with smallest non-zero positive number
+			# to avoid complaints about dividing by zero later
+			maxes[maxes == 0] = np.nextafter(0, 1)
+
 			tile = tile.transpose()
-			#tile = (tile+1)/(maxes+1)*256
+			tile -= mins
+			np.log2(tile, tile)
+			tile *= 255
+			tile /= maxes
+			tile = tile.transpose()
+
 			self.dz_save_tile(x, y, z, tile, truncate=False)
 			return tile
 
