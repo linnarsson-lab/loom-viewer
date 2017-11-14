@@ -50,7 +50,6 @@ def list_project_files(dataset_path, project):
 	if os.path.exists(project_path):
 		project_files = os.listdir(project_path)
 		loom_files = [(project, filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")]
-
 		total_loom_files = len(loom_files)
 		if total_loom_files is 0:
 			logging.info("No loom files found in %s folder" % project)
@@ -58,14 +57,12 @@ def list_project_files(dataset_path, project):
 			logging.info("Found 1 loom file")
 		else:
 			logging.info("Found %i loom files" % total_loom_files)
-
 		return loom_files
 	else:
 		raise warnings.warn("%s is not a path to a Project folder!" % project_path)
 
-def tile_command(dataset_path, filename, truncate):
-	loom_files = list_filename_matches(dataset_path, filename)
-	for project, filename, file_path in loom_files:
+def tile(loom_files, truncate):
+	for _, _, file_path in loom_files:
 		ds = None
 		try:
 			ds = connect_loom(file_path)
@@ -81,67 +78,56 @@ def tile_command(dataset_path, filename, truncate):
 		except Exception as e:
 			logging.error(e)
 
+def loom_files_from_abspath(filename):
+	""" filename is actually an absolute filepath - extract into '/..../project/filename'  """
+	project = os.path.basename(os.path.dirname(filename))
+	real_filename = os.path.basename(filename)
+	return [ (project, real_filename, filename) ]
+
+def tile_command(dataset_path, filename, truncate):
+	if filename == os.path.abspath(filename):
+		loom_files = loom_files_from_abspath(filename)
+	else:
+		loom_files = list_filename_matches(dataset_path, filename)
+	tile(loom_files, truncate)
+
 def tile_project_command(dataset_path, project, truncate):
 	loom_files = list_project_files(dataset_path, project)
-	for _, filename, file_path in loom_files:
-		ds = None
+	tile(loom_files, truncate)
+
+def expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols):
+	if not (metadata or attributes or rows or cols):
+		logging.info('Must explicitly state what to expand!')
+		return
+	for project, filename, file_path in loom_files:
 		try:
 			ds = connect_loom(file_path)
 			if ds == None:
 				raise warnings.warn("Could not connect to %s" % file_path)
-		except Exception as e:
-			logging.error(e)
-			return
-		try:
-			logging.info("    Precomputing %s heatmap tiles, stored in subfolder:\n    %s.tiles" % filename, file_path)
-			tiles = LoomTiles(ds)
-			tiles.prepare_heatmap(truncate)
+			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
+			if metadata:
+				expand.metadata(truncate)
+			if attributes:
+				expand.attributes(truncate)
+			if rows:
+				expand.rows(truncate)
+			if cols:
+				expand.columns(truncate)
 		except Exception as e:
 			logging.error(e)
 
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
-	if not (metadata or attributes or rows or cols):
-		logging.info('Must explicitly state what to expand!')
-		return
-	loom_files = list_filename_matches(dataset_path, filename)
-	for project, _, file_path in loom_files:
-		try:
-			ds = connect_loom(file_path)
-			if ds == None:
-				raise warnings.warn("Could not connect to %s" % file_path)
-			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
-			if metadata:
-				expand.metadata(truncate)
-			if attributes:
-				expand.attributes(truncate)
-			if rows:
-				expand.rows(truncate)
-			if cols:
-				expand.columns(truncate)
-		except Exception as e:
-			logging.error(e)
+	if filename == os.path.abspath(filename):
+		loom_files = loom_files_from_abspath(filename)
+	else:
+		loom_files = list_filename_matches(dataset_path, filename)
+	expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 
 def expand_project_command(dataset_path, project, truncate, metadata, attributes, rows, cols):
 	loom_files = list_project_files(dataset_path, project)
-	for _, filename, file_path in loom_files:
-		try:
-			ds = connect_loom(file_path)
-			if ds == None:
-				raise warnings.warn("Could not connect to %s" % file_path)
-			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
-			if metadata:
-				expand.metadata(truncate)
-			if attributes:
-				expand.attributes(truncate)
-			if rows:
-				expand.rows(truncate)
-			if cols:
-				expand.columns(truncate)
-		except Exception as e:
-			logging.error(e)
+	expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
-
 	if not (metadata or attributes or rows or cols):
 		logging.info('Must explicitly state what to expand!')
 		return
@@ -151,22 +137,7 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 	for project in projects:
 		logging.info('Entering project %s' % project)
 		loom_files = list_project_files(dataset_path, project)
-		for _, filename, file_path in loom_files:
-			try:
-				ds = connect_loom(file_path)
-				if ds == None:
-					raise warnings.warn("Could not connect to %s" % file_path)
-				expand = LoomExpand(ds, dataset_path, project, filename, file_path)
-				if metadata:
-					expand.metadata(truncate)
-				if attributes:
-					expand.attributes(truncate)
-				if rows:
-					expand.rows(truncate)
-				if cols:
-					expand.columns(truncate)
-			except Exception as e:
-				logging.error(e)
+		expand(loom_files, truncate, metadata, attributes, rows, cols)
 
 def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chunk_cache, compression_opts, shuffle, fletcher32):
 	if project != None:
@@ -236,7 +207,7 @@ if __name__ == '__main__':
 
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
-		tile_parser.add_argument("file", help="Loom input file")
+		tile_parser.add_argument("file", help="Loom file absolute path, or filename to search for in any project under dataset-path")
 		tile_parser.add_argument("-t", "--truncate", help="Remove previously expanded tiles if present (False by default)", action='store_true')
 
 		# loom tile all within project
@@ -246,7 +217,7 @@ if __name__ == '__main__':
 
 		# loom expand
 		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name.")
-		expand_parser.add_argument("file", help="Loom input file")
+		expand_parser.add_argument("file", help="Loom file absolute path, or filename to search for in any project under dataset-path")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
 		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
 		expand_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", action='store_true')
