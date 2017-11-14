@@ -137,7 +137,7 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 	for project in projects:
 		logging.info('Entering project %s' % project)
 		loom_files = list_project_files(dataset_path, project)
-		expand(loom_files, truncate, metadata, attributes, rows, cols)
+		expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 
 def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chunk_cache, compression_opts, shuffle, fletcher32):
 	if project != None:
