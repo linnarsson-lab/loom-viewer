@@ -62,15 +62,15 @@ On Windows, double-click (or type) `build.bat`.
 
 ### The Loom viewer
 
-To open the viewer, run the `loom` tool without any arguments. This will default to starting the local server. It will automatically open `localhost:8003` in your default browser, and likely show a message that our usage of `fetch` is (somehow) broken on Safari (bug #121). The real reason is that the local server looks for loom files in `loom-datasets` and did not find any.
-
 **Mac and Linux:**
 
-After installation, to run the `loom` tool you can simply open a terminal and type:
+To start the server you open a terminal and type:
 
 ```bash
 loom
 ```
+
+This will automatically open `localhost:8003` in your default browser, and likely show a message that our usage of `fetch` is (somehow) broken if you are on Safari (bug #121). The real reason is that the local server looks for loom files in `loom-datasets` and did not find any.
 
 **Windows:** 
 
