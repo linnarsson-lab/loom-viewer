@@ -139,7 +139,11 @@ The output should look similar to this:
 2017-10-20 21:15:03,335 - INFO -     Expanding rows (stored in /home/job/loom-datasets/Published/cortex.loom.rows subfolder)
 ```
 
-Note: the `loom tile` and `loom expand` commands will automatically search _all_ projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged!
+Note: the `loom tile` and `loom expand` commands will automatically search _all_ projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged! To make sure only one single loom file is processed, specify the absolute path instead, e.g.:
+
+```
+loom tile /home/me/datasets/new/cortex.loom
+```
 
 Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. Meaning that if you abort gene expansion halfway, the unexpanded genes will not be added if you try again. To force that, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes, even the previously expanded ones. Alternatively, delete the subfolder in question.
 
