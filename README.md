@@ -1,4 +1,4 @@
-# Warning: heavily outdated documentation
+# Warning: partially outdated documentation
 
 # Loom
 
@@ -6,7 +6,6 @@ Loom is
 
 * `.loom`, an efficient file format for large omics datasets
 * `loompy`, a Python library for creating and working with data in `.loom` format.
-* [deprecated] `loom`, a command-line tool for manipulating `.loom` files.
 * `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
 
 We recently split `loompy` into [a pure python package](https://github.com/linnarsson-lab/loompy) and a viewer.
@@ -17,7 +16,7 @@ This repository is the viewer part.
 
 **Mac and Linux**: you can choose to install through PyPi, or build `loom-viewer` from source. 
 
-**Windows users:** for now, the least hacky (but still hacky) option is to build from source. To ease this process we suggest using [cmdr](http://cmder.net/) for a nicer terminal experience. You may want also to add the Anaconda installation directory to your system PATH variable, so that you can run any Python scripts by simply typing `python`. If you only installed Anaconda for this purpose and do not have any other Python installation you should be fine.
+**Windows users:** for now, the only option is to build from source. To ease this process we suggest using [cmdr](http://cmder.net/) for a nicer terminal experience. You may want also to add the Anaconda installation directory to your system PATH variable, so that you can run any Python scripts by simply typing `python`. If you only installed Anaconda for this purpose and do not have any other Python installation you should be fine.
 
 ### Installing through pip
 
