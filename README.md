@@ -94,7 +94,7 @@ loom-datasets/
     └── # dataset2.loom (loom file)
 ```
 
-So to get started, either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](http://loom.linnarssonlab.org/), then place it in the appropriate project folder. For example, say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
+So to get started, either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](http://loom.linnarssonlab.org/) (this is our public dataset loom server), then place it in the appropriate project folder. For example, say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
 
 ```bash
 loom-datasets/
