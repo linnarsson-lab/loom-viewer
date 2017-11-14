@@ -85,7 +85,7 @@ We use that `loom.bat` file to "fake" the `loom` CLI tool, so you have to be in 
 
 The first time you run `loom`, a `loom-datasets` folder will be created in your home folder. You can also explicitly point the `loom` tool to a different path with the following flag: `--dataset-path <your path here>`
 
-By default, the `loom-datasets` folder is where the `loom-viewer` server looks for Loom files. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The loom files are then stored in the project folders:
+By default, the `loom-datasets` folder is where the `loom-viewer` server looks for Loom files. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The Loom files are then stored in the project folders:
 
 ```bash
 loom-datasets/
@@ -105,16 +105,12 @@ loom-datasets/
     └── cortex.loom
 ```
 
-When we star the loom server and open `localhost:8003`, the resulting view should be something like:
+When we start the loom server and open `localhost:8003`, the resulting view should be something like:
 
 ![image](https://user-images.githubusercontent.com/259840/31838214-075f1cde-b5dc-11e7-898e-6c7fca4ba8ea.png)
 
 ### Viewing the heatmap and genes
-Currently, only list and attribute metadata is generated on the fly; extracting data from a loom file through `h5py` was such a bottleneck that it made our loom-viewer server server crash on loads as high as a few dozen genes being requested at once. It also could not cope with multiple people accessing the same loom file.
-
-So instead, this data needs to be pre-generated from the loom file for quick static serving. Heat map tiles, and gene expression values are "expanded" using CLI (we're planning to add this expansion to the web-interface, to be more accessible to people less familiar with the command line - see issue #114). 
-
-After putting a loom file in the appropriate project folder as explained above, you can run the following commands from anywhere:
+Once the Loom file is in place in a project folder, heat map tiles and gene expression value views need to be pre-generated from the Loom file for quick static serving. This is also required since h5py can not safely cope with multiple people accessing the same Loom file simultanously. The pre-generation steps are performed from the command line (we're planning to add this expansion to the web-interface, to be more accessible to people less familiar with the command line - see issue #114):
 
 ```bash
 loom tile cortex.loom
@@ -139,7 +135,7 @@ The output should look similar to this:
 2017-10-20 21:15:03,335 - INFO -     Expanding rows (stored in /home/job/loom-datasets/Published/cortex.loom.rows subfolder)
 ```
 
-Note: the `loom tile` and `loom expand` commands will automatically search _all_ projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged! To make sure only one single loom file is processed, specify the absolute path instead, e.g.:
+Note: the `loom tile` and `loom expand` commands will automatically search _all_ projects for _all_ matching file names, and expand each. Unique file names are therefore encouraged! To make sure only one single Loom file is processed, specify the absolute path instead, e.g.:
 
 ```
 loom tile /home/me/datasets/new/cortex.loom
