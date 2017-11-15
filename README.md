@@ -1,4 +1,4 @@
-# Loom
+# Loom-viewer
 
 Loom is
 
