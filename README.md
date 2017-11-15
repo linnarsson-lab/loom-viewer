@@ -16,7 +16,7 @@ This repository is the loom-viewer part. Read more about .loom and loompy [here]
 
 ### Installing through pip
 
-1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
+1. Install [Anaconda](https://www.continuum.io/downloads). **Note: loompy and loom-server only works with Python version 3.x.**
 
 2. Install Loom:
 
@@ -32,7 +32,7 @@ pip install -U loom-viewer
 
 ### Installing from source
 
-1. Install [Anaconda](https://www.continuum.io/downloads). **Note: Loom only works with Python version 3.x.**
+1. Install [Anaconda](https://www.continuum.io/downloads). **Note: loompy and loom-server only works with Python version 3.x.**
 
 2. If you haven't already, install [`loompy`](https://github.com/linnarsson-lab/loompy), either from source or through PyPI:
 
