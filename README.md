@@ -148,10 +148,8 @@ To learn more about the `loom` tool, open your terminal, and type:
 loom --help
 ```
 
-**NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all` and `tile` are supported. Consider all other commands deprecated (some are actually broken at the moment). They originated from before the `loompy`/`loom-viewer` split and will be removed soon. 
+**NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all`,`tile`, and `tile-project` are supported. Consider all other commands deprecated. They originated from before the `loompy`/`loom-viewer` split and may be removed soon. 
 
 For help with individual commands, just type:
-
 ```bash
 loom [command] --help
-
