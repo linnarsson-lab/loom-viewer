@@ -8,7 +8,7 @@ Loom is
 * `loompy`, a Python library for creating and working with data in `.loom` format.
 * `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
 
-We recently split `loompy` into [a pure python package](https://github.com/linnarsson-lab/loompy) and a viewer. This repository is the viewer part.
+This repository is the loom-viewer part.
 
 ## Installation
 
