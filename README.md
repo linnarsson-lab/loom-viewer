@@ -58,41 +58,72 @@ On Windows, double-click (or type) `build.bat`.
 
 ## Getting started
 
-### The Loom viewer
+To view our loom files, we have to go through the following steps:
+
+1. Store the loom files in a project directory where the viewer can find it
+2. To access gene expression data, expand the gene rows (optional)
+3. To see heatmap tiles, generate them for the loom file (optional)
+4. Start the loom server, or if it is already running, refresh the dataset lists page
+
+### The Loom CLI tool
 
 **Mac and Linux:**
 
-To start the server you open a terminal and type:
+After installation, you should have access to the `loom` CLI. 
+
+**Windows:**
+
+Installing a CLI program on Windows requires modifying path variables. So instead we have provided a `loom.bat` file in the `loom-viewer` directory. This mimicks the same functionality as the loom CLI on Mac and Linux environments, provided that you added Anaconda to your path, and that you are in the root directory of your `loom-viewer` installation. 
+
+(Under the hood, this is just a micro-script that runs `python.exe .\python\loom_viewer\loom`. Maybe some day we will figure out how to properly package this as a CLI app in Windows; any suggestions are welcome!)
+
+#### Using the CLI tool
+
+Test if everything works correctly by typing:
 
 ```bash
 loom
 ```
 
-This will automatically open `localhost:8003` in your default browser, and likely show a message that our usage of `fetch` is (somehow) broken if you are on Safari (bug #121). The real reason is that the local server looks for loom files in `loom-datasets` and did not find any.
+(Windows users can also double-click `loom.bat` in the `loom-viewer` directory)
 
-**Windows:** 
+This will start a local server, and automatically open `localhost:8003` in your default browser. Since this is the first time running the tool, it will fail to find any datasets, showing an empty list and an error message about fetch being broken on Safari.
 
-To start the server, and provided you added Anaconda to your path, you can double-click `loom.bat` in the `loom-viewer` directory. This is just a micro-script that reads `python.exe .\python\loom_viewer\loom`
+Close the server for now (CTRL+C on Linux/Windows, CMD+C on Mac).
 
-We use that `loom.bat` file to "fake" the `loom` CLI tool, so you have to be in the root folder of the `loom-viewer` repo to use it. Maybe some day we'll figure out how to properly package this as a CLI app in Windows (any suggestions are welcome!).
+To learn more about the loom tool, type:
+
+```bash
+loom --help
+```
+
+For help with individual commands, just type:
+
+```bash
+loom [command] --help
+```
+
+**NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all`,`tile`, and `tile-project` are supported. Consider all other commands deprecated. They originated from before the `loompy`/`loom-viewer` split and may be removed soon.
 
 ### Where the server looks for Loom files
 
-The first time you run `loom`, a `loom-datasets` folder will be created in your home folder. You can also explicitly point the `loom` tool to a different path with the following flag: `--dataset-path <your path here>`
+The first time you run `loom`, a `loom-datasets` folder will be created in your home folder. By default, the `loom-datasets` folder is where the `loom-viewer` server looks for Loom files. 
 
-By default, the `loom-datasets` folder is where the `loom-viewer` server looks for Loom files. The root of `loom-datasets` is reserved for folders (everything else will be ignored), which represent individual projects. The Loom files are then stored in the project folders:
+You can explicitly point the `loom` tool to a different path with the following flag: `--dataset-path <your path here>`
+
+The root of the datasets folder is reserved for folders (everything else will be ignored). Folders represent individual projects. The Loom files are stored in these project folders:
 
 ```bash
 loom-datasets/
-├── #Project 1 (folder)
+├── # Project 1 (folder)
 │   ├── # dataset1.loom (loom file)
 │   └── # dataset2.loom (loom file)
-└── #Project 2 (folder)
+└── # Project 2 (folder)
     ├── # dataset1.loom (loom file)
     └── # dataset2.loom (loom file)
 ```
 
-So to get started, either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from [somewhere](http://loom.linnarssonlab.org/) (this is our public dataset loom server), then place it in the appropriate project folder. For example, say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
+Either create a Loom file with [`loompy`](https://github.com/linnarsson-lab/loompy), or download it from somewhere (like [our own loom-viewer website with published datasets](http://loom.linnarssonlab.org/)). Place it in the appropriate project folder. For example, say that we have downloaded a `cortex.loom` file containing data about [some paper](http://science.sciencemag.org/content/347/6226/1138), and store it in a `Published` project folder like so:
 
 ```bash
 loom-datasets/
@@ -100,15 +131,17 @@ loom-datasets/
     └── cortex.loom
 ```
 
-When we start the loom server and open `localhost:8003`, the resulting view should be something like:
+Once we start the loom server (see below) and open `localhost:8003`, the resulting view should be something like:
 
 ![image](https://user-images.githubusercontent.com/259840/31838214-075f1cde-b5dc-11e7-898e-6c7fca4ba8ea.png)
 
-### Viewing the heatmap and genes
+### Genes and Heatmap Tiles
 
-Once the Loom file is in place in a project folder, heat map tiles and gene expression value views need to be pre-generated from the Loom file before they can be seen in the viewer. **Note that when you change the gene expression data in the loom file, you need to repeat this step, or you will see the old data instead.**
+Once the Loom file is in place in a project folder, we only have access to the standard metadata attributes.
 
-The pre-generation steps are currently done through the command line (we are working on a web-interface for this, to be more accessible to people less familiar with the command line - see issue #114):
+To view gene expression values and heat map tiles, they must be expanded from the Loom file. **Note that when you change the gene expression data in a loom file, you need to repeat this step with the added -t flag, or you will see the old data instead.**
+
+This expansion currently done through the command line (we are working on a web-interface for this, to be more accessible to people less familiar with the command line - see issue #114):
 
 ```bash
 loom tile cortex.loom        # generates PNG tiles from data matrix for heatmap view
@@ -139,24 +172,54 @@ Note: the `loom tile` and `loom expand` commands will automatically search _all_
 loom tile /home/me/loom-datasets/PublishedOldVersion/cortex.loom
 ```
 
-Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. Meaning that if you abort gene expansion halfway, the unexpanded genes will not be added if you try again. To force that, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes, even the previously expanded ones. Alternatively, delete the subfolder in question.
+Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. So if gene expansion is aborted without finishing, the unexpanded genes will not be added when `loom expand` again. To override this, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes, even the previously expanded ones. Alternatively, delete the subfolder in question.
 
-You may be wondering why we need a manual extraction step, instead of loading the data from the loom files "on the fly". There are two reasons for this:
+### Starting the server
 
-First, h5py can not safely cope with multiple people accessing the same Loom file simultanously. This is not a problem when exploring loom files off-line (unless you open the same loom file in multiple tabs), but when using the `loom-viewer` as a server to share loom-files, two or more people opening the same loom files will cause the server to freeze.
-
-Second, loading the genes from the loom file and converting it to either JSON or a PNG is a fairly slow process. It is also wasteful to do it multiple times, since the results will always be the same as long as the loom file does not change. Serving pre-generated static files is thousands of times faster.
-
-### Other uses of the `loom` command-line tool
-
-To learn more about the `loom` tool, open your terminal, and type:
+To start the server, open a terminal and type:
 
 ```bash
-loom --help
+loom
 ```
 
-**NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all`,`tile`, and `tile-project` are supported. Consider all other commands deprecated. They originated from before the `loompy`/`loom-viewer` split and may be removed soon. 
+(Windows users can also double-click `loom.bat` in the `loom-viewer` directory)
 
-For help with individual commands, just type:
-```bash
-loom [command] --help
+This will start a local server, and automatically open `localhost:8003` in your default browser.
+
+If you see the message that `fetch` is broken if you are on Safari (bug #121), and you are not using Safari, this means that the server failed to find any loom files. See above for instructions how to set up the datasets directory
+
+If you see no heatmap tiles or get no gene expression, you may have forgotten to expand the loom file. See above for instructions.
+
+### FAQ
+
+#### I'm getting the message that fetch is broken on Safari, but I'm using [some other browser than Safari]
+
+The loom server cannot find any loom files, but the website mistakenly thinks it failed to fetch the list of loom files (which is guaranteed to happen on Safari anyway, hence the warning message).
+
+See above for where and how to store your loom files so that the server can find them.
+
+If this did not solve your problem, open an issue.
+
+#### Help, there are no heatmap tiles!
+
+If you have not done so yet, generate the tiles for the heatmap first with `loom tile [loom file]`. See above for more details.
+
+If you _have_ done so but something went wrong, you can try again with `loom tile -t [loom file]`.
+
+If the problem persists, open an issue and we'll look into it.
+
+#### Help, Gene expression data is displayed as zero for all genes!
+
+If you have not done so yet, generate the tiles for the heatmap first with `loom expand [loom file]`. See above for more details.
+
+If you _have_ done so but something went wrong, you can try again with `loom expand -t [loom file]`.
+
+If the problem persists, open an issue and we'll look into it.
+
+#### Why is pre-generation required for viewing heatmap tiles or gene expression data anyway?
+
+There are two reasons for this:
+
+First, h5py can not safely cope with multiple people accessing the same Loom file simultanously. This is not a problem when exploring loom files locally (unless you open the same loom file in multiple tabs), but when using the `loom-viewer` as a server to set up a website for sharing loom-files, two or more people opening the same loom files will cause the server to crash.
+
+Second, loading the genes from the loom file and converting it to either JSON or a PNG is a fairly slow process. As the loom file does not change, it is also wasteful to do it multiple times, since the results will always be the same. As a result, serving pre-generated static files is thousands of times faster.
