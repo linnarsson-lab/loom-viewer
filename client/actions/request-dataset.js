@@ -13,6 +13,7 @@ import {
 	convertJSONarray,
 	extractStringArray,
 	firstMatchingKey,
+	firstMatchingKeyCaseInsensitive,
 	merge,
 	mergeInPlace,
 } from 'js/util';
@@ -172,7 +173,7 @@ function convertToDataSet(data, dataset) {
 	row.allKeys = row.keys.concat(row.cellKeys);
 	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
-	const rowKey  = firstMatchingKey(row.attrs, ['Gene', 'Genes', 'gene', 'genes', '(original order)']);
+	const rowKey  = firstMatchingKeyCaseInsensitive(row.attrs, ['Gene', 'Genes', 'GeneName', 'Gene_Name', 'GeneNames', 'Gene_Names', '(original order)']);
 
 	col.geneKeys = extractStringArray(row.attrs[rowKey]);
 	col.rowToGenes = new Array(col.geneKeys.length);

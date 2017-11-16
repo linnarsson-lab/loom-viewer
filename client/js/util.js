@@ -582,6 +582,33 @@ export function firstMatchingKey(obj, keyList) {
 	return '';
 }
 
+function toLowerCase(key){
+	return key.toLowerCase();
+}
+
+/**
+ * Returns the first key in `keyList` that matches a key
+ * in `obj`, case insensitive, i.e. if `keyList` contains
+ * `'a'`, and the matching key in `obj` is `'A'`, then
+ * the returned key is `'A'`.
+ *
+ * Returns empty string if no matches are found.
+ * @param {object} obj
+ * @param {string[]} keyList
+ */
+export function firstMatchingKeyCaseInsensitive(obj, keyList) {
+	let keys = Object.keys(obj),
+		keysLowerCase = keys.map(toLowerCase),
+		keyListLowerCase = keyList.map(toLowerCase);
+	for (let i = 0; i < keyList.length; i++) {
+		if (keysLowerCase.indexOf(keyListLowerCase[i]) !== -1) {
+			return keys[i];
+		}
+	}
+	return '';
+}
+
+
 /**
  * - `array`: array to be sorted
  * - `compareFunc`: optional comparison callback that will be given
