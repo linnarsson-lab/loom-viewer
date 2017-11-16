@@ -56,16 +56,7 @@ npm install
 ```
 On Windows, double-click (or type) `build.bat`.
 
-## Getting started
-
-To view our loom files, we have to go through the following steps:
-
-1. Store the loom files in a project directory where the viewer can find it
-2. To access gene expression data, expand the gene rows (optional)
-3. To see heatmap tiles, generate them for the loom file (optional)
-4. Start the loom server, or if it is already running, refresh the dataset lists page
-
-### The Loom CLI tool
+## The Loom CLI tool
 
 **Mac and Linux:**
 
@@ -104,6 +95,15 @@ loom [command] --help
 ```
 
 **NOTE:** For the purpose of the loom viewer, only `expand`, `expand-project`, `expand-all`,`tile`, and `tile-project` are supported. Consider all other commands deprecated. They originated from before the `loompy`/`loom-viewer` split and may be removed soon.
+
+## Getting started
+
+To view our loom files, we have to go through the following steps:
+
+1. Store the loom files in a project directory where the viewer can find it
+2. To access gene expression data, expand the gene rows (optional)
+3. To see heatmap tiles, generate them for the loom file (optional)
+4. Start the loom server, or if it is already running, refresh the dataset lists page
 
 ### Where the server looks for Loom files
 
