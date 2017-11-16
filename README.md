@@ -105,11 +105,14 @@ When we start the loom server and open `localhost:8003`, the resulting view shou
 ![image](https://user-images.githubusercontent.com/259840/31838214-075f1cde-b5dc-11e7-898e-6c7fca4ba8ea.png)
 
 ### Viewing the heatmap and genes
-Once the Loom file is in place in a project folder, heat map tiles and gene expression value views need to be pre-generated from the Loom file for quick static serving. This is also required since h5py can not safely cope with multiple people accessing the same Loom file simultanously. The pre-generation steps are performed from the command line (we're planning to add this expansion to the web-interface, to be more accessible to people less familiar with the command line - see issue #114):
+
+Once the Loom file is in place in a project folder, heat map tiles and gene expression value views need to be pre-generated from the Loom file before they can be seen in the viewer. **Note that when you change the gene expression data in the loom file, you need to repeat this step, or you will see the old data instead.**
+
+The pre-generation steps are currently done through the command line (we are working on a web-interface for this, to be more accessible to people less familiar with the command line - see issue #114):
 
 ```bash
-loom tile cortex.loom
-loom expand -r cortex.loom
+loom tile cortex.loom        # generates PNG tiles from data matrix for heatmap view
+loom expand -r cortex.loom   # expands gene epression data into zipped JSON files
 ```
 
 The output should look similar to this:
@@ -122,7 +125,7 @@ The output should look similar to this:
 2017-10-20 21:39:31,680 - INFO -   Connecting to cortex.loom at full path
 2017-10-20 21:39:31,714 - INFO -     Precomputing heatmap tiles (stored in cortex.loom.tiles subfolder)
 
-> loom expand -r cortex.loom
+> loom expand -mar cortex.loom
 
 2017-10-20 21:15:02,688 - INFO - Found 1 projects
 2017-10-20 21:15:02,688 - INFO - Entering project /home/job/loom-datasets/Published
@@ -137,6 +140,12 @@ loom tile /home/me/loom-datasets/PublishedOldVersion/cortex.loom
 ```
 
 Because expansion can be slow for larger Loom files, the command checks if the relevant subfolder already exists and skips expansion if it does. Meaning that if you abort gene expansion halfway, the unexpanded genes will not be added if you try again. To force that, run: `loom expand -rt cortex.loom` (`t` for "truncate"), which generates newly expanded files for _all_ genes, even the previously expanded ones. Alternatively, delete the subfolder in question.
+
+You may be wondering why we need a manual extraction step, instead of loading the data from the loom files "on the fly". There are two reasons for this:
+
+First, h5py can not safely cope with multiple people accessing the same Loom file simultanously. This is not a problem when exploring loom files off-line (unless you open the same loom file in multiple tabs), but when using the `loom-viewer` as a server to share loom-files, two or more people opening the same loom files will cause the server to freeze.
+
+Second, loading the genes from the loom file and converting it to either JSON or a PNG is a fairly slow process. It is also wasteful to do it multiple times, since the results will always be the same as long as the loom file does not change. Serving pre-generated static files is thousands of times faster.
 
 ### Other uses of the `loom` command-line tool
 
