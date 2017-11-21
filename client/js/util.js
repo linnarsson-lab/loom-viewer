@@ -597,12 +597,13 @@ function toLowerCase(key){
  * @param {string[]} keyList
  */
 export function firstMatchingKeyCaseInsensitive(obj, keyList) {
-	let keys = Object.keys(obj),
-		keysLowerCase = keys.map(toLowerCase),
+	let keys = Object.keys(obj);
+	let keysLowerCase = keys.map(toLowerCase),
 		keyListLowerCase = keyList.map(toLowerCase);
 	for (let i = 0; i < keyList.length; i++) {
-		if (keysLowerCase.indexOf(keyListLowerCase[i]) !== -1) {
-			return keys[i];
+		let j = keysLowerCase.indexOf(keyListLowerCase[i]);
+		if (j !== -1) {
+			return keys[j];
 		}
 	}
 	return '';
