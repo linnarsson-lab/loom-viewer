@@ -139,7 +139,7 @@ Once we start the loom server (see below) and open `localhost:8003`, the resulti
 
 Once the Loom file is in place in a project folder, we only have access to the standard metadata attributes.
 
-To view gene expression values and heat map tiles, they must be expanded from the Loom file. **Note that when you change the gene expression data in a loom file, you need to repeat this step with the added -t flag, or you will see the old data instead.**
+To view gene expression values and heat map tiles, they must be expanded from the Loom file. **Note: the expanded files are _not_ automatically updated when changing data in a loom file, meaning the viewer may show the old data! To fix this, re-do this step with the added -t flag (for "truncate", telling loom to overwrite the old files)**
 
 This expansion currently done through the command line (we are working on a web-interface for this, to be more accessible to people less familiar with the command line - see issue #114):
 
@@ -206,15 +206,15 @@ If you have not done so yet, generate the tiles for the heatmap first with `loom
 
 If you _have_ done so but something went wrong, you can try again with `loom tile -t [loom file]`.
 
-If the problem persists, open an issue and we'll look into it.
+#### Help, generating tiles fails with `ERROR - module 'scipy.misc' has no attribute 'toimage'`!
+
+It looks like you're missing the required image library. This can happen if you use MiniConda, which has fewer default packages. Try installing it with `conda install pillow`.
 
 #### Help, Gene expression data is displayed as zero for all genes!
 
 If you have not done so yet, generate the tiles for the heatmap first with `loom expand [loom file]`. See above for more details.
 
 If you _have_ done so but something went wrong, you can try again with `loom expand -t [loom file]`.
-
-If the problem persists, open an issue and we'll look into it.
 
 #### Why is pre-generation required for viewing heatmap tiles or gene expression data anyway?
 
