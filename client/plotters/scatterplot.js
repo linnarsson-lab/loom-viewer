@@ -355,9 +355,9 @@ function prepareSprites(colorMode, spriteLayout) {
 	let zeroSprite = sprites[0],
 		ctx0 = zeroSprite.getContext('2d');
 	ctx0.clearRect(0, 0, spriteW, spriteH);
-	ctx0.globalAlpha = 0.25;
+	ctx0.globalAlpha = 1;
 	circlePath(ctx0, radius, spriteW, spriteH);
-	strokeCircle(ctx0, lineW);
+	fillCircle(ctx0, 'lightgrey');
 	const zeroSprite32 = new Uint32Array(ctx0.getImageData(0, 0, spriteW, spriteH).data.buffer);
 
 	spriteData[0] = zeroSprite;
@@ -370,10 +370,10 @@ function prepareSprites(colorMode, spriteLayout) {
 		let ctx = sprite.getContext('2d');
 		ctx.clearRect(0, 0, spriteW, spriteH);
 		circlePath(ctx, radius, spriteW, spriteH);
-		ctx.globalAlpha = 0.5;
-		fillCircle(ctx, palette[i]);
 		ctx.globalAlpha = 0.25;
-		strokeCircle(ctx, lineW);
+		strokeCircle(ctx, lineW, 'black');
+		ctx.globalAlpha = 1;
+		fillCircle(ctx, palette[i]);
 		spriteData[i] = sprite;
 		spriteData32[i] = new Uint32Array(ctx.getImageData(0, 0, spriteW, spriteH).data.buffer);
 	}
@@ -395,14 +395,14 @@ function prepareSprites(colorMode, spriteLayout) {
 	};
 }
 
-function circlePath(ctx, radius, spriteW, spriteH){
+function circlePath(ctx, radius, spriteW, spriteH) {
 	ctx.beginPath();
 	ctx.arc(spriteW * 0.5, spriteH * 0.5, radius, 0, 2 * Math.PI, false);
 	ctx.closePath();
 }
 
-function strokeCircle(ctx, lineW) {
-	ctx.strokeStyle = 'black';
+function strokeCircle(ctx, lineW, strokeColor) {
+	ctx.strokeStyle = strokeColor || 'black';
 	ctx.lineWidth = lineW;
 	ctx.stroke();
 }
@@ -463,6 +463,24 @@ function sortByAxes(xy, cIdx) {
 	};
 }
 
+// Re-use buckets to reduce allocation time & GC pressure
+const countBuckets = (function () {
+	return [
+		[
+			new Uint16Array(256),
+			new Uint16Array(256),
+			new Uint16Array(256),
+			new Uint16Array(256),
+		],
+		[
+			new Uint32Array(256),
+			new Uint32Array(256),
+			new Uint32Array(256),
+			new Uint32Array(256),
+		],
+	];
+})();
+
 /**
  * Returns the sorted indices for an array of Uint32 values.
  * "Works" on all arrays, but incorrect values will be sorted by their coerced
@@ -470,19 +488,18 @@ function sortByAxes(xy, cIdx) {
  * @param {number[]} input
  */
 function sortedUint32Indices(input) {
-	const length = input.length;
-	let arrayConstr = length < (1 << 16) ? Uint16Array : Uint32Array,
-		count1 = new arrayConstr(256),
-		count2 = new arrayConstr(256),
-		count3 = new arrayConstr(256),
-		count4 = new arrayConstr(256),
-		count = [count1, count2, count3, count4],
+	const length = input.length,
+		lessThan65k = length < (1 << 16);
+	let arrayConstr = lessThan65k ? Uint16Array : Uint32Array,
+		count = countBuckets[lessThan65k ? 0 : 1],
 		indices = new arrayConstr(length),
 		indices2 = new arrayConstr(length);
 
-	for (let i = 0; i < length; i++) {
-		indices[i] = i;
-	}
+	let [count1, count2, count3, count4] = count;
+	count1.fill(0);
+	count2.fill(0);
+	count3.fill(0);
+	count4.fill(0);
 
 	// count all bytes in one pass
 	for (let i = 0; i < length; i++) {
@@ -491,6 +508,7 @@ function sortedUint32Indices(input) {
 		count2[(val >>> 8) & 0xFF]++;
 		count3[(val >>> 16) & 0xFF]++;
 		count4[(val >>> 24) & 0xFF]++;
+		indices[i] = i;
 	}
 
 	// convert count to sum of previous counts
@@ -530,7 +548,6 @@ function sortedUint32Indices(input) {
 
 	return indices;
 }
-
 
 
 function blitSprites(context, xy, cIdx, spriteLayout, sorted, renderedSprites) {
@@ -627,41 +644,46 @@ function drawImgDataLE(spriteData32, cData32, x, y, imgW, imgH, tW) {
 
 	imgH = imgH | 0;
 	imgW = imgW | 0;
-	let sy = 0, // sprite y
-		cy = 0, // canvas y
+
+	// we know our sprites are square and powers of two
+	// so we can just iterate over the array in one loop, and
+	// calculate x and y with
+	// xi = i & (bitmask equal to width - 1)
+	// yi = i >>> (nr of bits to get width via power of two)
+	let spriteLength = imgW * imgH,
+		xMask = (imgW - 1) | 0,
+		yShift = log2(imgW) | 0,
+		c0 = x + y * tW | 0, // top-left corner of target canvas
+		cIdx = 0, // canvas index
 		sp = 0, // sprite pixel
 		cp = 0, // canvas pixel
 		sa = 0, // sprite alpha
 		ca = 0; // canvas alpha
 
-	for (let yi = 0; yi < imgH; yi++) {
-		sy = yi * imgW;
-		cy = (yi + y) * tW;
-		for (let xi = 0; xi < imgW; xi++) {
-
-			sp = spriteData32[xi + sy];
-			sa = sp >>> 24;
-			// skip transparent pixels.
-			if (sa > 0) {
-				// sa is a byte, so in the range [0,256).
-				// We introduce a tiny bias towards sa (the newer pixel),
-				// to replace /255 with /256, which can be written as
-				// >>8, which is faster
-				ca = 0x100 - ++sa;
-				// canvas pixel
-				cp = cData32[x + xi + cy];
-				cData32[x + xi + cy] = ((
-					(
-						(cp & 0xFF0000) * ca +
-						(sp & 0xFF0000) * sa & 0xFF000000
-					) + (
-						(cp & 0xFF00) * ca +
-						(sp & 0xFF00) * sa & 0xFF0000
-					) + (
-						(cp & 0xFF) * ca +
-						(sp & 0xFF) * sa & 0xFF00
-					)) >>> 8) + 0xFF000000;
-			}
+	for (let i = 0; i < spriteLength; i++) {
+		sp = spriteData32[i];
+		sa = (sp >>> 24);
+		if (sa) {
+			// sa is a byte, so in the range [0,256).
+			// We introduce a tiny bias towards sa (the newer pixel),
+			// to replace /255 with /256, which can be written as
+			// >>8, which is faster
+			ca = 0x100 - ++sa;
+			// index in canvas array
+			cIdx = c0 + (i & xMask) + (i >>> yShift) * tW;
+			// canvas pixel
+			cp = cData32[cIdx];
+			cData32[cIdx] = ((
+				(
+					(cp & 0xFF0000) * ca +
+					(sp & 0xFF0000) * sa & 0xFF000000
+				) + (
+					(cp & 0xFF00) * ca +
+					(sp & 0xFF00) * sa & 0xFF0000
+				) + (
+					(cp & 0xFF) * ca +
+					(sp & 0xFF) * sa & 0xFF00
+				)) >>> 8) + 0xFF000000;
 		}
 	}
 }
@@ -673,50 +695,50 @@ function drawImgDataBE(spriteData32, cData32, x, y, imgW, imgH, tW) {
 
 	imgH = imgH | 0;
 	imgW = imgW | 0;
-	let sy = 0, // sprite y
-		cy = 0, // canvas y
+	// we know our sprites are square and powers of two
+	// so we can just iterate over the array in one loop, and
+	// calculate x and y with
+	// xi = i & (bitmask equal to width - 1)
+	// yi = i >>> (nr of bits to get width via power of two)
+	let spriteLength = imgW * imgH,
+		xMask = (imgW - 1) | 0,
+		yShift = log2(imgW) | 0,
+		c0 = x + y * tW | 0, // top-left corner of target canvas
+		cIdx = 0, // canvas index
 		sp = 0, // sprite pixel
 		cp = 0, // canvas pixel
 		sa = 0, // sprite alpha
 		ca = 0; // canvas alpha
 
-	for (let yi = 0; yi < imgH; yi++) {
-		sy = yi * imgW;
-		cy = (yi + y) * tW;
-		for (let xi = 0; xi < imgW; xi++) {
-
-			sp = spriteData32[xi + yi * imgW];
-			sa = sp & 0xFF;
-			// skip transparent pixels.
-			if (sa === 0) {
-				continue;
-			}
+	for (let i = 0; i < spriteLength; i++) {
+		sp = spriteData32[i];
+		sa = (sp >>> 24);
+		if (sa) {
 			// alpha is a byte, so in the range [0,256).
 			// We introduce a tiny bias towards the newer pixel,
 			// to replace /255 with /256, which can be written as
 			// >>8, which is faster
 			ca = 0x100 - ++sa;
-
-			// canvas Idx, canvas pixel
-			cp = cData32[x + xi + cy];
-			cData32[x + xi + cy] =
+			// index in canvas array
+			cIdx = c0 + (i & xMask) + (i >>> yShift) * tW;
+			// canvas pixel
+			cp = cData32[cIdx];
+			cData32[cIdx] = (
 				(
+					// we do the 0xFF000000 separately to avoid integer overflow
+					(cp & 0xFF000000 >>> 8) * ca +
+					(sp & 0xFF000000 >>> 8) * sa & 0xFF000000
+				) +
+				((
 					(
-						// we do the 0xFF000000 separately to avoid integer overflow
-						(cp & 0xFF000000 >>> 8) * ca +
-						(sp & 0xFF000000 >>> 8) * sa & 0xFF000000
+						(cp & 0xFF0000) * ca +
+						(sp & 0xFF0000) * sa & 0xFF000000
 					) +
-					((
-						(
-							(cp & 0xFF0000) * ca +
-							(sp & 0xFF0000) * sa & 0xFF000000
-						) +
-						(
-							(cp & 0xFF00) * ca +
-							(sp & 0xFF00) * sa & 0xFF0000
-						)
-					) >>> 8)
-				) + 0xFF; // alpha
+					(
+						(cp & 0xFF00) * ca +
+						(sp & 0xFF00) * sa & 0xFF0000
+					)
+				) >>> 8)) + 0xFF; // alpha
 		}
 	}
 }
