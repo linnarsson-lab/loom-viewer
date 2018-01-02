@@ -29,9 +29,6 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 				if (attrData[indices[j]] === filterVal) {
 					// Remove value from indices.
 					// Note that indices will be unsorted after this
-					// Also note that we do not test values that
-					// have already been filtered out, which should
-					// speed things up a bit.
 					indices[j] = indices[indices.length - 1];
 					indices.pop();
 				}
@@ -47,10 +44,12 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 	// will be more cache friendly in that case.
 	// Hence, we save a separate set of indices.
 	let ascendingIndices = indices.slice(0);
-	ascendingIndices.sort();
+	ascendingIndices.sort(compareIndices);
 
 	return {
 		indices: sortFilterIndices(data, order, indices),
 		ascendingIndices,
 	};
 }
+
+function compareIndices(i, j){ return i - j; }
