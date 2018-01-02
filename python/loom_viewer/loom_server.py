@@ -141,7 +141,7 @@ def JSON_array(array):
 			uniques = uniques[0:i]
 			break
 
-	color_length = min(len(uniques), 20)
+	color_length = min(len(uniques), 1000)
 	color_freq = { uniques[i]["val"]: i+1 for i in range(color_length) }
 	color_indices = { "mostFreq": color_freq }
 
