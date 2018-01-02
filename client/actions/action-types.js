@@ -1,4 +1,4 @@
-const prod = process.env.NODE_ENV === 'production';
+const prod = process.env.NODE_ENV !== 'debug';
 
 // dirty trick to replace strings with integers in production
 // Only method that seems to work with dead code eliminiation
