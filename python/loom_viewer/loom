@@ -21,12 +21,14 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.stderr.write('\nerror: %s\n' % message)
 		sys.exit(2)
 
+
 def connect_loom(file_path):
 	if os.path.exists(file_path):
 		logging.info("  Connecting to %s" % file_path)
 		return loompy.connect(file_path)
 	logging.warn("  Could not find %s" % file_path)
 	return None
+
 
 def list_filename_matches(dataset_path, filename):
 	logging.info('Looking for Loom files matching %s' % filename)
@@ -43,6 +45,7 @@ def list_filename_matches(dataset_path, filename):
 				logging.info('  Found a matching Loom file')
 				matching_files.append((project, filename, file_path))
 	return matching_files
+
 
 def list_project_files(dataset_path, project):
 	logging.info('Listing all Loom files in %s' % project)
@@ -61,12 +64,13 @@ def list_project_files(dataset_path, project):
 	else:
 		raise warnings.warn("%s is not a path to a Project folder!" % project_path)
 
+
 def tile(loom_files, truncate):
 	for _, _, file_path in loom_files:
 		ds = None
 		try:
 			ds = connect_loom(file_path)
-			if ds == None:
+			if ds is None:
 				raise warnings.warn("Could not connect to %s" % file_path)
 		except Exception as e:
 			logging.error(e)
@@ -78,11 +82,13 @@ def tile(loom_files, truncate):
 		except Exception as e:
 			logging.error(e)
 
+
 def loom_files_from_abspath(filename):
 	""" filename is actually an absolute filepath - extract into '/..../project/filename'  """
 	project = os.path.basename(os.path.dirname(filename))
 	real_filename = os.path.basename(filename)
-	return [ (project, real_filename, filename) ]
+	return [(project, real_filename, filename)]
+
 
 def tile_command(dataset_path, filename, truncate):
 	if filename == os.path.abspath(filename):
@@ -91,9 +97,11 @@ def tile_command(dataset_path, filename, truncate):
 		loom_files = list_filename_matches(dataset_path, filename)
 	tile(loom_files, truncate)
 
+
 def tile_project_command(dataset_path, project, truncate):
 	loom_files = list_project_files(dataset_path, project)
 	tile(loom_files, truncate)
+
 
 def expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols):
 	if not (metadata or attributes or rows or cols):
@@ -102,7 +110,7 @@ def expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 	for project, filename, file_path in loom_files:
 		try:
 			ds = connect_loom(file_path)
-			if ds == None:
+			if ds is None:
 				raise warnings.warn("Could not connect to %s" % file_path)
 			expand = LoomExpand(ds, dataset_path, project, filename, file_path)
 			if metadata:
@@ -116,6 +124,7 @@ def expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 		except Exception as e:
 			logging.error(e)
 
+
 def expand_command(dataset_path, filename, truncate, metadata, attributes, rows, cols):
 	if filename == os.path.abspath(filename):
 		loom_files = loom_files_from_abspath(filename)
@@ -123,9 +132,11 @@ def expand_command(dataset_path, filename, truncate, metadata, attributes, rows,
 		loom_files = list_filename_matches(dataset_path, filename)
 	expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 
+
 def expand_project_command(dataset_path, project, truncate, metadata, attributes, rows, cols):
 	loom_files = list_project_files(dataset_path, project)
 	expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
+
 
 def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols):
 	if not (metadata or attributes or rows or cols):
@@ -139,48 +150,15 @@ def expand_all_command(dataset_path, truncate, metadata, attributes, rows, cols)
 		loom_files = list_project_files(dataset_path, project)
 		expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols)
 
-def fromloom_command(dataset_path, infile, outfile, project, dtype, _chunks, chunk_cache, compression_opts, shuffle, fletcher32):
-	if project != None:
-		outfile = os.path.join(dataset_path, project, outfile)
-
-	if dtype == None:
-		ds = loompy.connect(infile, 'r')
-		dtype = ds.file['matrix'].type
-
-	chunks = (_chunks,_chunks)
-	if type(chunks) != tuple or len(chunks) != 2:
-		chunks = (64,64)
-
-	logging.info("Converting %s to %s" % (infile, outfile))
-	logging.info("dtype: %s, chunks size: %s, chunk cache: %s, compression: %s, shuffle: %s, fletcher32: %s" % (dtype, chunks, chunk_cache, compression_opts, shuffle, fletcher32))
-	loompy.create_from_loom(infile, outfile, chunks, chunk_cache, dtype, compression_opts, shuffle, fletcher32)
-
-def benchmark_command(infile):
-	logging.info("Benchmarking %s random row access, 10 x 100" % infile)
-	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r"); rmax = ds.file["matrix"].shape[0]-1' % infile
-	testfunc = 'for i in range(0,100): ds[random.randint(0, rmax),:]'
-	t = timeit.Timer(testfunc, setup)
-	logging.info(t.timeit(10))
-
-	logging.info("Benchmarking %s loading 100 rows at once, 10 x" % infile)
-	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
-	testfunc = 'ds[0:100,:]'
-	t = timeit.Timer(testfunc, setup)
-	logging.info(t.timeit(10))
-
-	logging.info("Benchmarking %s sequential row access, 10 x 100" % infile)
-	setup = 'gc.enable(); import loompy; import random; ds = loompy.connect("%s", "r")' % infile
-	testfunc = 'for i in range(0,100): ds[i,:]'
-	t = timeit.Timer(testfunc, setup)
-	logging.info(t.timeit(10))
 
 class Empty(object):
 	pass
 
+
 if __name__ == '__main__':
 	def_dir = os.environ.get('LOOM_PATH')
-	if def_dir == None:
-		def_dir = os.path.join(os.path.expanduser("~"),"loom-datasets")
+	if def_dir is None:
+		def_dir = os.path.join(os.path.expanduser("~"), "loom-datasets")
 
 	# Handle the special case of no arguments, and create a fake args object with default settings
 	if len(sys.argv) == 1:
@@ -193,7 +171,7 @@ if __name__ == '__main__':
 	else:
 		parser = VerboseArgParser(description='Loom command-line tool.')
 		parser.add_argument('--debug', action="store_true")
-		parser.add_argument('--dataset-path', help="Path to datasets directory (default: %s)" % def_dir , default=def_dir)
+		parser.add_argument('--dataset-path', help="Path to datasets directory (default: %s)" % def_dir, default=def_dir)
 
 		subparsers = parser.add_subparsers(title="subcommands", dest="command")
 
@@ -203,7 +181,7 @@ if __name__ == '__main__':
 		# loom server
 		server_parser = subparsers.add_parser('server', help="Launch loom server (default command)")
 		server_parser.add_argument('--show-browser', help="Automatically launch browser", action="store_true")
-		server_parser.add_argument('-p','--port', help="Port", type=int, default=80)
+		server_parser.add_argument('-p', '--port', help="Port", type=int, default=80)
 
 		# loom tile
 		tile_parser = subparsers.add_parser('tile', help="Precompute heatmap tiles")
@@ -216,7 +194,8 @@ if __name__ == '__main__':
 		tile_parser.add_argument("-t", "--truncate", help="Remove previously expanded tiles if present (False by default)", action='store_true')
 
 		# loom expand
-		expand_parser = subparsers.add_parser('expand', help="Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name.")
+		expand_help = "Expand a loom file in the datasets folder to compressed pickle/json files for better server performance. Automatically searches through projects and expands all files with a matching name."
+		expand_parser = subparsers.add_parser('expand', help=expand_help)
 		expand_parser.add_argument("file", help="Loom file absolute path, or filename to search for in any project under dataset-path")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
 		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
@@ -225,7 +204,8 @@ if __name__ == '__main__':
 		expand_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
 
 		# loom expand all loom files in a project
-		expand_parser = subparsers.add_parser('expand-project', help="Expand all loom files in given project of the datasets folder to compressed pickle/json files for better server performance.")
+		expand_project_help = "Expand all loom files in given project of the datasets folder to compressed pickle/json files for better server performance."
+		expand_parser = subparsers.add_parser('expand-project', help=expand_project_help)
 		expand_parser.add_argument("project", help="Project directory name")
 		expand_parser.add_argument("-t", "--truncate", help="Remove previously expanded files if present (False by default)", action='store_true')
 		expand_parser.add_argument("-m", "--metadata", help="Expand metadata (False by default)", action='store_true')
@@ -240,23 +220,6 @@ if __name__ == '__main__':
 		expand_all_parser.add_argument("-a", "--attributes", help="Expand attributes (False by default)", action='store_true')
 		expand_all_parser.add_argument("-r", "--rows", help="Expand rows (False by default)", action='store_true')
 		expand_all_parser.add_argument("-c", "--cols", help="Expand columns (False by default)", action='store_true')
-
-
-		# loom from-loom
-		loom_parser = subparsers.add_parser('from-loom', help="Create a loom file from another loom file, letting you change HDF5 settings in the process. Useful to test the effect of various settings on performance")
-		loom_parser.add_argument('-o','--outfile', help="Name of output file", required=True)
-		loom_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
-		loom_parser.add_argument('--project', help="Project name")
-		loom_parser.add_argument('--dtype', help='Matrix data type. Defaults to "float32"', default="float32")
-		loom_parser.add_argument('--chunks', help='Chunk tile size, i.e. "--chunks 10" (defaults to 64)', type=int, default=64)
-		loom_parser.add_argument('--chunk_cache', help="Chunk cache size in MB (defaults to 512)", type=int, default=512)
-		loom_parser.add_argument('--compression_opts', help='Gzip compression strength. Default: 4', type=int, default=4)
-		loom_parser.add_argument('--shuffle', help='Use shuffle filter on chunks, defaults to False', action='store_true')
-		loom_parser.add_argument('--fletcher32', help='Use fletcher32 checksum on chunks, defaults to False', action='store_true')
-
-		# loom benchmark
-		benchmark_parser = subparsers.add_parser('benchmark', help="Benchmark random row access. Can be useful when testing the effects of  various chunk tile size and cache size settings")
-		benchmark_parser.add_argument('-i','--infile', help="Name of input loom file", required=True)
 
 		args = parser.parse_args()
 
@@ -284,7 +247,3 @@ if __name__ == '__main__':
 		expand_project_command(args.dataset_path, args.project, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
 	elif args.command == "expand-all":
 		expand_all_command(args.dataset_path, args.truncate, args.metadata, args.attributes, args.rows, args.cols)
-	elif args.command == "from-loom":
-		fromloom_command(args.dataset_path, args.infile, args.outfile, args.project, args.dtype, args.chunks, args.chunk_cache, args.compression_opts, args.shuffle, args.fletcher32)
-	elif args.command == "benchmark":
-		benchmark_command(args.infile)
