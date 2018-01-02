@@ -35,7 +35,7 @@ export function viewStateInitialiser(dataset) {
 	return {
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-			colAttr: firstMatchingKey(dataset.col.attrs, ['Clusters', 'Class', '_KMeans_10', '(original order)']),
+			colAttr: firstMatchingKey(dataset.col.attrs, ['ClusterNames', 'Clusters', 'Cluster', 'Class', 'Classes', '_KMeans_10', '(original order)']),
 			colMode: 'Stacked',
 			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded', '(original order)']),
 			rowMode: 'Stacked',
@@ -47,7 +47,7 @@ export function viewStateInitialiser(dataset) {
 		},
 
 		sparkline: {
-			colAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
+			colAttr: firstMatchingKey(colAttrs, ['ClusterNames', 'Clusters', 'Cluster', 'Class', 'Classes', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
 			colMode: 'Stacked',
 			geneMode: 'Box',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
@@ -70,16 +70,16 @@ export function viewStateInitialiser(dataset) {
 				plotSettings: {
 					0: {
 						x: {
-							attr: firstMatchingKey(colAttrs, ['_X', 'X', 'SFDP_X', '_tSNE1', '_PCA1', '(original order)']),
+							attr: firstMatchingKey(colAttrs, ['X', '_X', 'SFDP_X', '_tSNE1', '_PCA1', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
 						y: {
-							attr: firstMatchingKey(colAttrs, ['_Y', 'Y', 'SFDP_Y', '_tSNE2', '_PCA2', '(original order)']),
+							attr: firstMatchingKey(colAttrs, ['Y', '_Y', 'SFDP_Y', '_tSNE2', '_PCA2', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
-						colorAttr: firstMatchingKey(colAttrs, ['Clusters', 'Class', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
+						colorAttr: firstMatchingKey(colAttrs, ['ClusterNames', 'Clusters', 'Cluster', 'Class', 'Classes', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
 						colorMode: 'Stacked',
 						logScale: true,
 						clip: false,
