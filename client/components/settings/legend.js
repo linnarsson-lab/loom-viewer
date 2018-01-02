@@ -6,8 +6,11 @@ import { OverlayTooltip } from 'components/settings/collapsible';
 
 import {
 	nullFunc,
-	attrToColorFactory,
 } from 'js/util';
+
+import {
+	attrToColorFactory,
+} from 'js/colors';
 
 const buttonStyle = {
 	whiteSpace: 'normal',
@@ -63,8 +66,8 @@ export class AttrLegend extends Component {
 				attr.arrayType === 'number' ||
 				attr.arrayType === 'float64';
 
-			const showBlock = mode !== 'Bars';
-			let l = Math.min(uniques.length, 20);
+			const showBlock = mode !== 'Bars' && mode !== 'Box';
+			let l = Math.min(uniques.length, 100);
 			visibleData = [];
 
 			const sortedUniques = uniques
@@ -147,7 +150,7 @@ export class AttrLegend extends Component {
 			}
 			if (rest) {
 				visibleData.push(
-					<td key={20} style={restStyle2}>
+					<td key={100} style={restStyle2}>
 						{showBlock ?
 							<span style={restStyle1}>□</span> :
 							null} (other): {rest}

@@ -82,6 +82,11 @@ export class DropdownMenu extends Component {
 				onChange={this.handleChange}
 				clearable={clearable === true}
 				style={style}
+				menuContainerStyle={{
+					position: 'absolute',
+					width: '800px',
+					zIndex: 100000,
+				}}
 				maxHeight={100}
 			/>
 		);

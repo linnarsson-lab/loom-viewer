@@ -12,7 +12,6 @@ import {
 	arrayConstr,
 	convertJSONarray,
 	extractStringArray,
-	firstMatchingKey,
 	firstMatchingKeyCaseInsensitive,
 	merge,
 	mergeInPlace,
@@ -261,7 +260,7 @@ function addFunctions(dataset) {
 
 	// redux tools trips over gigantic typed arrays,
 	// so we need to add a custom serialiser for the attributes
-	if (process.env.NODE_ENV !== 'production') {
+	if (process.env.NODE_ENV === 'debug') {
 		reduxToJSON(col);
 		reduxToJSON(row);
 	}
@@ -398,17 +397,24 @@ function originalOrderAttribute(length) {
 			length < (1 << 32) ?
 				'uint32' :
 				'float64';
-	let data = new (arrayConstr(arrayType))(length);
+
+	let data = new (arrayConstr(arrayType))(length),
+		uniques = {};
+
 	let i = length;
 	while (i--) {
 		data[i] = i;
+		uniques[i] = i;
 	}
 
 	return {
 		name: '(original order)',
 		arrayType,
 		data,
-		colorIndices: { mostFreq: {} },
+		colorIndices: {
+			mostFreq: {},
+			uniques,
+		},
 		uniques: [],
 		allUnique: true,
 		min: 0,

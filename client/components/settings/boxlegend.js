@@ -5,27 +5,27 @@ export const boxLegend = (
 		<tbody>
 			<tr>
 				<td>
-					<span style={{ color: '#EECCCC' }}>██</span> <i>max column value</i>
+					<span style={{ color: '#ffa7a7' }}>██</span> <i>max column value</i>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<span style={{ color: '#EE6644' }}>██</span> <i>third quartile</i>
+					<span style={{ color: '#FF171B' }}>██</span> <i>third quartile</i>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<span style={{ color: '#000000' }}>██</span> <i>average column value</i>
+					<span style={{ color: '#000927' }}>██</span> <i>average column value</i>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<span style={{ color: '#4444AA' }}>██</span> <i>first quartile</i>
+					<span style={{ color: '#0043cf' }}>██</span> <i>first quartile</i>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<span style={{ color: '#666688' }}>██</span> <i>min column value</i>
+					<span style={{ color: '#7795f0' }}>██</span> <i>min column value</i>
 				</td>
 			</tr>
 		</tbody>

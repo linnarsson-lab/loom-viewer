@@ -12,41 +12,10 @@ export const isLittleEndian = (function () {
 	return t16[0] === 0xFF00;
 })();
 
-
-// === Color handling ===
-
-import * as colorLUT from './colors';
-const {
-	category20,
-	viridis,
-} = colorLUT;
-
-export function getPalette(colorMode) {
-	switch (colorMode) {
-		case 'Heatmap':
-		case 'Flame':
-		case 'Bar':
-		case 'Box':
-		case 'Text':
-		case 'Icicle':
-			return viridis;
-		case 'Categorical':
-		case 'Stacked':
-			return category20;
-		default:
-			return [];
-	}
-}
-
 export function constrain(x, a, b) {
 	return x < a ? a :
 		x > b ? b :
 			x;
-}
-
-
-function blackColor() {
-	return 'black';
 }
 
 const { log2 } = Math;
@@ -102,200 +71,6 @@ export function clipRange(attr, settings) {
 	};
 }
 
-export function attrToColorFactory(colorAttr, colorMode, settings) {
-	settings = settings || {};
-	const palette = getPalette(colorMode);
-	switch (colorMode) {
-		case 'Categorical':
-		case 'Stacked':
-			let { mostFreq } = colorAttr.colorIndices;
-			return (
-				(val) => {
-					const cIdx = mostFreq[val] | 0;
-					return palette[cIdx];
-				}
-			);
-		case 'Heatmap':
-		case 'Flame':
-		case 'Icicle':
-		case 'Box':
-		case 'Bar':
-		case 'Text':
-			let {
-				min,
-				max,
-				clipMin,
-				clipMax,
-			} = clipRange(colorAttr, settings);
-			const isZero = min === 0;
-
-			if (min === max) {
-				if (isZero) {
-					const c = palette[0];
-					return () => { return c; };
-				} else {
-					const c = palette[1];
-					return () => { return c; };
-				}
-			}
-
-			const clipDelta = (clipMax - clipMin) || 1;
-			const maxColor = palette[palette.length - 1];
-			if (isZero) { // zero-value is coloured differently
-				const minColor = palette[0];
-				const colorIdxScale = (palette.length - 1) / clipDelta;
-				return settings.logScale ? (
-					(val) => {
-						val = logProject(val);
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val <= clipMin) {
-							return minColor;
-						} else {
-							const cIdx = ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
-						}
-					}
-				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val <= clipMin) {
-							return minColor;
-						} else {
-							const cIdx = ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
-						}
-					}
-				);
-			} else {
-				// skip using special color for the zero-value for
-				// data ranges that have negative values and/or
-				// no zero value
-				const minColor = palette[1];
-				const colorIdxScale = (palette.length - 2) / clipDelta;
-				return settings.logScale ? (
-					(val) => {
-						val = logProject(val);
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val <= clipMin) {
-							return minColor;
-						} else {
-							const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
-						}
-					}
-				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val < clipMin) {
-							return minColor;
-						} else {
-							const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
-						}
-					}
-				);
-			}
-		default:
-			return blackColor;
-	}
-}
-
-// Again, the returned function is called inside an inner loop, which
-// is why we have so much code duplication.
-export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
-	switch (colorMode) {
-		case 'Categorical':
-		case 'Stacked':
-			let { mostFreq } = colorAttr.colorIndices;
-			return (
-				(val) => {
-					return mostFreq[val] | 0;
-				}
-			);
-		case 'Heatmap':
-		case 'Flame':
-		case 'Icicle':
-		case 'Bar':
-		case 'Box':
-		case 'Text':
-			let {
-				min,
-				max,
-				clipMin,
-				clipMax,
-			} = clipRange(colorAttr, settings);
-			const isZero = min === 0;
-			if (min === max) {
-				if (isZero) {
-					return () => { return 0; };
-				} else {
-					return () => { return 1; };
-				}
-			}
-
-			const clipDelta = (clipMax - clipMin) || 1;
-			const paletteEnd = getPalette(colorMode).length - 1;
-			if (isZero) { // zero-value is coloured differently
-				const colorIdxScale = paletteEnd / clipDelta;
-				return settings.logScale ? (
-					(val) => {
-						val = logProject(val);
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 0;
-						} else {
-							return ((val - clipMin) * colorIdxScale) | 0;
-						}
-					}
-				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 0;
-						} else {
-							return ((val - clipMin) * colorIdxScale) | 0;
-						}
-					}
-				);
-			} else {
-				// skip using special color for the zero-value for
-				// data ranges that have negative values and/or
-				// no zero value
-				const colorIdxScale = (paletteEnd - 1) / clipDelta;
-				return settings.logScale ? (
-					(val) => {
-						val = logProject(val);
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 1;
-						} else {
-							return 1 + ((val - clipMin) * colorIdxScale) | 0;
-						}
-					}
-				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 1;
-						} else {
-							return 1 + ((val - clipMin) * colorIdxScale) | 0;
-						}
-					}
-				);
-			}
-		default:
-			return blackColor;
-	}
-}
-
 // === Maths helper functions ===
 
 /**
@@ -344,6 +119,10 @@ export function inBounds(r1, r2) {
 		r2[1] < r1[3]    // r2.yMin < r1.yMax
 	);
 }
+
+// The following functions have been replaced with server-side work by Numpy
+// Still here for legacy purposes, or in case we ever need to remove
+// that Numpy thing aspect.
 
 /**
  * Returns array of all unique values as `{ val, count }`
@@ -398,8 +177,8 @@ export function countElements(array, start, end) {
 }
 
 export function findMostCommon(array, start, end) {
-	let mv;
-	if (array && start < array.length && end > 0) {
+	if (array) {
+		let mv;
 		start = start > 0 ? start : 0;
 		end = end < array.length ? end : array.length;
 		let i = 0,
@@ -425,8 +204,8 @@ export function findMostCommon(array, start, end) {
 			i = j;
 			val = sorted[j];
 		}
+		return mv;
 	}
-	return mv;
 }
 
 // assumes no NaN values!
@@ -553,6 +332,13 @@ export function convertJSONarray(arr, name) {
 
 	const allUnique = uniques.length === 0 || uniques.length === data.length;
 
+	let uniquesColor = {};
+
+	for (let i = 0; i < uniques.length; i++) {
+		uniquesColor[uniques[i].val] = i;
+	}
+	colorIndices.uniques = uniquesColor;
+
 	return {
 		name,
 		arrayType,
@@ -582,7 +368,7 @@ export function firstMatchingKey(obj, keyList) {
 	return '';
 }
 
-function toLowerCase(key){
+function toLowerCase(key) {
 	return key.toLowerCase();
 }
 
@@ -1166,5 +952,12 @@ function isCyclic(obj) {
 
 	detect(obj, 'obj');
 	return detected;
+}
+
+function percentage(old_val, error_old, new_val, error_new){
+	let closest = 100 * (new_val * 100 / (100 + error_new)) / (old_val * 100 / (100 - error_old)) - 100;
+	let furthest = 100 * (new_val * 100 / (100 - error_new)) / (old_val * 100 / (100 + error_old)) - 100;
+	let avg = 100 * new_val / old_val - 100;
+	console.log({avg, closest, furthest});
 }
 */

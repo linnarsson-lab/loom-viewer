@@ -14,6 +14,36 @@ function shouldResize(state) {
 	);
 }
 
+function resizeDesktop(){
+	if (!this.state.resizing && shouldResize(this.state)) {
+		this.setState(() => {
+			return {
+				resizing: true,
+				windowWidth: window.innerWidth,
+				windowHeight: window.innerHeight,
+				pixelRatio: window.devicePixelRatio,
+			};
+		});
+	}
+}
+
+function resizeMobile(){
+	const { state } = this;
+	const isPortrait = window.innerHeight > window.innerWidth;
+	const portraitChanged = isPortrait !== state.isPortrait;
+	if (!state.resizing && portraitChanged && shouldResize(state)) {
+		this.setState( () => {
+			return {
+				resizing: true,
+				isPortrait,
+				windowWidth: window.innerWidth,
+				windowHeight: window.innerHeight,
+				pixelRatio: window.devicePixelRatio,
+			};
+		});
+	}
+}
+
 export class Remount extends PureComponent {
 	constructor(...args) {
 		super(...args);
@@ -24,8 +54,8 @@ export class Remount extends PureComponent {
 		// to trigger a resize only when switching between
 		// portrait and landscape modes
 		const resizeFunc = isMobile ?
-			this.resizeMobile.bind(this) :
-			this.resizeDesktop.bind(this);
+			resizeMobile.bind(this) :
+			resizeDesktop.bind(this);
 
 		// Because the resize event can fire very often, we
 		// add a debouncer to minimise pointless
@@ -132,36 +162,6 @@ export class Remount extends PureComponent {
 			this.props.onRemount){
 			// a callback that should trigger on remounting
 			this.props.onRemount();
-		}
-	}
-
-	resizeDesktop(){
-		if (!this.state.resizing && shouldResize(this.state)) {
-			this.setState(() => {
-				return {
-					resizing: true,
-					windowWidth: window.innerWidth,
-					windowHeight: window.innerHeight,
-					pixelRatio: window.devicePixelRatio,
-				};
-			});
-		}
-	}
-
-	resizeMobile(){
-		const { state } = this;
-		const isPortrait = window.innerHeight > window.innerWidth;
-		const portraitChanged = isPortrait !== state.isPortrait;
-		if (!state.resizing && (portraitChanged || shouldResize(state))) {
-			this.setState( () => {
-				return {
-					resizing: true,
-					isPortrait,
-					windowWidth: window.innerWidth,
-					windowHeight: window.innerHeight,
-					pixelRatio: window.devicePixelRatio,
-				};
-			});
 		}
 	}
 

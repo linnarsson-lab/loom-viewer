@@ -1,17 +1,20 @@
 import {
 	arraySubset,
 	attrSubset,
-	attrToColorFactory,
-	attrToColorIndexFactory,
 	clipRange,
 	constrain,
-	getPalette,
 	isLittleEndian,
 	logProject,
 	logProjectArray,
 	nullFunc,
 	rndNormArray,
 } from 'js/util';
+
+import {
+	attrToColorFactory,
+	attrToColorIndexFactory,
+	getPalette,
+} from 'js/colors';
 
 import {
 	drawText,
@@ -25,24 +28,24 @@ import {
 const {
 	allSprites,
 } = (() => {
-	let i = 257,
-		j = 6;
-	const allSprites = new Array(j);
-	while (j--) {
-		i = 257;
-		const _sprites = new Array(i);
-		while (i--) {
-			_sprites[i] = document.createElement('canvas');
-			_sprites[i].id = `dot_sprite_${j}_${i}`;
-			_sprites[i].width = 4 << j;
-			_sprites[i].height = 4 << j;
+		let i = 257,
+			j = 6;
+		const allSprites = new Array(j);
+		while (j--) {
+			i = 257;
+			const _sprites = new Array(i);
+			while (i--) {
+				_sprites[i] = document.createElement('canvas');
+				_sprites[i].id = `dot_sprite_${j}_${i}`;
+				_sprites[i].width = 4 << j;
+				_sprites[i].height = 4 << j;
+			}
+			allSprites[j] = _sprites;
 		}
-		allSprites[j] = _sprites;
-	}
-	return {
-		allSprites,
-	};
-})();
+		return {
+			allSprites,
+		};
+	})();
 
 const { log2 } = Math;
 
@@ -81,7 +84,7 @@ export function scatterPlot(attrs, indices, settings) {
 		// == Prepare Palette & pre-render dots to sprites ==
 		// ==   Create both to Uint32 Arrays and sprites   ==
 		// ==================================================
-		const renderedSprites = prepareSprites(colorMode, spriteLayout);
+		const renderedSprites = prepareSprites(colorMode, colorAttr, spriteLayout);
 
 		// ======================================================
 		// == Convert color data to lookup indices for sprites ==
@@ -336,13 +339,13 @@ function convertColorData(colorAttr, indices, dataToIdx) {
 	return { cIdx };
 }
 
-function prepareSprites(colorMode, spriteLayout) {
+function prepareSprites(colorMode, colorAttr, spriteLayout) {
 	const {
 		radius,
 		sprites,
 	} = spriteLayout;
 
-	const palette = getPalette(colorMode);
+	const palette = getPalette(colorMode, colorAttr);
 	let spriteData = new Array(sprites.length),
 		spriteData32 = new Array(sprites.length);
 
@@ -364,16 +367,18 @@ function prepareSprites(colorMode, spriteLayout) {
 	spriteData32[0] = zeroSprite32;
 
 	// reset all sprites with a palette
-	// note the prefix decrement to skip index zero
-	for (let i = 1; i < palette.length; i++) {
+
+	// TODO: clean up this and all other color code, it's glued
+	// together with hacks at the moment and extremely frail
+	for (let i = 1; i < sprites.length; i++) {
 		let sprite = sprites[i];
 		let ctx = sprite.getContext('2d');
 		ctx.clearRect(0, 0, spriteW, spriteH);
 		circlePath(ctx, radius, spriteW, spriteH);
 		ctx.globalAlpha = 0.25;
 		strokeCircle(ctx, lineW, 'black');
-		ctx.globalAlpha = 1;
-		fillCircle(ctx, palette[i]);
+		ctx.globalAlpha = 0.75;
+		fillCircle(ctx, palette[1 + ((i - 1) % (palette.length-1))]);
 		spriteData[i] = sprite;
 		spriteData32[i] = new Uint32Array(ctx.getImageData(0, 0, spriteW, spriteH).data.buffer);
 	}

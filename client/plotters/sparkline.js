@@ -9,11 +9,13 @@ import {
 	arrayConstr,
 	attrIndexedSubset,
 	attrSubset,
-	attrToColorFactory,
 	logProject,
 	nullFunc,
-} from '../js/util';
+} from 'js/util';
 
+import{
+	attrToColorFactory,
+} from 'js/colors';
 
 const categoriesPainter = {
 	directly: categoriesDirectly,
@@ -159,7 +161,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 	// note that this will be called after rotation, so we don't have to
 	// worry about duplicating the logic for vertical sparklines.
 	const _sparkline = (context) => {
-		if (range.visible) {
+		if (range.visible && context.width && context.height) {
 
 			const {
 				unrounded,
@@ -736,6 +738,7 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 // - third quartile (red)
 // - max (very light grey red)
 function barPaintBoxPlot(context, attr, data, range, ratio, dataToColor, settings, label) {
+	context.globalAlpha = 1.0;
 	const {
 		min, max,
 	} = attr;
@@ -896,23 +899,23 @@ function drawBoxPlot(context, x, width, height, maxHeight, thirdQHeight, barHeig
 		// canvas defaults to positive y going *down*, so to
 		// draw from bottom to top we start at context height and
 		// subtract the bar height.
-		context.fillStyle = '#EECCCC';
+		context.fillStyle = '#ffa7a7';
 		context.fillRect(x, height - maxHeight | 0, width, maxHeight - thirdQHeight);
 	}
 	if (thirdQHeight > barHeight) {
-		context.fillStyle = '#EE6644';
+		context.fillStyle = '#FF171B';
 		context.fillRect(x, height - thirdQHeight | 0, width, thirdQHeight - barHeight);
 	}
 	if (barHeight > firstQHeight) {
-		context.fillStyle = '#000000';
+		context.fillStyle = '#000927';
 		context.fillRect(x, height - barHeight | 0, width, barHeight - firstQHeight);
 	}
 	if (firstQHeight > minHeight) {
-		context.fillStyle = '#4444AA';
+		context.fillStyle = '#0043cf';
 		context.fillRect(x, height - firstQHeight | 0, width, firstQHeight - minHeight);
 	}
 	if (minHeight) {
-		context.fillStyle = '#666688';
+		context.fillStyle = '#7795f0';
 		context.fillRect(x, height - minHeight | 0, width, minHeight);
 	}
 }
@@ -1122,7 +1125,6 @@ function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToCo
 		y = yNext;
 	}
 }
-
 
 
 // Note: icicleMapDirectly is just heatMapDirectly

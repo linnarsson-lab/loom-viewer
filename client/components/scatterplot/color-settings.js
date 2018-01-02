@@ -23,10 +23,12 @@ import { updateAndFetchGenes } from 'actions/update-and-fetch';
 import {
 	// To ensure that selected buttons don't dispatch anything.
 	nullFunc,
-	// To generate gradients for buttons
-	getPalette,
 } from 'js/util';
 
+import {
+	// To generate gradients for buttons
+	getPalette,
+} from 'js/colors';
 
 function palettePainter(palette){
 	return (context) => {
