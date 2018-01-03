@@ -24,7 +24,12 @@ setup(
     ],
 
     # loom command
-    scripts=['loom_viewer/loom'],
+    # scripts=['loom_viewer/loom'],
+    entry_points={
+        'console_scripts': [
+            'loom = loom_viewer:main',
+        ],
+    },
 
     # static files from MANIFEST.in
     include_package_data=True,
@@ -35,5 +40,5 @@ setup(
     description="View .loom files in the browser",
     license="BSD",
     keywords="loom omics transcriptomics bioinformatics",
-    url="https://github.com/linnarsson-lab/Loom",
+    url="https://github.com/linnarsson-lab/loom-viewer",
 )
