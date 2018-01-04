@@ -151,12 +151,12 @@ class LoomExpand(object):
 				row = {'idx': i + j, 'data': JSON_array(row64[j])}
 				row_file_name = '%s/%06d.json.gzip' % (row_dir, i + j)
 				self.save_compressed_json(row_file_name, row)
-			i + = 64
+			i += 64
 		while i < total_rows:
 			row = {'idx': i, 'data': JSON_array(ds[i, :])}
 			row_file_name = '%s/%06d.json.gzip' % (row_dir, i)
 			self.save_compressed_json(row_file_name, row)
-			i + = 1
+			i += 1
 
 	def columns(self, truncate=False):
 
@@ -193,10 +193,10 @@ class LoomExpand(object):
 				col = {'idx': i, 'data': data}
 				col_file_name = '%s/%06d.json.gzip' % (col_dir, i + j)
 				self.save_compressed_json(col_file_name, col)
-			i + = 64
+			i += 64
 		while i < total_cols:
 			data = JSON_array(ds[:, i].transpose())
 			col = {'idx': i, 'data': data}
 			col_file_name = '%s/%06d.json.gzip' % (col_dir, i)
 			self.save_compressed_json(col_file_name, col)
-			i + = 1
+			i += 1
