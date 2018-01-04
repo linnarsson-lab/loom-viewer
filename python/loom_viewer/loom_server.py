@@ -236,7 +236,7 @@ app.url_map.converters['intdict'] = IntDictConverter
 
 # enable GZIP compression
 compress = Compress()
-app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']
+app.config['COMPRESS_MIMETYPES'] = ['text/plain', 'text/html', 'text/css', 'text/xml', 'application/json', 'text/javascript']
 app.config['COMPRESS_LEVEL'] = 2
 compress.init_app(app)
 
@@ -245,10 +245,45 @@ compress.init_app(app)
 #
 
 
-@app.route('/static/<path:path>')
+@app.route('/static/js/<path:path>')
 @cache(expires=604800)
-def send_static(path):
-	return flask.send_from_directory('/static', path)
+def send_static_js(path):
+	return flask.send_from_directory('static/js/', path, mimetype='text/javascript')
+
+
+@app.route('/static/style/<path:path>')
+@cache(expires=604800)
+def send_static_css(path):
+	return flask.send_from_directory('static/styles/', path, mimetype='text/css')
+
+
+# Unsafe...
+@app.route('/static/fonts/<path:path>')
+@cache(expires=604800)
+def send_static_fonts(path):
+	mimetype = 'application/font-woff'
+	if path.endswith('.woff'):
+		mimetype = 'application/font-woff'
+	elif path.endswith('.woff2'):
+		mimetype = 'application/font-woff2'
+	elif path.endswith('.ttf'):
+		mimetype = 'application/x-font-truetype'
+	elif path.endswith('.otf'):
+		mimetype = 'application/x-font-opentype'
+	elif path.endswith('.eot'):
+		mimetype = 'application/vnd.ms-fontobject'
+	elif path.endswith('.svg'):
+		mimetype = 'image/svg+xml'
+	elif path.endswith('.sfnt'):
+		mimetype = 'application/font-sfnt'
+
+	return flask.send_from_directory('static/fonts/', path, mimetype=mimetype)
+
+
+@app.route('/sw.js')
+@cache(expires=None)
+def send_service_worker():
+	return flask.send_file('static/sw.js', mimetype='text/javascript')
 
 
 @app.route('/favicon.ico')
@@ -256,23 +291,20 @@ def send_static(path):
 def send_favicon():
 	return app.send_static_file('favicon.ico')
 
-#
-# Catch-all for the react-router endpoints
-#
-
 
 @app.route('/')
 @app.route('/index.html')
 @cache(expires=604800)
 def send_indexjs():
-	return app.send_static_file('index.html')
+	return flask.send_file('static/index.html', mimetype='text/html')
 
 
+# Catch-all for the react-router endpoints
 @app.route('/dataset/')
 @app.route('/dataset/<path:path>')
 @cache(expires=None)
 def catch_all(path):
-	return app.send_static_file('index.html')
+	return flask.send_file('static/index.html', mimetype='text/html')
 
 #
 # API endpoints
