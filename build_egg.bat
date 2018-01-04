@@ -1,9 +1,14 @@
 @echo off
 
 echo.
-echo ===============================================
-echo  Removing previous Python build files (if any)
-echo ===============================================
+echo ====================================================
+echo  Creating and installing loom-viewer Python package
+echo ====================================================
+echo.
+
+
+echo.
+echo === Removing previous Python build files (if any)
 echo.
 
 del /s /q python\build\*.*
@@ -16,13 +21,13 @@ echo   Done
 echo.
 
 echo.
-echo ====================================================
-echo  Creating and installing loom-viewer Python package
-echo ====================================================
+echo === Creating and installing loom-viewer Python package
 echo.
 
 cd .\python
-move .\loom_viewer\index.html .\loom_viewer\static\index.html
-copy .\client\images\favicon.ico .\python\loom_viewer\static\favicon.ico
 python setup.py install --force
 cd ..
+
+echo.
+echo   Done
+echo.

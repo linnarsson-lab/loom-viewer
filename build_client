@@ -5,15 +5,18 @@ dim=$(tput dim)
 noformat=$(tput sgr0)
 
 echo ""
-echo "${dim}=================================================${noformat}"
-echo " Removing previous WebPack build files (if any)"
-echo "${dim}=================================================${noformat}"
+echo "${dim}====================================${noformat}"
+echo " Building Client Web App (WebPack)"
+echo "${dim}====================================${noformat}"
+
+
+echo ""
+echo "=== Removing previous client build files (if any)"
 echo ""
 
 # Remove old files
 if [ -a ./python/loom_viewer/static/ ]; then
-  echo " rm -r ./python/loom_viewer/static/"
-  rm -r ./python/loom_viewer/static/
+  rm -rv ./python/loom_viewer/static/
 fi
 
 set -o nounset
@@ -26,25 +29,29 @@ echo ""
 
 echo ""
 if  [ "${1:-dev}" == "dev" ]; then
-  echo "${dim}================================================================${noformat}"
-  echo " Bundling development build and inserting it into HTML template"
-  echo "${dim}================================================================${noformat}"
+  echo "=== Run WebPack with production build"
   echo ""
 
   webpack --config='webpack.config.dev.js' --progress --profile --colors
+
+  # I haven't figured out how to both generate correct paths in the webpack HTML
+  # template, and have the resulting index.html be put in the right folders.
+  # Yes, this is an ugly hack around my incompetence, but it works - Job
+  mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico
 
   echo ""
   echo "  Done"
   echo ""  
 
 elif [ "${1:-dev}" == "prod" ]; then
-  echo "${dim}==========================================================${noformat}"
-  echo " Building for production. Minifying + bundling production"
-  echo "         build and inserting it into HTML template"
-  echo "${dim}==========================================================${noformat}"
+  echo "=== Run WebPack with development build"
   echo ""
 
   webpack --config='webpack.config.prod.js' --progress --profile --colors
+
+  mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
+  cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico
 
   echo ""
   echo "  Done"

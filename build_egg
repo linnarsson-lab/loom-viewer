@@ -4,20 +4,22 @@ bold=$(tput bold)
 dim=$(tput dim)
 noformat=$(tput sgr0)
 
+echo ""
+echo "${dim}====================================================${noformat}"
+echo " Creating and installing loom-viewer Python package"
+echo "${dim}====================================================${noformat}"
+echo ""
+
 
 echo ""
-echo "${dim}===============================================${noformat}"
-echo " Removing previous Python build files (if any)"
-echo "${dim}===============================================${noformat}"
+echo "=== Removing previous Python build files (if any)"
 echo ""
 
 if [ -a ./python/build ]; then
-  echo " rm -r ./python/build"
-  rm -r ./python/build
+  rm -rv ./python/build
 fi
 if [ -a ./python/dist ]; then
-  echo " rm -r ./python/dist"
-  rm -r ./python/dist
+  rm -rv ./python/dist
 fi
 
 set -o nounset
@@ -27,16 +29,9 @@ echo "  Done"
 echo ""
 
 echo ""
-echo "${dim}====================================================${noformat}"
-echo " Creating and installing loom-viewer Python package"
-echo "${dim}====================================================${noformat}"
+echo "=== Creating and installing loom-viewer Python package"
 echo ""
 
-# I haven't figured out how to both generate correct paths in the webpack HTML
-# template, and have the resulting index.html be put in the right folders.
-# Yes, this is an ugly hack around my incompetence, but it works - Job
-mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
-cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico
 cd python
 python setup.py install --force
 cd ..
