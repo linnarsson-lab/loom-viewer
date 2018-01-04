@@ -338,7 +338,7 @@
 
 
 /* layers control */
-
+/*
 .leaflet-control-layers {
 	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
 	background: #fff;
@@ -388,12 +388,13 @@
 	border-top: 1px solid #ddd;
 	margin: 5px -10px 5px -6px;
 	}
-
+*/
 /* Default icon URLs */
+/*
 .leaflet-default-icon-path {
 	background-image: url(images/marker-icon.png);
 	}
-
+*/
 
 /* attribution and scale controls */
 
