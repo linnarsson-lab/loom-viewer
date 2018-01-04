@@ -5,17 +5,19 @@ import logging
 import loompy
 import json
 
+
 def load_compressed_json(filename):
-	with gzip.open(filename,"rt") as f:
+	with gzip.open(filename, "rt") as f:
 		jsonVal = f.read()
 		return jsonVal
+
 
 class LoomCache(object):
 	"""
 	Represents loom files in the local dataset directory
 	"""
-
 	__slots__ = ['dataset_path', 'looms', 'list_entries']
+
 	def __init__(self, dataset_path):
 		"""
 		Create a LoomCache object that will cache loom files (on demand)
@@ -53,7 +55,7 @@ class LoomCache(object):
 		else:
 			try:
 				with open(authfile) as f:
-					lines = [x.split(",") for x in f.read().splitlines()]
+					lines = [x.split(", ") for x in f.read().splitlines()]
 					users = {x[0]: (x[1], x[2]) for x in lines}
 			except IndexError:
 				return False
@@ -100,7 +102,7 @@ class LoomCache(object):
 							ds = self.connect_dataset_locally(project, filename, username, password)
 							if ds is None:
 								continue
-							print("Outdated list-entry for " + key +", updating cache")
+							print("Outdated list-entry for " + key + ", updating cache")
 							list_entry = self.make_list_entry(project, filename, ds)
 
 						self.list_entries[key] = list_entry
@@ -130,7 +132,7 @@ class LoomCache(object):
 			"dataset": filename,
 			"title": title,
 			"description": descr,
-			"url":url,
+			"url": url,
 			"doi": doi,
 			"creationDate": creation_date,
 			"lastModified": last_mod,
@@ -147,7 +149,7 @@ class LoomCache(object):
 		mtime = time.gmtime(os.path.getmtime(path))
 		return time.strftime('%Y/%m/%d %H:%M:%S', mtime)
 
-	def connect_dataset_locally(self, project, filename, username=None, password=None, mode='r+'):
+	def connect_dataset_locally(self, project, filename, username=None, password=None, mode='r + '):
 		"""
 		Download the dataset (if needed) and connect it as a local loom file.
 
@@ -163,21 +165,22 @@ class LoomCache(object):
 
 		# Authorize and get path
 		absolute_path = self.get_absolute_path(project, filename, username, password)
-		if absolute_path == None:
+		if absolute_path is None:
 			return None
 
 		key = project + "/" + filename
 		cache = self.list_entries.get(key)
-		if key in self.looms and cache != None and cache["lastModified"] == self.format_last_mod(project, filename):
-			print("Serving dataset " + key +" from cache")
+		if key in self.looms and cache is not None and cache["lastModified"] == self.format_last_mod(project, filename):
+			print("Serving dataset " + key + " from cache")
 			return self.looms[key]
 
 		try:
 			result = loompy.connect(absolute_path, mode)
-		except:
+		except e:
 			return None
 		self.looms[key] = result
 		return result
+
 	def update_cache(self, project, filename, username=None, password=None):
 		"""
 		Updates the cache if file was modified according to the OS
