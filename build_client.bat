@@ -27,8 +27,13 @@ IF /i "%1"=="prod" (
     :: I haven't figured out how to both generate correct paths in the webpack HTML
     :: template, and have the resulting index.html be put in the right folders.
     :: Yes, this is an ugly hack around my incompetence, but it works - Job
-    copy .\client\images\favicon.ico .\python\loom_viewer\static\
+    echo.
+    echo copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
+    copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
+    echo move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
     move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
+    echo move .\python\loom_viewer\sw.js .\python\loom_viewer\static\js\sw.js
+    move .\python\loom_viewer\sw.js .\python\loom_viewer\static\js\sw.js
 
     echo.
     echo   Done
@@ -40,7 +45,12 @@ IF /i "%1"=="prod" (
 
     webpack --config=webpack.config.dev.js --progress --profile --colors
 
-    copy .\client\images\favicon.ico .\python\loom_viewer\static\
+    echo.
+    echo copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
+    copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
+    echo move .\python\loom_viewer\sw.js .\python\loom_viewer\static\sw.js
+    move .\python\loom_viewer\sw.js .\python\loom_viewer\static\sw.js
+    echo move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
     move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
 
 	 echo.

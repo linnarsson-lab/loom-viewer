@@ -74,6 +74,7 @@
     "extract-text-webpack-plugin": "^3.0.2",
     "file-loader": "^1.1.6",
     "html-webpack-plugin": "^2.30.1",
+    "offline-plugin": "^4.9.0",
     "prop-types": "^15.6.0",
     "style-loader": "^0.19.1",
     "sw-precache-webpack-plugin": "^0.11.4",

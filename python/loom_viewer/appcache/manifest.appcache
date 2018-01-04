@@ -1,0 +1,16 @@
+CACHE MANIFEST
+#ver:2018-1-4 22:00:29
+#plugin:4.9.0
+
+CACHE:
+../static/fonts/glyphicons-halflings-regular-448c34a56d699c29117adc64c43affeb.woff2
+../static/fonts/glyphicons-halflings-regular-fa2772327f55d8198301fdb8bcfc8158.woff
+/static/js/bundle.1f6130afe6b7dd7f9dd0.js
+/static/styles/bfbfa63ae69bd26590533c33ec691f3d.css
+../
+
+NETWORK:
+*
+
+FALLBACK:
+../ /

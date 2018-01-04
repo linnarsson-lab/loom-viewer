@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CssoWebpackPlugin = require('csso-webpack-plugin').default;
+const OfflinePlugin = require('offline-plugin');
 
 module.exports = {
 	entry: {
@@ -27,7 +28,7 @@ module.exports = {
 				loader: 'file-loader',
 				options: {
 					name: '[name]-[hash].[ext]',
-					outputPath: 'static/',
+					outputPath: 'static/images/',
 					publicPath: '/',
 				},
 			},
@@ -36,7 +37,7 @@ module.exports = {
 				loader: 'file-loader',
 				options: {
 					name: '[name]-[hash].[ext]',
-					outputPath: 'static/',
+					outputPath: 'static/fonts/',
 					publicPath: '/',
 				},
 			},
@@ -53,15 +54,29 @@ module.exports = {
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
-		new ExtractTextPlugin('/static/styles-[contenthash].css'),
+		new ExtractTextPlugin('/static/styles/[contenthash].css'),
 		new CssoWebpackPlugin({
-			sourceMap: true,
 			restructure: false,
 		}),
 		new HtmlWebpackPlugin({
 			template: path.join(__dirname + '/client/index.html'),
 			filename: 'index.html',
 			inject: 'body',
+		}),
+		new OfflinePlugin({
+			appShell: '/',
+			caches: 'all',
+			ServiceWorker: {
+				events: true,
+			},
+			cacheMaps: [
+				{
+					match: (requestUrl) => {
+						return new URL('/', location);
+					},
+					requestTypes: ['navigate', 'same-origin'],
+				},
+			],
 		}),
 	],
 };
