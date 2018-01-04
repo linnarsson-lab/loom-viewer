@@ -1,60 +1,9 @@
 #! /bin/bash
 
-# Remove old files
-if [ -a ./python/loom_viewer/static/ ]; then
-  rm -r ./python/loom_viewer/static/
-fi
-
-if [ -a ./python/build ]; then
-  rm -r ./python/build
-fi
-if [ -a ./python/dist ]; then
-  rm -r ./python/dist
-fi
-
-set -o nounset
-set -o errexit
-
-
-# Build static assets
-
-echo ""
-if  [ "${1:-dev}" == "dev" ]; then
-  echo "================================================================"
-  echo " Bundling development build and inserting it into HTML template"
-  echo "================================================================"
-  echo ""
-  webpack --config='webpack.config.dev.js' --progress --profile --colors
-elif [ "${1:-dev}" == "prod" ]; then
-  echo "=========================================================="
-  echo " Building for production. Minifying + bundling production"
-  echo "         build and inserting it into HTML template"
-  echo "=========================================================="
-  echo ""
-  webpack --config='webpack.config.prod.js' --progress --profile --colors
-else
-  echo "Incorrect flags passed"
-  exit 1
-fi
-
+./build_client
 build_status=$?
-
 if [ $build_status == 0 ]; then
-
-  # I haven't figured out how to both generate correct paths in the webpack HTML
-  # template, and have the resulting index.html be put in the right folders.
-  # Yes, this is an ugly hack around my incompetence, but it works - Job
-  mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
-  cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico
-
-  cd python
-  echo ""
-  echo "================================"
-  echo " Installing loom python package"
-  echo "================================"
-  echo ""
-  python setup.py install --force
-  cd ..
+  ./build_egg
 else
   echo ""
   echo ""

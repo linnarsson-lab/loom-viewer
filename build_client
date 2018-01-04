@@ -1,0 +1,40 @@
+#! /bin/bash
+
+echo ""
+echo "================================================="
+echo " Removing previous WebPack build files (if any)"
+echo "================================================="
+echo ""
+
+# Remove old files
+if [ -a ./python/loom_viewer/static/ ]; then
+  echo " rm -r ./python/loom_viewer/static/"
+  rm -r ./python/loom_viewer/static/
+fi
+
+set -o nounset
+set -o errexit
+echo ""
+echo "  Done"
+echo ""
+
+# Build static assets
+
+echo ""
+if  [ "${1:-dev}" == "dev" ]; then
+  echo "================================================================"
+  echo " Bundling development build and inserting it into HTML template"
+  echo "================================================================"
+  echo ""
+  webpack --config='webpack.config.dev.js' --progress --profile --colors
+elif [ "${1:-dev}" == "prod" ]; then
+  echo "=========================================================="
+  echo " Building for production. Minifying + bundling production"
+  echo "         build and inserting it into HTML template"
+  echo "=========================================================="
+  echo ""
+  webpack --config='webpack.config.prod.js' --progress --profile --colors
+else
+  echo "Incorrect flags passed"
+  exit 1
+fi
