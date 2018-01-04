@@ -1,31 +1,43 @@
 #! /bin/bash
 
-echo ""
-echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-echo "!! Don't forget to update _version.py before deploying !!"
-echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-echo ""
-./build prod
-build_status=$?
-if [ $build_status == 0 ]; then
-  cd python
-  echo ""
-  echo "============================================================"
-  echo "                   Submitting to PyPi"
-  echo " (Did you remember to update _version.py before deploying?)"
-  echo "============================================================"
-  echo ""
-  python setup.py sdist upload -r pypi
-  cd ..
-  echo ""
-  echo "*** NOT upgrading the server. Please wait a few minutes (to ensure that"
-  echo "    PyPi has serves the most recent loompy version), then upgrade"
-  echo "    manually as follows:"
-  echo ""
-  echo "- SSH into the server:    gcloud compute ssh ubuntu@loom --zone \"us-central1-a\""
-  echo "- Upgrade Loom:           upgrade_loom"
-  echo ""
-else
-  echo "Build not finished properly, aborting upload to pypi"
-  exit $build_status
+bold=$(tput bold)
+dim=$(tput dim)
+smul=$(tput smul)    # Enable underline mode
+rmul=$(tput rmul)    # Disable underline mode
+noformat=$(tput sgr0)
+
+read -p "Did you update ${bold}_version.py${noformat}? " -n 1 -r
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  ./build prod
+  build_status=$?
+  if [ $build_status == 0 ]; then
+
+    echo ""
+    echo "${dim}======================================${noformat}"
+    echo " Build successful, submitting to PyPi"
+    echo "${dim}======================================${noformat}"
+    echo ""
+    cd python
+    python setup.py sdist upload -r pypi
+    cd ..
+
+    echo ""
+    echo "*** ${smul}NOT${rmul} upgrading the server. Please wait a few minutes (to ensure that"
+    echo "    PyPi has serves the most recent loompy version), then upgrade"
+    echo "    manually as follows:"
+    echo ""
+    echo "- SSH into the server:    ${bold}gcloud compute ssh ubuntu@loom --zone \"us-central1-a\"${noformat}"
+    echo "- Upgrade Loom:           ${bold}upgrade_loom${noformat}"
+    echo ""
+
+  else
+
+    echo ""
+    echo " ${bold}Build not finished properly${noformat}"
+    echo " ${bold}Aborting upload to PyPi${noformat}"
+	 echo ""
+
+    exit $build_status
+
+  fi
 fi

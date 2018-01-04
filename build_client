@@ -1,9 +1,13 @@
 #! /bin/bash
 
+bold=$(tput bold)
+dim=$(tput dim)
+noformat=$(tput sgr0)
+
 echo ""
-echo "================================================="
+echo "${dim}=================================================${noformat}"
 echo " Removing previous WebPack build files (if any)"
-echo "================================================="
+echo "${dim}=================================================${noformat}"
 echo ""
 
 # Remove old files
@@ -22,19 +26,32 @@ echo ""
 
 echo ""
 if  [ "${1:-dev}" == "dev" ]; then
-  echo "================================================================"
+  echo "${dim}================================================================${noformat}"
   echo " Bundling development build and inserting it into HTML template"
-  echo "================================================================"
+  echo "${dim}================================================================${noformat}"
   echo ""
+
   webpack --config='webpack.config.dev.js' --progress --profile --colors
+
+  echo ""
+  echo "  Done"
+  echo ""  
+
 elif [ "${1:-dev}" == "prod" ]; then
-  echo "=========================================================="
+  echo "${dim}==========================================================${noformat}"
   echo " Building for production. Minifying + bundling production"
   echo "         build and inserting it into HTML template"
-  echo "=========================================================="
+  echo "${dim}==========================================================${noformat}"
   echo ""
+
   webpack --config='webpack.config.prod.js' --progress --profile --colors
+
+  echo ""
+  echo "  Done"
+  echo ""
+
 else
-  echo "Incorrect flags passed"
+  echo " ${bold}ERROR: Incorrect flags passed for WebPack build${noformat}"
+  echo ""
   exit 1
 fi

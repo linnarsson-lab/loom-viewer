@@ -1,5 +1,8 @@
 #! /bin/bash
 
+bold=$(tput bold)
+noformat=$(tput sgr0)
+
 ./build_client
 build_status=$?
 if [ $build_status == 0 ]; then
@@ -7,7 +10,8 @@ if [ $build_status == 0 ]; then
 else
   echo ""
   echo ""
-  echo " Minification not finished properly, aborting build"
+  echo " ${bold}Minification was not finished properly${noformat}"
+  echo " ${bold}Aborting Python build step${noformat}"
   echo ""
   exit $build_status
 fi
