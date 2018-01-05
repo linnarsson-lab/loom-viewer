@@ -139,7 +139,8 @@ function fetchDataset(datasets, path, dispatch) {
 				// However, we do have to check if the dataset was
 				// already loaded, because in that case dataset[path]
 				// will now include all attributes.
-				if (list && !list[path]) {
+				list = list || {};
+				if (!list[path]) {
 					list[path] = oldMetaData;
 					return localforage.setItem('cachedDatasets', list)
 						.catch((err) => {

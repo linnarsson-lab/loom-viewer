@@ -35,9 +35,6 @@ from loom_viewer import start_server, LoomTiles, LoomExpand
 
 import numpy as np
 
-import timeit
-import random
-
 
 class VerboseArgParser(argparse.ArgumentParser):
 	def error(self, message):

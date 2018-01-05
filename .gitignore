@@ -11,6 +11,7 @@ python/build/
 python/loom_viewer/test
 python/loom_viewer/static/
 python/loom_viewer/cache/
+python/loom_viewer/appcache/
 cache/
 datasets/
 

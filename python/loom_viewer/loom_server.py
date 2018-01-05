@@ -33,8 +33,8 @@ from gevent.wsgi import WSGIServer
 from gevent import monkey
 
 
-monkey.patch_all()
-
+import gevent.monkey, gevent.socket, gevent.wsgi
+import socket
 
 # ===================
 # JSON Utils
@@ -257,7 +257,7 @@ def send_static_css(path):
 	return flask.send_from_directory('static/styles/', path, mimetype='text/css')
 
 
-# Unsafe...
+
 @app.route('/static/fonts/<path:path>')
 @cache(expires=604800)
 def send_static_fonts(path):
@@ -468,6 +468,12 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 def start_server(dataset_path, show_browser=True, port="8003", debug=True):
+
+	if debug:
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s')
+	else:
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
 	app.cache = LoomCache(dataset_path)
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -479,7 +485,11 @@ def start_server(dataset_path, show_browser=True, port="8003", debug=True):
 			webbrowser.open(url)
 	try:
 		# app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
-		http_server = WSGIServer(('', port), app)
+		# Monkey-patch if this has not happened yet
+		if socket.socket is not gevent.socket.socket:
+			gevent.monkey.patch_all()
+		http_server = gevent.wsgi.WSGIServer(('', port), app)
+
 		http_server.serve_forever()
 	except socket_error as serr:
 		logging.error(serr)
