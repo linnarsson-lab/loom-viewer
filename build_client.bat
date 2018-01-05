@@ -32,8 +32,8 @@ IF /i "%1"=="prod" (
     copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
     echo move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
     move .\python\loom_viewer\index.html .\python\loom_viewer\static\index.html
-    echo move .\python\loom_viewer\sw.js .\python\loom_viewer\static\js\sw.js
-    move .\python\loom_viewer\sw.js .\python\loom_viewer\static\js\sw.js
+    echo move .\python\loom_viewer\sw.js .\python\loom_viewer\static\sw.js
+    move .\python\loom_viewer\sw.js .\python\loom_viewer\static\sw.js
 
     echo.
     echo   Done

@@ -65,7 +65,7 @@ module.exports = {
 				loader: 'file-loader',
 				options: {
 					name: '[name]-[hash].[ext]',
-					outputPath: 'static/',
+					outputPath: 'static/images/',
 					publicPath: '/',
 				},
 			},
@@ -74,7 +74,7 @@ module.exports = {
 				loader: 'file-loader',
 				options: {
 					name: '[name]-[hash].[ext]',
-					outputPath: 'static/',
+					outputPath: 'static/fonts/',
 					publicPath: '/',
 				},
 			},
@@ -100,7 +100,7 @@ module.exports = {
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
 		new webpack.optimize.UglifyJsPlugin(uglifySettings),
-		new ExtractTextPlugin('/static/styles-[contenthash].css'),
+		new ExtractTextPlugin('/static/styles/[contenthash].css'),
 		new CssoWebpackPlugin({
 			restructure: true,
 			forceMediaMerge: true,
