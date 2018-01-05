@@ -338,7 +338,7 @@ def send_fileinfo(project, filename):
 	ds_filename = '%s.attrs.json.gzip' % (path)
 	fileinfo = None
 	if os.path.isfile(ds_filename):
-		logging.debug('Using file info from json.gzip ')
+		logging.info('Using file info from json.gzip ')
 		fileinfo = load_compressed_json(ds_filename)
 	else:
 		ds = app.cache.connect_dataset_locally(project, filename, u, p)
@@ -385,7 +385,7 @@ def send_row(project, filename, rows):
 	path = app.cache.get_absolute_path(project, filename, u, p)
 	row_dir = '%s.rows' % (path)
 	if os.path.isdir(row_dir):
-		logging.debug('Using json.gzip rows')
+		logging.info('Using json.gzip rows')
 		retRows = ['[']
 		comma = ','
 		for row in rows:
@@ -409,7 +409,7 @@ def send_col(project, filename, cols):
 	cols.sort()
 	col_dir = '%s.cols' % (path)
 	if os.path.isdir(col_dir):
-		logging.debug('Using json.gzip columns')
+		logging.info('Using json.gzip columns')
 		retCols = ['[']
 		comma = ','
 		for col in cols:

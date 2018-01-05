@@ -248,13 +248,16 @@ def main():
 		args = parser.parse_args()
 
 	if args.debug:
-		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s')
 	else:
-		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 	if not os.path.exists(args.dataset_path):
 		logging.info("Creating dataset directory: " + args.dataset_path)
 		os.mkdir(args.dataset_path)
+	else:
+		logging.info("Using dataset directory at:")
+		logging.info("    " + args.dataset_path)
 
 	if args.command == "version":
 		print("loom v" + str(loompy.__version__))
