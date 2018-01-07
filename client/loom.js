@@ -106,5 +106,9 @@ OfflinePluginRuntime.install({
 	},
 });
 
+// =================
+//  Start React app
+// =================
+
 import Routes from './components/routes';
 render(Routes, document.getElementById('react-root'));
