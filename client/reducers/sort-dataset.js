@@ -6,7 +6,7 @@ export function updateDatasetSortOrder(state, key) {
 	return merge(state, {
 		order: {
 			key,
-			asc: (state.order.key === key) || !state.order.asc,
+			asc: !((state.order.key === key) && state.order.asc),
 		},
 	});
 }
