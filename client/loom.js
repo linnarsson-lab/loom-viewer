@@ -1,9 +1,14 @@
 import { render } from 'react-dom';
 
-// initiate any custom polyfills that we might have
+// ===================================================
+//  Initiate any custom polyfills that we might have
+// ===================================================
+
 import 'js/polyfills';
 
-// Import all CSS once, at the top level
+// =====================================================
+//  CSS Imports - import all CSS once, at the top level
+// =====================================================
 
 // react-virtualized-select
 import 'react-select/dist/react-select.css';
@@ -24,8 +29,13 @@ import './css/bootstrap-theme.css';
 // Custom loom CSS, includes crispness override for leaflet
 import './css/loom.css';
 
-// Set up localforage configuration once
+// ========================================================
+//  LocalForage - set up off-line cache for datasets/genes
+// ========================================================
+
 import localforage from 'localforage';
+
+// Set up configuration once, at start of app
 localforage.config({
 	name: 'Loom',
 	storeName: 'datasets',
@@ -36,7 +46,45 @@ localforage.config({
 	],
 });
 
-// Instantiate OfflinePlugin
+const dataSchemaVersion = '0.0.1 # first semver';
+// Check for schema version, wipe localForage cache if outdated
+localforage.getItem('dataSchemaVersion')
+	.then((storedSchemaVersion) => {
+		console.log({
+			dataSchemaVersion,
+			storedSchemaVersion,
+		});
+		if (storedSchemaVersion) {
+			const schemas = [dataSchemaVersion, storedSchemaVersion]
+				.map((schemaString) => {
+					return schemaString
+						.split('.')
+						.map((str) => { return str | 0; });
+				});
+			return schemas[0][0] > schemas[1][0]; // breaking major update
+			// schemas[0][1] > schemas[1][1] == non-breaking update
+			// schemas[0][2] > schemas[1][2] == non-breaking minor update
+		} else {
+			// no storedSchemaVersion in cache means the schema is
+			// from before versioning it, so by definition outdated
+			return true;
+		}
+	})
+	.then((wipeCache) => {
+		if (wipeCache) {
+			console.log('Major update to data schema, wiping localForage cache');
+			return localforage.clear();
+		}
+		return null;
+	})
+	.then(() => {
+		return localforage.setItem('dataSchemaVersion', dataSchemaVersion);
+	});
+
+// ===========================
+//  Instantiate OfflinePlugin
+// ===========================
+
 import * as OfflinePluginRuntime from 'offline-plugin/runtime';
 OfflinePluginRuntime.install({
 	onUpdating: () => {
