@@ -20,7 +20,7 @@ import 'rc-slider/assets/index.css';
 
 // Modified leaflet.css that does not include the images
 // for layer controls, which we don't use anyway
-import 'css/leaflet.css';
+import './css/leaflet.css';
 
 // Required for react-bootstrap
 import './css/bootstrap.css';
