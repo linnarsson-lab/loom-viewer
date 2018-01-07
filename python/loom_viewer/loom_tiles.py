@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 import scipy
 import logging
+from shutil import rmtree
 
 from loompy import LoomConnection
 
@@ -27,7 +28,7 @@ class LoomTiles(object):
 			# max values faster
 			# self._maxes = self.ds.map([max], 0)[0]
 
-			print('\n  calculating & caching max values', end='', flush=True)
+			logging.info('calculating & caching max values')
 			rows = self.ds.shape[0]
 			_maxes = np.zeros(rows)
 			ix = 0
@@ -38,13 +39,13 @@ class LoomTiles(object):
 				ix += rows_per_chunk
 				print('.', end='', flush=True)
 			self._maxes = _maxes
-			print(' done\n')
+			print(' done\n\n')
 		return self._maxes
 
 	def mins(self):
 		if self._mins is None:
 			# self._mins = self.ds.map([min], 0)[0]
-			print('\n  calculating & caching min values', end='', flush=True)
+			logging.info('calculating & caching min values')
 			rows = self.ds.shape[0]
 			_mins = np.zeros(rows)
 			ix = 0
@@ -55,15 +56,27 @@ class LoomTiles(object):
 				ix += rows_per_chunk
 				print('.', end='', flush=True)
 			self._mins = _mins
-			print(' done\n')
+			print(' done\n\n')
 		return self._mins
 
-	def prepare_heatmap(self, truncate):
+	def prepare_heatmap(self, truncate=False):
 		if self.ds._file.__contains__("tiles"):
 			logging.info("    Removing deprecated tile pyramid, use h5repack to reclaim space")
 			del self.ds._file['tiles']
+
+		tile_dir = "%s.tiles/" % (self.ds.filename)
+		if os.path.isdir(tile_dir) and truncate:
+			logging.info("    Removing old tile folder %s" % (tile_dir))
+			rmtree(tile_dir)
+
+		self.maxes()
+
+		self.mins()
+
+		logging.info('generating and saving tiles')
+
 		self.dz_get_zoom_tile(0, 0, 8, truncate)
-		logging.info("    done")
+		print(" done\n\n")
 
 	def dz_zoom_range(self):
 		"""
@@ -109,8 +122,8 @@ class LoomTiles(object):
 			# logging.info("Trying to save out of bound tile: x: %02d y: %02d z: %02d" % (x, y, z))
 			return
 
-		tiledir = '%s.tiles/z%02d/' % (self.ds.filename, z)
-		tilepath = '%sx%03d_y%03d.png' % (tiledir, x, y)
+		tile_dir = '%s.tiles/z%02d/' % (self.ds.filename, z)
+		tile_path = '%sx%03d_y%03d.png' % (tile_dir, x, y)
 
 		# make sure the tile directory exists
 		# we use a try/error approach so that we
@@ -118,25 +131,25 @@ class LoomTiles(object):
 		# (if another process creates the same
 		#  directory we just catch the exception)
 		try:
-			os.makedirs(tiledir, exist_ok=True)
+			os.makedirs(tile_dir, exist_ok=True)
 		except OSError as exception:
 			# if the error was that the directory already
 			# exists, ignore it, since that is expected.
 			if exception.errno != errno.EEXIST:
 				raise
 
-		if os.path.isfile(tilepath):
+		if os.path.isfile(tile_path):
 			if truncate:
 				# remove old file
-				os.remove(tilepath)
+				os.remove(tile_path)
 			else:
 				# load old file instead of generating new image
-				return scipy.misc.imread(tilepath, mode='P')
+				return scipy.misc.imread(tile_path, mode='P')
 
 		img = self.dz_tile_to_image(x, y, z, tile)
 		# save to file
-		with open(tilepath, 'wb') as img_io:
-			# logging.info("saving %s" % tilepath)
+		with open(tile_path, 'wb') as img_io:
+			# logging.info("saving %s" % tile_path)
 			print('.', end='', flush=True)
 			img.save(img_io, 'PNG', compress_level=4)
 		return img
@@ -214,7 +227,7 @@ class LoomTiles(object):
 		return tmax
 
 	# Returns a submatrix scaled to 0-255 range
-	def dz_get_zoom_tile(self, x, y, z, truncate):
+	def dz_get_zoom_tile(self, x, y, z, truncate=False):
 		"""
 		Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
 
@@ -278,7 +291,7 @@ class LoomTiles(object):
 			tile /= maxes
 			tile = tile.transpose()
 
-			self.dz_save_tile(x, y, z, tile, truncate=False)
+			self.dz_save_tile(x, y, z, tile, truncate)
 			return tile
 
 		if z < zmid:
