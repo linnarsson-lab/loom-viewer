@@ -285,7 +285,8 @@ class LoomTiles(object):
 			maxes[maxes == 0] = np.nextafter(0, 1)
 
 			tile = tile.transpose()
-			tile -= mins
+			# we can't use -= mins here, because tile and mins might be a different dtype
+			tile = tile - mins
 			np.log2(tile, tile)
 			tile *= 255
 			tile /= maxes
