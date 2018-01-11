@@ -21,29 +21,6 @@ from loom_viewer import LoomExpand, LoomTiles
 #
 
 
-def list_filename_matches(dataset_path: str, filename: str) -> List[Tuple[str, str]]:
-	projects = [x for x in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, x)) and not x.startswith(".")]
-	matching_files = []
-	for project in projects:
-		project_path = os.path.join(dataset_path, project)
-		if os.path.exists(project_path):
-			project_files = os.listdir(project_path)
-			file_path = os.path.join(project_path, filename)
-			if os.path.isfile(file_path):
-				matching_files.append((filename, file_path))
-	return matching_files
-
-
-def list_project_files(dataset_path: str, project: str) -> List[Tuple[str, str]]:
-	project_path = os.path.join(dataset_path, project)
-	if os.path.exists(project_path):
-		project_files = os.listdir(project_path)
-		loom_files = [(filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")]
-		return loom_files
-	else:
-		return []
-
-
 class LoomDatasets(object):
 	"""
 	A connection to the loom files in the local dataset directory
@@ -87,9 +64,9 @@ class LoomDatasets(object):
 		self.expansion_entries = {}  # type: Dict[str, LoomExpand]
 
 		# Find all projects and loom files in the dataset folder
-		self.update_projects()
+		self.update_dataset_list()
 
-	def update_projects(self) -> None:
+	def update_dataset_list(self) -> None:
 		"""
 		Scan dataset folder for new project folders
 		Scan project folders for new loom files.
@@ -105,13 +82,13 @@ class LoomDatasets(object):
 
 			loom_files = self.projects.get(project, set())  # type: Set[str]
 
-			project_files_list = list_project_files(ds_path, project)
-			all_file_paths = set([file_path for _, file_path in project_files_list])
+			project_files_list = self.list_files_in_project(project)
+			all_file_paths = set([file_path for _, _, file_path in project_files_list])
 
 			# if a file_path is in the new set, but not in the old one, it's a new file
 			new_file_paths = all_file_paths - self.absolute_file_paths
 
-			for filename, file_path in project_files_list:
+			for _, filename, file_path in project_files_list:
 				logging.debug("       %s", filename)
 				if file_path in new_file_paths:
 					loom_files.add(filename)
@@ -120,6 +97,49 @@ class LoomDatasets(object):
 
 			# store updated file names in projects dictionary
 			self.projects[project] = loom_files
+
+	def split_from_abspath(self, file_path: str) -> Tuple[str, str, str]:
+		"""If file_path is an absolute filepath in dataset folder, extract into (project, real_filename, filename)"""
+		if file_path == os.path.abspath(file_path):
+			filename = os.path.basename(file_path)
+			project = os.path.basename(os.path.dirname(file_path))
+			dataset_path = os.path.basename(os.path.dirname(project))
+			if dataset_path is self.dataset_path:
+				return (project, filename, file_path)
+		return (None, None, file_path)
+
+	def list_all_files(self) -> List[Tuple[str, str, str]]:
+		projects = [x for x in os.listdir(self.dataset_path) if os.path.isdir(os.path.join(self.dataset_path, x)) and not x.startswith(".")]
+		loom_files = []
+		for project in projects:
+			project_path = os.path.join(self.dataset_path, project)
+			if os.path.exists(project_path):
+				project_files = os.listdir(project_path)
+				for filename in project_files:
+					if filename.endswith(".loom"):
+						loom_files.append((project, filename, os.path.join(project_path, filename)))
+		return loom_files
+
+	def list_matching_filenames(self, filename: str) -> List[Tuple[str, str, str]]:
+		projects = [x for x in os.listdir(self.dataset_path) if os.path.isdir(os.path.join(self.dataset_path, x)) and not x.startswith(".")]
+		matching_files = []
+		for project in projects:
+			project_path = os.path.join(self.dataset_path, project)
+			if os.path.exists(project_path):
+				project_files = os.listdir(project_path)
+				file_path = os.path.join(project_path, filename)
+				if os.path.isfile(file_path):
+					matching_files.append((project, filename, file_path))
+		return matching_files
+
+	def list_files_in_project(self, project: str) -> List[Tuple[str, str, str]]:
+		project_path = os.path.join(self.dataset_path, project)
+		if os.path.exists(project_path):
+			project_files = os.listdir(project_path)
+			loom_files = [(project, filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")]
+			return loom_files
+		else:
+			return []
 
 	def authorize(self, project: str, username: str, password: str, mode: str ="read") -> bool:
 		"""
@@ -192,7 +212,7 @@ class LoomDatasets(object):
 		else:
 			return ""
 
-	def connect(self, project: str, filename: str, mode: str="r+", timeout: float=60) -> LoomConnection:
+	def connect(self, project: str, filename: str, mode: str="r+") -> LoomConnection:
 		"""
 		Connect to a local loom file.
 
@@ -214,13 +234,9 @@ class LoomDatasets(object):
 		Uses a semaphore to ensure there is never more than one connection
 		open to a loom file (provided this is the only method that connects to it)
 
-		May require a username and password.
-
 		Args:
 			project (string): 		Name of the project (e.g. "Midbrain")
 			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
-			username (string):		Username or None
-			password (string):		Password or None
 			timeout (float):				Time to wait for connection to become available in seconds, or None to wait indefinitely
 
 		Returns:
@@ -249,7 +265,7 @@ class LoomDatasets(object):
 			lock = self.dataset_locks[absolute_file_path]
 			lock.release()
 
-	def list_datasets(self, username: str = None, password: str = None) -> str:
+	def JSON_list_metadata(self, username: str = None, password: str = None) -> str:
 		"""
 		Return a JSON string listing metadata for all loom files authorized to see.
 		"""
@@ -269,7 +285,7 @@ class LoomDatasets(object):
 				key = "%s/%s" % (project, filename)
 				metadata = self.metadata_entries.get(key, "")
 				if metadata is "":
-					metadata = self.metadata(project, filename)
+					metadata = self.JSON_metadata(project, filename)
 				if metadata is not None:
 					self.metadata_entries[key] = metadata
 					metadata_list.append(metadata)
@@ -281,7 +297,7 @@ class LoomDatasets(object):
 		metadata_list[len(metadata_list) - 1] = "]"
 		return "".join(metadata_list)
 
-	def metadata(self, project: str, filename: str) -> str:
+	def JSON_metadata(self, project: str, filename: str, truncate: bool = False) -> str:
 		"""
 		Get metadata for an individual dataset.
 
@@ -300,66 +316,86 @@ class LoomDatasets(object):
 			logging.debug("      Invalid or inaccessible path to loom file")
 			return None
 
-		# See if metadata was already loaded before
 		key = "%s/%s" % (project, filename)
-		logging.debug("      Attempting to load %s from cache", key)
-		metadata = self.metadata_entries.get(key, "")
+		md_filename = "%s.file_md.json.gzip" % (absolute_file_path)
 
-		# If not, see if expanded metadata json file exists
-		if metadata is "":
-			md_filename = "%s.file_md.json.gzip" % (absolute_file_path)
-			if os.path.isfile(md_filename):
-				logging.debug("      Found previously extracted JSON file, loading")
-				metadata = load_gzipped_json_string("%s.file_md.json.gzip" % (absolute_file_path))
+		metadata = None
 
-		# If neither expanded generate/update metadata and attributes
-		if metadata is "":
-			logging.debug("      No previous extracted JSON file, expanding")
+		if truncate:
 			expand = self._acquire_expander(project, filename)
 			if expand is None:
+				# Only happens in case of concurrent access and time-out
 				return None
-			metadata = expand.metadata(True)
+			logging.debug("      Truncate set, clearing cache")
+			metadata = expand.metadata(False)
 			expand.close(True)
+		else:
+			# See if metadata was already loaded before
+			logging.debug("      Attempting to load %s from cache", key)
+			metadata = self.metadata_entries.get(key, "")
+
+			# If not, see if expanded metadata json file exists
+			if metadata is "":
+				md_filename = "%s.file_md.json.gzip" % (absolute_file_path)
+				if os.path.isfile(md_filename):
+					logging.debug("      Found previously extracted JSON file, loading")
+					metadata = load_gzipped_json_string("%s.file_md.json.gzip" % (absolute_file_path))
+
+			# If neither expanded generate/update metadata and attributes
+			if metadata is "":
+				logging.debug("      No previous extracted JSON file, expanding")
+				expand = self._acquire_expander(project, filename)
+				if expand is None:
+					return None
+				metadata = expand.metadata(False)
+				expand.close(True)
 
 		self.metadata_entries[key] = metadata
 		return metadata
 
-	def attributes(self, project: str, filename: str) -> str:
+	def JSON_attributes(self, project: str, filename: str, truncate: bool = False) -> str:
 		"""
 		Gets the attributes of an individual dataset.
-		Updates the expanded file if the OS indicates the file was modified.
 		"""
 		absolute_file_path = self.get_absolute_file_path(project, filename)
 		if absolute_file_path is "":
 			logging.debug("      Invalid or inaccessible path to loom file")
 			return None
 
-		# See if attributes were already loaded before
 		key = "%s/%s" % (project, filename)
-		logging.debug("      Attempting to find attributes in cache")
-		attributes = self.attribute_entries.get(key, "")
+		attrs_name = "%s.attrs.json.gzip" % (absolute_file_path)
 
-		# If not, see if expanded attribute json file exists
-		if attributes is "":
-			attrs_name = "%s.attrs.json.gzip" % (absolute_file_path)
-			if os.path.isfile(attrs_name):
-				logging.debug("      Found previously extracted JSON file, loading")
-				attributes = load_gzipped_json_string("%s.attrs.json.gzip" % (absolute_file_path))
+		attributes = None
 
-		# If not, expand attributes
-		if attributes is "":
-			logging.debug("      No previous extracted JSON file, expanding")
+		if truncate:
 			expand = self._acquire_expander(project, filename)
 			if expand is None:
-				# Only happens in case of concurrent access and time-out
 				return None
+			logging.debug("      Truncate set, clearing cache")
 			attributes = expand.attributes(True)
 			expand.close(True)
+		else:
+			# See if attributes were already loaded before
+			logging.debug("      Attempting to find attributes in cache")
+			attributes = self.attribute_entries.get(key, "")
+			# If not, see if expanded attribute json file exists
+			if attributes is "":
+				if os.path.isfile(attrs_name):
+					logging.debug("      Found previously extracted JSON file, loading")
+					attributes = load_gzipped_json_string("%s.attrs.json.gzip" % (absolute_file_path))
+			# If not, expand attributes
+			if attributes is "":
+				logging.debug("      No previous extracted JSON file, expanding")
+				expand = self._acquire_expander(project, filename)
+				if expand is None:
+					return None
+				attributes = expand.attributes(False)
+				expand.close(True)
 
 		self.attribute_entries[key] = attributes
 		return attributes
 
-	def rows(self, row_numbers: List[int], project: str, filename: str) -> str:
+	def JSON_rows(self, row_numbers: List[int], project: str, filename: str) -> str:
 		absolute_file_path = self.get_absolute_file_path(project, filename)
 		if absolute_file_path is "":
 			logging.debug("Invalid or inaccessible path to loom file")
@@ -407,7 +443,7 @@ class LoomDatasets(object):
 
 		return "".join(retRows)
 
-	def columns(self, column_numbers: List[int], project: str, filename: str) -> str:
+	def JSON_columns(self, column_numbers: List[int], project: str, filename: str) -> str:
 		expand = self._acquire_expander(project, filename)
 		if expand is None:
 			return None
@@ -415,5 +451,22 @@ class LoomDatasets(object):
 		expand.close(True)
 		return expanded_columns
 
-	def tile(self, project: str, filename: str) -> None:
-		pass
+	def tile(self, project: str, filename: str, truncate: bool = False) -> None:
+		absolute_path = self.get_absolute_file_path(project, filename)
+		ds = None
+		if absolute_path is not "":
+			try:
+				lock = self.dataset_locks[absolute_path]
+				if lock.acquire(blocking=True, timeout=10):
+					ds = LoomConnection(absolute_path)
+					tiles = LoomTiles(ds)
+					tiles.prepare_heatmap(truncate)
+					ds.close()
+					lock.release()
+			except TimeoutError:
+				# May happen when cancelled by the environment (for example, on a server).
+				# If so, and the lock was acquired, release the dataset and lock
+				if ds is not None:
+					ds.close()
+					lock.release()
+				pass

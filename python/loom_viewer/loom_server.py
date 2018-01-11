@@ -176,7 +176,7 @@ def get_auth(request: Any) -> Any:
 @cache(expires=None)
 def send_dataset_list() -> Any:
 	(u, p) = get_auth(request)
-	dataset_list = app.loom_datasets.list_datasets(u, p)
+	dataset_list = app.loom_datasets.JSON_list_metadata(u, p)
 	if dataset_list is "":
 		return "", 404
 	return flask.Response(dataset_list, mimetype="application/json")
@@ -188,7 +188,7 @@ def send_dataset_list() -> Any:
 def send_fileinfo(project: str, filename: str) -> Any:
 	(u, p) = get_auth(request)
 	if app.loom_datasets.authorize(project, u, p):
-		attributes = app.loom_datasets.attributes(project, filename)
+		attributes = app.loom_datasets.JSON_attributes(project, filename)
 		if attributes is not None and attributes is not "":
 			return flask.Response(attributes, mimetype="application/json")
 	else:
@@ -215,7 +215,7 @@ def send_row(project: str, filename: str, row_numbers: List[int]) -> Any:
 	# path to desired rows
 	(u, p) = get_auth(request)
 	if app.loom_datasets.authorize(project, u, p):
-		rows = app.loom_datasets.rows(row_numbers, project, filename)
+		rows = app.loom_datasets.JSON_rows(row_numbers, project, filename)
 		if rows is not None:
 			return flask.Response(rows, mimetype="application/json")
 	return "", 404
@@ -228,7 +228,7 @@ def send_col(project: str, filename: str, column_numbers: List[int]) -> Any:
 	# path to desired cols
 	(u, p) = get_auth(request)
 	if app.loom_datasets.authorize(project, u, p):
-		columns = app.loom_datasets.columns(column_numbers, project, filename)
+		columns = app.loom_datasets.JSON_columns(column_numbers, project, filename)
 		if columns is not None:
 			return flask.Response(columns, mimetype="application/json")
 	return "", 404
@@ -245,7 +245,7 @@ def send_tile(project: str, filename: str, z: int, x: int, y: int) -> Any:
 	(u, p) = get_auth(request)
 	if app.loom_datasets.authorize(project, u, p):
 		# path to desired tile
-		file_path = app.loom_datasets.absolute_file_path(project, filename)
+		file_path = app.loom_datasets.get_absolute_file_path(project, filename)
 		# subfolder by zoom level to get more useful sorting order
 		tile_path = '%s.tiles/z%02d/x%03d_y%03d.png' % (file_path, z, x, y)
 

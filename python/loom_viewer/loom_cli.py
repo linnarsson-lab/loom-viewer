@@ -90,25 +90,6 @@ def list_project_files(dataset_path, project):
 	else:
 		raise warnings.warn("%s is not a path to a Project folder!" % project_path)
 
-
-def tile(loom_files, truncate):
-	for _, _, file_path in loom_files:
-		ds = None
-		try:
-			ds = connect_loom(file_path)
-			if ds is None:
-				raise warnings.warn("Could not connect to %s" % file_path)
-		except Exception as e:
-			logging.error(e)
-			return
-		try:
-			logging.info("    Precomputing heatmap tiles, stored in subfolder:\n    %s.tiles" % file_path)
-			tiles = LoomTiles(ds)
-			tiles.prepare_heatmap(truncate)
-		except Exception as e:
-			logging.error(e)
-
-
 def loom_files_from_abspath(filename):
 	""" filename is actually an absolute filepath - extract into "/..../project/filename"  """
 	project = os.path.basename(os.path.dirname(filename))
@@ -116,23 +97,30 @@ def loom_files_from_abspath(filename):
 	return [(project, real_filename, filename)]
 
 
-def tile_command(dataset_path, filename, truncate):
+def tile_command(dataset_path: str, filename: str, truncate: bool):
+	datasets = LoomDatasets(dataset_path)
+	matches = []
 	if filename == os.path.abspath(filename):
-		loom_files = loom_files_from_abspath(filename)
+		matches = [datasets.split_from_abspath(filename)]
 	else:
-		loom_files = list_filename_matches(dataset_path, filename)
-	tile(loom_files, truncate)
+		matches = datasets.list_matching_filenames(filename)
+	for project, filename, file_path in matches:
+		datasets.tile(project, file_path, truncate)
 
 
 def tile_project_command(dataset_path, project, truncate):
-	loom_files = list_project_files(dataset_path, project)
-	tile(loom_files, truncate)
+	datasets = LoomDatasets(dataset_path)
+	loom_files = datasets.list_files_in_project(project)
+	for project, filename, file_path in loom_files:
+		datasets.tile(loom_files, truncate)
 
 
 def expand(loom_files, dataset_path, truncate, metadata, attributes, rows, cols):
 	if not (metadata or attributes or rows or cols):
 		logging.info("Must explicitly state what to expand!")
 		return
+	datasets = LoomDatasets(dataset_path)
+
 	for project, filename, file_path in loom_files:
 		try:
 			expand = LoomExpand(project, filename, file_path)
@@ -252,12 +240,6 @@ def main():
 	else:
 		logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
-	if not os.path.exists(args.dataset_path):
-		logging.info("Creating dataset directory: " + args.dataset_path)
-		os.mkdir(args.dataset_path)
-	else:
-		logging.info("Using dataset directory at:")
-		logging.info("    " + args.dataset_path)
 
 	if args.command == "version":
 		print("loom v" + str(loompy.__version__))
