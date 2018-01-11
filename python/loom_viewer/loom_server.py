@@ -1,181 +1,36 @@
-import flask
-from flask import request
-from flask import make_response
-from flask_compress import Compress
-from werkzeug.utils import secure_filename
-from werkzeug.routing import BaseConverter
-from functools import wraps, update_wrapper
-import os
-import os.path
-import sys
-from io import BytesIO
+from typing import *
+from mypy_extensions import NoReturn
 
-import numpy as np
-from operator import itemgetter
+import os
+import sys
+
+from functools import wraps, update_wrapper
 
 from datetime import datetime, timedelta
-import argparse
-import errno
-from socket import error as socket_error
 import webbrowser
 import subprocess
 import logging
 import signal
-import inspect
 import time
-from loom_viewer import LoomCache, LoomTiles
+
+import flask
+from flask import request
+from flask import make_response
+from flask_compress import Compress
+from werkzeug.routing import BaseConverter
+
 from wsgiref.handlers import format_date_time
 
-import gzip
-import json
-
-from gevent.wsgi import WSGIServer
-from gevent import monkey
-
-
-import gevent.monkey, gevent.socket, gevent.wsgi
 import socket
 
-# ===================
-# JSON Utils
-# ===================
+import gevent.monkey
+import gevent.socket
+import gevent.wsgi
 
-def np_to_list(vals):
-	"""
-	Convert a numpy array to a python list,
-	ready for JSON conversion.
-	"""
-	try:
-		# NaNs and Infinities are not supported by JSON
-		vals[np.isnan(vals)] = 0
-		vals[np.isinf(vals)] = 0
-
-		# test if all values are integer
-		vals_int = vals.astype(int)
-		safe_conversion = (vals - vals_int) == 0
-
-		if np.all(safe_conversion):
-			return vals_int.tolist()
-		else:
-			# Because we use the client mainly to view, we
-			# do not need the 20 digits of precision given
-			# by float64 values. Eight digits lets us
-			# blow up a single pixel to full screen size;
-			# presumably this is enough.
-			vals = np.around(vals, 8)
-			# if there are _some_ integers, convert them
-			# (arrays will likely have many zero values,
-			# so this could still save a bit of space in
-			# our JSON text file output)
-			vals = vals.tolist()
-			if np.any(safe_conversion):
-				for i in range(len(vals)):
-					if safe_conversion[i]:
-						vals[i] = int(vals[i])
-			return vals
-	except Exception as e:
-		"""Not a numeric type (expected for strings, not reported)"""
-		return vals.tolist()
+from .loom_datasets import LoomDatasets
 
 
-def JSON_array(array):
-	"""
-	Takes a numpy array and produces an object wrapping
-	an array with precomputed metadata, ready to be served
-	or saved as a JSON file
-	"""
-
-	_un, _ind, _counts = np.unique(array, return_inverse=True, return_counts=True)
-
-	_un = np_to_list(_un)
-	_counts = np_to_list(_counts)
-
-	_data = np_to_list(array)
-
-	# default to string until proven otherwise
-	array_type = 'string'
-	indexed_val = None
-	_min = 1
-	_max = len(_un)
-	try:
-		_min = np.nanmin(array)
-		_max = np.nanmax(array)
-		# Convert to proper Python type (JSON conversion breaks otherwise)
-		_min = int(_min) if int(_min) == _min else float(_min)
-		_max = int(_max) if int(_max) == _max else float(_max)
-
-		array_int = array.astype(int)
-		if np.all((array - array_int) == 0):
-			if _min >= 0:
-				if _max < 256:
-					array_type = 'uint8'
-				elif _max < 65535:
-					array_type = 'uint16'
-				else:
-					array_type = 'uint32'
-			elif _min > -128 and _max < 128:
-				array_type = 'int8'
-			elif _min > -32769 and _max < 32768:
-				array_type = 'int16'
-			else:
-				array_type = 'int32'
-		else:
-			array_type = 'float32'
-	except Exception as e:
-		"""Not a numeric type (expected for strings, not reported)"""
-		if len(_un) < 256:
-			# strore strings in indexed_val
-			indexed_val = _un
-
-			# we will unshift `null` in front of the IndexedVal
-			# array on the client-side, so we anticipate that by
-			# increasing the indices now.
-			_ind += 1
-			_un, _counts = np.unique(_ind, return_counts=True)
-			_un = np_to_list(_un)
-			_counts = np_to_list(_counts)
-			_ind = np_to_list(_ind)
-			_data = _ind
-
-	uniques = [{"val": _un[i], "count": _counts[i]} for i in range(len(_un))]
-
-	# slice off any values with count 1 - note that this implies
-	# that arrays with only unique values have an empty `uniques` array
-	uniques.sort(key=itemgetter('count'), reverse=True)
-	for i in range(len(uniques)):
-		if uniques[i]["count"] == 1:
-			uniques = uniques[0:i]
-			break
-
-	color_length = min(len(uniques), 1000)
-	color_freq = {uniques[i]["val"]: i + 1 for i in range(color_length)}
-	color_indices = {"mostFreq": color_freq}
-
-	retVal = {
-		"arrayType": array_type,
-		"data": _data,
-		"uniques": uniques,
-		"colorIndices": color_indices,
-		"min": _min,
-		"max": _max
-	}
-	if indexed_val is not None:
-		retVal["indexedVal"] = indexed_val
-	return retVal
-
-
-def load_compressed_json(filename):
-	with gzip.open(filename, "rt") as f:
-		jsonVal = f.read()
-		return jsonVal
-
-
-# =================
-# Server
-# =================
-
-
-def cache(expires=None, round_to_minute=False):
+def cache(expires: int = None, round_to_minute: bool = False) -> Any:
 	"""
 	Add Flask cache response headers based on expires in seconds.
 
@@ -191,9 +46,9 @@ def cache(expires=None, round_to_minute=False):
 		return render_template('index.html')
 
 	"""
-	def cache_decorator(view):
+	def cache_decorator(view: Any) -> Any:
 		@wraps(view)
-		def cache_func(*args, **kwargs):
+		def cache_func(*args: Any, **kwargs: Any) -> Any:
 			now = datetime.now()
 
 			response = make_response(view(*args, **kwargs))
@@ -215,20 +70,19 @@ def cache(expires=None, round_to_minute=False):
 		return cache_func
 	return cache_decorator
 
-
 app = flask.Flask(__name__)
-app.cache = None
 
 
 # Advanced routing for fetching multiple rows/columns at once
 # creates list of integers based on a '+' separated string
 class IntDictConverter(BaseConverter):
 
-	def to_python(self, value):
-		return [int(v) for v in value.split('+')]
+	def to_python(self, valueString: str) -> List[int]:
+		return [int(v) for v in valueString.split('+')]
 
-	def to_url(self, values):
-		urlValues = [BaseConverter.to_url(value) for value in values]
+	def to_url(self, values: List[int]) -> str:
+		base_to_url = super().to_url
+		urlValues = [base_to_url(value) for value in values]
 		return '+'.join(urlValues)
 
 
@@ -247,20 +101,19 @@ compress.init_app(app)
 
 @app.route('/static/js/<path:path>')
 @cache(expires=604800)
-def send_static_js(path):
+def send_static_js(path: str) -> Any:
 	return flask.send_from_directory('static/js/', path, mimetype='text/javascript')
 
 
 @app.route('/static/style/<path:path>')
 @cache(expires=604800)
-def send_static_css(path):
+def send_static_css(path: str) -> Any:
 	return flask.send_from_directory('static/styles/', path, mimetype='text/css')
-
 
 
 @app.route('/static/fonts/<path:path>')
 @cache(expires=604800)
-def send_static_fonts(path):
+def send_static_fonts(path: str) -> Any:
 	mimetype = 'application/font-woff'
 	if path.endswith('.woff'):
 		mimetype = 'application/font-woff'
@@ -282,20 +135,20 @@ def send_static_fonts(path):
 
 @app.route('/sw.js')
 @cache(expires=None)
-def send_service_worker():
+def send_service_worker() -> Any:
 	return flask.send_file('static/sw.js', mimetype='text/javascript')
 
 
 @app.route('/favicon.ico')
 @cache(expires=604800)
-def send_favicon():
+def send_favicon() -> Any:
 	return app.send_static_file('favicon.ico')
 
 
 @app.route('/')
 @app.route('/index.html')
 @cache(expires=604800)
-def send_indexjs():
+def send_indexjs() -> Any:
 	return flask.send_file('static/index.html', mimetype='text/html')
 
 
@@ -303,7 +156,7 @@ def send_indexjs():
 @app.route('/dataset/')
 @app.route('/dataset/<path:path>')
 @cache(expires=None)
-def catch_all(path):
+def catch_all(path: str) -> Any:
 	return flask.send_file('static/index.html', mimetype='text/html')
 
 #
@@ -311,7 +164,7 @@ def catch_all(path):
 #
 
 
-def get_auth(request):
+def get_auth(request: Any) -> Any:
 	if request.authorization is not None:
 		return (request.authorization.username, request.authorization.password)
 	else:
@@ -321,160 +174,103 @@ def get_auth(request):
 # List of all datasets
 @app.route('/loom', methods=['GET'])
 @cache(expires=None)
-def send_dataset_list():
+def send_dataset_list() -> Any:
 	(u, p) = get_auth(request)
-	dataset_list = app.cache.list_datasets(u, p)
-	if len(dataset_list) is 0:
-		dataset_list = "No Projects or Loom files in dataset folder!"
-	return flask.Response(json.dumps(dataset_list), mimetype="application/json")
+	dataset_list = app.loom_datasets.list_datasets(u, p)
+	if dataset_list is "":
+		return "", 404
+	return flask.Response(dataset_list, mimetype="application/json")
 
 
 # Info for a single dataset
 @app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
 @cache(expires=None)
-def send_fileinfo(project, filename):
+def send_fileinfo(project: str, filename: str) -> Any:
 	(u, p) = get_auth(request)
-	path = app.cache.get_absolute_path(project, filename, u, p)
-	ds_filename = '%s.attrs.json.gzip' % (path)
-	fileinfo = None
-	if os.path.isfile(ds_filename):
-		logging.info('Using file info from json.gzip ')
-		fileinfo = load_compressed_json(ds_filename)
+	if app.loom_datasets.authorize(project, u, p):
+		attributes = app.loom_datasets.attributes(project, filename)
+		if attributes is not None and attributes is not "":
+			return flask.Response(attributes, mimetype="application/json")
 	else:
-		ds = app.cache.connect_dataset_locally(project, filename, u, p)
-		if ds is None:
-			return "", 404
-		tile_data = LoomTiles(ds)
-		dims = tile_data.dz_dimensions()
-
-		rowAttrs = {key: JSON_array(arr) for (key, arr) in ds.row_attrs.items()}
-		colAttrs = {key: JSON_array(arr) for (key, arr) in ds.col_attrs.items()}
-
-		fileinfo = json.dumps({
-			"project": project,
-			"dataset": filename,
-			"filename": filename,
-			"shape": ds.shape,
-			"zoomRange": tile_data.dz_zoom_range(),
-			"fullZoomHeight": dims[1],
-			"fullZoomWidth": dims[0],
-			"rowAttrs": rowAttrs,
-			"colAttrs": colAttrs,
-		})
-	return flask.Response(fileinfo, mimetype="application/json")
+		logging.debug("Not authorised")
+	return "", 404
 
 
 # Download a dataset to the client
 @app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
 @cache(expires=None)
-def get_clone(project, filename):
+def get_clone(project: str, filename: str) -> Any:
 	(u, p) = get_auth(request)
-	path = app.cache.get_absolute_path(project, filename, u, p)
-	if path is None:
+	if app.loom_datasets.authorize(project, u, p):
+		file_path = app.loom_datasets.get_absolute_file_path(project, filename)
+		return flask.send_file(file_path, mimetype='application/octet-stream')
+	else:
 		return "", 404
-
-	return flask.send_file(path, mimetype='application/octet-stream')
 
 
 # Get one or more rows of data (i.e. all the expression values for a single gene)
-@app.route('/loom/<string:project>/<string:filename>/row/<intdict:rows>')
+@app.route('/loom/<string:project>/<string:filename>/row/<intdict:row_numbers>')
 @cache(expires=None)
-def send_row(project, filename, rows):
+def send_row(project: str, filename: str, row_numbers: List[int]) -> Any:
 	# path to desired rows
 	(u, p) = get_auth(request)
-	path = app.cache.get_absolute_path(project, filename, u, p)
-	row_dir = '%s.rows' % (path)
-	if os.path.isdir(row_dir):
-		logging.info('Using json.gzip rows')
-		retRows = ['[']
-		comma = ','
-		for row in rows:
-			row_file_name = '%s/%06d.json.gzip' % (row_dir, row)
-			retRows.append(load_compressed_json(row_file_name))
-			retRows.append(comma)
-		retRows[len(retRows) - 1] = ']'
-		retJSON = ''.join(retRows)
-		return flask.Response(retJSON, mimetype="application/json")
-	else:
-		return "", 404
+	if app.loom_datasets.authorize(project, u, p):
+		rows = app.loom_datasets.rows(row_numbers, project, filename)
+		if rows is not None:
+			return flask.Response(rows, mimetype="application/json")
+	return "", 404
 
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
-@app.route('/loom/<string:project>/<string:filename>/col/<intdict:cols>')
+@app.route('/loom/<string:project>/<string:filename>/col/<intdict:column_numbers>')
 @cache(expires=None)
-def send_col(project, filename, cols):
+def send_col(project: str, filename: str, column_numbers: List[int]) -> Any:
 	# path to desired cols
 	(u, p) = get_auth(request)
-	path = app.cache.get_absolute_path(project, filename, u, p)
-	cols.sort()
-	col_dir = '%s.cols' % (path)
-	if os.path.isdir(col_dir):
-		logging.info('Using json.gzip columns')
-		retCols = ['[']
-		comma = ','
-		for col in cols:
-			col_file_name = '%s/%06d.json.gzip' % (col_dir, col)
-			col_data = load_compressed_json(col_file_name)
-			retCols.append(load_compressed_json(col_file_name))
-			retCols.append(comma)
-		retCols[len(retCols) - 1] = ']'
-		retJSON = ''.join(retCols)
-		return flask.Response(retJSON, mimetype="application/json")
-	else:
-		return "", 404
+	if app.loom_datasets.authorize(project, u, p):
+		columns = app.loom_datasets.columns(column_numbers, project, filename)
+		if columns is not None:
+			return flask.Response(columns, mimetype="application/json")
+	return "", 404
 
 
 #
 # Tiles
 #
 
+
 @app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
-@cache(expires=60 * 20)
-def send_tile(project, filename, z, x, y):
+@cache(expires=60 * 24 * 30)
+def send_tile(project: str, filename: str, z: int, x: int, y: int) -> Any:
 	(u, p) = get_auth(request)
-	# path to desired tile
-	path = app.cache.get_absolute_path(project, filename, u, p)
-	# subfolder by zoom level to get more useful sorting order
-	tiledir = '%s.tiles/z%02d/' % (path, z)
-	tile = 'x%03d_y%03d.png' % (x, y)
-	tilepath = '%s%s' % (tiledir, tile)
+	if app.loom_datasets.authorize(project, u, p):
+		# path to desired tile
+		file_path = app.loom_datasets.absolute_file_path(project, filename)
+		# subfolder by zoom level to get more useful sorting order
+		tile_path = '%s.tiles/z%02d/x%03d_y%03d.png' % (file_path, z, x, y)
 
-	if not os.path.isfile(tilepath):
-		return "", 404
-		# if there are no tiles, don't generate them during server-time
-
-		# # if the tile doesn't exist, we're either out of range,
-		# # or it still has to be generated
-		# ds = app.cache.connect_dataset_locally(project, filename, u, p)
-		# if ds is None:
-		# 	return "", 404
-		# ds.dz_get_zoom_tile(x, y, z)
-		# # if the file still does not exist at this point,
-		# # we are out of range
-		# if not os.path.isfile(tilepath):
-		# 	return "", 404
-
-	return flask.send_file(open(tilepath, 'rb'), mimetype='image/png')
+		if os.path.isfile(tile_path):
+			return flask.send_file(tile_path, mimetype='image/png')
+	return "", 404
 
 
-def signal_handler(signal, frame):
+def signal_handler(signal: int, frame: object) -> NoReturn:
 	print('\nShutting down.')
-	if app.cache is not None:
-		app.cache.close()
 	sys.exit(0)
 
 
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def start_server(dataset_path, show_browser=True, port="8003", debug=True):
-
+def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003, debug: bool=True) -> Any:
 	if debug:
 		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s')
+		app.config['DEBUG'] = True
 	else:
 		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+		app.config['DEBUG'] = False
 
-	app.cache = LoomCache(dataset_path)
+	app.loom_datasets = LoomDatasets(dataset_path)
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 	if show_browser:
@@ -491,7 +287,7 @@ def start_server(dataset_path, show_browser=True, port="8003", debug=True):
 		http_server = gevent.wsgi.WSGIServer(('', port), app)
 
 		http_server.serve_forever()
-	except socket_error as serr:
-		logging.error(serr)
-		if port < 1024:
+	except socket.error as serr:
+		if int(port) < 1024:
 			print("You may need to invoke the server with sudo: sudo python loom_server.py ...")
+		raise serr

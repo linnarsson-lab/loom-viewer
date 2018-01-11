@@ -1,5 +1,7 @@
 @echo off
 
+cd .\python
+
 echo.
 echo ====================================================
 echo  Creating and installing loom-viewer Python package
@@ -8,7 +10,7 @@ echo.
 
 
 echo.
-echo === Removing previous Python build files (if any)
+echo === Removing previous Python build and dist folders (if any)
 echo.
 
 del /s /q python\build\*.*
@@ -24,10 +26,10 @@ echo.
 echo === Creating and installing loom-viewer Python package
 echo.
 
-cd .\python
 python setup.py install --force
-cd ..
 
 echo.
 echo   Done
 echo.
+
+cd ..

@@ -9,25 +9,27 @@ setup(
     version=__version__,
     packages=find_packages(),
     install_requires=[
-        'matplotlib',
-        'scikit-learn',
-        'h5py',
-        'pandas',
-        'scipy',
-        'numpy',
-        'progressbar2',
-        'requests',
-        'flask',
-        'flask-compress',
-        'gevent',
-        'PyMySQL'
+        "matplotlib",
+        "scikit-learn",
+        "h5py",
+        "pandas",
+        "scipy",
+        "numpy",
+        "progressbar2",
+        "requests",
+        "flask",
+        "flask-compress",
+        "gevent",
+        "PyMySQL",
+        "typing",
+        "mypy_extensions"
     ],
 
     # loom command
-    # scripts=['loom_viewer/loom'],
+    # scripts=["loom_viewer/loom"],
     entry_points={
-        'console_scripts': [
-            'loom = loom_viewer:main',
+        "console_scripts": [
+            "loom = loom_viewer:main",
         ],
     },
 

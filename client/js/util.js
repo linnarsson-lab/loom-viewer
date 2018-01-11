@@ -317,7 +317,6 @@ export function convertJSONarray(arr, name) {
 		data,
 		indexedVal,
 		uniques,
-		colorIndices,
 		min,
 		max,
 	} = arr;
@@ -337,7 +336,8 @@ export function convertJSONarray(arr, name) {
 	for (let i = 0; i < uniques.length; i++) {
 		uniquesColor[uniques[i].val] = i;
 	}
-	colorIndices.uniques = uniquesColor;
+
+	const colorIndices = { uniques: uniquesColor };
 
 	return {
 		name,

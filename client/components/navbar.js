@@ -125,7 +125,7 @@ export class NavbarView extends Component {
 					datasetTitle :
 					'Loom'}>
 				<div key='main-view' className='view-vertical'>
-					<div>
+					<div key='NavBarContainer'>
 						{realNavBar}
 						{dummyNavBar}
 					</div>

@@ -1,5 +1,7 @@
 #! /bin/bash
 
+cd python
+
 bold=$(tput bold)
 dim=$(tput dim)
 noformat=$(tput sgr0)
@@ -12,14 +14,14 @@ echo ""
 
 
 echo ""
-echo "=== Removing previous Python build files (if any)"
+echo "=== Removing previous Python build and dist folders (if any)"
 echo ""
 
-if [ -a ./python/build ]; then
-  rm -rv ./python/build
+if [ -a ./build ]; then
+  rm -rv ./build
 fi
-if [ -a ./python/dist ]; then
-  rm -rv ./python/dist
+if [ -a ./dist ]; then
+  rm -rv ./dist
 fi
 
 set -o nounset
@@ -32,10 +34,10 @@ echo ""
 echo "=== Creating and installing loom-viewer Python package"
 echo ""
 
-cd python
 python setup.py install --force
-cd ..
 
 echo ""
 echo "  Done"
 echo ""
+
+cd ..

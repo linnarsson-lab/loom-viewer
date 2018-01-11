@@ -413,7 +413,6 @@ function originalOrderAttribute(length) {
 		arrayType,
 		data,
 		colorIndices: {
-			mostFreq: {},
 			uniques,
 		},
 		uniques: [],

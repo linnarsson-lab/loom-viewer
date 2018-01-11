@@ -1,9 +1,11 @@
 import os
+import errno
 import h5py
 import numpy as np
 import scipy
 import logging
 from shutil import rmtree
+from typing import *
 
 from loompy import LoomConnection
 
@@ -17,7 +19,7 @@ class LoomTiles(object):
 		self._maxes = None  # type: np.ndarray
 		self._mins = None
 
-	def maxes(self):
+	def maxes(self) -> Any:
 		if self._maxes is None:
 			# colormax = np.percentile(data, 99, axis=1) + 0.1
 			# minFloat = np.finfo(float).eps;
@@ -42,7 +44,7 @@ class LoomTiles(object):
 			print(' done\n\n')
 		return self._maxes
 
-	def mins(self):
+	def mins(self) -> Any:
 		if self._mins is None:
 			# self._mins = self.ds.map([min], 0)[0]
 			logging.info('calculating & caching min values')
@@ -59,7 +61,7 @@ class LoomTiles(object):
 			print(' done\n\n')
 		return self._mins
 
-	def prepare_heatmap(self, truncate=False):
+	def prepare_heatmap(self, truncate: bool = False) -> None:
 		if self.ds._file.__contains__("tiles"):
 			logging.info("    Removing deprecated tile pyramid, use h5repack to reclaim space")
 			del self.ds._file['tiles']
@@ -78,7 +80,7 @@ class LoomTiles(object):
 		self.dz_get_zoom_tile(0, 0, 8, truncate)
 		print(" done\n\n")
 
-	def dz_zoom_range(self):
+	def dz_zoom_range(self) -> Tuple[int, int, int]:
 		"""
 		Determine the zoom limits for this file.
 
@@ -87,7 +89,7 @@ class LoomTiles(object):
 		"""
 		return (8, int(max(np.ceil(np.log2(self.ds.shape)))), int(max(np.ceil(np.log2(self.ds.shape))) + 8))
 
-	def dz_dimensions(self):
+	def dz_dimensions(self) -> Tuple[int, int]:
 		"""
 		Determine the total size of the deep zoom image.
 
@@ -97,7 +99,7 @@ class LoomTiles(object):
 		(y, x) = np.divide(self.ds.shape, 256) * 256 * pow(2, 8)
 		return (x, y)
 
-	def dz_tile_to_image(self, x, y, z, tile):
+	def dz_tile_to_image(self, x: int, y: int, z: int, tile: Any) -> Any:
 		# Crop outside matrix dimensions
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		(max_x, max_y) = (int(pow(2, z - zmid) * self.ds.shape[1]) - x * 256, int(pow(2, z - zmid) * self.ds.shape[0]) - y * 256)
@@ -111,7 +113,7 @@ class LoomTiles(object):
 			tile[max_y + 1:256, :] = 255
 		return scipy.misc.toimage(tile, cmin=0, cmax=255, pal=_viridis)
 
-	def dz_save_tile(self, x, y, z, tile, truncate=False):
+	def dz_save_tile(self, x: int, y: int, z: int, tile: Any, truncate: bool = False) -> Any:
 		(zmin, zmid, zmax) = self.dz_zoom_range()
 		if (
 			z < zmin or z > zmid or
@@ -154,7 +156,7 @@ class LoomTiles(object):
 			img.save(img_io, 'PNG', compress_level=4)
 		return img
 
-	def dz_merge_tile(self, tl, tr, bl, br):
+	def dz_merge_tile(self, tl: Any, tr: Any, bl: Any, br: Any) -> Any:
 		temp = np.empty((512, 512), dtype='float32')
 		temp[0:256, 0:256] = tl
 		temp[0:256, 256:512] = tr
@@ -227,7 +229,7 @@ class LoomTiles(object):
 		return tmax
 
 	# Returns a submatrix scaled to 0-255 range
-	def dz_get_zoom_tile(self, x, y, z, truncate=False):
+	def dz_get_zoom_tile(self, x: int, y: int, z: int, truncate: bool = False) -> Any:
 		"""
 		Create a 256x256 pixel matrix corresponding to the tile at x,y and z.
 
