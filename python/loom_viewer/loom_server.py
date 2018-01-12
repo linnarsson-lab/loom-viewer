@@ -176,9 +176,7 @@ def get_auth(request: Any) -> Any:
 @cache(expires=None)
 def send_dataset_list() -> Any:
 	(u, p) = get_auth(request)
-	dataset_list = app.loom_datasets.JSON_list_metadata(u, p)
-	if dataset_list is "":
-		return "", 404
+	dataset_list = app.loom_datasets.JSON_metadata_list(u, p)
 	return flask.Response(dataset_list, mimetype="application/json")
 
 
@@ -191,8 +189,6 @@ def send_fileinfo(project: str, filename: str) -> Any:
 		attributes = app.loom_datasets.JSON_attributes(project, filename)
 		if attributes is not None and attributes is not "":
 			return flask.Response(attributes, mimetype="application/json")
-	else:
-		logging.debug("Not authorised")
 	return "", 404
 
 
@@ -204,8 +200,7 @@ def get_clone(project: str, filename: str) -> Any:
 	if app.loom_datasets.authorize(project, u, p):
 		file_path = app.loom_datasets.get_absolute_file_path(project, filename)
 		return flask.send_file(file_path, mimetype='application/octet-stream')
-	else:
-		return "", 404
+	return "", 404
 
 
 # Get one or more rows of data (i.e. all the expression values for a single gene)
@@ -218,7 +213,7 @@ def send_row(project: str, filename: str, row_numbers: List[int]) -> Any:
 		rows = app.loom_datasets.JSON_rows(row_numbers, project, filename)
 		if rows is not None:
 			return flask.Response(rows, mimetype="application/json")
-	return "", 404
+	return flask.Response("[]", mimetype="application/json")
 
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
@@ -231,7 +226,7 @@ def send_col(project: str, filename: str, column_numbers: List[int]) -> Any:
 		columns = app.loom_datasets.JSON_columns(column_numbers, project, filename)
 		if columns is not None:
 			return flask.Response(columns, mimetype="application/json")
-	return "", 404
+	return flask.Response("[]", mimetype="application/json")
 
 
 #

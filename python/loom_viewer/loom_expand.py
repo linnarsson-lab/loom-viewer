@@ -20,7 +20,7 @@ from .loom_tiles import LoomTiles
 class LoomExpand(object):
 	"""
 		Methods for extracting data as zipped json files for fast access.
-		Deep Zoom handles expansion on its own (see LoomTiles in loom_tiles.py).
+		Deep Zoom handles expansion on its own (see LoomTiles).
 	"""
 	__slots__ = [
 		"project",
@@ -40,7 +40,7 @@ class LoomExpand(object):
 		self.callback_on_close = callback_on_close
 		self._closed = False
 		try:
-			logging.debug("opening LoomConnection")
+			logging.debug("LoomExpander: opening LoomConnection at %s", file_path)
 			self.ds = loompy.connect(file_path, "r")
 		except Exception as e:
 			logging.debug("Could not open loom file at %s, closing LoomExpand object", file_path)
@@ -65,6 +65,7 @@ class LoomExpand(object):
 			if self.callback_on_close is not None:
 				self.callback_on_close(self)
 			if self.close_connection_on_exit and self.ds is not None:
+				logging.debug("LoomExpander: closing LoomConnection at %s", file_path)
 				self.ds.close()
 			self.ds = None
 			self.project = None
@@ -221,6 +222,7 @@ class LoomExpand(object):
 			row_file_name = "%s/%06d.json.gzip" % (row_dir, i)
 			save_gzipped_json(row_file_name, row)
 			i += 1
+		logging.debug(" done")
 
 	def selected_rows(self, row_numbers: List[int]) -> str:
 		"""
@@ -260,6 +262,9 @@ class LoomExpand(object):
 					retRows.append(row)
 					save_gzipped_json_string(row_file_name, row)
 				retRows.append(comma)
+
+		if len(retRows) is 1:
+			return "[]"
 
 		# convert last "," to "]" to make it a valid JSON array
 		retRows[len(retRows) - 1] = "]"
@@ -308,6 +313,7 @@ class LoomExpand(object):
 			col_file_name = "%s/%06d.json.gzip" % (col_dir, i)
 			save_gzipped_json(col_file_name, col)
 			i += 1
+		logging.debug(" done")
 
 	def selected_columns(self, column_numbers: List[int]) -> str:
 		"""
@@ -351,6 +357,8 @@ class LoomExpand(object):
 					save_gzipped_json_string(col_file_name, column)
 				retCols.append(comma)
 
+		if len(retCols) is 1:
+			return "[]"
 		# convert last "," to "]" to make it a valid JSON array
 		retCols[len(retCols) - 1] = "]"
 		return "".join(retCols)

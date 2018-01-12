@@ -47,6 +47,8 @@ class LoomDatasets(object):
 				def_dir = os.path.join(os.path.expanduser("~"), "loom-datasets")
 			dataset_path = def_dir
 
+		dataset_path = os.path.abspath(dataset_path)
+
 		if not os.path.exists(dataset_path):
 			logging.info("Dataset folder does not exist, creating directory at:")
 			logging.info(dataset_path)
@@ -82,13 +84,13 @@ class LoomDatasets(object):
 
 			loom_files = self.projects.get(project, set())  # type: Set[str]
 
-			project_files_list = self.list_files_in_project(project)
-			all_file_paths = set([file_path for _, _, file_path in project_files_list])
+			project_files = self.files_in_project(project)
+			all_file_paths = {file_path for _, _, file_path in project_files}
 
 			# if a file_path is in the new set, but not in the old one, it's a new file
 			new_file_paths = all_file_paths - self.absolute_file_paths
 
-			for _, filename, file_path in project_files_list:
+			for _, filename, file_path in project_files:
 				logging.debug("       %s", filename)
 				if file_path in new_file_paths:
 					loom_files.add(filename)
@@ -98,17 +100,44 @@ class LoomDatasets(object):
 			# store updated file names in projects dictionary
 			self.projects[project] = loom_files
 
+	def is_abspath(self, path: str) -> bool:
+		return os.path.exists(os.path.abspath(path))
+
+	def get_absolute_file_path(self, project: str, filename: str) -> str:
+		"""
+		Returns the absolute path to the dataset.
+		Returns an empty string otherwise
+
+		Args:
+			project (string): 		Name of the project (e.g. "Midbrain")
+			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
+
+		Returns:
+			An absolute path string, or None if not authorized or file does not exist.
+		"""
+		absolute_path = os.path.join(self.dataset_path, project, filename)
+
+		if absolute_path in self.absolute_file_paths:
+			return absolute_path
+		else:
+			return ""
+
 	def split_from_abspath(self, file_path: str) -> Tuple[str, str, str]:
-		"""If file_path is an absolute filepath in dataset folder, extract into (project, real_filename, filename)"""
-		if file_path == os.path.abspath(file_path):
+		"""
+		If file_path is an absolute filepath in dataset folder,
+		extract into (project, filename, file_path).
+		Return None.
+		"""
+		if os.path.normpath(file_path) is os.path.abspath(file_path) and os.path.exists(file_path):
 			filename = os.path.basename(file_path)
 			project = os.path.basename(os.path.dirname(file_path))
 			dataset_path = os.path.basename(os.path.dirname(project))
 			if dataset_path is self.dataset_path:
 				return (project, filename, file_path)
-		return (None, None, file_path)
+		return None
 
-	def list_all_files(self) -> List[Tuple[str, str, str]]:
+	def list_all_files(self) -> Set[Tuple[str, str, str]]:
+		"""List all files in the dataset folder"""
 		projects = [x for x in os.listdir(self.dataset_path) if os.path.isdir(os.path.join(self.dataset_path, x)) and not x.startswith(".")]
 		loom_files = []
 		for project in projects:
@@ -118,42 +147,67 @@ class LoomDatasets(object):
 				for filename in project_files:
 					if filename.endswith(".loom"):
 						loom_files.append((project, filename, os.path.join(project_path, filename)))
-		return loom_files
+		return set(loom_files)
 
-	def list_matching_filenames(self, filename: str) -> List[Tuple[str, str, str]]:
-		projects = [x for x in os.listdir(self.dataset_path) if os.path.isdir(os.path.join(self.dataset_path, x)) and not x.startswith(".")]
-		matching_files = []
-		for project in projects:
-			project_path = os.path.join(self.dataset_path, project)
-			if os.path.exists(project_path):
-				project_files = os.listdir(project_path)
-				file_path = os.path.join(project_path, filename)
-				if os.path.isfile(file_path):
-					matching_files.append((project, filename, file_path))
-		return matching_files
+	def matching_filenames(self, filename: str) -> Set[Tuple[str, str, str]]:
+		"""
+		List all matching loom files in the dataset folder.
+		If filename is an absolute path, there will be at most one match (obviously)
 
-	def list_files_in_project(self, project: str) -> List[Tuple[str, str, str]]:
+		Args:
+			filename (string): 		Filename of the loom file to match against (e.g. "Midbrain_20160701.loom"). May be an absolute path
+
+		Returns:
+			A set of tuples of (project, filename, file_path), each of which are strings.
+		"""
+		if self.is_abspath(filename):
+			split_abspath = self.split_from_abspath(filename)
+			if split_abspath is not None:
+				return {split_abspath}
+			else:
+				return set()
+		else:
+			matching_files = []
+			if filename.endswith(".loom"):
+				projects = [x for x in os.listdir(self.dataset_path) if os.path.isdir(os.path.join(self.dataset_path, x)) and not x.startswith(".")]
+				for project in projects:
+					project_path = os.path.join(self.dataset_path, project)
+					if os.path.exists(project_path):
+						project_files = os.listdir(project_path)
+						file_path = os.path.join(project_path, filename)
+						if os.path.isfile(file_path):
+							matching_files.append((project, filename, file_path))
+			return set(matching_files)
+
+	def files_in_project(self, project: str) -> Set[Tuple[str, str, str]]:
+		"""
+		List all loom files for the given project in the dataset folder.
+
+		Returns:
+			A set of tuples of (project, filename, file_path), each of which are strings.
+		"""
 		project_path = os.path.join(self.dataset_path, project)
 		if os.path.exists(project_path):
 			project_files = os.listdir(project_path)
-			loom_files = [(project, filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")]
-			return loom_files
+			return {(project, filename, os.path.join(project_path, filename)) for filename in project_files if filename.endswith(".loom")}
 		else:
-			return []
+			return set()
 
 	def authorize(self, project: str, username: str, password: str, mode: str ="read") -> bool:
 		"""
 		Check authorization for the specific project and credentials
+
+		Write access will only be allowed if the credentials match
+		an existing auth.txt file (with 'w' flag for the user).
+		Read access will be allowed if the credentials are valid,
+		or if there is no auth.txt file in the project directory
+		and the requested access is read-only.
 
 		Args:
 			project (str):		Project name
 			username (str):	Username
 			password (str):	Password
 			mode (str):			"read" or "write"
-
-		Read access will be allowed if the credentials are valid, or if there is no auth.txt file
-		in the project directory. Write access will only be allowed if the credentials match
-		an existing auth.txt file (with 'w' flag for the user).
 
 		Returns:
 			True (authorised) or False (not authorised).
@@ -192,25 +246,6 @@ class LoomDatasets(object):
 			if username in users and users[username][0] == password and users[username][1] == "w":
 				return True
 		return False
-
-	def get_absolute_file_path(self, project: str, filename: str) -> str:
-		"""
-		Returns the absolute path to the dataset.
-		Returns an empty string otherwise
-
-		Args:
-			project (string): 		Name of the project (e.g. "Midbrain")
-			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
-
-		Returns:
-			An absolute path string, or None if not authorized or file does not exist.
-		"""
-		absolute_path = os.path.join(self.dataset_path, project, filename)
-
-		if absolute_path in self.absolute_file_paths:
-			return absolute_path
-		else:
-			return ""
 
 	def connect(self, project: str, filename: str, mode: str="r+") -> LoomConnection:
 		"""
@@ -258,16 +293,24 @@ class LoomDatasets(object):
 	def _release_expander(self, expander: LoomExpand) -> None:
 		"""
 		Release the lock associated with an acquired expander.
-		Called automatically from within the expander when it is closed
+		Called automatically from within the expander when it is closed.
 		"""
 		if not expander.closed:
 			absolute_file_path = expander.ds.filename
 			lock = self.dataset_locks[absolute_file_path]
 			lock.release()
 
-	def JSON_list_metadata(self, username: str = None, password: str = None) -> str:
+	def JSON_metadata_list(self, username: str = None, password: str = None) -> str:
 		"""
-		Return a JSON string listing metadata for all loom files authorized to see.
+		Generates expanded metadata for all (accessible) loom files
+		and returns a JSON serialised string of the listed metadata
+
+		Args:
+			username (str):	Username
+			password (str):	Password
+
+		Returns:
+			a JSON string listing metadata for all loom files authorized to see.
 		"""
 		dataset_path = self.dataset_path
 		logging.debug("Listing datasets in %s", dataset_path)
@@ -276,22 +319,21 @@ class LoomDatasets(object):
 		metadata_list = ["["]
 		comma = ","
 		for project in self.projects:
-			if not self.authorize(project, username, password):
-				continue
-			logging.debug("  project: %s", project)
-			for filename in self.projects[project]:
-				logging.debug("    filename: %s", filename)
-				# See if metadata was already loaded before
-				key = "%s/%s" % (project, filename)
-				metadata = self.metadata_entries.get(key, "")
-				if metadata is "":
-					metadata = self.JSON_metadata(project, filename)
-				if metadata is not None:
-					self.metadata_entries[key] = metadata
-					metadata_list.append(metadata)
-					metadata_list.append(comma)
+			if self.authorize(project, username, password):
+				logging.debug("  project: %s", project)
+				for filename in self.projects[project]:
+					logging.debug("    filename: %s", filename)
+					# See if metadata was already loaded before
+					key = "%s/%s" % (project, filename)
+					metadata = self.metadata_entries.get(key, "")
+					if metadata is "":
+						metadata = self.JSON_metadata(project, filename)
+					if metadata is not None:
+						self.metadata_entries[key] = metadata
+						metadata_list.append(metadata)
+						metadata_list.append(comma)
 		if len(metadata_list) is 1:
-			return ""
+			return "[]"
 
 		# convert last "," to "]" to make it a valid JSON array
 		metadata_list[len(metadata_list) - 1] = "]"
@@ -299,17 +341,15 @@ class LoomDatasets(object):
 
 	def JSON_metadata(self, project: str, filename: str, truncate: bool = False) -> str:
 		"""
-		Get metadata for an individual dataset.
+		Generates expanded metadata for a loom file.
 
-		Generates expanded metadata if not present yet
-
-		If the OS indicates the loom file was modified,
-		all previously expanded files are deleted, and
-		a new metadata file is generated.
+		Args:
+			project (string): 		Name of the project (e.g. "Midbrain")
+			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
+			truncate (bool):			Whether to overwrite previously expanded metadata files (defaults to False)
 
 		Returns:
-			- JSON-serialised string of metadata,
-			- None if invalid or unauthorised path to loom file.
+			a string of the JSON serialision of the metadata for the loom file at project/filename.
 		"""
 		absolute_file_path = self.get_absolute_file_path(project, filename)
 		if absolute_file_path is "":
@@ -355,7 +395,15 @@ class LoomDatasets(object):
 
 	def JSON_attributes(self, project: str, filename: str, truncate: bool = False) -> str:
 		"""
-		Gets the attributes of an individual dataset.
+		Generates expanded attributes for a loom file.
+
+		Args:
+			project (string): 		Name of the project (e.g. "Midbrain")
+			filename (string): 		Filename of the loom file (e.g. "Midbrain_20160701.loom")
+			truncate (bool):			Whether to overwrite previously expanded attribute files (defaults to False)
+
+		Returns:
+			a string of the JSON serialision of the attributes for the loom file at project/filename.
 		"""
 		absolute_file_path = self.get_absolute_file_path(project, filename)
 		if absolute_file_path is "":
@@ -396,6 +444,18 @@ class LoomDatasets(object):
 		return attributes
 
 	def JSON_rows(self, row_numbers: List[int], project: str, filename: str) -> str:
+		"""
+		Generates expanded rows for a loom file.
+
+		Args:
+			row_numbers (list of integers):	List of the row numbers to expand.
+			project (string): 					Name of the project (e.g. "Midbrain")
+			filename (string): 					Filename of the loom file (e.g. "Midbrain_20160701.loom")
+
+		Returns:
+			a string of the JSON serialision of the selected row numbers for the loom file at project/filename.
+		"""
+
 		absolute_file_path = self.get_absolute_file_path(project, filename)
 		if absolute_file_path is "":
 			logging.debug("Invalid or inaccessible path to loom file")
@@ -404,7 +464,6 @@ class LoomDatasets(object):
 		# make sure all rows are included only once
 		row_numbers = list(set(row_numbers))
 		if len(row_numbers) is 0:
-			logging.debug("No rows passed, returning empty array")
 			return "[]"
 
 		row_numbers.sort()
@@ -439,17 +498,71 @@ class LoomDatasets(object):
 			if len(row_numbers) is len(unexpanded):
 				# all rows were newly expanded
 				return expanded_rows
+			# remember, expanded_rows is a string already!
 			retRows.append(expanded_rows[1:])
 
 		return "".join(retRows)
 
 	def JSON_columns(self, column_numbers: List[int], project: str, filename: str) -> str:
-		expand = self._acquire_expander(project, filename)
-		if expand is None:
+		"""
+		Generates expanded columns for a loom file.
+
+		Args:
+			column_numbers (list of integers):	List of the row numbers to expand.
+			project (string): 					Name of the project (e.g. "Midbrain")
+			filename (string): 					Filename of the loom file (e.g. "Midbrain_20160701.loom")
+
+		Returns:
+			a string of the JSON serialision of the selected column numbers for the loom file at project/filename.
+		"""
+
+		absolute_file_path = self.get_absolute_file_path(project, filename)
+		if absolute_file_path is "":
+			logging.debug("Invalid or inaccessible path to loom file")
 			return None
-		expanded_columns = expand.selected_columns(column_numbers)
-		expand.close(True)
-		return expanded_columns
+
+		# make sure all columns are included only once
+		column_numbers = list(set(column_numbers))
+
+		if len(column_numbers) is 0:
+			return "[]"
+
+		column_numbers.sort()
+		retCols = ["["]
+		comma = ","
+
+		unexpanded = []
+
+		col_dir = "%s.cols" % (absolute_file_path)
+		if os.path.isdir(col_dir):
+			logging.debug("%s.cols/ directory detected, loading expanded columns", filename)
+
+		for i in column_numbers:
+			col_file_name = "%s/%06d.json.gzip" % (col_dir, i)
+			if os.path.exists(col_file_name):
+				logging.debug(col_file_name)
+				retCols.append(load_gzipped_json_string(col_file_name))
+				retCols.append(comma)
+			else:
+				unexpanded.append(i)
+
+		if len(unexpanded) is 0:
+			retCols[len(retCols) - 1] = "]"
+		elif len(unexpanded) > 0:
+			logging.debug("acquiring expander")
+			expand = self._acquire_expander(project, filename)
+			if expand is None:
+				return None
+			expanded_cols = expand.selected_columns(unexpanded)
+			logging.debug("closing expander")
+			expand.close(True)
+			if len(column_numbers) is len(unexpanded):
+				# all columns were newly expanded
+				return expanded_cols
+			# remember, expanded_cols is a string already!
+			retCols.append(expanded_cols[1:])
+
+		return "".join(retCols)
 
 	def tile(self, project: str, filename: str, truncate: bool = False) -> None:
 		absolute_path = self.get_absolute_file_path(project, filename)
