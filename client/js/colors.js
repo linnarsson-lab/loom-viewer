@@ -161,7 +161,6 @@ function blackColor() {
 const blackPalette = ['black'];
 
 export function getPalette(colorMode, colorAttr) {
-	const totalCategories = colorAttr && constrain(colorAttr.uniques.length + 1, 1, hsluvManual.length) || 1;
 	switch (colorMode) {
 		case 'Heatmap':
 		case 'Flame':
@@ -169,9 +168,14 @@ export function getPalette(colorMode, colorAttr) {
 			return viridis;
 		case 'Categorical':
 		case 'Stacked':
-			return totalCategories > 1 ?
-				hsluvManual.slice(0, totalCategories) :
-				blackPalette;
+			if (colorAttr) {
+				const totalCategories = constrain(colorAttr.uniques.length + 1, 1, hsluvManual.length);
+				return totalCategories > 1 ?
+					hsluvManual.slice(0, totalCategories) :
+					blackPalette;
+			} else {
+				return hsluvManual;
+			}
 		case 'Bar':
 		case 'Box':
 		case 'Text':
@@ -240,17 +244,17 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val <= clipMin) {
-							return minColor;
-						} else {
-							const cIdx = ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
+						(val) => {
+							if (val >= clipMax) {
+								return maxColor;
+							} else if (val <= clipMin) {
+								return minColor;
+							} else {
+								const cIdx = ((val - clipMin) * colorIdxScale) | 0;
+								return palette[cIdx];
+							}
 						}
-					}
-				);
+					);
 			} else {
 				// skip using special color for the zero-value for
 				// data ranges that have negative values and/or
@@ -270,17 +274,17 @@ export function attrToColorFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return maxColor;
-						} else if (val < clipMin) {
-							return minColor;
-						} else {
-							const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
-							return palette[cIdx];
+						(val) => {
+							if (val >= clipMax) {
+								return maxColor;
+							} else if (val < clipMin) {
+								return minColor;
+							} else {
+								const cIdx = 1 + ((val - clipMin) * colorIdxScale) | 0;
+								return palette[cIdx];
+							}
 						}
-					}
-				);
+					);
 			}
 		case 'Text':
 		case 'Box':
@@ -350,16 +354,16 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 0;
-						} else {
-							return ((val - clipMin) * colorIdxScale) | 0;
+						(val) => {
+							if (val >= clipMax) {
+								return paletteEnd;
+							} else if (val <= clipMin) {
+								return 0;
+							} else {
+								return ((val - clipMin) * colorIdxScale) | 0;
+							}
 						}
-					}
-				);
+					);
 			} else {
 				// skip using special color for the zero-value for
 				// data ranges that have negative values and/or
@@ -377,16 +381,16 @@ export function attrToColorIndexFactory(colorAttr, colorMode, settings) {
 						}
 					}
 				) : (
-					(val) => {
-						if (val >= clipMax) {
-							return paletteEnd;
-						} else if (val <= clipMin) {
-							return 1;
-						} else {
-							return 1 + ((val - clipMin) * colorIdxScale) | 0;
+						(val) => {
+							if (val >= clipMax) {
+								return paletteEnd;
+							} else if (val <= clipMin) {
+								return 1;
+							} else {
+								return 1 + ((val - clipMin) * colorIdxScale) | 0;
+							}
 						}
-					}
-				);
+					);
 			}
 		case 'Text':
 		case 'Bar':
