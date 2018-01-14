@@ -296,8 +296,7 @@ class LoomDatasets(object):
 		Called automatically from within the expander when it is closed.
 		"""
 		if not expander.closed:
-			absolute_file_path = expander.ds.filename
-			lock = self.dataset_locks[absolute_file_path]
+			lock = self.dataset_locks[expander.file_path]
 			lock.release()
 
 	def JSON_metadata_list(self, username: str = None, password: str = None) -> str:

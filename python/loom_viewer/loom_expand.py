@@ -65,12 +65,9 @@ class LoomExpand(object):
 			if self.callback_on_close is not None:
 				self.callback_on_close(self)
 			if self.close_connection_on_exit and self.ds is not None:
-				logging.debug("LoomExpander: closing LoomConnection at %s", file_path)
+				logging.debug("LoomExpander: closing LoomConnection at %s", self.file_path)
 				self.ds.close()
 			self.ds = None
-			self.project = None
-			self.filename = None
-			self.file_path = None
 			self._closed = True
 
 	@property
@@ -80,7 +77,10 @@ class LoomExpand(object):
 	def clear_metadata(self) -> None:
 		md_filename = "%s.file_md.json.gzip" % (self.file_path)
 		if os.path.isfile(md_filename):
+			logging.debug("LoomExpander: removing %s", md_filename)
 			os.remove(md_filename)
+		else:
+			logging.debug("LoomExpander: cannot remove %s, does not exist", md_filename)
 
 	def metadata(self, truncate: bool = False) -> str:
 		"""
@@ -137,7 +137,10 @@ class LoomExpand(object):
 	def clear_attributes(self) -> None:
 		attrs_name = "%s.attrs.json.gzip" % (self.file_path)
 		if os.path.isfile(attrs_name):
+			logging.debug("LoomExpander: removing %s", attrs_name)
 			os.remove(attrs_name)
+		else:
+			logging.debug("LoomExpander: cannot remove %s, does not exist", attrs_name)
 
 	def attributes(self, truncate: bool = False) -> str:
 		"""
@@ -181,7 +184,10 @@ class LoomExpand(object):
 	def clear_rows(self) -> None:
 		row_dir = "%s.rows" % (self.file_path)
 		if os.path.isdir(row_dir):
+			logging.debug("LoomExpander: removing %s", row_dir)
 			rmtree(row_dir)
+		else:
+			logging.debug("LoomExpander: cannot remove %s, does not exist", row_dir)
 
 	def rows(self, truncate: bool = False) -> None:
 		row_dir = "%s.rows" % (self.file_path)
@@ -273,7 +279,10 @@ class LoomExpand(object):
 	def clear_columns(self) -> None:
 		col_dir = "%s.cols" % (self.file_path)
 		if os.path.isdir(col_dir):
+			logging.debug("LoomExpander: removing %s", col_dir)
 			rmtree(col_dir)
+		else:
+			logging.debug("LoomExpander: cannot remove %s, does not exist", col_dir)
 
 	def columns(self, truncate: bool = False) -> None:
 		col_dir = "%s.cols" % (self.file_path)
