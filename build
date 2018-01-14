@@ -3,7 +3,7 @@
 bold=$(tput bold)
 noformat=$(tput sgr0)
 
-./build_client
+./build_client ${1:-dev}
 build_status=$?
 if [ $build_status == 0 ]; then
   ./build_egg
