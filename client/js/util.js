@@ -24,14 +24,6 @@ export function logProject(x) {
 	return x >= 0 ? log2(1 + x) : -log2(1 - x);
 }
 
-export function logProjectArray(data) {
-	for (let i = 0; i < data.length; i++) {
-		let v = data[i];
-		data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
-	}
-	return data;
-}
-
 export function clipRange(attr, settings) {
 	let {
 		min,

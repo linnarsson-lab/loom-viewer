@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
-import { scatterPlot } from 'plotters/scatterplot';
+import { memoizedScatterPlot } from 'plotters/scatterplot';
 import { Canvas } from 'components/canvas';
 import { Remount } from 'components/remount';
 
@@ -63,30 +63,11 @@ class SinglePlot extends Component {
 				},
 			});
 		};
-
+		const scatterPlot = memoizedScatterPlot();
+		scatterPlot(attrs, indices, settings);
 		this.state = {
-			paint: scatterPlot(attrs, indices, settings),
+			scatterPlot,
 		};
-	}
-
-	componentWillReceiveProps(nextProps) {
-		const {
-			attrs,
-			indices,
-			settings,
-			plotNr,
-		} = nextProps;
-		const { props } = this;
-		if (plotNr !== props.plotNr ||
-			indices !== props.indices ||
-			settings !== props.settings ||
-			changedAttrs(attrs, props.attrs, settings)) {
-			this.setState(() => {
-				return {
-					paint: scatterPlot(attrs, indices, settings),
-				};
-			});
-		}
 	}
 
 	shouldComponentUpdate(nextProps) {
@@ -116,12 +97,19 @@ class SinglePlot extends Component {
 
 	render() {
 		const {
+			attrs,
+			indices,
 			plotNr,
 			selectedPlot,
+			settings,
 			totalPlots,
 			width,
 			height,
 		} = this.props;
+
+		const {
+			scatterPlot,
+		} = this.state;
 
 		return (
 			<button
@@ -138,7 +126,7 @@ class SinglePlot extends Component {
 				onClick={this.selectTab}>
 				<Canvas
 					paint={plotNr < totalPlots ?
-						this.state.paint :
+						scatterPlot(attrs, indices, settings) :
 						null
 					}
 					width={width}

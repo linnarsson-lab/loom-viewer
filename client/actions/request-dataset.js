@@ -399,13 +399,11 @@ function originalOrderAttribute(length) {
 				'uint32' :
 				'float64';
 
-	let data = new (arrayConstr(arrayType))(length),
-		uniques = {};
+	let data = new (arrayConstr(arrayType))(length);
 
 	let i = length;
 	while (i--) {
 		data[i] = i;
-		uniques[i] = i;
 	}
 
 	return {
@@ -413,7 +411,7 @@ function originalOrderAttribute(length) {
 		arrayType,
 		data,
 		colorIndices: {
-			uniques,
+			uniques: {},
 		},
 		uniques: [],
 		allUnique: true,
