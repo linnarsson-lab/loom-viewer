@@ -65,26 +65,37 @@ def expand_command(
 	datasets: LoomDatasets,
 	filenames: List[str],
 	projects: List[str],
+	all_files: bool,
+	clear: bool,
 	metadata: bool,
 	attributes: bool,
 	rows: bool,
 	cols: bool,
 	truncate: bool
 ) -> None:
-	if not (metadata or attributes or rows or cols):
+	if not (clear or metadata or attributes or rows or cols):
 		logging.info("Must explicitly state what to expand!")
 		return
 
 	matches = set()  # type: Set[Tuple[str, str, str]]
-	for filename in filenames:
-		matches |= datasets.matching_filenames(filename)
 
-	for project in projects:
-		matches |= datasets.files_in_project(project)
+	if all_files:
+		matches = datasets.list_all_files()
+	else:
+		for filename in filenames:
+			matches |= datasets.matching_filenames(filename)
+
+		for project in projects:
+			matches |= datasets.files_in_project(project)
 
 	for project, filename, file_path in matches:
 		try:
 			expand = LoomExpand(project, filename, file_path)
+			if clear:
+				expand.clear_metadata()
+				expand.clear_attributes()
+				expand.clear_rows()
+				expand.clear_columns()
 			if metadata:
 				expand.metadata(truncate)
 			if attributes:
@@ -196,27 +207,33 @@ def main() -> None:
 			help="""Loom file(s) to expand.
 			Expands all files matching the provided file names.
 			To avoid this, use an absolute path to specify a single file.
+			When combined with --clear it clears all expanded files instead.
 			""",
 			nargs='*',
 		)
 
 		expand_parser.add_argument(
 			"project",
-			help="Project(s) for which to expand all files.",
+			help="Project(s) for which to expand all files (or clear expansion with --clear).",
 			nargs='*',
 		)
 
 		expand_parser.add_argument(
-			"-a"
 			"--all",
-			help="Expand all loom files.",
+			help="Expand all loom files (or clear expansion with --clear).",
+			action="store_true"
+		)
+
+		expand_parser.add_argument(
+			"--clear",
+			help="Remove previously expanded files.",
 			action="store_true"
 		)
 
 		expand_parser.add_argument(
 			"-t",
 			"--truncate",
-			help="Remove previously expanded files if present (False by default)",
+			help="Replace previously expanded files if present (False by default). Only does something in combination with expansion (-m, -a, -r or -c).",
 			action="store_true"
 		)
 
@@ -265,7 +282,7 @@ def main() -> None:
 		if args.command == "tile":
 			tile_command(datasets, args.file, args.project, args.all, args.truncate)
 		elif args.command == "expand":
-			expand_command(datasets, args.file, args.project, args.metadata, args.attributes, args.rows, args.cols, args.truncate)
+			expand_command(datasets, args.file, args.project, args.all, args.clear, args.metadata, args.attributes, args.rows, args.cols, args.truncate)
 		else:  # args.command == "server":
 			start_server(datasets.dataset_path, args.show_browser, args.port, args.debug)
 
