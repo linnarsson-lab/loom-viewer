@@ -225,6 +225,7 @@ def main() -> None:
 		)
 
 		expand_parser.add_argument(
+			"-C",
 			"--clear",
 			help="Remove previously expanded files.",
 			action="store_true"
