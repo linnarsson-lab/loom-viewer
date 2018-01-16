@@ -177,7 +177,7 @@ def main() -> None:
 		)
 
 		tile_parser.add_argument(
-			"project",
+			"--project",
 			help="Project(s) for which to expand all files.",
 			nargs='*',
 		)
@@ -215,7 +215,7 @@ def main() -> None:
 		)
 
 		expand_parser.add_argument(
-			"project",
+			"--project",
 			help="Project(s) for which to expand all files (or clear expansion with --clear).",
 			nargs='*',
 		)
