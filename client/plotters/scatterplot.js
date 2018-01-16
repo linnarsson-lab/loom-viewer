@@ -46,9 +46,7 @@ const { log2 } = Math;
 
 export function memoizedScatterPlot() {
 
-	const convertColorData = mConvertColorData(),
-		convertCoordinates = mConvertCoordinates(),
-		scaleToContext = mScaleToContext();
+	let m = memoisedVars();
 
 	return (attrs, indices, settings) => {
 		// only render if all required settings are supplied
@@ -73,13 +71,13 @@ export function memoizedScatterPlot() {
 		const dataToIdx = attrToColorIndexFactory(colorAttr, colorMode, settings);
 
 		// Convert color data to lookup indices for sprites
-		const cIdx = convertColorData(colorAttr, indices, dataToIdx);
+		const cIdx = convertColorData(m.convertColorData, colorAttr, indices, dataToIdx);
 
 		// Convert x, y to pixel positions ==
 		const {
 			xData,
 			yData,
-		} = convertCoordinates(xAttr, yAttr, indices, settings.x.jitter, settings.y.jitter);
+		} = convertCoordinates(m.convertCoordinates, xAttr, yAttr, indices, settings.x.jitter, settings.y.jitter);
 
 		return (context) => {
 
@@ -94,7 +92,7 @@ export function memoizedScatterPlot() {
 			// Create both sprites and Uint32 Arrays of pixel data
 			const renderedSprites = prepareSprites(colorMode, colorAttr, spriteLayout);
 
-			let xy = scaleToContext(xData, yData, xAttr, yAttr, spriteLayout, settings);
+			let xy = scaleToContext(m.scaleToContext, xData, yData, xAttr, yAttr, spriteLayout, settings);
 
 			// Sort for tiling purposes. Render zero values first, and then from
 			// back-to-front. This has to be done after jittering to maintain the
@@ -115,6 +113,14 @@ export function memoizedScatterPlot() {
 
 			context.restore();
 		};
+	};
+}
+
+function memoisedVars() {
+	return {
+		convertColorData: mConvertColorData(),
+		convertCoordinates: mConvertCoordinates(),
+		scaleToContext: mScaleToContext(),
 	};
 }
 
@@ -194,33 +200,35 @@ function calcLayout(context, colorAttr, settings) {
 
 
 function mConvertColorData() {
-	let _colorAttr,
-		_indices,
-		_dataToIdx,
-		_cIdx;
-
-	return (colorAttr, indices, dataToIdx) => {
-		if (colorAttr !== _colorAttr ||
-			indices !== _indices ||
-			dataToIdx !== _dataToIdx
-		) {
-			const colData = attrSubset(colorAttr, indices);
-			// Largest palettes are 256 entries in size,
-			// so we can safely Uint8Array for cIdx
-			let cIdx = new Uint8Array(colData.length);
-			let i = cIdx.length;
-			while (i--) {
-				cIdx[i] = dataToIdx(colData[i]);
-			}
-
-			// update memoized variables
-			_colorAttr = colorAttr;
-			_indices = indices;
-			_dataToIdx = dataToIdx;
-			_cIdx = cIdx;
-		}
-		return _cIdx;
+	return {
+		colorAttr: {},
+		indices: [],
+		dataToIdx: nullFunc,
+		cIdx: new Uint8Array(0),
 	};
+}
+
+function convertColorData(m, colorAttr, indices, dataToIdx) {
+	if (colorAttr !== m.colorAttr ||
+		indices !== m.indices ||
+		dataToIdx !== m.dataToIdx
+	) {
+		const colData = attrSubset(colorAttr, indices);
+		// Largest palettes are 256 entries in size,
+		// so we can safely Uint8Array for cIdx
+		let cIdx = new Uint8Array(colData.length);
+		let i = cIdx.length;
+		while (i--) {
+			cIdx[i] = dataToIdx(colData[i]);
+		}
+
+		// update memoized variables
+		m.colorAttr = colorAttr;
+		m.indices = indices;
+		m.dataToIdx = dataToIdx;
+		m.cIdx = cIdx;
+	}
+	return m.cIdx;
 }
 
 
@@ -230,71 +238,73 @@ const {
 const TAU = 2 * PI;
 
 function mConvertCoordinates() {
-	let _xAttr,
-		_yAttr,
-		_indices,
-		_xJitter,
-		_yJitter,
-		_xData,
-		_yData;
+	return {
+		xAttr: {},
+		yAttr: {},
+		indices: [],
+		xJitter: false,
+		yJitter: false,
+		xData: [],
+		yData: [],
+		convertXAttr: mConvertAttr(),
+		convertYAttr: mConvertAttr(),
+	};
+}
 
-	const _convertXAttr = mConvertAttr(),
-		_convertYAttr = mConvertAttr();
-	return (xAttr, yAttr, indices, xJitter, yJitter) => {
-		if (
-			_xAttr !== xAttr ||
-			_yAttr !== yAttr ||
-			_indices !== indices ||
-			_xJitter !== xJitter ||
-			_yJitter !== yJitter
-		) {
-			// If we have an string array, convert it
-			// to numbers as a form of categorization.
-			// Similarly, if we need to jitter the data
-			// we must ensure the data array is a floating
-			// point typed array, not an integer array.
-			_xData = _convertXAttr(xAttr, indices, xJitter);
-			_yData = _convertYAttr(yAttr, indices, yJitter);
+function convertCoordinates(m, xAttr, yAttr, indices, xJitter, yJitter) {
+	if (
+		m.xAttr !== xAttr ||
+		m.yAttr !== yAttr ||
+		m.indices !== indices ||
+		m.xJitter !== xJitter ||
+		m.yJitter !== yJitter
+	) {
+		// If we have an string array, convert it
+		// to numbers as a form of categorization.
+		// Similarly, if we need to jitter the data
+		// we must ensure the data array is a floating
+		// point typed array, not an integer array.
+		m.xData = convertAttr(m.convertXAttr, xAttr, indices, xJitter);
+		m.yData = convertAttr(m.convertYAttr, yAttr, indices, yJitter);
 
-			// Jitter if requested
+		// Jitter if requested
 
-			const {
-				xJitterScale,
-				yJitterScale,
-			} = jitterScale(xAttr, yAttr);
+		const {
+			xJitterScale,
+			yJitterScale,
+		} = jitterScale(xAttr, yAttr);
 
-			let i = _xData.length;
-			if (xJitter && yJitter) {
-				// if jittering both axes, do so in a
-				// circle around the data
-				const randomness = rndNormArray(i << 1);
-				while (i--) {
-					const r = randomness[(i << 1) + 1];
-					const t = TAU * randomness[i << 1];
-					_xData[i] += xJitterScale * r * sin(t);
-					_yData[i] += yJitterScale * r * cos(t);
-				}
-			} else if (xJitter) {
-				const randomness = rndNormArray(i);
-				while (i--) {
-					_xData[i] += xJitterScale * randomness[i];
-				}
-			} else if (yJitter) {
-				const randomness = rndNormArray(i);
-				while (i--) {
-					_yData[i] += yJitterScale * randomness[i];
-				}
+		let i = m.xData.length;
+		if (xJitter && yJitter) {
+			// if jittering both axes, do so in a
+			// circle around the data
+			const randomness = rndNormArray(i << 1);
+			while (i--) {
+				const r = randomness[(i << 1) + 1];
+				const t = TAU * randomness[i << 1];
+				m.xData[i] += xJitterScale * r * sin(t);
+				m.yData[i] += yJitterScale * r * cos(t);
 			}
-			_xAttr = xAttr;
-			_yAttr = yAttr;
-			_indices = indices;
-			_xJitter = xJitter;
-			_yJitter = yJitter;
+		} else if (xJitter) {
+			const randomness = rndNormArray(i);
+			while (i--) {
+				m.xData[i] += xJitterScale * randomness[i];
+			}
+		} else if (yJitter) {
+			const randomness = rndNormArray(i);
+			while (i--) {
+				m.yData[i] += yJitterScale * randomness[i];
+			}
 		}
-		return {
-			xData: _xData,
-			yData: _yData,
-		};
+		m.xAttr = xAttr;
+		m.yAttr = yAttr;
+		m.indices = indices;
+		m.xJitter = xJitter;
+		m.yJitter = yJitter;
+	}
+	return {
+		xData: m.xData,
+		yData: m.yData,
 	};
 }
 
@@ -320,38 +330,41 @@ function jitterScale(xAttr, yAttr) {
 }
 
 function mConvertAttr() {
-	let _attr,
-		_indices,
-		_jitter,
-		_arraySubset;
-	return (attr, indices, jitter) => {
-		if (
-			attr !== _attr ||
-			indices !== _indices ||
-			jitter !== _jitter
-		) {
-			// In practice, having text data that is not indexed
-			// only happens if all strings are unique,
-			// so it's kind of pointless
-			if (attr.arrayType === 'string' && !attr.indexedVal) {
-				let i = indices.length;
-				let retVal = new Float32Array(i);
-				while (i--) {
-					retVal[i] = indices[i] + 1;
-				}
-				return retVal;
-			}
-			// If we jitter later, we need to return a float32,
-			// Otherwise we can keep the more compact typed arrays
-			// if our data is integers
-			const convertedType = jitter ? 'float32' : attr.arrayType;
-			_arraySubset = arraySubset(attr.data, convertedType, indices);
-			_attr = attr;
-			_indices = indices;
-			_jitter = jitter;
-		}
-		return _arraySubset.slice(0);
+	return {
+		attr: {},
+		indices: [],
+		jitter: false,
+		arraySubset: [],
 	};
+}
+
+function convertAttr(m, attr, indices, jitter) {
+	if (
+		attr !== m.attr ||
+		indices !== m.indices ||
+		jitter !== m.jitter
+	) {
+		// In practice, having text data that is not indexed
+		// only happens if all strings are unique,
+		// so it's kind of pointless
+		if (attr.arrayType === 'string' && !attr.indexedVal) {
+			let i = indices.length;
+			let retVal = new Float32Array(i);
+			while (i--) {
+				retVal[i] = indices[i] + 1;
+			}
+			return retVal;
+		}
+		// If we jitter later, we need to return a float32,
+		// Otherwise we can keep the more compact typed arrays
+		// if our data is integers
+		const convertedType = jitter ? 'float32' : attr.arrayType;
+		m.arraySubset = arraySubset(attr.data, convertedType, indices);
+		m.attr = attr;
+		m.indices = indices;
+		m.jitter = jitter;
+	}
+	return m.arraySubset.slice(0);
 }
 
 function logProjectArray(data) {
@@ -367,85 +380,88 @@ function logProjectArray(data) {
 // as `((y & 0xFFFF)<<16) + (x & 0xFFFF)`. Supposedly faster than using
 // separate uint16 arrays. Also sorts a bit quicker.
 function mScaleToContext() {
-	let _xMin,
-		_yMin,
-		_xMargin,
-		_yMargin,
-		_xScale,
-		_yScale,
-		_radius,
-		_xy;
-	return (xData, yData, xAttr, yAttr, spriteLayout, settings) => {
-		let xMin = xAttr.min,
-			xMax = xAttr.max,
-			yMin = yAttr.min,
-			yMax = yAttr.max;
-
-		if (settings.x.logScale) {
-			xData = logProjectArray(xData);
-			xMin = logProject(xMin);
-			xMax = logProject(xMax);
-		}
-		if (settings.y.logScale) {
-			yData = logProjectArray(yData);
-			yMin = logProject(yMin);
-			yMax = logProject(yMax);
-		}
-
-		const xMargin = (xMax - xMin) * 0.0625;
-		const yMargin = (yMax - yMin) * 0.0625;
-
-		const {
-			width,
-			height,
-			radius,
-		} = spriteLayout;
-
-		// we add xMargin/yMargin in the divisor here
-		// (and compensate further on with 0.5) to
-		// *also* add a margin *before* the normalization.
-		// We also subtract the radius to avoid any points
-		// from going over the edge of the canvas.
-		let xScale = ((width - 4 * radius)) / (xMax - xMin + xMargin);
-		let yScale = ((height - 4 * radius)) / (yMax - yMin + yMargin);
-
-		let xy = _xy;
-		if (xData && (!_xy || xData.length !== _xy.length)) {
-			xy = new Uint32Array(xData.length);
-		}
-
-		if (
-			xy && (
-				_xMin !== xMin ||
-				_yMin !== yMin ||
-				_xMargin !== xMargin ||
-				_yMargin !== yMargin ||
-				_xScale !== xScale ||
-				_yScale !== yScale ||
-				_radius !== radius ||
-				_xy !== xy
-			)
-		) {
-			let i = xy.length;
-			while (i--) {
-				let x = (xData[i] - xMin + 0.5 * xMargin) * xScale + 2 * radius;
-				let y = (yData[i] - yMin + 0.5 * yMargin) * yScale + 2 * radius;
-				// packing x and y into one 32-bit integer is currently faster
-				// than using two arrays. As long as our screen dimension do
-				// not exceed 65k pixels in either dimension we should be fine
-				xy[i] = ((y & 0x7FFF) << 16) + (x & 0xFFFF);
-			}
-			_xMin = xMin;
-			_yMin = yMin;
-			_xMargin = xMargin;
-			_yMargin = yMargin;
-			_xScale = xScale;
-			_yScale = yScale;
-			_radius = radius;
-			_xy = xy;
-		}
-		return _xy;
+	return {
+		xMin: 0,
+		yMin: 0,
+		xMargin: 0,
+		yMargin: 0,
+		xScale: 0,
+		yScale: 0,
+		radius: 1,
+		xy: new Uint32Array(0),
 	};
+}
+
+function scaleToContext(m, xData, yData, xAttr, yAttr, spriteLayout, settings) {
+	let xMin = xAttr.min,
+		xMax = xAttr.max,
+		yMin = yAttr.min,
+		yMax = yAttr.max;
+
+	if (settings.x.logScale) {
+		xData = logProjectArray(xData);
+		xMin = logProject(xMin);
+		xMax = logProject(xMax);
+	}
+	if (settings.y.logScale) {
+		yData = logProjectArray(yData);
+		yMin = logProject(yMin);
+		yMax = logProject(yMax);
+	}
+
+	const xMargin = (xMax - xMin) * 0.0625;
+	const yMargin = (yMax - yMin) * 0.0625;
+
+	const {
+		width,
+		height,
+		radius,
+	} = spriteLayout;
+
+	// we add xMargin/yMargin in the divisor here
+	// (and compensate further on with 0.5) to
+	// *also* add a margin *before* the normalization.
+	// We also subtract the radius to avoid any points
+	// from going over the edge of the canvas.
+	let xScale = ((width - 4 * radius)) / (xMax - xMin + xMargin);
+	let yScale = ((height - 4 * radius)) / (yMax - yMin + yMargin);
+
+	let xy = m.xy;
+	if (xData && (!xy || xData.length !== xy.length)) {
+		xy = new Uint32Array(xData.length);
+	}
+
+	if (
+		xy && (
+			m.xMin !== xMin ||
+			m.yMin !== yMin ||
+			m.xMargin !== xMargin ||
+			m.yMargin !== yMargin ||
+			m.xScale !== xScale ||
+			m.yScale !== yScale ||
+			m.radius !== radius ||
+			m.xy !== xy
+		)
+	) {
+		let i = xy.length;
+		while (i--) {
+			let x = (xData[i] - xMin + 0.5 * xMargin) * xScale + 2 * radius;
+			let y = (yData[i] - yMin + 0.5 * yMargin) * yScale + 2 * radius;
+			// packing x and y into one 32-bit integer is currently faster
+			// than using two arrays. As long as our screen dimension do
+			// not exceed 65k pixels in either dimension we should be fine
+			xy[i] = ((y & 0x7FFF) << 16) + (x & 0xFFFF);
+		}
+		m.xMin = xMin;
+		m.yMin = yMin;
+		m.xMargin = xMargin;
+		m.yMargin = yMargin;
+		m.xScale = xScale;
+		m.yScale = yScale;
+		m.radius = radius;
+		m.xy = xy;
+	}
+	return m.xy;
 }
 
 function prepareSprites(colorMode, colorAttr, spriteLayout) {
