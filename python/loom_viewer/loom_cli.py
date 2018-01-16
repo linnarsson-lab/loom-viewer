@@ -182,7 +182,7 @@ def main() -> None:
 		)
 
 		tile_parser.add_argument(
-			"-a"
+			"-A",
 			"--all",
 			help="Expand all loom files.",
 			action="store_true"
@@ -220,6 +220,7 @@ def main() -> None:
 		)
 
 		expand_parser.add_argument(
+			"-A",
 			"--all",
 			help="Expand all loom files (or clear expansion with --clear).",
 			action="store_true"
