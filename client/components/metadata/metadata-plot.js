@@ -49,7 +49,7 @@ export class MetadataPlot extends Component {
 					mode === 'Heatmap' ||
 					mode === 'Flame' ||
 					mode === 'Icicle';
-				return sparkline(props.attr, props.indices, mode, { logScale });
+				return sparkline(props.attr, props.indices, mode, { logScale }, ' ');
 			}),
 		};
 	}
@@ -74,7 +74,7 @@ export class MetadataPlot extends Component {
 						mode === 'Heatmap' ||
 						mode === 'Flame' ||
 						mode === 'Icicle';
-					return sparkline(attr, indices, mode, { logScale });
+					return sparkline(attr, indices, mode, { logScale }, ' ');
 				}),
 			};
 			this.setState(() => {
