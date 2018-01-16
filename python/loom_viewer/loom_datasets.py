@@ -311,6 +311,8 @@ class LoomDatasets(object):
 		Returns:
 			a JSON string listing metadata for all loom files authorized to see.
 		"""
+		self.update_dataset_list()
+
 		dataset_path = self.dataset_path
 		logging.debug("Listing datasets in %s", dataset_path)
 
