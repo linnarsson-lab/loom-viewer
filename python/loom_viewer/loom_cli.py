@@ -91,20 +91,21 @@ def expand_command(
 	for project, filename, file_path in matches:
 		try:
 			expand = LoomExpand(project, filename, file_path)
-			if clear:
-				expand.clear_metadata()
-				expand.clear_attributes()
-				expand.clear_rows()
-				expand.clear_columns()
-			if metadata:
-				expand.metadata(truncate)
-			if attributes:
-				expand.attributes(truncate)
-			if rows:
-				expand.rows(truncate)
-			if cols:
-				expand.columns(truncate)
-			expand.close()
+			if not expand.closed:
+				if clear:
+					expand.clear_metadata()
+					expand.clear_attributes()
+					expand.clear_rows()
+					expand.clear_columns()
+				if metadata:
+					expand.metadata(truncate)
+				if attributes:
+					expand.attributes(truncate)
+				if rows:
+					expand.rows(truncate)
+				if cols:
+					expand.columns(truncate)
+				expand.close()
 		except Exception as e:
 			expand.close()
 			raise e
