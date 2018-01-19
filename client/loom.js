@@ -59,7 +59,7 @@ localforage.getItem('dataSchemaVersion')
 				.map((schemaString) => {
 					return schemaString
 						.split('.')
-						.map((str) => { return str | 0; });
+						.map((str) => { return str.split('#')[0] | 0; });
 				});
 			return schemas[0][0] > schemas[1][0]; // breaking major update
 			// schemas[0][1] > schemas[1][1] == non-breaking update
