@@ -44,6 +44,16 @@ const allSprites = (() => {
 
 const { log2 } = Math;
 
+function memoisedVars() {
+	return {
+		convertColorData: mConvertColorData(),
+		convertCoordinates: mConvertCoordinates(),
+		scaleToContext: mScaleToContext(),
+		sortByAxes: mSortByAxes(),
+		blitSprites: mBlitSprites(),
+	};
+}
+
 export function memoizedScatterPlot() {
 
 	let m = memoisedVars();
@@ -97,12 +107,12 @@ export function memoizedScatterPlot() {
 			// Sort for tiling purposes. Render zero values first, and then from
 			// back-to-front. This has to be done after jittering to maintain the
 			// tiling order that is desired.
-			const sorted = sortByAxes(xy, cIdx);
+			const sorted = sortByAxes(m.sortByAxes, xy, cIdx);
 
 			// Now that we converted the coordinates, prepared the sprites
 			// and the colour indices to look them up, we can blit them
 			// to the canvas.
-			blitSprites(m, context, xy, cIdx, spriteLayout, sorted, renderedSprites);
+			blitSprites(m.blitSprites, context, xy, cIdx, spriteLayout, sorted, renderedSprites);
 
 			drawLabels(context, xAttr, yAttr, colorAttr, labelLayout);
 
@@ -113,15 +123,6 @@ export function memoizedScatterPlot() {
 
 			context.restore();
 		};
-	};
-}
-
-function memoisedVars() {
-	return {
-		convertColorData: mConvertColorData(),
-		convertCoordinates: mConvertCoordinates(),
-		scaleToContext: mScaleToContext(),
-		blitSprites: mBlitSprites(),
 	};
 }
 
@@ -543,20 +544,12 @@ function fillCircle(ctx, fillColor) {
 	ctx.fill();
 }
 
-// Turns out tSNE almost never overlaps, even with rounding to pixels.
-//
-// Given a transparency level (0 = transparent, 255 = opaque), it makes no
-// sense to draw sprites on the same spot if the bottom ones are not even
-// visible. This is a look-up table to determine how many layers of stacked
-// sprites will be visible at most.
-// const cullSprites = [0, 255, 191, 155, 132, 116, 103, 93, 85, 79, 73, 69, 64, 61, 58, 55, 52, 51, 48, 46, 44, 43, 41, 40, 38, 37, 36, 35, 34, 33, 32, 31, 30, 30, 29, 28, 28, 26, 26, 26, 25, 25, 25, 24, 23, 23, 22, 22, 22, 21, 21, 21, 20, 20, 19, 19, 18, 18, 18, 18, 18, 17, 17, 17, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1];
-// // For our current lowest alpha of 0.3125 (79),
-// // we need to draw at most 13 sprites).
-// const maxVisibleStack = cullSprites[0.5 * 256 | 0];
-
-// re-use compVal when possible, to reduce GC pressuce
-let compVal = new Uint32Array(1);
-function sortByAxes(xy, cIdx) {
+function mSortByAxes(){
+	return {
+		compVal: new Uint32Array(0),
+	};
+}
+function sortByAxes(m, xy, cIdx) {
 
 	// Note that at this point xy contains the x,y coordinates
 	// packed as 0x YYYY XXXX, so sorting by that value
@@ -569,9 +562,10 @@ function sortByAxes(xy, cIdx) {
 	const l = cIdx.length;
 	let i = l,
 		zeros = 0;
-	if (compVal.length !== l) {
-		compVal = new Uint32Array(l);
+	if (m.compVal.length !== l) {
+		m.compVal = new Uint32Array(l);
 	}
+	const { compVal } = m;
 	while (i--) {
 		let val = xy[i];
 		if (cIdx[i]) {
@@ -721,13 +715,13 @@ function blitSprites(m, context, xy, cIdx, spriteLayout, sorted, renderedSprites
 
 	// Only replace canvasData if the width or height has changed,
 	// to reduce GC pressure and time spent on memory allocation
-	if (width !== m.blitSprites.canvasWidth || context.height !== m.blitSprites.canvasHeight) {
-		m.blitSprites.canvasData = context.createImageData(width, context.height);
-		m.blitSprites.cDataUint32 = new Uint32Array(m.blitSprites.canvasData.data.buffer);
-		m.blitSprites.canvasWidth = width;
-		m.blitSprites.canvasHeight = context.height;
+	if (width !== m.canvasWidth || context.height !== m.canvasHeight) {
+		m.canvasData = context.createImageData(width, context.height);
+		m.cDataUint32 = new Uint32Array(m.canvasData.data.buffer);
+		m.canvasWidth = width;
+		m.canvasHeight = context.height;
 	}
-	const { cDataUint32 } = m.blitSprites;
+	const { cDataUint32 } = m;
 	// set pixel values in canvas image data to white
 	cDataUint32.fill(0xFFFFFFFF);
 
@@ -753,7 +747,7 @@ function blitSprites(m, context, xy, cIdx, spriteLayout, sorted, renderedSprites
 	}
 
 	// put imagedata back on the canvas
-	context.putImageData(m.blitSprites.canvasData, 0, 0);
+	context.putImageData(m.canvasData, 0, 0);
 }
 
 function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
