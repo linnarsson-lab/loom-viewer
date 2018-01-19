@@ -102,7 +102,7 @@ export function memoizedScatterPlot() {
 			// Now that we converted the coordinates, prepared the sprites
 			// and the colour indices to look them up, we can blit them
 			// to the canvas.
-			blitSprites(context, xy, cIdx, spriteLayout, sorted, renderedSprites);
+			blitSprites(m, context, xy, cIdx, spriteLayout, sorted, renderedSprites);
 
 			drawLabels(context, xAttr, yAttr, colorAttr, labelLayout);
 
@@ -121,6 +121,7 @@ function memoisedVars() {
 		convertColorData: mConvertColorData(),
 		convertCoordinates: mConvertCoordinates(),
 		scaleToContext: mScaleToContext(),
+		blitSprites: mBlitSprites(),
 	};
 }
 
@@ -683,11 +684,16 @@ function sortedUint32Indices(input) {
 	return indices;
 }
 
-let canvasWidth = 0,
-	canvasHeight = 0,
-	canvasData = null,
-	cDataUint32 = new Uint32Array(0);
-function blitSprites(context, xy, cIdx, spriteLayout, sorted, renderedSprites) {
+function mBlitSprites(){
+	return {
+		canvasWidth: 0,
+		canvasHeight: 0,
+		canvasData: null,
+		cDataUint32: new Uint32Array(0),
+	};
+}
+
+function blitSprites(m, context, xy, cIdx, spriteLayout, sorted, renderedSprites) {
 	let {
 		sortedIndices,
 		zeros,
@@ -715,13 +721,13 @@ function blitSprites(context, xy, cIdx, spriteLayout, sorted, renderedSprites) {
 
 	// Only replace canvasData if the width or height has changed,
 	// to reduce GC pressure and time spent on memory allocation
-	if (width !== canvasWidth || context.height !== canvasHeight) {
-		canvasData = context.createImageData(width, context.height);
-		cDataUint32 = new Uint32Array(canvasData.data.buffer);
-		canvasWidth = width;
-		canvasHeight = context.height;
+	if (width !== m.blitSprites.canvasWidth || context.height !== m.blitSprites.canvasHeight) {
+		m.blitSprites.canvasData = context.createImageData(width, context.height);
+		m.blitSprites.cDataUint32 = new Uint32Array(m.blitSprites.canvasData.data.buffer);
+		m.blitSprites.canvasWidth = width;
+		m.blitSprites.canvasHeight = context.height;
 	}
-
+	const { cDataUint32 } = m.blitSprites;
 	// set pixel values in canvas image data to white
 	cDataUint32.fill(0xFFFFFFFF);
 
@@ -747,7 +753,7 @@ function blitSprites(context, xy, cIdx, spriteLayout, sorted, renderedSprites) {
 	}
 
 	// put imagedata back on the canvas
-	context.putImageData(canvasData, 0, 0);
+	context.putImageData(m.blitSprites.canvasData, 0, 0);
 }
 
 function drawLabels(context, xAttr, yAttr, colorAttr, labelLayout) {
