@@ -13,10 +13,10 @@ echo.
 echo === Removing previous Python build and dist folders (if any)
 echo.
 
-del /s /q python\build\*.*
-del /s /q python\build
-del /s /q python\dist\*.*
-del /s /q python\dist
+del /s /q build\*.*
+del /s /q build
+del /s /q dist\*.*
+del /s /q dist
 
 echo.
 echo   Done
