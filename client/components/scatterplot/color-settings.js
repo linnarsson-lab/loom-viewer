@@ -44,6 +44,7 @@ function palettePainter(palette){
 			context.fillStyle = palette[i];
 			context.fillRect(x0, 0, x1-x0, height);
 		}
+		return false;
 	};
 }
 
