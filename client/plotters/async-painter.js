@@ -2,7 +2,7 @@ import {
 	textSize,
 	textStyle,
 	drawText,
-} from './canvas';
+} from 'plotters/canvas-util';
 
 /**
  * A queue that automatically schedules to start drawing
@@ -22,7 +22,9 @@ import {
 let asyncPainters = [],
 	startTime = 0,
 	elapsed = 0,
-	maxTime = 50,
+	// less calls to setTimeOut means less overhead;
+	// a framerate of 10 FPS is acceptable.
+	maxTime = 100,
 	timeoutSet = false,
 	timeoutID = -1;
 
@@ -42,19 +44,37 @@ function start() {
  * continue in the background
  */
 function startNow() {
-	elapsed = startTime = performance.now();
-	while (asyncPainters.length && elapsed - startTime < maxTime) {
-		asyncPainters.pop().drawNow();
+
+	// copy all curently queued AsyncPainters.
+	// This is to prevent animated painters that
+	// are queued again to be redrawn immediately
+	// (potentially overwriting themselves without
+	// before the compositer renders the output
+	// on the screen).
+	let paintersThisFrame = asyncPainters.slice(0);
+	asyncPainters.length = 0;
+
+	// Draw while not going over time budget
+	startTime = performance.now();
+	elapsed = startTime;
+	while (paintersThisFrame.length && elapsed - startTime < maxTime) {
+		paintersThisFrame.pop().drawNow();
 		elapsed = performance.now();
 	}
-	if (asyncPainters.length) {
-		// if there are still any asyncPainters left,
-		// resume drawing on next `setTimeout`
+	// if there are still any AsyncPainters left,
+	// or if any animated painters enqueued themselves again,
+	// resume drawing on next `setTimeout`
+	if (paintersThisFrame.length || asyncPainters.length) {
+		// copy any remaining painters back in the
+		// front of the the asyncPainters queue.
+		for (let i = 0; i < paintersThisFrame.length; i++){
+			asyncPainters.push(paintersThisFrame[i]);
+		}
 		timeoutSet = true;
 		timeoutID = setTimeout(startNow, 0);
 	} else {
 		// cancel any pending callbacks
-		if (timeoutID !== -1){
+		if (timeoutID !== -1) {
 			clearTimeout(timeoutID);
 		}
 		timeoutSet = false;
@@ -83,7 +103,7 @@ function push(asyncPainter) {
 }
 
 /**
- * Put `asyncPainter` in back fo queue if not already
+ * Put `asyncPainter` in back of queue if not already
  * in queue. Start the queue if not running already.
 */
 function unshift(asyncPainter) {
@@ -124,9 +144,9 @@ function clear() {
 		timeoutID = -1;
 		timeoutSet = false;
 	}
-	let i = asyncPainters.length;
-	while (i--){
+	for(let i = 0; i < asyncPainters.length; i++){
 		asyncPainters[i].running = false;
+		asyncPainters[i].animated = false;
 	}
 	asyncPainters.length = 0;
 }
@@ -151,11 +171,11 @@ export const asyncPainterQueue = {
 
 
 /**
- * Automatically renders a passed `paint` function onto a `context` once.
- *
- * Automatically re-renders if `paint` or `context` changes.
- *
- * Assume passed `paint` functions are pure, that is: will
+ * Renders a passed `paint` function onto a `context`.
+ * When called multiple times, it only re-renders 
+ * if `paint` or `context` has changed.
+ * 
+ * Assumes passed `paint` functions are pure, that is: will
  * always produce the same output on a given `context`.
  *
  * Assumes that nothing else is touching our `context`.
@@ -166,6 +186,7 @@ export const asyncPainterQueue = {
  * @param {*} context
  */
 export function AsyncPainter(paint, context) {
+	this.animated = false;
 	this.running = false;
 	this.rendered = false;
 	this.paint = paint;
@@ -175,17 +196,26 @@ export function AsyncPainter(paint, context) {
 	this.enqueue();
 }
 
+/**
+ * Start painting without delay
+ */
+AsyncPainter.prototype.drawNow = function () {
+	// this.context.clearRect(0, 0, this.context.width, this.context.height);
+	this.animated = this.paint(this.context);
+	this.rendered = !this.animated;
+	this.running = this.animated;
+	if (this.animated) {
+		this.markRender();
+		unshift(this);
+	}
+};
+
 // draw pushes to the front of the queue
 AsyncPainter.prototype.draw = function () {
-	if (!this.rendered && this.paint && this.context) {
-		if (!this.running) {
+	if (this.paint && this.context && !this.rendered) {
+		if (!(this.running)) {
 			this.running = true;
-			// indicate that we are rendering a new asyncPainter
-			let size = Math.min(this.context.height / 3 | 0, 20);
-			let height = Math.min(size + this.context.height / 3 | 0, 40);
-			textSize(this.context, size);
-			textStyle(this.context, 'black', 'white', 5);
-			drawText(this.context, 'Rendering...', size, height);
+			this.markRender();
 		}
 		// render in background, first in queue
 		// We also call this if already running,
@@ -198,45 +228,50 @@ AsyncPainter.prototype.draw = function () {
  * Add this `AsyncPainter` instance to the painter queue
  */
 AsyncPainter.prototype.enqueue = function () {
-	if (!this.rendered && !this.running && this.paint && this.context) {
-		this.running = true;
-		// indicate that we are rendering a new asyncPainter
-		let size = Math.min(this.context.height / 3 | 0, 20);
-		let height = Math.min(size + this.context.height / 3 | 0, 40);
-		textSize(this.context, size);
-		textStyle(this.context, 'black', 'white', 5);
-		drawText(this.context, 'Rendering...', size, height);
+	if (this.paint && this.context && !this.rendered) {
+		if (!(this.running)) {
+			this.running = true;
+			this.markRender();
+		}
 		// render in background, last in queue
 		unshift(this);
 	}
 };
 
 /**
- * Start painting without delay
+ * Make it clear to the user that the canvas has not finished rendering
  */
-AsyncPainter.prototype.drawNow = function () {
-	this.context.clearRect(0, 0, this.context.width, this.context.height);
-	this.paint(this.context);
-	this.running = false;
-	this.rendered = true;
+AsyncPainter.prototype.markRender = function () {
+	if (this.context) {
+		let size = Math.min(this.context.height / 3 | 0, 20);
+		let height = Math.min(size + this.context.height / 3 | 0, 40);
+		textSize(this.context, size);
+		textStyle(this.context, 'black', 'white', 5);
+		drawText(this.context, 'Rendering...', size, height);
+	}
 };
 
 AsyncPainter.prototype.remove = function () {
 	remove(this);
 	this.running = false;
+	this.animated = false;
 };
 
 AsyncPainter.prototype.replacePaint = function (newPainter, noBump) {
+	this.animated = false;
 	this.rendered = false;
+	this.running = false;
 	this.paint = newPainter;
-	// replacing the painter implies user interaction,
+	// replacing the painter usually implies user interaction,
 	// so it should get priority. Therefore we bump to
 	// the front of the queue unless told not to do so.
 	noBump ? this.enqueue() : this.draw();
 };
 
 AsyncPainter.prototype.replaceContext = function (newContext) {
+	this.animated = false;
 	this.rendered = false;
+	this.running = false;
 	this.context = newContext;
 	// replacing the context implies mounting a node,
 	// so it shouldn't override user interaction
