@@ -1,6 +1,8 @@
 import 'whatwg-fetch';
 
 import localforage from 'localforage';
+import 'localforage-removeitems';
+
 
 import {
 	// REQUEST_PROJECTS,
@@ -62,20 +64,39 @@ function loadOfflineProjects(list) {
 function receiveProjects(json, prevList) {
 	// convert json array to dictionary
 	let list = {};
-	let i = json.length;
-	while (i--) {
+	for (let i = 0; i < json.length; i++) {
 		let ds = json[i];
 		ds.path = ds.project + '/' + ds.filename;
-		// don't overwrite existing datasets
-		if (prevList && prevList[ds.path]) {
-			ds = prevList[ds.path];
+		// check if dataset changed.
+		const cachedDS = prevList && prevList[ds.path];
+		if (cachedDS) {
+			if (
+				ds.creationDate < cachedDS.creationDate ||
+				ds.lastModified < cachedDS.lastModified
+			){
+				console.log('Dataset was modified:');
+				console.log({
+					newDS: {
+						creationDate: ds.creationDate,
+						lastModified: ds.lastModified,
+					},
+					cachedDS: {
+						creationDate: cachedDS.creationDate,
+						lastModified: cachedDS.lastModified,
+					},
+				});
+				uncacheDataset(ds);
+				list[ds.path] = unloadDataset(ds, cachedDS);
+			} else {
+				// Do nothing - we do not need to re-add this dataset
+			}
 		} else {
 			ds.fetchedGenes = {};
 			ds.fetchingGenes = {};
 			ds.col = null;
 			ds.row = null;
+			list[ds.path] = ds;
 		}
-		list[ds.path] = ds;
 	}
 
 	return {
@@ -85,6 +106,51 @@ function receiveProjects(json, prevList) {
 			fetchProjectsStatus: ONLINE,
 		},
 	};
+}
+
+
+function uncacheDataset(ds){
+	localforage.keys().then((keys) => {
+		let matchingKeys = [];
+		for(let i = 0; i < keys.length; i++){
+			let key = keys[i];
+			if (key.startsWith(ds.path)){
+				matchingKeys.push(key);
+			}
+		}
+		return localforage.removeItems(matchingKeys);
+	});
+
+}
+
+/**
+ * Modify `ds` in such a way that it removes all previously loaded
+ * data from `cachedDS`
+ * @param {*} ds 
+ * @param {*} cachedDS 
+ */
+function unloadDataset(ds, cachedDS){
+	// To unload previously set fetchedGenes and fetchingGenes,
+	// we have to manually set all to `false` (since `undefined`
+	// will leave the previous value untouched). Note that we
+	// must copy to respect redux' immutability guarantee.
+	ds.fetchedGenes = copyAndSetFalse(cachedDS.fetchedGenes);
+	ds.fetchingGenes = copyAndSetFalse(cachedDS.fetchingGenes);
+	ds.col = null;
+	ds.row = null;
+	return ds;
+}
+
+/**
+ * Returns a copy of `obj` with `false` assigned to each key;
+ * @param {{}} obj 
+ */
+function copyAndSetFalse(obj){
+	let newObj = {};
+	for(let i = 0, keys = Object.keys(obj); i < keys.length; i++){
+		newObj[keys[i]] = false;
+	}
+	return newObj;
 }
 
 
