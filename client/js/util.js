@@ -537,17 +537,10 @@ function makeNumberCompareFunc(array) {
  * @param {{(i:number, j:number)=> number}=} compareFunc
  */
 export function findIndices(array, compareFunc) {
-	// Assumes we don't have to worry about sorting more than
-	// 4 billion elements; uses the smallest fitting typed array
-	// for smaller input sizes.
-	const indicesConstr = array.length < 256 ?
-		Uint8Array :
-		array.length < 65535 ?
-			Uint16Array :
-			Uint32Array;
 	let i = array.length,
-		indices = new indicesConstr(i);
-	// unrolled 16-decrement loop was benchmarked as the fastest
+		indices = new Uint32Array(i);
+	// unrolled 16-decrement loop was benchmarked as the fastest option on the slowest browser.
+	// https://run.perf.zone/view/initiating-indices-for-vs-while-loop-plain-unrolled-16-and-unrolled-32-1516713346278
 	while (i - 16 > 0) {
 		indices[--i] = i;
 		indices[--i] = i;
@@ -907,6 +900,64 @@ export function mergeInPlace(oldObj, newObj) {
 	}
 	return oldObj;
 }
+
+/**
+ * Returns a new object that purges the leaves of
+ * `purgeTree` from `oldObj`, by virtue of not copying. 
+ * Uses shallow copying where possible.
+ *
+ * **WARNING: Do NOT pass cyclical objects!
+ * This includes React nodes!**
+ *
+ * - keys that only exist in `oldObj` are preserved
+ * - for duplicate keys, values that are objects 
+ *   (except (typed) arrays and `null`) are
+ *   recursively merged.
+ * - in all other cases, the overlapping value 
+ *   represents a leaf, and the matching key/value
+ *   pair is *not* copied over to the returned object.
+ *
+ * @param {object} oldObj
+ * @param {object} purgeTree
+ */
+export function purge(oldObj, purgeTree) {
+	if (!(oldObj && purgeTree)) {
+		// we expect a new object (immutability guarantee),
+		// so if either aren't defined, return a copy of oldObj
+		return Object.assign({}, oldObj);
+	}
+
+	let untouchedKeys = Object.keys(oldObj),
+		purgeKeys = Object.keys(purgeTree),
+		overlappingKeys = disjointArrays(untouchedKeys, purgeKeys),
+		purgedObj = {},
+		key = '',
+		i = overlappingKeys.length;
+
+	while (i--) {
+		key = overlappingKeys[i];
+		let purgeVal = purgeTree[key];
+		// navigate purgeTree by recursion
+		if(
+			typeof purgeVal === 'object' &&
+			!isArray(purgeVal) &&   // typof returns object for arrays
+			purgeVal !== null // null represents values to be purged, not recursed on
+		){
+			let val = purge(oldObj[key], purgeVal);
+			if(val){
+				purgedObj[key] = val;
+			}
+		}
+	}
+	// directly assign all values that don't need purging
+	i = untouchedKeys.length;
+	while (i--) {
+		key = untouchedKeys[i];
+		purgedObj[key] = oldObj[key];
+	}
+	return Object.keys(purgedObj).length ? purgedObj : undefined;
+}
+
 
 /*
 // cycle detector

@@ -14,7 +14,7 @@ function shouldResize(state) {
 	);
 }
 
-function resizeDesktop(){
+function resizeDesktop() {
 	if (!this.state.resizing && shouldResize(this.state)) {
 		this.setState(() => {
 			return {
@@ -27,12 +27,12 @@ function resizeDesktop(){
 	}
 }
 
-function resizeMobile(){
+function resizeMobile() {
 	const { state } = this;
 	const isPortrait = window.innerHeight > window.innerWidth;
 	const portraitChanged = isPortrait !== state.isPortrait;
 	if (!state.resizing && portraitChanged && shouldResize(state)) {
-		this.setState( () => {
+		this.setState(() => {
 			return {
 				resizing: true,
 				isPortrait,
@@ -43,6 +43,18 @@ function resizeMobile(){
 		});
 	}
 }
+
+// Props to remove from Remount's props before passing them to the children
+const purgeTree = {
+	children: 0,
+	ignoreResize: 0,
+	ignoreWidth: 0,
+	ignoreHeight: 0,
+	watchedVal: 0,
+	delay: 0,
+	onUnmount: 0,
+	onRemount: 0,
+};
 
 export class Remount extends PureComponent {
 	constructor(...args) {
@@ -96,7 +108,7 @@ export class Remount extends PureComponent {
 		}
 		this.triggerResize.cancel();
 
-		if (this.props.onUnmount){
+		if (this.props.onUnmount) {
 			this.props.onUnmount();
 		}
 	}
@@ -154,24 +166,31 @@ export class Remount extends PureComponent {
 				return { resizing: false };
 			});
 			// a callback that should trigger on unmounting
-			if (this.props.onUnmount){
+			if (this.props.onUnmount) {
 				this.props.onUnmount();
 			}
 		} else if (prevState.resizing &&
 			!this.state.resizing &&
-			this.props.onRemount){
+			this.props.onRemount) {
 			// a callback that should trigger on remounting
 			this.props.onRemount();
 		}
 	}
 
 	render() {
-		return this.state.resizing ?
-			null :
-			this.props.children;
+		if (this.state.resizing) {
+			return null;
+		}
+		const { children } = this.props;
+
+		const childProps = purge(this.props, purgeTree);
+
+		const childrenWithProps = React.Children.map(children, (child) => {
+			return React.cloneElement(child, childProps);
+		});
+		return childrenWithProps;
 	}
 }
-
 
 Remount.propTypes = {
 	children: PropTypes.node.isRequired,
