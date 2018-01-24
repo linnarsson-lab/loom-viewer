@@ -120,14 +120,14 @@ def main() -> None:
 	# Handle the special case of no arguments, and create a fake args object with default settings
 	if len(sys.argv) == 1:
 		args = argparse.Namespace()
-		setattr(args, "debug", False)
+		setattr(args, "debug", True)
 		setattr(args, "dataset_path", def_dir)
 		setattr(args, "port", 8003)
 		setattr(args, "command", "server")
 		setattr(args, "show_browser", True)
 	else:
 		parser = VerboseArgParser(description="Loom command-line tool.")
-		parser.add_argument("--debug", action="store_true")
+		parser.add_argument("--debug", action="store_false", help="Show verbose debug outpu (true by default)")
 		parser.add_argument(
 			"--dataset-path",
 			help="Path to datasets directory (default: %s)" % def_dir,
@@ -149,7 +149,7 @@ def main() -> None:
 
 		server_parser.add_argument(
 			"--show-browser",
-			help="Automatically launch browser (False by default)",
+			help="Automatically launch browser (false by default)",
 			action="store_true"
 		)
 
@@ -191,7 +191,7 @@ def main() -> None:
 		tile_parser.add_argument(
 			"-t",
 			"--truncate",
-			help="Remove previously expanded tiles if present (False by default)",
+			help="Remove previously expanded tiles if present (false by default)",
 			action="store_true"
 		)
 
@@ -236,35 +236,35 @@ def main() -> None:
 		expand_parser.add_argument(
 			"-t",
 			"--truncate",
-			help="Replace previously expanded files if present (False by default). Only does something in combination with expansion (-m, -a, -r or -c).",
+			help="Replace previously expanded files if present (false by default). Only does something in combination with expansion (-m, -a, -r or -c).",
 			action="store_true"
 		)
 
 		expand_parser.add_argument(
 			"-m",
 			"--metadata",
-			help="Expand metadata (False by default)",
+			help="Expand metadata (false by default)",
 			action="store_true"
 		)
 
 		expand_parser.add_argument(
 			"-a",
 			"--attributes",
-			help="Expand attributes (False by default)",
+			help="Expand attributes (false by default)",
 			action="store_true"
 		)
 
 		expand_parser.add_argument(
 			"-r",
 			"--rows",
-			help="Expand rows (False by default)",
+			help="Expand rows (false by default)",
 			action="store_true"
 		)
 
 		expand_parser.add_argument(
 			"-c",
 			"--cols",
-			help="Expand columns (False by default)",
+			help="Expand columns (false by default)",
 			action="store_true"
 		)
 
