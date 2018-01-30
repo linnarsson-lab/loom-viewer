@@ -6,16 +6,42 @@ smul=$(tput smul)    # Enable underline mode
 rmul=$(tput rmul)    # Disable underline mode
 noformat=$(tput sgr0)
 
-read -p "Did you update ${bold}_version.py${noformat}? " -n 1 -r
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  ./build prod
-  build_status=$?
-  if [ $build_status == 0 ]; then
-
+build_status=1
+old_build=""
+read -p "Did you update ${bold}_version.py${noformat}? y/n (Default: n) " -n 4 -r
+if [[ $REPLY =~ ^[Yy].*$ ]]; then
+  echo ""
+  echo "Build client? y/n (Default: y)"
+  read -p "If not, the most recent build will be used " -n 4 -r
+  if [[ $REPLY =~ ^[Yy].*$ ]]; then
     echo ""
-    echo "${dim}======================================${noformat}"
-    echo " Build successful, submitting to PyPi"
-    echo "${dim}======================================${noformat}"
+    read -p "(r)elease or (d)ev build? (Default: r) " -n 8 -r
+    if [[ $REPLY =~ ^[Dd].*$ ]]; then
+      ./build_client dev
+      build_status=$?
+    else
+      ./build_client prod
+      build_status=$?
+    fi
+  else
+    # assume previous client build was successful
+    build_status=0
+    old_build="(presumed) "
+  fi
+  if [ $build_status == 0 ]; then
+    echo ""
+    echo "${dim}===================================================${noformat}"
+    echo " Client build ${old_build}successful, building egg"
+    echo "${dim}===================================================${noformat}"
+    echo ""
+    ./build_egg
+    build_status=$?
+  fi
+  if [ $build_status == 0 ]; then
+    echo ""
+    echo "${dim}=====================================${noformat}"
+    echo " Egg successful, submitting to PyPi"
+    echo "${dim}=====================================${noformat}"
     echo ""
     cd python
     python setup.py sdist upload -r pypi
@@ -35,9 +61,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo " ${bold}Build not finished properly${noformat}"
     echo " ${bold}Aborting upload to PyPi${noformat}"
-	 echo ""
+    echo ""
 
     exit $build_status
 
   fi
+else
+  echo ""
+  echo " ${bold}PyPi requires a version bump to accept uploads${noformat}"
+  echo " ${bold}Please update ./python/loom_viewer/_version.py${noformat}"
+  echo " Cancelling build + upload to PyPi"
+
 fi
