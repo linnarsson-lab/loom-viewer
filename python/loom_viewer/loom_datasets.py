@@ -665,6 +665,7 @@ class LoomDatasets(object):
 		row_mod_filename = "%s.rows.lastmod.gzip" % absolute_file_path
 		row_mod = load_gzipped_json_string(row_mod_filename)
 		last_mod = self.last_mod(absolute_file_path)
+		expander = None
 
 		if row_mod < last_mod:
 			expander = self.connections.acquire_expander(project, filename)
@@ -738,6 +739,7 @@ class LoomDatasets(object):
 		col_mod_filename = "%s.cols.lastmod.gzip" % absolute_file_path
 		col_mod = load_gzipped_json_string(col_mod_filename)
 		last_mod = self.last_mod(absolute_file_path)
+		expander = None
 
 		if col_mod < last_mod:
 			expander = self.connections.acquire_expander(project, filename)
