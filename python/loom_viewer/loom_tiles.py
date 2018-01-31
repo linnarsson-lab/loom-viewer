@@ -68,12 +68,8 @@ class LoomTiles(object):
 		return self._mins
 
 	def prepare_heatmap(self, truncate: bool = False) -> None:
-		logging.info("Generating tiles for %s", ds.filename)
-		if self.ds._file.__contains__("tiles"):
-			logging.warn("  File contains deprecated tile pyramid, please remove and use h5repack to reclaim space")
-
 		tile_dir = "%s.tiles/" % (self.ds.filename)
-		if os.path.isdir(tile_dir)
+		if os.path.isdir(tile_dir):
 			logging.info("  Previous tile folder found at %s)", tile_dir)
 			if truncate:
 				logging.info("    Truncate set, removing old tile folder")

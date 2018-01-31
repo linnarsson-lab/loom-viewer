@@ -36,7 +36,7 @@ import warnings
 
 import loompy
 from .loom_expand import LoomExpand
-from .loom_datasets import LoomDatasets
+from .loom_datasets import def_dataset_dir, LoomDatasets
 from .loom_server import start_server
 
 
@@ -48,14 +48,22 @@ class VerboseArgParser(argparse.ArgumentParser):
 		sys.exit(2)
 
 
-def tile_command(datasets: LoomDatasets, filenames: List[str], projects: List[str], all: bool, truncate: bool) -> None:
+def tile_command(
+	datasets: LoomDatasets,
+	filenames: List[str],
+	projects: List[str],
+	all_files: bool,
+	truncate: bool) -> None:
 	# do not expand tiles more than once for any given filename
 	matches = set()  # type: Set[Tuple[str, str, str]]
-	for filename in filenames:
-		matches |= datasets.matching_filenames(filename)
+	if all_files:
+		matches = datasets.list.all_files()
+	else:
+		for filename in filenames:
+			matches |= datasets.list.matching_filenames(filename)
 
-	for project in projects:
-		matches |= datasets.files_in_project(project)
+		for project in projects:
+			matches |= datasets.list.files_in_project(project)
 
 	for project, filename, file_path in matches:
 		datasets.tile(project, file_path, truncate)
@@ -71,8 +79,7 @@ def expand_command(
 	attributes: bool,
 	rows: bool,
 	cols: bool,
-	truncate: bool
-) -> None:
+	truncate: bool) -> None:
 	if not (clear or metadata or attributes or rows or cols):
 		logging.info("Must explicitly state what to expand!")
 		return
@@ -80,13 +87,13 @@ def expand_command(
 	matches = set()  # type: Set[Tuple[str, str, str]]
 
 	if all_files:
-		matches = datasets.list_all_files()
+		matches = datasets.list.all_files()
 	else:
 		for filename in filenames:
-			matches |= datasets.matching_filenames(filename)
+			matches |= datasets.list.matching_filenames(filename)
 
 		for project in projects:
-			matches |= datasets.files_in_project(project)
+			matches |= datasets.list.files_in_project(project)
 
 	for project, filename, file_path in matches:
 		try:
@@ -113,21 +120,19 @@ def expand_command(
 
 def main() -> None:
 
-	def_dir = os.environ.get("LOOM_PATH")
-	if def_dir is None:
-		def_dir = os.path.join(os.path.expanduser("~"), "loom-datasets")
+	def_dir = def_dataset_dir()
 
 	# Handle the special case of no arguments, and create a fake args object with default settings
 	if len(sys.argv) == 1:
 		args = argparse.Namespace()
-		setattr(args, "debug", True)
+		setattr(args, "debug", False)
 		setattr(args, "dataset_path", def_dir)
 		setattr(args, "port", 8003)
 		setattr(args, "command", "server")
 		setattr(args, "show_browser", True)
 	else:
 		parser = VerboseArgParser(description="Loom command-line tool.")
-		parser.add_argument("--debug", action="store_false", help="Show verbose debug outpu (true by default)")
+		parser.add_argument("--debug", action="store_true", help="Show verbose debug output (False by default)")
 		parser.add_argument(
 			"--dataset-path",
 			help="Path to datasets directory (default: %s)" % def_dir,
@@ -281,13 +286,14 @@ def main() -> None:
 			"loom v" + str(loompy.__version__))
 		sys.exit(0)
 	else:
-		datasets = LoomDatasets(args.dataset_path)
 		if args.command == "tile":
+			datasets = LoomDatasets(args.dataset_path)
 			tile_command(datasets, args.file, args.project, args.all, args.truncate)
 		elif args.command == "expand":
+			datasets = LoomDatasets(args.dataset_path)
 			expand_command(datasets, args.file, args.project, args.all, args.clear, args.metadata, args.attributes, args.rows, args.cols, args.truncate)
 		else:  # args.command == "server":
-			start_server(datasets.dataset_path, args.show_browser, args.port, args.debug)
+			start_server(args.dataset_path, args.show_browser, args.port, args.debug)
 
 
 if __name__ == "__main__":
