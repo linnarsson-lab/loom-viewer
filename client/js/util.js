@@ -169,8 +169,8 @@ export function countElements(array, start, end) {
 }
 
 export function findMostCommon(array, start, end) {
+	let mv;
 	if (array) {
-		let mv;
 		start = start > 0 ? start : 0;
 		end = end < array.length ? end : array.length;
 		let i = 0,
@@ -196,8 +196,8 @@ export function findMostCommon(array, start, end) {
 			i = j;
 			val = sorted[j];
 		}
-		return mv;
 	}
+	return mv;
 }
 
 // assumes no NaN values!

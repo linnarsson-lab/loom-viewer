@@ -35,6 +35,7 @@ import logging
 import warnings
 
 import loompy
+from ._version import __version__
 from .loom_expand import LoomExpand
 from .loom_datasets import def_dataset_dir, LoomDatasets
 from .loom_server import start_server
@@ -181,7 +182,7 @@ def main() -> None:
 		)
 
 		tile_parser.add_argument(
-			"project",
+			"--project",
 			help="Project(s) for which to expand all files.",
 			nargs='*',
 		)
@@ -219,7 +220,7 @@ def main() -> None:
 		)
 
 		expand_parser.add_argument(
-			"project",
+			"--project",
 			help="Project(s) for which to expand all files (or clear expansion with --clear).",
 			nargs='*',
 		)
@@ -282,8 +283,7 @@ def main() -> None:
 		logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 	if args.command == "version":
-		print(
-			"loom v" + str(loompy.__version__))
+		print("loom v%s" % __version__)
 		sys.exit(0)
 	else:
 		if args.command == "tile":
