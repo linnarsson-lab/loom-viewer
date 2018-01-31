@@ -14,6 +14,12 @@ class LoomTiles(object):
 	#############
 	# DEEP ZOOM #
 	#############
+	__slots__ = [
+		'ds',
+		'_maxes',
+		'_mins'
+	]
+
 	def __init__(self, ds: LoomConnection) -> None:
 		self.ds = ds
 		self._maxes = None  # type: np.ndarray
@@ -62,20 +68,25 @@ class LoomTiles(object):
 		return self._mins
 
 	def prepare_heatmap(self, truncate: bool = False) -> None:
+		logging.info("Generating tiles for %s", ds.filename)
 		if self.ds._file.__contains__("tiles"):
-			logging.info("    Removing deprecated tile pyramid, use h5repack to reclaim space")
-			del self.ds._file['tiles']
+			logging.warn("  File contains deprecated tile pyramid, please remove and use h5repack to reclaim space")
 
 		tile_dir = "%s.tiles/" % (self.ds.filename)
-		if os.path.isdir(tile_dir) and truncate:
-			logging.info("    Removing old tile folder %s" % (tile_dir))
-			rmtree(tile_dir)
+		if os.path.isdir(tile_dir)
+			logging.info("  Previous tile folder found at %s)", tile_dir)
+			if truncate:
+				logging.info("    Truncate set, removing old tile folder")
+				rmtree(tile_dir)
+			else:
+				logging.info("    Call prepare_heatmap(truncate=True) to overwrite")
+				return
 
 		self.maxes()
 
 		self.mins()
 
-		logging.info('generating and saving tiles')
+		logging.info('  Generating and saving tiles')
 
 		self.dz_get_zoom_tile(0, 0, 8, truncate)
 		print(" done\n\n")
