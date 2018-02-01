@@ -119,168 +119,191 @@ def expand_command(
 			raise e
 
 
+def parse_args(def_dir: str) -> Any:
+	parser = VerboseArgParser(description="Loom command-line tool.")
+	parser.add_argument(
+		"--debug",
+		action="store_true",
+		help="Show verbose debug output (False by default)"
+	)
+	parser.add_argument(
+		"--dataset-path",
+		help="Path to datasets directory (default: %s)" % def_dir,
+		nargs='?',
+		const=def_dir,
+		default=def_dir
+	)
+
+	subparsers = parser.add_subparsers(title="subcommands", dest="command")
+
+	# loom version
+	version_parser = subparsers.add_parser("version", help="Print version")
+
+	# loom server
+	server_parser = subparsers.add_parser(
+		"server",
+		help="Launch loom server (default command)"
+	)
+
+	server_parser.add_argument(
+		"--show-browser",
+		help="Automatically launch browser (False by default)",
+		action="store_true"
+	)
+
+	server_parser.add_argument(
+		"-p",
+		"--port",
+		help="Port",
+		type=int,
+		nargs='?',
+		const=8003,
+		default=8003
+	)
+
+	# loom tile
+	tile_parser = subparsers.add_parser("tile", help="Precompute heatmap tiles")
+
+	tile_parser.add_argument(
+		"file",
+		help="""Loom file(s) to expand.
+		Expands all files matching the provided file names.
+		To avoid this, use an absolute path to specify a single file.
+		""",
+		nargs='*',
+	)
+
+	tile_parser.add_argument(
+		"--project",
+		help="Project(s) for which to expand all files.",
+		nargs='*',
+	)
+
+	tile_parser.add_argument(
+		"-A",
+		"--all",
+		help="Expand all loom files.",
+		action="store_true"
+	)
+
+	tile_parser.add_argument(
+		"-t",
+		"--truncate",
+		help="Remove previously expanded tiles if present (false by default)",
+		action="store_true"
+	)
+
+	# loom expand
+	expand_help = "Expands data to compressed json files. Processes all matching loom filenames in dataset_path, unless absolute path is passed"
+
+	expand_parser = subparsers.add_parser(
+		"expand",
+		help=expand_help
+	)
+
+	expand_parser.add_argument(
+		"file",
+		help="""Loom file(s) to expand.
+		Expands all files matching the provided file names.
+		To avoid this, use an absolute path to specify a single file.
+		When combined with --clear it clears all expanded files instead.
+		""",
+		nargs='*',
+	)
+
+	expand_parser.add_argument(
+		"--project",
+		help="Project(s) for which to expand all files (or clear expansion with --clear).",
+		nargs='*',
+	)
+
+	expand_parser.add_argument(
+		"-A",
+		"--all",
+		help="Expand all loom files (or clear expansion with --clear).",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-C",
+		"--clear",
+		help="Remove previously expanded files.",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-t",
+		"--truncate",
+		help="Replace previously expanded files if present (false by default). Only does something in combination with expansion (-m, -a, -r or -c).",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-m",
+		"--metadata",
+		help="Expand metadata (false by default)",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-a",
+		"--attributes",
+		help="Expand attributes (false by default)",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-r",
+		"--rows",
+		help="Expand rows (false by default)",
+		action="store_true"
+	)
+
+	expand_parser.add_argument(
+		"-c",
+		"--cols",
+		help="Expand columns (false by default)",
+		action="store_true"
+	)
+
+	return parser.parse_args()
+
+
 def main() -> None:
 
 	def_dir = def_dataset_dir()
-
-	# Handle the special case of no arguments, and create a fake args object with default settings
+	# Create a fake args object with default settings
+	# to handle the special case of no arguments.
 	if len(sys.argv) == 1:
 		args = argparse.Namespace()
 		setattr(args, "debug", False)
 		setattr(args, "dataset_path", def_dir)
-		setattr(args, "port", 8003)
-		setattr(args, "command", "server")
-		setattr(args, "show_browser", True)
+		# handled below
+		# setattr(args, "port", 8003)
+		# setattr(args, "command", "server")
+		# setattr(args, "show_browser", True)
 	else:
-		parser = VerboseArgParser(description="Loom command-line tool.")
-		parser.add_argument("--debug", action="store_true", help="Show verbose debug output (False by default)")
-		parser.add_argument(
-			"--dataset-path",
-			help="Path to datasets directory (default: %s)" % def_dir,
-			nargs='?',
-			const=def_dir,
-			default=def_dir
-		)
-
-		subparsers = parser.add_subparsers(title="subcommands", dest="command")
-
-		# loom version
-		version_parser = subparsers.add_parser("version", help="Print version")
-
-		# loom server
-		server_parser = subparsers.add_parser(
-			"server",
-			help="Launch loom server (default command)"
-		)
-
-		server_parser.add_argument(
-			"--show-browser",
-			help="Automatically launch browser (false by default)",
-			action="store_true"
-		)
-
-		server_parser.add_argument(
-			"-p",
-			"--port",
-			help="Port",
-			type=int,
-			nargs='?',
-			const=8003,
-			default=8003
-		)
-
-		# loom tile
-		tile_parser = subparsers.add_parser("tile", help="Precompute heatmap tiles")
-
-		tile_parser.add_argument(
-			"file",
-			help="""Loom file(s) to expand.
-			Expands all files matching the provided file names.
-			To avoid this, use an absolute path to specify a single file.
-			""",
-			nargs='*',
-		)
-
-		tile_parser.add_argument(
-			"--project",
-			help="Project(s) for which to expand all files.",
-			nargs='*',
-		)
-
-		tile_parser.add_argument(
-			"-A",
-			"--all",
-			help="Expand all loom files.",
-			action="store_true"
-		)
-
-		tile_parser.add_argument(
-			"-t",
-			"--truncate",
-			help="Remove previously expanded tiles if present (false by default)",
-			action="store_true"
-		)
-
-		# loom expand
-		expand_help = "Expands data to compressed json files. Processes all matching loom filenames in dataset_path, unless absolute path is passed"
-
-		expand_parser = subparsers.add_parser(
-			"expand",
-			help=expand_help
-		)
-
-		expand_parser.add_argument(
-			"file",
-			help="""Loom file(s) to expand.
-			Expands all files matching the provided file names.
-			To avoid this, use an absolute path to specify a single file.
-			When combined with --clear it clears all expanded files instead.
-			""",
-			nargs='*',
-		)
-
-		expand_parser.add_argument(
-			"--project",
-			help="Project(s) for which to expand all files (or clear expansion with --clear).",
-			nargs='*',
-		)
-
-		expand_parser.add_argument(
-			"-A",
-			"--all",
-			help="Expand all loom files (or clear expansion with --clear).",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-C",
-			"--clear",
-			help="Remove previously expanded files.",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-t",
-			"--truncate",
-			help="Replace previously expanded files if present (false by default). Only does something in combination with expansion (-m, -a, -r or -c).",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-m",
-			"--metadata",
-			help="Expand metadata (false by default)",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-a",
-			"--attributes",
-			help="Expand attributes (false by default)",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-r",
-			"--rows",
-			help="Expand rows (false by default)",
-			action="store_true"
-		)
-
-		expand_parser.add_argument(
-			"-c",
-			"--cols",
-			help="Expand columns (false by default)",
-			action="store_true"
-		)
-
-		args = parser.parse_args()
+		args = parse_args(def_dir)
 
 	if args.debug:
 		logging.basicConfig(
 			level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s")
 	else:
 		logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+
+	# If only --debug or --dataset-path is passed,
+	# we still want to default to the server command
+	if 'command' not in args:
+		setattr(args, "command", "server")
+	if 'port' not in args:
+		setattr(args, "port", 8003)
+	if 'show_browser' not in args:
+		setattr(args, "show_browser", True)
+
+	if args.debug:
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s - %(module)s, %(lineno)d: %(message)s')
+	else:
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
 
 	if args.command == "version":
 		print("loom v%s" % __version__)

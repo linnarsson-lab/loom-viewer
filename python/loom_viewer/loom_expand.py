@@ -141,13 +141,17 @@ class LoomExpand(object):
 			descr = "" if "description" not in attrs else ds.attrs.description
 			url = "" if "url" not in attrs else ds.attrs.url
 			doi = "" if "doi" not in attrs else ds.attrs.doi
-			creation_date = last_mod if "creation_date" not in attrs else ds.attrs.creation_date
+			# converts compact ISO timestamps to human-readable ones.
+			# Example: "20180130T155028.262458Z" becomes "2018/01/13 15:50"
+			last_mod_humanreadable = "{}/{}/{} {}:{}:{}".format(last_mod[0:4], last_mod[4:6], last_mod[6:8], last_mod[9:11], last_mod[11:13], last_mod[13:15])
+			# default to last_modified for older files that do
+			# not have a creation_date field
+			creation_date = last_mod_humanreadable if "creation_date" not in attrs else ds.attrs.creation_date
 			# get arbitrary col/row attribute, they are all lists
 			# of equal size. The length equals total cells/genes
 			total_cells = ds.shape[1]
 			total_genes = ds.shape[0]
-			# default to last_modified for older files that do
-			# not have a creation_date field
+
 			md_data = {
 				"project": self.project,
 				"filename": filename,
@@ -157,7 +161,7 @@ class LoomExpand(object):
 				"url": url,
 				"doi": doi,
 				"creationDate": creation_date,
-				"lastModified": last_mod,
+				"lastModified": last_mod_humanreadable,
 				"totalCells": total_cells,
 				"totalGenes": total_genes,
 			}

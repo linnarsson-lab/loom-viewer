@@ -104,6 +104,7 @@ class LoomServer(object):
 	def __init__(self, dataset_path: str = None) -> None:
 		logging.info("Initialising LoomServer with %s", dataset_path)
 		app = flask.Flask(__name__)		# type: Any
+
 		app.url_map.converters['intdict'] = IntDictConverter
 
 		# enable GZIP compression
@@ -290,11 +291,12 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003, debug: bool=False) -> Any:
+
 	if debug:
-		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s')
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s - %(module)s, %(lineno)d: %(message)s')
 		loom_server.app.config['DEBUG'] = True
 	else:
-		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
 		loom_server.app.config['DEBUG'] = False
 
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
