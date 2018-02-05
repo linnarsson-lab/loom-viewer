@@ -157,6 +157,9 @@ def send_indexjs() -> Any:
 @app.route('/dataset/<path:path>')
 @cache(expires=None)
 def catch_all(path: str) -> Any:
+	# prevent infinite appcache recursion
+	if path.endswith('manifest.html'):
+		return "manifest.html should only be opened at the root", 404
 	return flask.send_file('static/index.html', mimetype='text/html')
 
 #
