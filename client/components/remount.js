@@ -44,18 +44,6 @@ function resizeMobile() {
 	}
 }
 
-// Props to remove from Remount's props before passing them to the children
-const purgeTree = {
-	children: 0,
-	ignoreResize: 0,
-	ignoreWidth: 0,
-	ignoreHeight: 0,
-	watchedVal: 0,
-	delay: 0,
-	onUnmount: 0,
-	onRemount: 0,
-};
-
 export class Remount extends PureComponent {
 	constructor(...args) {
 		super(...args);
@@ -181,14 +169,7 @@ export class Remount extends PureComponent {
 		if (this.state.resizing) {
 			return null;
 		}
-		const { children } = this.props;
-
-		const childProps = purge(this.props, purgeTree);
-
-		const childrenWithProps = React.Children.map(children, (child) => {
-			return React.cloneElement(child, childProps);
-		});
-		return childrenWithProps;
+		return this.props.children;
 	}
 }
 

@@ -1,15 +1,19 @@
-import React, { PureComponent } from 'react';
+import React, {
+	Component,
+} from 'react';
 import PropTypes from 'prop-types';
 
 import {
 	Remount,
 } from './remount';
 
-import { AsyncPainter } from 'plotters/async-painter';
+import {
+	AsyncPainter,
+} from 'plotters/async-painter';
 
-// Mounts a canvas and gets its context,
-// then passes this context to the AsyncPainter.
-class CanvasComponent extends PureComponent {
+// Mounts a canvas, gets its context, and passes it to the AsyncPainter.
+// Only renders when visible - pauses rendering otherwise
+class CanvasComponent extends Component {
 	constructor(...args) {
 		super(...args);
 		this.mountView = this.mountView.bind(this);
@@ -18,16 +22,31 @@ class CanvasComponent extends PureComponent {
 	}
 
 	componentWillUpdate(nextProps, nextState) {
-		// if our AsyncPainter changed, and we have a
-		// context, pass it the context to start rendering
-		if (nextProps.AsyncPainter && nextState.context) {
-			if (nextProps.AsyncPainter !== this.props.AsyncPainter && nextProps.AsyncPainter && nextState.context) {
-				nextProps.AsyncPainter.replaceContext(nextState.context);
-			}
+		const {
+			paint,
+			asyncPainter,
+		} = nextProps;
+		const {
+			context,
+		} = nextState;
+
+		// We only need to re-render if we have a new paint function
+		const canRender = context && paint && asyncPainter;
+		if (canRender && (paint !== this.props.paint || context !== this.state.context)) {
+			asyncPainter.replaceBoth(paint, context);
 		}
 	}
 
-	mountView(view){
+	componentWillUnmount() {
+		const {
+			asyncPainter,
+		} = this.props;
+		// Remove context from painter, since the matching canvas will disappear too
+		asyncPainter.replaceContext(null);
+	}
+
+
+	mountView(view) {
 		// Scaling lets us adjust the painter function for
 		// high density displays and zoomed browsers.
 		// Painter functions decide how to use scaling
@@ -49,24 +68,22 @@ class CanvasComponent extends PureComponent {
 		}
 	}
 
-	mountCanvas(canvas){
+	mountCanvas(canvas) {
 		if (canvas) {
 			let context = canvas.getContext('2d');
-			const { state } = this;
+			const {
+				state,
+			} = this;
 			// store width, height and ratio in context for paint functions
 			context.width = state.width;
 			context.height = state.height;
 			context.pixelRatio = state.ratio;
 			context.pixelScale = state.pixelScale;
-			if (this.props.AsyncPainter) {
-				this.props.AsyncPainter.replaceContext(context);
-			}
-			const newState = {
-				canvas,
-				context,
-			};
 			this.setState(() => {
-				return newState;
+				return {
+					canvas,
+					context,
+				};
 			});
 		}
 	}
@@ -80,22 +97,20 @@ class CanvasComponent extends PureComponent {
 			<div
 				className={this.props.className}
 				style={this.props.style}
-				ref={this.mountView}>
+				ref = {this.mountView}>
 				{
 					this.state.view ?
-						(
-							<canvas
-								ref={this.mountCanvas}
-								width={this.state.width}
-								height={this.state.height}
-								style={{
-									width: '100%',
-									height: '100%',
-									display: 'block',
-								}}
-							/>
-						) :
-						null
+						( <canvas
+							ref={this.mountCanvas}
+							width={this.state.width}
+							height={this.state.height}
+							style={{
+								width: '100%',
+								height: '100%',
+								display: 'block',
+							}}
+						/>
+						) : null
 				}
 			</div>
 		);
@@ -103,7 +118,9 @@ class CanvasComponent extends PureComponent {
 }
 
 CanvasComponent.propTypes = {
-	AsyncPainter: PropTypes.object.isRequired,
+	asyncPainter: PropTypes.object.isRequired,
+	paint: PropTypes.func,
+	noBump: PropTypes.bool,
 	pixelScale: PropTypes.number,
 	className: PropTypes.string,
 	style: PropTypes.object,
@@ -115,32 +132,35 @@ CanvasComponent.propTypes = {
  * To determine size/layout, we just use CSS on the div containing the Canvas
  * component (we're using this with flexbox, for example).
  *
- * Expects a `paint` function that takes a `context` to draw on. After the canvas is mounted, this paint function will be called _once_. Pixel dimensions are stored in context.width, context.height and context.pixelRatio, making it possible for paint functions to depend on canvas size. Whenever the paint function or the canvas size changes it will  call this paint function, passing the canvas context
+ * Expects a `paint` function that takes a `context` to draw on. After the canvas is mounted, this paint function will be called _once_. Pixel dimensions are stored in context.width, context.height and context.pixelRatio, making it possible for paint functions to depend on canvas size. Whenever the paint function or the canvas size changes it will	call this paint function, passing the canvas context
  */
-export class Canvas extends PureComponent {
+export class Canvas extends Component {
 	constructor(...args) {
 		super(...args);
-		this.AsyncPainter = new AsyncPainter(this.props.paint, null);
+		this.asyncPainter = new AsyncPainter(null, null);
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.paint !== this.props.paint) {
-			this.AsyncPainter.replacePaint(nextProps.paint, nextProps.noBump);
+	componentWillReceiveProps(nextProps){
+		if(nextProps.forceUpdate){
+			this.asyncPainter.enqueue(true);
 		}
 	}
 
 	componentWillUnMount() {
-		this.AsyncPainter.remove();
+		this.asyncPainter.remove();
 	}
 
 	render() {
 		// If not given a width or height prop, make these fill their parent div
 		// This will implicitly set the size of the <Canvas> component, which
 		// will then call the passed paint function with the right dimensions.
-		const { props } = this;
+		const {
+			props,
+		} = this;
 		let style = Object.assign({}, props.style);
 		let {
-			width, height,
+			width,
+			height,
 		} = props;
 		if (width) {
 			style.minWidth = (width | 0) + 'px';
@@ -150,22 +170,22 @@ export class Canvas extends PureComponent {
 			style.minHeight = (height | 0) + 'px';
 			style.maxHeight = (height | 0) + 'px';
 		}
+		/* Since canvas interferes with CSS layouting,
+			we unmount and remount it on resize events,
+			unless width and height are set */
 		return (
 			<Remount
-				/* Since canvas interferes with CSS layouting,
-				we unmount and remount it on resize events,
-				unless width and height are set */
 				noResize={width !== undefined && height !== undefined}
-				ignoreWidth={props.ignoreWidth}
+				ignoreWidth={ props.ignoreWidth}
 				ignoreHeight={props.ignoreHeight}
 				ignoreResize={props.ignoreResize}
-				watchedVal={props.watchedVal} >
+				watchedVal={props.watchedVal}>
 				<CanvasComponent
-					AsyncPainter={this.AsyncPainter}
+					asyncPainter={this.asyncPainter}
+					paint={props.paint}
 					pixelScale={props.pixelScale}
 					className={props.className}
-					style={style}
-				/>
+					style={style} />
 			</Remount>
 		);
 	}
@@ -175,6 +195,8 @@ Canvas.propTypes = {
 	paint: PropTypes.func,
 	/** Never bump rendering to front of queue */
 	noBump: PropTypes.bool,
+	/** Always enqueue when receiving props */
+	forceUpdate: PropTypes.bool,
 	width: PropTypes.number,
 	height: PropTypes.number,
 	pixelScale: PropTypes.number,
