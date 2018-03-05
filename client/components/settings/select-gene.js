@@ -112,8 +112,7 @@ function arrayEqual(arr1, arr2) {
 		// differences will more likely show up
 		// at the end too.
 		// looping back to front should be faster.
-		let i = arr1.length;
-		while (i--) {
+		for(let i = 0; i < arr1.length; i++) {
 			if (arr1[i] !== arr2[i]) {
 				return false;
 			}

@@ -399,9 +399,8 @@ class SearchDataSetViewComponent extends Component {
 				projectListsFiltered,
 			} = this.prepareProjects(list);
 
-			let i = projectNames.length;
-			projectListsFiltered = new Array(i);
-			while (i--) {
+			projectListsFiltered = new Array(projectNames.length);
+			for (let i = 0; i < projectNames.length; i++) {
 				projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
 			}
 			this.state.projectNames = projectNames;
@@ -438,9 +437,8 @@ class SearchDataSetViewComponent extends Component {
 			} = nextProps;
 			if (JSON.stringify(order) !== JSON.stringify(this.props.order) ||
 				JSON.stringify(search) !== JSON.stringify(this.props.search)) {
-				let i = projectNames.length;
-				projectListsFiltered = new Array(i);
-				while (i--) {
+				projectListsFiltered = new Array(projectNames.length);
+				for (let i = 0; i < projectNames.length; i++) {
 					projectListsFiltered[i] = this.filterProjects(projectLists[i], order, search);
 				}
 			}
@@ -478,8 +476,7 @@ class SearchDataSetViewComponent extends Component {
 		let projectNames = [],
 			projectLists = [],
 			projectListsFiltered = [];
-		let i = arrayList.length;
-		while (i--) {
+		for(let i = 0; i < arrayList.length; i++) {
 			const dataset = arrayList[i];
 			const { project } = dataset;
 			let j = projectNames.indexOf(project);
@@ -600,9 +597,8 @@ class SearchDataSetViewComponent extends Component {
 			{};
 		let datasetList = null;
 		if (projectNames && projectNames.length) {
-			let i = projectNames.length;
-			let _datasetList = new Array(i);
-			while (i--) {
+			let _datasetList = new Array(projectNames.length);
+			for(let i = 0; i < projectNames.length; i++) {
 				let project = projectNames[i];
 				_datasetList[i] = (
 					<DatasetList

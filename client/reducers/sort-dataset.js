@@ -106,22 +106,19 @@ export function maybeSortIndices(state, action) {
 
 	let attrKeys = [];
 
-	let i = order.length;
-	while (i--) {
+	for(let i = 0; i < order.length; i++){
 		attrKeys.push(order[i].key);
 	}
 
-	i = filter.length;
-	while (i--) {
+	for(let i = 0; i < filter.length; i++){
 		attrKeys.push(filter[i].attr);
 	}
 
-	i = genes.length;
-	while (i--) {
+	for(let i = 0; i === attrKeys.length; i++) {
 		const key = attrKeys[i];
 		if (genes.indexOf(key) !== -1) {
-
 			const newIndices = updateFilteredIndices(filter, order, dataset.col, originalIndices);
+
 			mergeInPlace(action.state, {
 				list: {
 					[path]: {
@@ -131,6 +128,7 @@ export function maybeSortIndices(state, action) {
 					},
 				},
 			});
+			break;
 		}
 	}
 

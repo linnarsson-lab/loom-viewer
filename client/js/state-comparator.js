@@ -111,9 +111,8 @@ function baseCompare(a, b) {
 // For variable sized arrays, use vectorOf()
 function compareArray(patternArray) {
 	let l = patternArray.length,
-		i = l,
-		comparatorArray = [];
-	while (i--) {
+		comparatorArray = new Array(l);
+	for(let i = 0; i < l; i++) {
 		comparatorArray[i] = createComparator(patternArray[i]);
 	}
 	return (arr1, arr2) => {
@@ -122,8 +121,7 @@ function compareArray(patternArray) {
 		} else if (!(isArray(arr1) && isArray(arr2) && arr1.length === l && arr2.length === l)) {
 			return false;
 		}
-		let i = l;
-		while (i--) {
+		for(let i = 0; i < l; i++) {
 			if (!comparatorArray[i](arr1[i], arr2[i])) {
 				return false;
 			}
@@ -134,9 +132,8 @@ function compareArray(patternArray) {
 
 export function vectorOf(patternArray) {
 	let l = patternArray.length,
-		i = l,
-		comparatorArray = [];
-	while (i--) {
+		comparatorArray = new Array(l);
+	for (let i = 0; i < l; i++) {
 		comparatorArray[i] = createComparator(patternArray[i]);
 	}
 	return (arr1, arr2) => {
@@ -145,8 +142,7 @@ export function vectorOf(patternArray) {
 		} else if (!(isArray(arr1) && isArray(arr2) && arr1.length === arr2.length)) {
 			return false;
 		}
-		let i = arr1.length;
-		while (i--) {
+		for(let i = 0; i < arr1.length; i++) {
 			if (!comparatorArray[i % l](arr1[i], arr2[i])) {
 				return false;
 			}
@@ -162,9 +158,8 @@ function compareObj(schema) {
 	keys.sort();
 
 	// create a comparator for each key
-	let subCompare = {},
-		i = keys.length;
-	while (i--) {
+	let subCompare = {};
+	for( let i = 0; i < keys.length; i++) {
 		let k = keys[i];
 		subCompare[k] = createComparator(schema[k]);
 	}
@@ -176,8 +171,7 @@ function compareObj(schema) {
 		else if (!(typeof a === 'object' && typeof b === 'object')) {
 			return false;
 		}
-		let i = keys.length;
-		while (i--) {
+		for (let i = 0; i < keys.length; i++) {
 			let k = keys[i];
 			if (!subCompare[k](a[k], b[k])) {
 				return false;

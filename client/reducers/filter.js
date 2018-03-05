@@ -3,17 +3,7 @@ import { sortFilterIndices } from './sort-dataset';
 export function updateFilteredIndices(data, filter, order, originalIndices) {
 	let indices = Array.from(originalIndices);
 
-	let typedArray = Float64Array;
-	if (indices.length < (1 << 8)){
-		typedArray = Uint8Array;
-	} else if (indices.length < (1 << 16)){
-		typedArray = Uint16Array;
-	} else if (indices.length < (1 << 32)){
-		typedArray = Uint32Array;
-	}
-
-	let i = filter.length;
-	while (i--) {
+	for(let i = 0; i < filter.length; i++) {
 		let filterEntry = filter[i];
 		let filterAttrName = filterEntry.attr;
 		let filterVal = filterEntry.val;
@@ -23,10 +13,10 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 		// attr may be an unfetched gene
 		if (attr) {
 			// count occurrences of filtered value.
-			let j = indices.length;
+
 			let attrData = attr.data;
-			while (j--) {
-				if (attrData[indices[j]] === filterVal) {
+			for(let j = 0; j < indices.length; j++) {
+				while (attrData[indices[j]] === filterVal) {
 					// Remove value from indices.
 					// Note that indices will be unsorted after this
 					indices[j] = indices[indices.length - 1];
@@ -37,17 +27,17 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 	}
 
 	// Convert to typed array
-	indices = typedArray.from(indices);
+	let newIndices = Uint32Array.from(indices);
 
 	// In some cases, we just want to know which indices
 	// are present, and iterating by ascending indices
 	// will be more cache friendly in that case.
 	// Hence, we save a separate set of indices.
-	let ascendingIndices = indices.slice(0);
+	let ascendingIndices = newIndices.slice(0);
 	ascendingIndices.sort(compareIndices);
 
 	return {
-		indices: sortFilterIndices(data, order, indices),
+		indices: sortFilterIndices(data, order, newIndices),
 		ascendingIndices,
 	};
 }

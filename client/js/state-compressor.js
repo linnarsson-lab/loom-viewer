@@ -172,9 +172,8 @@ export function oneOf(valArr) {
 	// make sure valArr isn't accidentally mutated later
 	valArr = valArr.slice();
 	// hashmap lookup is usually faster than indexOf in modern browsers
-	let valToIdx = {},
-		i = valArr.length;
-	while(i--){
+	let valToIdx = {};
+	for(let i = 0; i < valArr.length; i++){
 		valToIdx[valArr[i]] = i;
 	}
 	let retVal = () => { };
@@ -225,16 +224,14 @@ export function vectorOf(patternArr){
 // For variable sized arrays, use vectorOf()
 export function encodeArray(patternArr) {
 	let l = patternArr.length,
-		i = l,
-		encoderArr = [];
-	while (i--) {
+		encoderArr = new Array(l);
+	for(let i = 0; i < l; i++) {
 		encoderArr[i] = createEncoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let i = l,
-				retArr = new Array(l);
-			while (i--) {
+			let retArr = new Array(l);
+			for(let i = 0; i < l; i++) {
 				retArr[i] = encoderArr[i](arr[i]);
 			}
 			return retArr;
@@ -246,36 +243,32 @@ export function encodeArray(patternArr) {
 
 export function decodeArray(patternArr) {
 	let l = patternArr.length,
-		decoderArr = [],
-		i = l;
-	while (i--) {
+		decoderArr = new Array(l);
+	for (let i = 0; i < l; i++) {
 		decoderArr[i] = createDecoder(patternArr[i]);
 	}
 	return (arr) => {
-		if (arr) {
-			let i = l,
-				retArr = new Array(l);
-			while (i--) {
+		if (arr && arr.length) {
+			let retArr = new Array(l);
+			for(let i = 0; i < l ; i++) {
 				retArr[i] = decoderArr[i](arr[i]);
 			}
 			return retArr;
 		}
-		// else return undefined
+		return undefined;
 	};
 }
 
 export function encodeVector(patternArr){
 	let l = patternArr.length,
-		i = l,
-		encoderArr = [];
-	while (i--) {
+		encoderArr = new Array(l);
+	for(let i = 0; i < l; i++) {
 		encoderArr[i] = createEncoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let i = arr.length,
-				retArr = new Array(i);
-			while (i--) {
+			let retArr = new Array(arr.length);
+			for (let i = 0; i < arr.length; i++) {
 				retArr[i] = encoderArr[i % l](arr[i]);
 			}
 			return retArr;
@@ -287,21 +280,19 @@ export function encodeVector(patternArr){
 
 export function decodeVector(patternArr) {
 	let l = patternArr.length,
-		decoderArr = [],
-		i = l;
-	while (i--) {
+		decoderArr = new Array(l);
+	for(let i = 0; i < l; i++) {
 		decoderArr[i] = createDecoder(patternArr[i]);
 	}
 	return (arr) => {
 		if (arr) {
-			let i = arr.length,
-				retArr = new Array(i);
-			while (i--) {
+			let retArr = new Array(arr.length);
+			for(let i = 0; i < arr.length; i++) {
 				retArr[i] = decoderArr[i % l](arr[i]);
 			}
 			return retArr;
 		}
-		// else return undefined
+		return undefined;
 	};
 }
 
@@ -311,17 +302,15 @@ export function encodeObj(schema) {
 	keys.sort();
 
 	let _encoder = {};
-	let i = keys.length;
-	while (i--) {
+	for(let i = 0; i < keys.length; i++) {
 		let k = keys[i];
 		_encoder[k] = createEncoder(schema[k]);
 	}
 
 	let encoder = (obj) => {
 		if (obj) {
-			let i = keys.length,
-				retArr = new Array(i);
-			while (i--) {
+			let retArr = new Array(keys.length);
+			for (let i = 0; i < keys.length; i++) {
 				let k = keys[i];
 				retArr[i] = _encoder[k](obj[k]);
 			}
@@ -331,8 +320,7 @@ export function encodeObj(schema) {
 		}
 	};
 
-	i = keys.length;
-	while (i--) {
+	for(let i = 0; i < keys.length; i++) {
 		let k = keys[i];
 		encoder[k] = _encoder[k];
 	}
@@ -346,17 +334,15 @@ export function decodeObj(schema) {
 	keys.sort();
 
 	let _decoder = {};
-	let i = keys.length;
-	while (i--) {
+	for(let i = 0; i < keys.length; i++) {
 		let k = keys[i];
 		_decoder[k] = createDecoder(schema[k]);
 	}
 
 	let decoder = (arr) => {
 		if (arr) {
-			let i = keys.length,
-				retObj = {};
-			while (i--) {
+			let retObj = {};
+			for(let i = 0; i < keys.length; i++){
 				let k = keys[i],
 					decoded = _decoder[k](arr[i]);
 				if (decoded !== undefined) {
@@ -365,11 +351,10 @@ export function decodeObj(schema) {
 			}
 			return retObj;
 		}
-		// else return undefined
+		return undefined;
 	};
 
-	i = keys.length;
-	while (i--) {
+	for(let i = 0; i < keys.length; i++){
 		let k = keys[i];
 		decoder[k] = _decoder[k];
 	}

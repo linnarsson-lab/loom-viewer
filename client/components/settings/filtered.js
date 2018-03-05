@@ -25,10 +25,8 @@ export class FilteredValues extends Component {
 		if (filtered && filtered.length) {
 
 			let filteredVals = [],
-				attrNames = [],
-				i = filtered.length;
-
-			while (i--) {
+				attrNames = [];
+			for( let i = 0; i < filtered.length; i++) {
 
 				let {
 					attr,
@@ -45,8 +43,7 @@ export class FilteredValues extends Component {
 			}
 
 			let filteredList = new Array(filteredVals.length);
-			i = filteredVals.length;
-			while (i--) {
+			for (let i = 0; i < filteredVals.length; i++) {
 
 				let filterAttrName = attrNames[i],
 					attr = attrs[filterAttrName],

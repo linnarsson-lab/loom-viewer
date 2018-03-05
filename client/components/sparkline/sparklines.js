@@ -86,11 +86,10 @@ function makeSparklines(props) {
 		containerWidth,
 	} = props;
 
-	let i = selection.length,
-		painters = new Array(i),
-		canvases = new Array(i);
+	let painters = new Array(selection.length),
+		canvases = new Array(selection.length);
 
-	while (i--) {
+	for(let i = 0; i < selection.length; i++) {
 		let gene = selection[i];
 		painters[i] = makePainter(props, gene);
 		canvases[i] = makeCanvas(gene, containerWidth, painters, i);
@@ -164,13 +163,12 @@ export class Sparklines extends PureComponent {
 			painters, canvases,
 		} = this.state;
 
-		let i = selection.length,
-			changedPlotters = i !== canvases.length;
+		let changedPlotters = selection.length !== canvases.length;
 
 		// A sparkline only needs updating when
 		// the gene selection changed, or if
 		// a fetched gene has arrived.
-		while (i--) {
+		for(let i = 0; i < selection.length; i++) {
 			const gene = selection[i],
 				geneData = attrs[gene];
 			if (gene !== pSelection[i] || geneData !== pAttrs[gene]) {

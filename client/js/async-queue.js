@@ -187,8 +187,7 @@ export function asyncQueue(asyncCallbacks = [], maxTime = 50, autoStart = true, 
 				timeoutID = -1;
 				timeoutSet = false;
 			}
-			let i = asyncCallbacks.length;
-			while (i--) {
+			for(let i = 0; i < asyncCallbacks.length; i++) {
 				if (asyncCallbacks[i].cancel) {
 					asyncCallbacks[i].cancel();
 				}

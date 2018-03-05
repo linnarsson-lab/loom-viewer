@@ -166,8 +166,7 @@ function cacheGenes(genes, path) {
 
 function requestGenesFetch(genes, path) {
 	let fetchingGenes = {};
-	let i = genes.length;
-	while (i--) {
+	for(let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = true;
 	}
 	return {
@@ -184,8 +183,7 @@ function requestGenesFetch(genes, path) {
 
 function requestGenesFailed(genes, path) {
 	let fetchingGenes = {};
-	let i = genes.length;
-	while (i--) {
+	for(let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = false;
 	}
 	return {
@@ -204,8 +202,7 @@ function requestGenesFailed(genes, path) {
 function receiveGenes(attrs, genes, path) {
 	let fetchingGenes = {},
 		fetchedGenes = {};
-	let i = genes.length;
-	while (i--) {
+	for (let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = false;
 		fetchedGenes[genes[i]] = true;
 	}
