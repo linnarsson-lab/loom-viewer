@@ -1,7 +1,7 @@
 // You'd be surprised how often I need this.
-// I hope webpack puts it at top level...
+// I hope WebPack puts it at top level...
 
-export function nullFunc() { }
+export function nullFunc() {}
 
 // test if we are on a little endian or big endian architecture
 
@@ -12,16 +12,129 @@ export const isLittleEndian = (function () {
 	return t16[0] === 0xFF00;
 })();
 
-export function constrain(x, a, b) {
-	return x < a ? a :
-		x > b ? b :
+/**
+ * Constrain input x to min or max
+ *
+ * @param {Number} x
+ * @param {Number} min
+ * @param {Number} max
+ */
+export function constrain(x, min, max) {
+	return x < min ? min :
+		x > max ? max :
 			x;
 }
 
-const { log2 } = Math;
+const {
+	log2,
+} = Math;
 
 export function logProject(x) {
 	return x >= 0 ? log2(1 + x) : -log2(1 - x);
+}
+
+export function logProjectArray(data) {
+	switch (data.constructor) {
+		case Float32Array:
+			return logProjectArrayF32(data);
+		case Float64Array:
+			return logProjectArrayF64(data);
+		case Int32Array:
+			return logProjectArrayI32(data);
+		case Int16Array:
+			return logProjectArrayI16(data);
+		case Int8Array:
+			return logProjectArrayI8(data);
+		case Uint32Array:
+			return logProjectArrayU32(data);
+		case Uint16Array:
+			return logProjectArrayU16(data);
+		case Uint8Array:
+			return logProjectArrayU8(data);
+		default:
+	}
+	return logProjectArrayPlain(data);
+}
+
+function logProjectArrayF64(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayF32(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayI32(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayI16(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayI8(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayU32(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayU16(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayU8(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
+}
+
+function logProjectArrayPlain(data) {
+	let _data = data.slice(0);
+	for (let i = 0; i < data.length; i++) {
+		let v = data[i];
+		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+	}
+	return _data;
 }
 
 export function clipRange(attr, settings) {
@@ -67,15 +180,27 @@ export function clipRange(attr, settings) {
 
 /**
  * Crude visual approximation of a normal curve.
- * Returns an array of random values between (-0.5, 0.5)
+ * Returns an array of random values guaranteed to
+ * be within (-0.5, 0.5)
  */
 export function rndNormArray(length) {
-	let source = new Uint8Array(Math.min(length * 4, 65536)),
+	let source = new Uint32Array(Math.min(length, 16384)),
 		returnValues = new Float32Array(length);
-	window.crypto.getRandomValues(source);
+	// For large arrays, this is faster than iterating over Math.random()
+	// For small arrays, the extra cost doesn't matter.
 	for (let i = 0; i < length; i++) {
-		let i4 = (i * 4) % (source.length - 3);
-		returnValues[i] = (source[i4] + source[i4 + 1] - source[i4 + 2] - source[i4 + 3]) * 0.0009765625; // 0.0009765625 = 1 / (4 * 256)
+		if (i % 16384 === 0) {
+			window.crypto.getRandomValues(source);
+		}
+		// we take an 32bit integers,
+		// convert them to four 8bit integers
+		// add two, subtract the other two,
+		// then normalise the result.
+		let v = source[i % source.length];
+		returnValues[i] = (
+			(v >>> 24) + ((v >>> 16) & 0xFF) -
+			(((v >>> 8) & 0xFF) + (v & 0xFF))
+		) * 0.0009765625; // 0.0009765625	= 1 / (4 * 256)
 	}
 	return returnValues;
 }
@@ -108,7 +233,7 @@ export function inBounds(r1, r2) {
 		r1[0] < r2[2] && // r1.xMin < r2.xMax
 		r2[2] < r1[2] && // r2.xMin < r1.xMax
 		r1[1] < r2[3] && // r1.yMin < r2.yMax
-		r2[1] < r1[3]    // r2.yMin < r1.yMax
+		r2[1] < r1[3] // r2.yMin < r1.yMax
 	);
 }
 
@@ -120,7 +245,7 @@ export function inBounds(r1, r2) {
  * Returns array of all unique values as `{ val, count }`
  * objects. Sorted by `val`.
  */
-export function countElements(array, start, end) {
+export function countUniques(array, start, end) {
 	start = start > 0 ? start : 0;
 	end = end < array.length ? end : array.length;
 	// Copy and sort the array. Note that after sorting,
@@ -144,13 +269,22 @@ export function countElements(array, start, end) {
 		j = i,
 		uniques = [];
 	while (val !== sentinel) {
-
 		// keep going until a different value is found
-		while (j - 1024 > start && sorted[j - 1024] === val) { j -= 1024; }
-		while (j - 256 > start && sorted[j - 256] === val) { j -= 256; }
-		while (j - 64 > start && sorted[j - 64] === val) { j -= 64; }
-		while (j - 8 > start && sorted[j - 8] === val) { j -= 8; }
-		while (j > start && sorted[j] === val) { j--; }
+		while (j - 1024 > start && sorted[j - 1024] === val) {
+			j -= 1024;
+		}
+		while (j - 256 > start && sorted[j - 256] === val) {
+			j -= 256;
+		}
+		while (j - 64 > start && sorted[j - 64] === val) {
+			j -= 64;
+		}
+		while (j - 8 > start && sorted[j - 8] === val) {
+			j -= 8;
+		}
+		while (j > start && sorted[j] === val) {
+			j--;
+		}
 
 		uniques.push({
 			val,
@@ -183,11 +317,21 @@ export function findMostCommon(array, start, end) {
 		while (val !== null && val !== undefined) {
 
 			// keep going until a different value is found
-			while (sorted[j + 1024] === val) { j += 1024; }
-			while (sorted[j + 256] === val) { j += 256; }
-			while (sorted[j + 64] === val) { j += 64; }
-			while (sorted[j + 8] === val) { j += 8; }
-			while (sorted[j] === val) { j++; }
+			while (sorted[j + 1024] === val) {
+				j += 1024;
+			}
+			while (sorted[j + 256] === val) {
+				j += 256;
+			}
+			while (sorted[j + 64] === val) {
+				j += 64;
+			}
+			while (sorted[j + 8] === val) {
+				j += 8;
+			}
+			while (sorted[j] === val) {
+				j++;
+			}
 
 			if (j - i > mc) {
 				mv = val;
@@ -213,8 +357,12 @@ export function calcMinMax(data, start, end) {
 		min = max = v;
 		while (start < i--) {
 			v = data[i];
-			if (v < min) { min = v; }
-			if (v > max) { max = v; }
+			if (v < min) {
+				min = v;
+			}
+			if (v > max) {
+				max = v;
+			}
 		}
 	}
 	return {
@@ -226,7 +374,7 @@ export function calcMinMax(data, start, end) {
 /**
  * Tests if all values in an array are integer values
  * and finds min and max values of the array.
-*/
+ */
 export function isIntegerMinMax(array) {
 	let min,
 		max,
@@ -238,8 +386,12 @@ export function isIntegerMinMax(array) {
 		isInt = v === (v | 0);
 		while (i--) {
 			v = array[i];
-			if (v < min) { min = v; }
-			if (v > max) { max = v; }
+			if (v < min) {
+				min = v;
+			}
+			if (v > max) {
+				max = v;
+			}
 			isInt = isInt && v === (v | 0);
 		}
 	}
@@ -247,7 +399,7 @@ export function isIntegerMinMax(array) {
 		min,
 		max,
 		isInt,
-	};	// |0 forces to integer value, we can
+	}; // |0 forces to integer value, we can
 }
 
 export function normalise(array) {
@@ -273,8 +425,12 @@ export function normalise(array) {
 		normMax = Number.MIN_VALUE;
 	while (i--) {
 		let norm = data[i] / deviation;
-		if (norm < normMin) { normMin = norm; }
-		if (norm > normMax) { normMax = norm; }
+		if (norm < normMin) {
+			normMin = norm;
+		}
+		if (norm > normMax) {
+			normMax = norm;
+		}
 		data[i] = norm;
 	}
 	return {
@@ -299,6 +455,31 @@ export function normalise(array) {
 // value, which twenty values are most common, by how much,
 // whether they are filtered, and a color indices LUT matching
 // these common values
+
+export function arrayConstr(arrayType) {
+	switch (arrayType) {
+		case 'float32':
+			return Float32Array;
+		case 'number':
+		case 'float64':
+			return Float64Array;
+		case 'integer':
+		case 'int32':
+			return Int32Array;
+		case 'int16':
+			return Int16Array;
+		case 'int8':
+			return Int8Array;
+		case 'uint32':
+			return Uint32Array;
+		case 'uint16':
+			return Uint16Array;
+		case 'uint8':
+			return Uint8Array;
+		default:
+	}
+	return Array;
+}
 
 
 // Convert plain array to object with
@@ -329,26 +510,28 @@ export function convertJSONarray(arr, name) {
 		uniquesColor[uniques[i].val] = i;
 	}
 
-	const colorIndices = { uniques: uniquesColor };
+	const colorIndices = {
+		uniques: uniquesColor,
+	};
 
 	return {
-		name,
-		arrayType,
-		indexedVal,
-		data: processedData,
 		allUnique,
+		arrayType,
+		colorIndices,
+		data: processedData,
+		indexedVal,
+		max,
+		min,
+		name,
 		uniqueVal,
 		uniques,
-		colorIndices,
-		min,
-		max,
 	};
 }
 
 /**
  * Returns the first string in `keyList` that is a key
  * in `obj`. Returns empty string if none are found.
- * @param {object} obj
+ * @param {*} obj
  * @param {string[]} keyList
  */
 export function firstMatchingKey(obj, keyList) {
@@ -388,41 +571,94 @@ export function firstMatchingKeyCaseInsensitive(obj, keyList) {
 }
 
 
+
+export function generateIndices(length) {
+	// I don't think we have to worry about ever
+	// have more than 4294967296 elements,
+	// since single Float64Array would be over 32 gigabytes.
+	let indices = new Uint32Array(length);
+
+	// unrolled 16-decrement loop was benchmarked as the fastest option on the slowest browser supported.
+	// https://run.perf.zone/view/initiating-indices-for-vs-while-loop-plain-unrolled-16-and-unrolled-32-1516713346278
+	while (length - 16 > 0) {
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+		indices[--length] = length;
+	}
+	while (length--) {
+		indices[length] = length;
+	}
+	return indices;
+}
+
+/**
+ * For a given selection of indices, returns the indices not selected
+ *
+ * @param {Uint32Array} ascendingIndices selected indices, sorted in ascending order,
+ * @param {number} totalIndices a number indicating total indices.
+ * @returns {Uint32Array} a sorted Uint32Array of the indices not selected.
+ */
+export function generateExcludedIndices(ascendingIndices, totalIndices) {
+	let otherIndices = new Uint32Array(totalIndices - ascendingIndices.length);
+	for (let i = 0, j = 0, k = 0; i < totalIndices; i++) {
+		const iNext = j < ascendingIndices.length ? ascendingIndices[j++] : totalIndices;
+		while (i < iNext) {
+			otherIndices[i - k] = i++;
+		}
+		k++;
+	}
+	return otherIndices;
+}
+
 /**
  * - `array`: array to be sorted
  * - `compareFunc`: optional comparison callback that will be given
- *   *indices* i and j. This can be used to create callbacks that
- *   do more complex comparisons on objects in the array, and more
- *   importantly *other arrays*
- *   To ensure stability it should always end with `i - j`
- *   as the last sort key.
+ *	 *indices* i and j. This can be used to create callbacks that
+ *	 do more complex comparisons on objects in the array, and
+ *	 more importantly *other arrays as well*.
+ *
+ *	 `compareFunc` should always end with `i - j`
+ *	 as the last sort key, as this will ensure a stable sort.
  *
  * Example:
  *
- *    let array = [
- *      {label: 'b', value: 1},
- *      {label: 'a', value: 1},
- *      {label: 'c', value: 0}
- *    ];
- *    const compareFunc = (i, j) => {
- *      let vi = array[i].value,
- *        vj = array[j].value;
- *      return vi < vj ? -1 :
- *        vi > vj ? 1 :
- *          i - j;
- *    };
- *    sortInPlace(array, compareFunc);
- *    // ==> [
- *    //   {label: "c", value:0},
- *    //   {label: "b", value:1},
- *    //   {label: "a", value:1}
- *    // ]
+ *		let array = [
+ *			{label: 'b', value: 1},
+ *			{label: 'a', value: 1},
+ *			{label: 'c', value: 0}
+ *		];
+ *		const compareFunc = (i, j) => {
+ *			let vi = array[i].value,
+ *				vj = array[j].value;
+ *			return vi < vj ? -1 :
+ *				vi > vj ? 1 :
+ *					i - j;
+ *		};
+ *		sortInPlace(array, compareFunc);
+ *		// ==> [
+ *		//	 {label: "c", value:0},
+ *		//	 {label: "b", value:1},
+ *		//	 {label: "a", value:1}
+ *		// ]
  *
  * @param {*[]} array
  * @param {{(i:number, j:number)=> number}=} compareFunc
  */
 export function sortInPlace(array, compareFunc) {
-	return sortFromIndices(array, findIndices(array, compareFunc));
+	return sortFromIndices(array, findSourceIndices(array, compareFunc));
 }
 
 /**
@@ -431,7 +667,7 @@ export function sortInPlace(array, compareFunc) {
  * @returns {*[]} sortedArray
  */
 export function sortedCopy(array, compareFunc) {
-	let indices = findIndices(array, compareFunc);
+	let indices = findSourceIndices(array, compareFunc);
 	let i = array.length;
 	// make sure we use the same type of array
 	let sortedArray = new Object.getPrototypeOf(array).constructor(i);
@@ -467,20 +703,21 @@ export function sortedCopy(array, compareFunc) {
  * @param {*[]} array
  * @returns {{(i:number, j:number)=> number}}
  */
-function makeCompareFunc(array) {
+function makeSourceCompareFunc(array) {
 	isTypedArray(array) || typeof array[0] === 'number' ?
-		makeNumberCompareFunc(array) :
-		makeBaseCompareFunc(array);
+		makeSourceNumberFunc(array) :
+		makeSourceAnyFunc(array);
 }
 
 /**
  * Creates a compare function for sorting a set of *indices*
  * based on lexicographical comparison of the array values.
- * Uses comparisons.
+ * Therefore, elements in array must be have sensible output
+ * for greater than/smaller than operations.
  * @param {*[]} array
  * @returns {{(i:number, j:number)=> number}}
  */
-function makeBaseCompareFunc(array) {
+function makeSourceAnyFunc(array) {
 	return (i, j) => {
 		let vi = array[i],
 			vj = array[j];
@@ -499,7 +736,7 @@ function makeBaseCompareFunc(array) {
  * @param {*[]} array
  * @returns {{(i:number, j:number)=> number}}
  */
-function makeNumberCompareFunc(array) {
+function makeSourceNumberFunc(array) {
 	return (i, j) => {
 		return (+array[i]) - (+array[j]) || i - j;
 	};
@@ -508,62 +745,62 @@ function makeNumberCompareFunc(array) {
 /**
  * - `array`: array to find indices for.
  * - `compareFunc`: comparison closure that takes _indices_ i and j,
- *   and compares values at `array[i]` to `array[j]` in some way.
- *   To force stability, use `i - j` as last sort key.
+ *	 and compares values at `array[i]` to `array[j]` in some way.
+ *	 Suggestion: use `i - j` as last sort key for a stable sort.
+ *	 If `array` contains only strings, or only numbers, `compareFunc`
+ *	 is optional.
  *
- * Finds the indices of the values that *should* be stored
- * at each array position (that is: `array[i]` should have
- * the value at `array[indices[i]]`).
+ * For a given `array` and `compareFunc`, `findSourceIndices`
+ * returns a `Uint32Array` with indices such that the following
+ * would result in a sorted array:
  *
- * Returns the smallest typed array that can contain all indices
+ *		let array2 = []
+ *		for(let i = 0; i < array.length; i++){
+ *			array2.push(array[indices[i]])
+ *		}
  *
  * Example:
  *
- *    let array = [
- *      {label: 'b', value: 1},
- *      {label: 'a', value: 1},
- *      {label: 'c', value: 0}
- *    ];
- *    const compareFunc = (i, j) => {
- *      let vi = array[i].n, vj = array[j].n;
- *      return vi < vj ? -1 :
- *        vi > vj ? 1 :
- *          i - j;
- *    };
- *    findIndices(array, compareFunc);
- *    // ==> [2, 0, 1]
+ *		const data = [
+ *			{label: 'd', v: 0},
+ *			{label: 'b', v: 1},
+ *			{label: 'a', v: 1},
+ *			{label: 'c', v: 0}
+ *		];
+ *
+ *		const compareFunc = (i, j) => {
+ *			const vDelta = data[i].v - data[j].v,
+ *				li = data[i].label,
+ *				lj = data[j].label;
+ *
+ *			return (
+ *				vDelta !== 0 ? vDelta :
+ *				 li < lj ? -1 :
+ *					 li > lj ? 1 :
+ *						 i - j
+ *			);
+ *		};
+ *
+ *		const indices = findSourceIndices(compareFunc);
+ *		// ==> [3, 0, 2, 1]
+ *
+ *		const sortedData = data.map((_, i) => {
+ *			return data[indices[i]];
+ *		});
+ *		// ==> [
+ *		//			 {label: 'd', v: 0},
+ *		//			 {label: 'b', v: 1},
+ *		//			 {label: 'a', v: 1},
+ *		//			 {label: 'c', v: 0}
+ *		//		 ];
  *
  * @param {*[]} array
  * @param {{(i:number, j:number)=> number}=} compareFunc
  */
-export function findIndices(array, compareFunc) {
-	let i = array.length,
-		indices = new Uint32Array(i);
-	// unrolled 16-decrement loop was benchmarked as the fastest option on the slowest browser.
-	// https://run.perf.zone/view/initiating-indices-for-vs-while-loop-plain-unrolled-16-and-unrolled-32-1516713346278
-	while (i - 16 > 0) {
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-		indices[--i] = i;
-	}
-	while (i--) {
-		indices[i] = i;
-	}
+export function findSourceIndices(array, compareFunc) {
+	let indices = generateIndices(array.length);
 	if (typeof compareFunc !== 'function') {
-		compareFunc = makeCompareFunc(array);
+		compareFunc = makeSourceCompareFunc(array);
 	}
 	// after sorting, `indices[i]` gives the index from where
 	// `array[i]` should take the value from, so
@@ -572,10 +809,52 @@ export function findIndices(array, compareFunc) {
 }
 
 /**
+ * Almost identical to `findSourceIndices`, except that
+ * the returned indices are ordered such that the following
+ * results in an ordered array:
+ *
+ *		let array2 = new Array(array1.length)
+ *		for(let i = 0; i < array.length; i++){
+ *			array2[indices[i] = array[i];
+ *		}
+ * @param {*} array
+ * @param {*} compareFunc
+ */
+export function findTargetIndices(array, compareFunc) {
+	let sourceIndices = findSourceIndices(array, compareFunc),
+		i = sourceIndices.length,
+		targetIndices = Uint32Array(i);
+
+	while (i - 16 > 0) {
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+		targetIndices[sourceIndices[--i]] = i;
+	}
+
+	while (i--) {
+		targetIndices[sourceIndices[--i]] = i;
+	}
+	return targetIndices;
+}
+
+/**
  * - `array`: data to be sorted in-place
  * - `indices`: indices from where the value should _come from_,
- *   that is:  `sorted array[i] = array[indices[i]]`
- *    (`indices` is sorted in-place as a side effect).
+ *	 that is:	`sorted array[i] = array[indices[i]]`
+ *		(`indices` is sorted in-place as a side effect).
  *
  * `indices` must contain each index of `array`, and each
  * index must be present only once! In other words:
@@ -584,18 +863,29 @@ export function findIndices(array, compareFunc) {
  *
  * Example:
  *
- *     let array = ['a', 'b', 'c', 'd', 'e' ],
- *       indices = [1, 2, 0, 4, 3]
- *     sortFromIndices(array, indices)
- *     // ==> array: ['b', 'c', 'a', 'e', 'd' ],
- *     //     indices: [0, 1, 2, 3, 4]
+ *		 let array = ['a', 'b', 'c', 'd', 'e' ],
+ *			 indices = [1, 2, 0, 4, 3]
+ *		 sortFromIndices(array, indices)
+ *		 // ==> array: ['b', 'c', 'a', 'e', 'd' ],
+ *		 //		 indices: [0, 1, 2, 3, 4]
  * - in: `['a', 'b', 'c', 'd', 'e' ]`, `[1, 2, 0, 4, 3]`,
  * - out: `['b', 'c', 'a', 'e', 'd' ]`, `[0, 1, 2, 3, 4]`
  *
  * @param {*[]} array
- * @param {number[]} indices
+ * @param {Uint32Array} indices
  */
 export function sortFromIndices(array, indices) {
+	switch (array.constructor) {
+		case Uint8Array:
+			return sortFromIndicesU8(array, indices);
+		case Uint32Array:
+			return sortFromIndicesU32(array, indices);
+		default:
+	}
+	return sortFromIndicesArray(array, indices);
+}
+
+function sortFromIndicesArray(array, indices) {
 	// there might be multiple cycles, so we must
 	// walk through the whole array to check
 	let k = array.length;
@@ -627,39 +917,426 @@ export function sortFromIndices(array, indices) {
 	return array;
 }
 
+function sortFromIndicesU8(array, indices) {
+	// there might be multiple cycles, so we must
+	// walk through the whole array to check
+	let k = array.length;
+	while (k--) {
+		// advance until we find a value in
+		// the "wrong" position
+		if (k !== indices[k]) {
+			// create vacancy to use "half-swaps" trick
+			// Thank you Andrei Alexandrescu :)
+			let v0 = array[k];
+			let i = k;
+			let j = indices[k];
+			while (j !== k) {
+				// shuffle value around
+				array[i] = array[j];
+				// array[i] is now in the correct position,
+				// update indices[i] to reflect this
+				indices[i] = i;
+				// go to next index
+				i = j;
+				j = indices[j];
+			}
+			// put original array[k] back in
+			// the array and update indices
+			array[i] = v0;
+			indices[i] = i;
+		}
+	}
+	return array;
+}
+
+function sortFromIndicesU32(array, indices) {
+	// there might be multiple cycles, so we must
+	// walk through the whole array to check
+	let k = array.length;
+	while (k--) {
+		// advance until we find a value in
+		// the "wrong" position
+		if (k !== indices[k]) {
+			// create vacancy to use "half-swaps" trick
+			// Thank you Andrei Alexandrescu :)
+			let v0 = array[k];
+			let i = k;
+			let j = indices[k];
+			while (j !== k) {
+				// shuffle value around
+				array[i] = array[j];
+				// array[i] is now in the correct position,
+				// update indices[i] to reflect this
+				indices[i] = i;
+				// go to next index
+				i = j;
+				j = indices[j];
+			}
+			// put original array[k] back in
+			// the array and update indices
+			array[i] = v0;
+			indices[i] = i;
+		}
+	}
+	return array;
+}
+
+/**
+ * Like `sortFromIndices`, except that it treats
+ * each step of two as "one" block.
+ * @param {number[]} array
+ * @param {number[]} indices
+ */
+export function sortBlock2FromIndices(array, indices) {
+	// there might be multiple cycles, so we must
+	// walk through the whole array to check
+	let k = array.length;
+	while (k--) {
+		// advance until we find a value in
+		// the "wrong" position
+		if (k !== indices[k]) {
+			// create vacancy to use "half-swaps" trick
+			// Thank you Andrei Alexandrescu :)
+			let v0 = array[k << 1];
+			let v1 = array[(k << 1) + 1];
+			let i = k;
+			let j = indices[k];
+			while (j !== k) {
+				// shuffle value around
+				array[i << 1] = array[j << 1];
+				array[(i << 1) + 1] = array[(j << 1) + 1];
+				// array[i] is now in the correct position,
+				// update indices[i] to reflect this
+				indices[i] = i;
+				// go to next index
+				i = j;
+				j = indices[j];
+			}
+			// put original array[k] back in
+			// the array and update indices
+			array[i << 1] = v0;
+			array[(i << 1) + 1] = v1;
+			indices[i] = i;
+		}
+	}
+	return array;
+}
+
+// === Array Subset ===
+
+/**
+ * arraySubset can and will be called by many different
+ * types of arrays. In such situations, JS engines are
+ * likely to permanently de-opt it.
+ * By making a separate sub-function for each data type,
+ * the sub-functions stay type stable (a.k.a. monomorphic).
+ * So while arraySubset will be de-opted, the sub-function
+ * are likely to remain performant.
+ *
+ * 2018/02/08: This has been confirmed in practice with
+ * a large loom file. Previously, a stackedCategoriesChart
+ * would take take multiple frames to render. With this
+ * approach, it renders multiple charts per frame.
+ * (no precise measurement necessary, this was visible by
+ * eyeballing on both Firefox and Chrome)
+ * This suggests similar optimisations may improve the
+ * performance inside the plotters themselves too, actually.
+ */
+
 export function attrSubset(attr, indices, i0, i1) {
-	return arraySubset(attr.data, attr.arrayType, indices, i0, i1);
+	return arraySubset(attr.data, attr.data.constructor, indices, i0, i1);
+}
+
+export function arraySubset(data, constructor, indices, i0, i1) {
+	constructor = constructor || data.constructor;
+	if (!indices) {
+		return constructor.from(data);
+	}
+	i0 = i0 || 0;
+	i1 = i1 === undefined ? indices.length : i1;
+	switch (constructor) {
+		case Float32Array:
+			// We coerce to F32 arrays quite often inside the scatter plot,
+			// so we differentiate both input and output types.
+			// For other array types,	we only make subsets equal to
+			// the input type (so far).
+			let selection = new Float32Array(i1 - i0);
+			switch (data.constructor) {
+				case Float32Array:
+					return arraySubsetF32_F32(data, selection, indices, i0, i1);
+				case Float64Array:
+					return arraySubsetF32_F64(data, selection, indices, i0, i1);
+				case Int32Array:
+					return arraySubsetF32_I32(data, selection, indices, i0, i1);
+				case Int16Array:
+					return arraySubsetF32_I16(data, selection, indices, i0, i1);
+				case Int8Array:
+					return arraySubsetF32_I8(data, selection, indices, i0, i1);
+				case Uint32Array:
+					return arraySubsetF32_U32(data, selection, indices, i0, i1);
+				case Uint16Array:
+					return arraySubsetF32_U16(data, selection, indices, i0, i1);
+				case Uint8Array:
+					return arraySubsetF32_U8(data, selection, indices, i0, i1);
+				default:
+			}
+			return arraySubsetF32_Array(data, selection, indices, i0, i1);
+		case Float64Array:
+			return arraySubsetF64(data, indices, i0, i1);
+		case Int32Array:
+			return arraySubsetI32(data, indices, i0, i1);
+		case Int16Array:
+			return arraySubsetI16(data, indices, i0, i1);
+		case Int8Array:
+			return arraySubsetI8(data, indices, i0, i1);
+		case Uint32Array:
+			return arraySubsetU32(data, indices, i0, i1);
+		case Uint16Array:
+			return arraySubsetU16(data, indices, i0, i1);
+		case Uint8Array:
+			return arraySubsetU8(data, indices, i0, i1);
+		default:
+	}
+	return arraySubsetPlain(data, indices, i0, i1);
+}
+
+function arraySubsetF32_F32(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_F64(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_I32(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_U32(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_I16(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_U16(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_I8(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_U8(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF32_Array(data, selection, indices, i0, i1) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetF64(data, indices, i0, i1) {
+	let selection = new Float64Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetI32(data, indices, i0, i1) {
+	let selection = new Int32Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetI16(data, indices, i0, i1) {
+	let selection = new Int16Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetI8(data, indices, i0, i1) {
+	let selection = new Int8Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetU32(data, indices, i0, i1) {
+	let selection = new Uint32Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetU16(data, indices, i0, i1) {
+	let selection = new Uint16Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetU8(data, indices, i0, i1) {
+	let selection = new Uint8Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
+}
+
+function arraySubsetPlain(data, indices, i0, i1) {
+	let selection = new Array(i1 - i0);
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = data[indices[i]];
+	}
+	return selection;
 }
 
 export function attrIndexedSubset(attr, indices, i0, i1) {
-	return indexedSubset(attr.data, indices, i0, i1, attr.indexedVal);
+	return indexedSubset(attr.data, indices, i0, i1, attr.indexedVal, attr.uniqueVal);
 }
 
-export function arraySubset(data, arrayType, indices, i0, i1) {
+export function indexedSubset(data, indices, i0, i1, indexedVal, uniqueVal) {
 	i0 = i0 || 0;
 	i1 = i1 === undefined ? indices.length : i1;
-	let i = i0,
-		selection = new (arrayConstr(arrayType))(i1 - i0);
-	while (i < i1) {
-		selection[i - i0] = data[indices[i++]];
+	let selection = new Array(i1 - i0);
+	if (uniqueVal || indexedVal === undefined) {
+		uniqueVal = uniqueVal !== undefined ? uniqueVal : '';
+		for (let i = 0; i < selection.length; i++) {
+			selection[i] = uniqueVal;
+		}
+	} else {
+		switch (data.constructor) {
+			case Float64Array:
+				indexedSubsetF64(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Float32Array:
+				indexedSubsetF32(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Int32Array:
+				indexedSubsetI32(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Int16Array:
+				indexedSubsetI16(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Int8Array:
+				indexedSubsetI8(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Uint32Array:
+				indexedSubsetU32(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Uint16Array:
+				indexedSubsetU16(data, selection, indices, i0, i1, indexedVal);
+				break;
+			case Uint8Array:
+				indexedSubsetU8(data, selection, indices, i0, i1, indexedVal);
+				break;
+			default:
+				indexedSubsetPlain(data, selection, indices, i0, i1, indexedVal);
+		}
 	}
 	return selection;
 }
 
-export function indexedSubset(data, indices, i0, i1, indexedVal) {
-	i0 = i0 || 0;
-	i1 = i1 === undefined ? indices.length : i1;
-	let i = i0,
-		selection = new Array(i1 - i0);
-	while (i < i1) {
+function indexedSubsetF64(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
 		selection[i - i0] = indexedVal[data[indices[i]]];
-		i++;
 	}
-	return selection;
 }
 
+function indexedSubsetF32(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetI32(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetI16(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetI8(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetU32(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetU16(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetU8(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+function indexedSubsetPlain(data, selection, indices, i0, i1, indexedVal) {
+	for (let i = i0; i < i1; i++) {
+		selection[i - i0] = indexedVal[data[indices[i]]];
+	}
+}
+
+/**
+ * Convert an indexed string array to plain string array
+ * @param {*} attr
+ */
 export function extractStringArray(attr) {
-	const { data } = attr;
+	// We do not need to type-switch, since
+	// all indexed arrays are Uint8Arrays.
+	const {
+		data,
+	} = attr;
 	if (attr.arrayType === 'string') {
 		if (attr.indexedVal) {
 			return indexedToStringArray(data, attr.indexedVal);
@@ -684,55 +1361,36 @@ export function extractStringArray(attr) {
 }
 
 export function indexedToStringArray(data, indexedVal) {
-	let retVal = [];
+	let retVal = new Array(data.length);
 	for (let i = 0; i < data.length; i++) {
 		const str = indexedVal[data[i]];
-		retVal.push(str ? str : '');
+		retVal[i] = str ? str : '';
 	}
 	return retVal;
 }
 
-export function arrayConstr(arrayType) {
-	switch (arrayType) {
-		case 'float32':
-			return Float32Array;
-		case 'number':
-		case 'float64':
-			return Float64Array;
-		case 'integer':
-		case 'int32':
-			return Int32Array;
-		case 'int16':
-			return Int16Array;
-		case 'int8':
-			return Int8Array;
-		case 'uint32':
-			return Uint32Array;
-		case 'uint16':
-			return Uint16Array;
-		case 'uint8':
-			return Uint8Array;
-		default:
-	}
-	return Array;
-}
-
 // checks if an object is an array or typed array
-// not for our objects that encapsulate typed arrays
 export function isArray(obj) {
-	return obj instanceof Array || isTypedArray(obj);
+	return obj && (obj.constructor === Array || isTypedArray(obj));
 }
 
+// benchmarked as significantly faster than instanceof
+// https://run.perf.zone/view/isTypedArray-constructor-vs-instanceof-1519140393812
 export function isTypedArray(obj) {
-	return obj instanceof Uint8Array ||
-		obj instanceof Float32Array ||
-		obj instanceof Uint16Array ||
-		obj instanceof Uint32Array ||
-		obj instanceof Int32Array ||
-		obj instanceof Float64Array ||
-		obj instanceof Int8Array ||
-		obj instanceof Uint8ClampedArray ||
-		obj instanceof Int16Array;
+	switch (obj && obj.constructor) {
+		case Uint8Array:
+		case Float32Array:
+		case Uint16Array:
+		case Uint32Array:
+		case Int32Array:
+		case Float64Array:
+		case Int8Array:
+		case Uint8ClampedArray:
+		case Int16Array:
+			return true;
+		default:
+			return false;
+	}
 }
 
 // === Helper functions for updating Redux state ===
@@ -798,6 +1456,83 @@ export function disjointArrays(a, b) {
 }
 
 /**
+ * * Returns `{ keys: string[], inObject: number[] }`
+ *
+ * `keys` is the set of total keys, returned as an array
+ * of sorted strings. `inObject` is an array of numbers
+ * that are either 0, -1 or 1, representing "in both",
+ * "in obj1", and "in obj2" respectively.
+ *
+ * The reason we to sort is to maximise consistent property
+ * order when merging two objects, which should lead to
+ * more identical hidden classes, which is something
+ * JavaScript engines like when it comes to optimisation.
+ *
+ * See also: https://stackoverflow.com/questions/5525795/does-javascript-guarantee-object-property-order/38218582#38218582
+ * http://mp.binaervarianz.de/fse2015.pdf, (figure six)
+
+ * Example:
+ *
+let a = {
+	xa: 0,
+	ya: 0,
+	both: 'this is in both',
+};
+
+let b = {
+	xb: 0,
+	yb: 0,
+	both: 'this is in both',
+};
+ *
+ *		 sortedOverlap(a, b);
+ *		 // ==> {
+ *		 //	 keys: ['both', 'xa', 'xb', 'ya', 'yb'],
+ *		 //	 in: [0, -1, 1, -1, 1],
+ *		 // };
+ *
+ * @param {*} obj1
+ * @param {*} obj2
+ * @returns {{ keys: string[], inObject: number[]}}
+ */
+export function sortedOverlap(obj1, obj2) {
+	let keys = [],
+		inObject = [];
+	if (
+		obj1 !== null &&
+		obj1 !== undefined &&
+		obj2 !== null &&
+		obj2 !== undefined
+	) {
+		let firstKeys = Object.keys(obj1).sort(),
+			secondKeys = Object.keys(obj2).sort();
+		for (let i = 0, j = 0; i < firstKeys.length || j < secondKeys.length;) {
+			let ki = firstKeys[i],
+				kj = secondKeys[j],
+				inObjectValue = (ki < kj || ki && kj === undefined) ? -1 : (ki > kj || ki === undefined && kj) ? 1 : 0;
+			switch (inObjectValue) {
+				case 0:
+					j++;
+				case -1:
+					i++;
+					break;
+				case 1:
+					ki = kj;
+					j++;
+			}
+			keys.push(ki);
+			inObject.push(inObjectValue);
+		}
+	}
+	return {
+		keys,
+		inObject,
+	};
+}
+
+
+/**
+ * `oldObj` and `newObj` must be plain objects.
  * Returns a new object that merges the values of
  * `newObj` into `oldObj`. Uses shallow copying.
  *
@@ -809,55 +1544,41 @@ export function disjointArrays(a, b) {
  * but replaced by the newer array.
  *
  * - for duplicate keys, values that are objects are
- *   recursively merged (except (typed) arrays and `null`)
+ *	 recursively merged (except (typed) arrays and `null`)
  * - in all other cases, the value from `newObj` is
- *   assigned to the returned object (including (typed) arrays and `null`).
+ *	 assigned to the returned object (including (typed) arrays and `null`).
  *
  * @param {object} oldObj
  * @param {object} newObj
  */
 export function merge(oldObj, newObj) {
-	if (!(oldObj || newObj)) {
-		// if neither are defined, return whatever newObj is
-		// (safe, since all falsy values are immutable values)
-		return newObj;
-	} else if (!oldObj) {
-		// we expect a new object (immutability guarantee),
-		// so if there is no oldObj, return a copy of newObj
-		return Object.assign({}, newObj);
-	} else if (!newObj) {
-		// we expect a new object (immutability guarantee),
-		// so if there is no newObj, return a copy of oldObj
-		return Object.assign({}, oldObj);
+	if (newObj === undefined) {
+		return oldObj;
+	} else if (oldObj === undefined ||
+		oldObj === null ||
+		newObj === null ||
+		oldObj.constructor !== Object ||
+		newObj.constructor !== Object
+	) {
+		// For better consistency in hidden classes,
+		// we use sortedDeepCopy to ensure consistent
+		// order in property keys. This also has the
+		// effect of not leaking any references to
+		// any (plain) objects inside newObj.
+		return sortedDeepCopy(newObj);
 	}
 
-	let untouchedKeys = Object.keys(oldObj),
-		newKeys = Object.keys(newObj),
-		overlappingKeys = disjointArrays(untouchedKeys, newKeys),
-		mergedObj = {},
-		key = '',
-		i = overlappingKeys.length;
-
-	while (i--) {
-		key = overlappingKeys[i];
-		let newVal = newObj[key];
-		// merge object values by recursion, otherwise just assign new value
-		mergedObj[key] = (
-			typeof newVal === 'object' &&
-			newVal !== null && // avoid accidentally turning null into {}
-			!isArray(newVal)   // typof returns object for arrays
-		) ? merge(oldObj[key], newVal) : newVal;
-	}
-	// directly assign all values that don't need merging
-	i = untouchedKeys.length;
-	while (i--) {
-		key = untouchedKeys[i];
-		mergedObj[key] = oldObj[key];
-	}
-	i = newKeys.length;
-	while (i--) {
-		key = newKeys[i];
-		mergedObj[key] = newObj[key];
+	const {
+		keys,
+		inObject,
+	} = sortedOverlap(oldObj, newObj);
+	let mergedObj = {};
+	for (let i = 0; i < keys.length; i++) {
+		let key = keys[i],
+			t = inObject[i];
+		mergedObj[key] = t < 0 ?
+			oldObj[key] : t > 0 ?
+				newObj[key] : merge(oldObj[key], newObj[key]);
 	}
 	return mergedObj;
 }
@@ -865,57 +1586,79 @@ export function merge(oldObj, newObj) {
 /**
  * Like `merge`, but overwrites `oldObj` instead of creating
  * a new one.
+ *
+ * For guaranteed immutability, stick to `merge` and never
+ * directly assign.
  * @param {object} oldObj - original object to be merged into
  * @param {object} newObj - new object to merge into oldObj
  */
 export function mergeInPlace(oldObj, newObj) {
-	if (!(oldObj || newObj)) {
-		return newObj;
-	} else if (!oldObj) {
-		return Object.assign({}, newObj);
-	} else if (!newObj) {
+	if (newObj === undefined) {
 		return oldObj;
+	} else if (oldObj === undefined ||
+		oldObj === null ||
+		newObj === null ||
+		oldObj.constructor !== Object ||
+		newObj.constructor !== Object
+	) {
+		return newObj;
 	}
 
-	let untouchedKeys = Object.keys(oldObj),
-		newKeys = Object.keys(newObj),
-		overlappingKeys = disjointArrays(untouchedKeys, newKeys),
-		key = '',
-		i = overlappingKeys.length;
-
-	while (i--) {
-		key = overlappingKeys[i];
-		let newVal = newObj[key];
-		// merge object values by recursion, otherwise just assign new value
-		oldObj[key] = (
-			typeof newVal === 'object' &&
-			newVal !== null && // avoid accidentally turning null into {}
-			!isArray(newVal)   // typof returns object for arrays
-		) ? mergeInPlace(oldObj[key], newVal) : newVal;
-	}
-	i = newKeys.length;
-	while (i--) {
-		key = newKeys[i];
-		oldObj[key] = newObj[key];
+	const {
+		keys,
+		inObject,
+	} = sortedOverlap(oldObj, newObj);
+	for (let i = 0; i < keys.length; i++) {
+		let key = keys[i],
+			t = inObject[i];
+		oldObj[key] = t < 0 ? oldObj[key] :
+			t > 0 ? newObj[key] :
+				mergeInPlace(oldObj[key], newObj[key]);
 	}
 	return oldObj;
 }
 
 /**
+ * Recursively copies objects via iterating over sorted
+ * keys of `obj`. Returns a naive deep copy of the object,
+ * except that enumerables other than plain Objects will be copied
+ * by reference. So (typed) arrays, Maps, Sets, etc.
+ *
+ * Will initiate all properties by sorted key order, for more
+ * consistent hidden classes.
+ * @param {*} obj
+ * @returns {*}
+ */
+function sortedDeepCopy(obj) {
+	if (obj && obj.constructor === Object) {
+		const keys = Object.keys(obj).sort();
+		let copy = {};
+		for (let i = 0; i < keys.length; i++) {
+			let k = keys[i],
+				v = obj[k];
+			copy[k] = (v && v.constructor === Object) ?
+				sortedDeepCopy(v) : v;
+		}
+		return copy;
+	}
+	return obj;
+}
+
+/**
  * Returns a new object that purges the leaves of
- * `purgeTree` from `oldObj`, by virtue of not copying. 
+ * `purgeTree` from `oldObj`, by virtue of not copying.
  * Uses shallow copying where possible.
  *
  * **WARNING: Do NOT pass cyclical objects!
  * This includes React nodes!**
  *
  * - keys that only exist in `oldObj` are preserved
- * - for duplicate keys, values that are objects 
- *   (except (typed) arrays and `null`) are
- *   recursively merged.
- * - in all other cases, the overlapping value 
- *   represents a leaf, and the matching key/value
- *   pair is *not* copied over to the returned object.
+ * - for duplicate keys, values that are objects
+ *	 (except (typed) arrays and `null`) are
+ *	 recursively merged.
+ * - in all other cases, the overlapping value
+ *	 represents a leaf, and the matching key/value
+ *	 pair is *not* copied over to the returned object.
  *
  * @param {object} oldObj
  * @param {object} purgeTree
@@ -938,13 +1681,13 @@ export function purge(oldObj, purgeTree) {
 		key = overlappingKeys[i];
 		let purgeVal = purgeTree[key];
 		// navigate purgeTree by recursion
-		if(
+		if (
 			typeof purgeVal === 'object' &&
-			!isArray(purgeVal) &&   // typof returns object for arrays
+			!isArray(purgeVal) && // typof returns object for arrays
 			purgeVal !== null // null represents values to be purged, not recursed on
-		){
+		) {
 			let val = purge(oldObj[key], purgeVal);
-			if(val){
+			if (val !== undefined) {
 				purgedObj[key] = val;
 			}
 		}
@@ -959,23 +1702,26 @@ export function purge(oldObj, purgeTree) {
 }
 
 
-/*
 // cycle detector
-function isCyclic(obj) {
-	var keys = [];
-	var stack = [];
-	var stackSet = new Set();
-	var detected = false;
+export function isCyclic(object) {
+	let keys = [];
+	let stack = [];
+	let stackSet = new Set();
+	let detected = false;
 
-	function detect(obj, key) {
-		if (typeof obj != 'object') { return; }
+	const detect = (obj, key) => {
+		if (typeof obj !== 'object') {
+			return;
+		}
 
 		if (stackSet.has(obj)) { // it's cyclic! Print the object and its locations.
-			var oldIndex = stack.indexOf(obj);
-			var l1 = keys.join('.') + '.' + key;
-			var l2 = keys.slice(0, oldIndex + 1).join('.');
+			let oldIndex = stack.indexOf(obj);
+			let l1 = keys.join('.') + '.' + key;
+			let l2 = keys.slice(0, oldIndex + 1).join('.');
 			console.log('CIRCULAR: ' + l1 + ' = ' + l2 + ' = ' + obj);
-			console.log({obj});
+			console.log({
+				obj,
+			});
 			detected = true;
 			return;
 		}
@@ -983,20 +1729,23 @@ function isCyclic(obj) {
 		keys.push(key);
 		stack.push(obj);
 		stackSet.add(obj);
-		for (var k in obj) { //dive on the object's children
-			if (obj.hasOwnProperty(k)) { detect(obj[k], k); }
+		for (let k in obj) { // dive on the object's children
+			if (obj.hasOwnProperty(k)) {
+				detect(obj[k], k);
+			}
 		}
 
 		keys.pop();
 		stack.pop();
 		stackSet.delete(obj);
 		return;
-	}
+	};
 
-	detect(obj, 'obj');
+	detect(object, 'obj');
 	return detected;
 }
 
+/*
 function percentage(old_val, error_old, new_val, error_new){
 	let closest = 100 * (new_val * 100 / (100 + error_new)) / (old_val * 100 / (100 - error_old)) - 100;
 	let furthest = 100 * (new_val * 100 / (100 - error_new)) / (old_val * 100 / (100 + error_old)) - 100;
