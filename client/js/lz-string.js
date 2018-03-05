@@ -4,9 +4,10 @@
 
 const f = String.fromCharCode,
 	UriSafeCharArray = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~_-'.split('');
-let UriSafeReverseDict = {},
-	i = 65;
-while (i--) {
+// All characters are in the lower-ASCII range, and the values are
+// between 0 and 64, so a 128-length Uint8Array works fine here
+let UriSafeReverseDict = new Uint8Array(128);
+for(let i = 0; i < UriSafeCharArray.length; i++) {
 	UriSafeReverseDict[UriSafeCharArray[i].charCodeAt(0)] = i;
 }
 
