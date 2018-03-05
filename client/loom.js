@@ -34,6 +34,9 @@ import './css/loom.css';
 // ========================================================
 
 import localforage from 'localforage';
+import 'localforage-getitems';
+import 'localforage-setitems';
+import 'localforage-removeitems';
 
 // Set up configuration once, at start of app
 localforage.config({
