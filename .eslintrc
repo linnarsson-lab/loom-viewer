@@ -20,6 +20,7 @@
         "no-console": "off",
         "semi": "error",
         "no-var": "error",
+        "no-unused-vars": "warn",
         "eqeqeq": "error",
         "object-curly-newline": [
             "error",
