@@ -2,7 +2,10 @@ import 'whatwg-fetch';
 
 import createFilterOptions from 'react-select-fast-filter-options';
 // customise search to only care about prefixes, and ignore uppercase
-import { LowerCaseSanitizer, PrefixIndexStrategy } from 'js-search';
+import {
+	LowerCaseSanitizer,
+	PrefixIndexStrategy,
+} from 'js-search';
 const indexStrategy = new PrefixIndexStrategy();
 const sanitizer = new LowerCaseSanitizer();
 
@@ -17,18 +20,26 @@ import {
 	mergeInPlace,
 } from 'js/util';
 
-import { createViewStateConverter } from 'js/viewstate-encoder';
+import {
+	createViewStateConverter,
+} from 'js/viewstate-encoder';
 
-import { viewStateInitialiser } from 'js/viewstate-initialiser';
+import {
+	viewStateInitialiser,
+} from 'js/viewstate-initialiser';
 
 // used for writing view state to the browser URL
-import { browserHistory } from 'react-router';
+import {
+	browserHistory,
+} from 'react-router';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
 } from 'js/lz-string';
 
-import { updateAndFetchGenes } from 'actions/update-and-fetch';
+import {
+	updateAndFetchGenes,
+} from 'actions/update-and-fetch';
 
 import {
 	REQUEST_DATASET,
@@ -87,16 +98,17 @@ export function requestDataset(datasets, path) {
 function mergeGenesInPlace(dataset, genes) {
 	// mark all genes retrieved from cache as fetched
 	let fetchedGenes = {};
-	let keys = Object.keys(genes),
-		i = keys.length;
-	while (i--) {
+	let keys = Object.keys(genes);
+	for (let i = 0; i < keys.length; i++) {
 		fetchedGenes[keys[i]] = true;
 	}
 	// merge genes into column attributes
 	return mergeInPlace(
-		dataset,
-		{
-			fetchedGenes, col: { attrs: genes },
+		dataset, {
+			fetchedGenes,
+			col: {
+				attrs: genes,
+			},
 		}
 	);
 }
@@ -117,7 +129,11 @@ function fetchDataset(datasets, path, dispatch) {
 				// store those. We also want to avoid caching viewState
 				return localforage.setItem(path, dataset)
 					.catch((err) => {
-						console.log('Caching dataset failed:', err, { err });
+						console.log(
+							'Caching dataset failed:',
+							err, 
+							{ err }
+						);
 						return dataset;
 					});
 			})
@@ -144,7 +160,11 @@ function fetchDataset(datasets, path, dispatch) {
 					list[path] = oldMetaData;
 					return localforage.setItem('cachedDatasets', list)
 						.catch((err) => {
-							console.log('Updating cached datasets list failed:', err, { err });
+							console.log(
+								'Updating cached datasets list failed:',
+								err,
+								{ err }
+							);
 						});
 				}
 				return null;
@@ -152,7 +172,11 @@ function fetchDataset(datasets, path, dispatch) {
 			.catch((err) => {
 				// Or, if fetch request failed, dispatch
 				// an action to set the error flag
-				console.log('Fetch failed:', err, { err });
+				console.log(
+					'Fetch failed:',
+					err,
+					{ err }
+				);
 				dispatch({
 					type: REQUEST_DATASET_FAILED,
 					datasetName: path,
@@ -173,22 +197,23 @@ function convertToDataSet(data, dataset) {
 	row.allKeys = row.keys.concat(row.cellKeys);
 	row.allKeysNoUniques = row.keysNoUniques.concat(row.cellKeys);
 
-	const rowKey  = firstMatchingKeyCaseInsensitive(row.attrs, ['Gene', 'Genes', 'GeneName', 'Gene_Name', 'GeneNames', 'Gene_Names', '(original order)']);
+	const rowKey = firstMatchingKeyCaseInsensitive(row.attrs, ['Gene', 'Genes', 'GeneName', 'Gene_Name', 'GeneNames', 'Gene_Names', '(original order)']);
 
 	col.geneKeys = extractStringArray(row.attrs[rowKey]);
 	col.rowToGenes = new Array(col.geneKeys.length);
 	col.geneToRow = {};
 	col.geneToRowLowerCase = {};
 	// store row indices for gene fetching later
-	let i = col.geneKeys.length;
-	while (i--) {
+	for (let i = 0; i < col.geneKeys.length; i++) {
 		let gene = col.geneKeys[i];
 		col.rowToGenes[i] = gene;
 		col.geneToRow[gene] = i;
 		col.geneToRowLowerCase[gene.toLowerCase()] = i;
 	}
 	col.geneKeys.sort();
-	col.geneKeysLowerCase = col.geneKeys.map((gene) => { return gene.toLowerCase(); });
+	col.geneKeysLowerCase = col.geneKeys.map((gene) => {
+		return gene.toLowerCase();
+	});
 	col.allKeys = col.keys.concat(col.geneKeys);
 	col.allKeysNoUniques = col.keysNoUniques.concat(col.geneKeys);
 
@@ -197,17 +222,17 @@ function convertToDataSet(data, dataset) {
 	// Note that this returns a new object, so we can safely
 	// use mergeInPlace on viewState later to safe some overhead.
 	return merge(dataset, {
-		loaded: true,
 		col,
 		row,
-		totalCols: col.geneKeys.length,
-		totalRows: row.cellKeys.length,
 		heatmap: {
-			zoomRange: data.zoomRange,
 			fullZoomHeight: data.fullZoomHeight,
 			fullZoomWidth: data.fullZoomWidth,
 			shape: data.shape,
+			zoomRange: data.zoomRange,
 		},
+		loaded: true,
+		totalCols: col.geneKeys.length,
+		totalRows: row.cellKeys.length,
 	});
 }
 
@@ -247,14 +272,14 @@ function addFunctions(dataset) {
 
 	const rowAttrsNoUniques = prepFilter(row.keysNoUniques);
 	row.dropdownOptions = {
-		attrsNoUniques: rowAttrsNoUniques,
 		allNoUniques: rowAttrsNoUniques,
+		attrsNoUniques: rowAttrsNoUniques,
 	};
 
 	col.dropdownOptions = {
+		allNoUniques: prepFilter(col.allKeysNoUniques),
 		attrsNoUniques: prepFilter(col.keysNoUniques),
 		keyAttr: prepFilter(col.geneKeys),
-		allNoUniques: prepFilter(col.allKeysNoUniques),
 	};
 
 	dataset.viewStateConverter = createViewStateConverter(dataset);
@@ -269,12 +294,12 @@ function addFunctions(dataset) {
 }
 
 /**
-	 * Initiate viewState. This includes reading and
-	 *  writing URI-encoded state, which requires
-	 * `viewStateConverter`, so this must
-	 * be called after functions are added.
-	 * @param {*} dataset
-	 */
+ * Initiate viewState. This includes reading and
+ *	writing URI-encoded state, which requires
+ * `viewStateConverter`, so this must
+ * be called after functions are added.
+ * @param {*} dataset
+ */
 function prepareViewState(dataset) {
 	// Initiate default viewState
 	let viewState = viewStateInitialiser(dataset);
@@ -309,7 +334,7 @@ function prepareViewState(dataset) {
 }
 
 
-export function reduxToJSON(attrs) {
+function reduxToJSON(attrs) {
 	for (let i = 0; i < attrs.keys.length; i++) {
 		let key = attrs.keys[i],
 			attr = attrs.attrs[key];
@@ -319,6 +344,7 @@ export function reduxToJSON(attrs) {
 			data,
 			indexedVal,
 			uniques,
+			allUnique,
 			colorIndices,
 			min,
 			max,
@@ -332,11 +358,14 @@ export function reduxToJSON(attrs) {
 			indexedVal,
 			uniques: uniques.slice(0, Math.min(3, uniques.length)),
 			total_uniques: `${uniques.length} items`,
+			allUnique,
 			colorIndices,
 			min,
 			max,
 		};
-		attr.toJSON = () => { return reduxJSON; };
+		attr.toJSON = () => {
+			return reduxJSON;
+		};
 	}
 }
 
@@ -357,8 +386,7 @@ function prepData(attrs) {
 	// convert rest of attribute arrays to objects with summary
 	// metadata (arrayType, uniques, colorIndices, etc)
 	// Note --i prefix to skip originalOrder
-	let i = keys.length;
-	while (--i) {
+	for (let i = 1; i < keys.length; i++) {
 		// Set attrs[k] to null early, so it can be GC'ed if necessary
 		// (had an allocation failure of a new typed array for large attrs,
 		// so this is a realistic worry)
@@ -366,14 +394,14 @@ function prepData(attrs) {
 			attr = attrs[k];
 		attrs[k] = null;
 		newAttrs[k] = convertJSONarray(attr, k);
+
 	}
 
 	// Add the set of keys for data that excludes data
 	// where all values are the same (these are useless in
 	// scatter plot and sparkline views, so filtered out).
 	let keysNoUniques = [];
-	i = keys.length;
-	while (i--) {
+	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
 		if (!newAttrs[key].uniqueVal) {
 			keysNoUniques.push(key);
@@ -383,9 +411,9 @@ function prepData(attrs) {
 
 
 	return {
+		attrs: newAttrs,
 		keys,
 		keysNoUniques,
-		attrs: newAttrs,
 		length: dataLength,
 	};
 }
@@ -399,41 +427,41 @@ function originalOrderAttribute(length) {
 				'uint32' :
 				'float64';
 
-	let data = new (arrayConstr(arrayType))(length);
+	let data = new(arrayConstr(arrayType))(length);
 
-	let i = length;
-	while (i--) {
+	for (let i = 0; i < data.length; i++) {
 		data[i] = i;
 	}
 
 	return {
-		name: '(original order)',
+		allUnique: true,
 		arrayType,
-		data,
 		colorIndices: {
 			uniques: {},
 		},
-		uniques: [],
-		allUnique: true,
-		min: 0,
+		data,
 		max: data.length - 1,
+		min: 0,
+		name: '(original order)',
+		uniques: [],
 	};
 }
 
 
 function prepFilter(options) {
-	let i = options.length,
-		newOptions = new Array(i);
-	while (i--) {
+	let newOptions = new Array(options.length);
+	for (let i = 0; i < options.length; i++) {
 		newOptions[i] = {
 			value: options[i],
 			label: options[i],
 		};
 	}
 	return {
-		options: newOptions,
 		fastFilterOptions: createFilterOptions({
-			indexStrategy, sanitizer, options: newOptions,
+			indexStrategy,
+			sanitizer,
+			options: newOptions,
 		}),
+		options: newOptions,
 	};
 }
