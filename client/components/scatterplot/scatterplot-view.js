@@ -55,7 +55,7 @@ export class ScatterplotComponent extends Component {
 						plotSettings={plotSettings}
 						selectedPlot={selectedPlot}
 						totalPlots={totalPlots}
-						indices={ascendingIndices}
+						ascendingIndices={ascendingIndices}
 					/>
 				</Remount>
 			</div>

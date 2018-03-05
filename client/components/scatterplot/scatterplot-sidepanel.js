@@ -125,7 +125,7 @@ export class ScatterPlotSidepanel extends Component {
 				// new plot, if less than four plots
 				if (totalPlots < 4){
 					// copy the settings of the currently selected plot
-					newScatterPlots.plotSettings =  {
+					newScatterPlots.plotSettings ={
 						[totalPlots]: plotSettings[selectedPlot],
 					};
 					// select new plot
@@ -145,7 +145,10 @@ export class ScatterPlotSidepanel extends Component {
 				}
 				break;
 			default:
-				// switch to existing plot
+				// switch to existing plot, but only if not already selected
+				if(selectedPlot === key){
+					return;
+				}
 				newScatterPlots.selectedPlot = key;
 		}
 

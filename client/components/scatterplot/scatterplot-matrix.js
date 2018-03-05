@@ -2,159 +2,9 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { TypedArrayProp } from 'js/proptypes-typedarray';
 
-import { memoizedScatterPlot } from 'plotters/scatterplot';
-import { Canvas } from 'components/canvas';
 import { Remount } from 'components/remount';
 
-import { UPDATE_VIEWSTATE } from 'actions/action-types';
-
-// See if an individual attr has changed -
-// this may happen as the result of a gene
-// being fetched or retrieved from cache
-function changedAttrs(oldAttrs, newAttrs, settings) {
-
-	if (!(oldAttrs && newAttrs && settings)) {
-		return false;
-	}
-
-	const {
-		x,
-		y,
-		colorAttr,
-	} = settings;
-
-	const xAttr = oldAttrs[x.attr],
-		yAttr = oldAttrs[y.attr],
-		oldColorAttr = oldAttrs[colorAttr],
-		newXAttr = newAttrs[x.attr],
-		newYAttr = newAttrs[y.attr],
-		newColorAttr = newAttrs[colorAttr];
-	return oldColorAttr !== newColorAttr ||
-		xAttr !== newXAttr ||
-		yAttr !== newYAttr;
-}
-
-
-class SinglePlot extends Component {
-	constructor(...args) {
-		super(...args);
-		const {
-			dispatch,
-			dataset,
-			axis,
-			plotNr,
-			attrs,
-			indices,
-			settings,
-		} = this.props;
-
-		const { path } = dataset;
-		this.selectTab = () => {
-			dispatch({
-				type: UPDATE_VIEWSTATE,
-				stateName: axis,
-				path,
-				viewState: {
-					[axis]: {
-						scatterPlots: {
-							selectedPlot: plotNr,
-						},
-					},
-				},
-			});
-		};
-		const scatterPlot = memoizedScatterPlot();
-		scatterPlot(attrs, indices, settings);
-		this.state = {
-			scatterPlot,
-		};
-	}
-
-	shouldComponentUpdate(nextProps) {
-		const {
-			attrs,
-			indices,
-			settings,
-			plotNr,
-			selectedPlot,
-			totalPlots,
-			width,
-			height,
-		} = nextProps;
-		const { props } = this;
-		return (
-			indices !== props.indices ||
-			settings !== props.settings ||
-			changedAttrs(attrs, props.attrs, settings) ||
-			(plotNr === selectedPlot) !== (props.plotNr === props.selectedPlot) ||
-			(plotNr < totalPlots) !== (props.plotNr < props.totalPlots) ||
-			plotNr !== props.plotNr ||
-			width !== props.width ||
-			height !== props.height
-		);
-	}
-
-
-	render() {
-		const {
-			attrs,
-			indices,
-			plotNr,
-			selectedPlot,
-			settings,
-			totalPlots,
-			width,
-			height,
-		} = this.props;
-
-		const {
-			scatterPlot,
-		} = this.state;
-
-		return (
-			<button
-				style={{
-					border: plotNr === selectedPlot ?
-						'1px solid black' :
-						'1px solid lightgrey',
-					flex: '0 0 auto',
-					margin: '1px',
-					padding: 0,
-					backgroundColor: 'transparent',
-				}}
-				disabled={plotNr >= totalPlots || plotNr === selectedPlot}
-				onClick={this.selectTab}>
-				<Canvas
-					paint={plotNr < totalPlots ?
-						scatterPlot(attrs, indices, settings) :
-						null
-					}
-					width={width}
-					height={height}
-					// We are wrapped inside a component that remounts,
-					// so we can skip the pointless event listeners
-					ignoreResize
-				/>
-			</button>
-		);
-	}
-}
-
-SinglePlot.propTypes = {
-	// props for button
-	axis: PropTypes.string.isRequired,
-	dataset: PropTypes.object.isRequired,
-	dispatch: PropTypes.func.isRequired,
-	plotNr: PropTypes.number.isRequired,
-	selectedPlot: PropTypes.number.isRequired,
-	totalPlots: PropTypes.number.isRequired,
-	// props for canvas
-	attrs: PropTypes.object.isRequired,
-	indices: TypedArrayProp.any,
-	settings: PropTypes.object.isRequired,
-	width: PropTypes.number.isRequired,
-	height: PropTypes.number.isRequired,
-};
+import { SinglePlot } from './scatterplot-singleplot.js';
 
 export class ScatterPlotMatrix extends Component {
 	constructor(...args) {
@@ -177,7 +27,7 @@ export class ScatterPlotMatrix extends Component {
 			axis,
 			dataset,
 			dispatch,
-			indices,
+			ascendingIndices,
 			plotSettings,
 			selectedPlot,
 			totalPlots,
@@ -213,7 +63,7 @@ export class ScatterPlotMatrix extends Component {
 							selectedPlot={selectedPlot}
 							totalPlots={totalPlots}
 							attrs={attrs}
-							indices={indices}
+							ascendingIndices={ascendingIndices}
 							settings={plotSettings[plotNr]}
 							width={plotW}
 							height={plotH}
@@ -257,5 +107,5 @@ ScatterPlotMatrix.propTypes = {
 	plotSettings: PropTypes.object.isRequired,
 	selectedPlot: PropTypes.number.isRequired,
 	totalPlots: PropTypes.number.isRequired,
-	indices: TypedArrayProp.any,
+	ascendingIndices: TypedArrayProp.any,
 };
