@@ -47,7 +47,7 @@ const inferno = [
 ];
 
 function reverseColors(value, index, array){
-	// reverse,  but keep '#FFFFFF' at the zero index
+	// reverse, but keep '#FFFFFF' at the zero index
 	return index > 0 ? array[array.length - index] : value;
 }
 
@@ -263,10 +263,12 @@ function heatmapIndexFactory(colorAttr, colorMode, settings) {
 
 	const clipDelta = (clipMax - clipMin) || 1;
 	const paletteEnd = getPalette(colorMode).length - 1;
-	if (isZero) { // zero-value is coloured differently
+
+	// zero-value is coloured differently
+	if (isZero){
 		const colorIdxScale = paletteEnd / clipDelta;
-		return settings.logScale ? (
-			(val) => {
+		if (settings.logScale){
+			return (val) => {
 				val = logProject(val);
 				if (val >= clipMax) {
 					return paletteEnd;
@@ -275,46 +277,44 @@ function heatmapIndexFactory(colorAttr, colorMode, settings) {
 				} else {
 					return ((val - clipMin) * colorIdxScale) | 0;
 				}
+			};
+		}
+		return (val) => {
+			if (val >= clipMax) {
+				return paletteEnd;
+			} else if (val <= clipMin) {
+				return 0;
+			} else {
+				return ((val - clipMin) * colorIdxScale) | 0;
 			}
-		) : (
-			(val) => {
-				if (val >= clipMax) {
-					return paletteEnd;
-				} else if (val <= clipMin) {
-					return 0;
-				} else {
-					return ((val - clipMin) * colorIdxScale) | 0;
-				}
-			}
-		);
-	} else {
-		// skip using special color for the zero-value for
-		// data ranges that have negative values and/or
-		// no zero value
-		const colorIdxScale = (paletteEnd - 1) / clipDelta;
-		return settings.logScale ? (
-			(val) => {
-				val = logProject(val);
-				if (val >= clipMax) {
-					return paletteEnd;
-				} else if (val <= clipMin) {
-					return 1;
-				} else {
-					return 1 + ((val - clipMin) * colorIdxScale) | 0;
-				}
-			}
-		) : (
-			(val) => {
-				if (val >= clipMax) {
-					return paletteEnd;
-				} else if (val <= clipMin) {
-					return 1;
-				} else {
-					return 1 + ((val - clipMin) * colorIdxScale) | 0;
-				}
-			}
-		);
+		};
 	}
+
+	// skip using special color for the zero-value for
+	// data ranges that have negative values and/or
+	// no zero value
+	const colorIdxScale = (paletteEnd - 1) / clipDelta;
+	if (settings.logScale) {
+		return (val) => {
+			val = logProject(val);
+			if (val >= clipMax) {
+				return paletteEnd;
+			} else if (val <= clipMin) {
+				return 1;
+			} else {
+				return 1 + ((val - clipMin) * colorIdxScale) | 0;
+			}
+		};
+	}
+	return (val) => {
+		if (val >= clipMax) {
+			return paletteEnd;
+		} else if (val <= clipMin) {
+			return 1;
+		} else {
+			return 1 + ((val - clipMin) * colorIdxScale) | 0;
+		}
+	};
 }
 
 function indexZero() { return 0; }
