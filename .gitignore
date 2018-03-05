@@ -110,3 +110,6 @@ target/
 
 # NPM package lock
 package-lock.json
+
+# iPython notebooks
+*.ipynb
