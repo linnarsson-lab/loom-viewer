@@ -38,7 +38,7 @@ module.exports = {
 				options: {
 					name: '[name]-[hash].[ext]',
 					outputPath: 'static/fonts/',
-					publicPath: '/',
+					publicPath: '/static/fonts/',
 				},
 			},
 			{
