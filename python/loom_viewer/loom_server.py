@@ -40,7 +40,7 @@ def cache(expires: int = None, round_to_minute: bool = False) -> Any:
 
 	Example usage:
 
-	@app.route('/map')
+	@loom_server.app.route('/map')
 	@cache(expires=60)
 	def index():
 		return render_template('index.html')
@@ -70,8 +70,6 @@ def cache(expires: int = None, round_to_minute: bool = False) -> Any:
 		return cache_func
 	return cache_decorator
 
-app = flask.Flask(__name__)
-
 
 # Advanced routing for fetching multiple rows/columns at once
 # creates list of integers based on a '+' separated string
@@ -86,32 +84,65 @@ class IntDictConverter(BaseConverter):
 		return '+'.join(urlValues)
 
 
-app.url_map.converters['intdict'] = IntDictConverter
+# loom_server.app = flask.Flask(__name__)
 
-# enable GZIP compression
-compress = Compress()
-app.config['COMPRESS_MIMETYPES'] = ['text/plain', 'text/html', 'text/css', 'text/xml', 'application/json', 'text/javascript']
-app.config['COMPRESS_LEVEL'] = 2
-compress.init_app(app)
+# There are two reasons create a special class.
+# First, that flask.Flask returns the Any type
+# This means it breaks autocomplete and mypy, so by using a class we can
+# hoist LoomDatasets and any other future additions out of there, giving
+# us some extra saftey checks and ease of updating.
+# Second, this should make it easier to run an encapsulated server
+# in a subprocess, which would make it possible to run the server from
+# a Jupyter notebook
+class LoomServer(object):
+	__slots__ = [
+		"app",
+		"datasets",
+		"dataset_path",
+	]
+
+	def __init__(self, dataset_path: str = None) -> None:
+		logging.info("Initialising LoomServer with %s", dataset_path)
+		app = flask.Flask(__name__)		# type: Any
+
+		app.url_map.converters['intdict'] = IntDictConverter
+
+		# enable GZIP compression
+		compress = Compress()
+		app.config['COMPRESS_MIMETYPES'] = ['text/plain', 'text/html', 'text/css', 'text/xml', 'application/json', 'text/javascript']
+		app.config['COMPRESS_LEVEL'] = 2
+		compress.init_app(app)
+
+		self.app = app
+		self.update_dataset(dataset_path)
+
+	def update_dataset(self, dataset_path: str = None) -> None:
+		self.datasets = LoomDatasets(dataset_path)
+		self.dataset_path = dataset_path
+
+
+
+loom_server = LoomServer()
+
 
 #
 # Static assets
 #
 
 
-@app.route('/static/js/<path:path>')
+@loom_server.app.route('/static/js/<path:path>')
 @cache(expires=604800)
 def send_static_js(path: str) -> Any:
 	return flask.send_from_directory('static/js/', path, mimetype='text/javascript')
 
 
-@app.route('/static/style/<path:path>')
+@loom_server.app.route('/static/style/<path:path>')
 @cache(expires=604800)
 def send_static_css(path: str) -> Any:
 	return flask.send_from_directory('static/styles/', path, mimetype='text/css')
 
 
-@app.route('/static/fonts/<path:path>')
+@loom_server.app.route('/static/fonts/<path:path>')
 @cache(expires=604800)
 def send_static_fonts(path: str) -> Any:
 	mimetype = 'application/font-woff'
@@ -133,28 +164,28 @@ def send_static_fonts(path: str) -> Any:
 	return flask.send_from_directory('static/fonts/', path, mimetype=mimetype)
 
 
-@app.route('/sw.js')
+@loom_server.app.route('/sw.js')
 @cache(expires=None)
 def send_service_worker() -> Any:
 	return flask.send_file('static/sw.js', mimetype='text/javascript')
 
 
-@app.route('/favicon.ico')
+@loom_server.app.route('/favicon.ico')
 @cache(expires=604800)
 def send_favicon() -> Any:
-	return app.send_static_file('favicon.ico')
+	return loom_server.app.send_static_file('favicon.ico')
 
 
-@app.route('/')
-@app.route('/index.html')
+@loom_server.app.route('/')
+@loom_server.app.route('/index.html')
 @cache(expires=604800)
 def send_indexjs() -> Any:
 	return flask.send_file('static/index.html', mimetype='text/html')
 
 
 # Catch-all for the react-router endpoints
-@app.route('/dataset/')
-@app.route('/dataset/<path:path>')
+@loom_server.app.route('/dataset/')
+@loom_server.app.route('/dataset/<path:path>')
 @cache(expires=None)
 def catch_all(path: str) -> Any:
 	# prevent infinite appcache recursion
@@ -175,58 +206,58 @@ def get_auth(request: Any) -> Any:
 
 
 # List of all datasets
-@app.route('/loom', methods=['GET'])
+@loom_server.app.route('/loom', methods=['GET'])
 @cache(expires=None)
 def send_dataset_list() -> Any:
 	(u, p) = get_auth(request)
-	dataset_list = app.loom_datasets.JSON_metadata_list(u, p)
+	dataset_list = loom_server.datasets.JSON_metadata_list(u, p)
 	return flask.Response(dataset_list, mimetype="application/json")
 
 
 # Info for a single dataset
-@app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
+@loom_server.app.route('/loom/<string:project>/<string:filename>', methods=['GET'])
 @cache(expires=None)
 def send_fileinfo(project: str, filename: str) -> Any:
 	(u, p) = get_auth(request)
-	if app.loom_datasets.authorize(project, u, p):
-		attributes = app.loom_datasets.JSON_attributes(project, filename)
+	if loom_server.datasets.authorize(project, u, p):
+		attributes = loom_server.datasets.JSON_attributes(project, filename)
 		if attributes is not None and attributes is not "":
 			return flask.Response(attributes, mimetype="application/json")
 	return "", 404
 
 
 # Download a dataset to the client
-@app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
+@loom_server.app.route('/clone/<string:project>/<string:filename>', methods=['GET'])
 @cache(expires=None)
 def get_clone(project: str, filename: str) -> Any:
 	(u, p) = get_auth(request)
-	if app.loom_datasets.authorize(project, u, p):
-		file_path = app.loom_datasets.get_absolute_file_path(project, filename)
+	if loom_server.datasets.authorize(project, u, p):
+		file_path = loom_server.datasets.list.absolute_file_path(project, filename)
 		return flask.send_file(file_path, mimetype='application/octet-stream')
 	return "", 404
 
 
 # Get one or more rows of data (i.e. all the expression values for a single gene)
-@app.route('/loom/<string:project>/<string:filename>/row/<intdict:row_numbers>')
+@loom_server.app.route('/loom/<string:project>/<string:filename>/row/<intdict:row_numbers>')
 @cache(expires=None)
 def send_row(project: str, filename: str, row_numbers: List[int]) -> Any:
 	# path to desired rows
 	(u, p) = get_auth(request)
-	if app.loom_datasets.authorize(project, u, p):
-		rows = app.loom_datasets.JSON_rows(row_numbers, project, filename)
+	if loom_server.datasets.authorize(project, u, p):
+		rows = loom_server.datasets.JSON_rows(row_numbers, project, filename)
 		if rows is not None:
 			return flask.Response(rows, mimetype="application/json")
 	return flask.Response("[]", mimetype="application/json")
 
 
 # Get one or more columns of data (i.e. all the expression values for a single cell)
-@app.route('/loom/<string:project>/<string:filename>/col/<intdict:column_numbers>')
+@loom_server.app.route('/loom/<string:project>/<string:filename>/col/<intdict:column_numbers>')
 @cache(expires=None)
 def send_col(project: str, filename: str, column_numbers: List[int]) -> Any:
 	# path to desired cols
 	(u, p) = get_auth(request)
-	if app.loom_datasets.authorize(project, u, p):
-		columns = app.loom_datasets.JSON_columns(column_numbers, project, filename)
+	if loom_server.datasets.authorize(project, u, p):
+		columns = loom_server.datasets.JSON_columns(column_numbers, project, filename)
 		if columns is not None:
 			return flask.Response(columns, mimetype="application/json")
 	return flask.Response("[]", mimetype="application/json")
@@ -237,19 +268,21 @@ def send_col(project: str, filename: str, column_numbers: List[int]) -> Any:
 #
 
 
-@app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
+@loom_server.app.route('/loom/<string:project>/<string:filename>/tiles/<int:z>/<int:x>_<int:y>.png')
 @cache(expires=60 * 24 * 30)
 def send_tile(project: str, filename: str, z: int, x: int, y: int) -> Any:
 	(u, p) = get_auth(request)
-	if app.loom_datasets.authorize(project, u, p):
+	if loom_server.datasets.authorize(project, u, p):
 		# path to desired tile
-		file_path = app.loom_datasets.get_absolute_file_path(project, filename)
+		file_path = loom_server.datasets.list.absolute_file_path(project, filename)
 		# subfolder by zoom level to get more useful sorting order
 		tile_path = '%s.tiles/z%02d/x%03d_y%03d.png' % (file_path, z, x, y)
 
 		if os.path.isfile(tile_path):
 			return flask.send_file(tile_path, mimetype='image/png')
 	return "", 404
+
+# Starting the server
 
 
 def signal_handler(signal: int, frame: object) -> NoReturn:
@@ -260,16 +293,20 @@ def signal_handler(signal: int, frame: object) -> NoReturn:
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003, debug: bool=True) -> Any:
-	if debug:
-		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(module)s, %(lineno)d - %(message)s')
-		app.config['DEBUG'] = True
-	else:
-		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
-		app.config['DEBUG'] = False
+def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003, debug: bool=False) -> Any:
 
-	app.loom_datasets = LoomDatasets(dataset_path)
+	if debug:
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s - %(module)s, %(lineno)d: %(message)s')
+		loom_server.app.config['DEBUG'] = True
+	else:
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
+		loom_server.app.config['DEBUG'] = False
+
 	os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+	logging.info("Starting LoomServer with %s", loom_server.dataset_path)
+
+	loom_server.update_dataset(dataset_path)
 
 	if show_browser:
 		url = "http://localhost:" + str(port)
@@ -278,11 +315,11 @@ def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003
 		else:
 			webbrowser.open(url)
 	try:
-		# app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
+		# self.app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
 		# Monkey-patch if this has not happened yet
 		if socket.socket is not gevent.socket.socket:
 			gevent.monkey.patch_all()
-		http_server = gevent.wsgi.WSGIServer(('', port), app)
+		http_server = gevent.wsgi.WSGIServer(('', port), loom_server.app)
 
 		http_server.serve_forever()
 	except socket.error as serr:

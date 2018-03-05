@@ -88,10 +88,10 @@ class DatasetList extends Component {
 				key: 'description',
 			});
 		};
-		const sortByCreationDate = () => {
+		const sortByLastModified = () => {
 			dispatch({
 				type: SORT_DATASETS,
-				key: 'creationDate',
+				key: 'lastModified',
 			});
 		};
 		const sortByTotalCells = () => {
@@ -128,14 +128,14 @@ class DatasetList extends Component {
 			},
 			{
 				headers: ['Date'],
-				key: 'creationDate',
+				key: 'lastModified',
 				sortIcon: 'sort-by-order',
 				headerStyles,
 				dataStyle: {
 					width: '14%',
 					fontSize: '12px',
 				},
-				onHeaderClick: [sortByCreationDate],
+				onHeaderClick: [sortByLastModified],
 			},
 			{
 				headers: ['Size'],
@@ -169,7 +169,7 @@ class DatasetList extends Component {
 			sortByProject,
 			sortByTitle,
 			sortByDescription,
-			sortByCreationDate,
+			sortByLastModified,
 			sortByTotalCells,
 			headerStyles,
 			columns,
@@ -196,7 +196,7 @@ class DatasetList extends Component {
 					path,
 					title,
 					description,
-					creationDate,
+					lastModified,
 					totalCells,
 					dataset,
 					url,
@@ -274,7 +274,7 @@ class DatasetList extends Component {
 
 				tableData.push({
 					rowKey: path,
-					path, project, description, creationDate, totalCells,
+					path, project, description, lastModified, totalCells,
 					title: titleURL,
 					buttons: (
 						<div style={centerTextStyle}>
@@ -376,7 +376,7 @@ class SearchDataSetViewComponent extends Component {
 		} = this.props;
 
 		const searchAll = handleSearchChangeFactory('all', dispatch);
-		const searchByCreationDate = handleSearchChangeFactory('creationDate', dispatch);
+		const searchBylastModified = handleSearchChangeFactory('lastModified', dispatch);
 		const searchByProject = handleSearchChangeFactory('project', dispatch);
 		const searchByTitle = handleSearchChangeFactory('title', dispatch);
 		const searchByDescription = handleSearchChangeFactory('description', dispatch);
@@ -385,7 +385,7 @@ class SearchDataSetViewComponent extends Component {
 			projectLists: null,
 			projectNames: null,
 			searchAll,
-			searchByCreationDate,
+			searchBylastModified,
 			searchByProject,
 			searchByTitle,
 			searchByDescription,
@@ -455,12 +455,12 @@ class SearchDataSetViewComponent extends Component {
 	prepareProjects(list) {
 		// Convert to array sorted by dataset creation date
 		let arrayList = Object.values(list);
-		let creationDates = arrayList.map((dataset) => {
-			return dataset.creationDate;
+		let lastModifieds = arrayList.map((dataset) => {
+			return dataset.lastModified;
 		});
 		const comparator = (i, j) => {
-			let vi = creationDates[i];
-			let vj = creationDates[j];
+			let vi = lastModifieds[i];
+			let vj = lastModifieds[j];
 			return (
 				vi < vj ?
 					-1 :
@@ -526,12 +526,12 @@ class SearchDataSetViewComponent extends Component {
 		} else {	// search/filter projects
 
 			// give date special (exact stringmatch) treatment
-			const date = search.creationDate;
+			const date = search.lastModified;
 			if (date) {
 				filtered = [];
 				for (let i = 0; i < list.length; i++) {
 					const entry = list[i];
-					if (entry.creationDate.indexOf(date) !== -1) {
+					if (entry.lastModified.indexOf(date) !== -1) {
 						filtered.push(entry);
 					}
 				}
@@ -579,7 +579,7 @@ class SearchDataSetViewComponent extends Component {
 			projectLists,
 			projectListsFiltered,
 			searchAll,
-			searchByCreationDate,
+			searchBylastModified,
 			searchByProject,
 			searchByTitle,
 			searchByDescription,
@@ -700,10 +700,10 @@ class SearchDataSetViewComponent extends Component {
 										lg={3}>
 										<SearchField
 											label={'Date'}
-											tooltip={'Filter by date (exact substring match)'}
+											tooltip={'Filter by last modification date (exact substring match)'}
 											tooltipId={'datesearch-tltp'}
-											value={search.creationDate}
-											onChange={searchByCreationDate}
+											value={search.lastModified}
+											onChange={searchBylastModified}
 											mountClosed
 										/>
 									</Col>

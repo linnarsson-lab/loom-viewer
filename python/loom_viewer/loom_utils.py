@@ -64,7 +64,7 @@ def save_gzipped_json_string(json_filename: str, json_string: str, truncate: boo
 #
 
 
-def format_last_mod(file_path: str) -> str:
+def format_mtime(file_path: str) -> str:
 	"""
 	Returns the last time the file was modified as a string,
 	formatted year/month/day hour:minute:second
