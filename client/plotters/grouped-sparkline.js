@@ -1,66 +1,46 @@
 import { sparkline } from './sparkline';
-
-function maxVal(arr) {
-	let max = 0;
-	for (let i = 0; i < arr.length; i++) {
-		if (arr[i] > max) { max = arr[i]; }
-	}
-	return max;
-}
-
-function findConstr(indices) {
-	let maxIdx = maxVal(indices);
-	return maxIdx <= 0xFF ?
-		Uint8Array :
-		maxIdx <= 0xFFFF ?
-			Uint16Array :
-			maxIdx <= 0xFFFFFFFF ?
-				Uint32Array :
-				Float64Array;
-}
-
-function fitToSmallestIndex(indices){
-	return findConstr(indices).from(indices);
-}
+import { Uint32Vector } from '../js/typed-vector';
 
 export function groupedSparkline(indices, groupAttr) {
-	let groupedIndices = [],
-		labels = [],
-		lengths = [],
-		totalPoints = indices.length;
-	// convert to smallest fitting TypedArray
-	indices = fitToSmallestIndex(indices);
+	// convert to TypedArray
+	indices = Uint32Array.from(indices);
 
+	let groupedIndices = [],
+		// an array *of* Uint32Vector
+		groupedIndicesVectorArray = [],
+		labels = [],
+		lengths = new Uint32Array(0),
+		lengthsVector = new Uint32Vector(0),
+		totalPoints = indices.length;
+
+	// without an attribute to group, this is just a sparkline.
 	if (!groupAttr) {
 		groupedIndices = [indices];
 		labels = [''];
-		lengths = fitToSmallestIndex([indices.length]);
+		lengths = new Uint32Array(1);
+		lengths[0] = indices.length;
 	} else {
 		const {
 			data,
 			uniques,
 			indexedVal,
 		} = groupAttr;
+
 		if (uniques.length === 0) {
 			groupedIndices = [indices];
 			labels = [''];
 		} else {
-			let other = [];
-			let vals = {};
-			let maxGroups = Math.min(uniques.length, 100);
+			let other = new Uint32Vector(0),
+				vals = {},
+				maxGroups = Math.min(uniques.length, 100);
 			const sortedUniques = uniques
 				.slice(0, maxGroups)
-				.sort((a, b) => {
-					return a.val < b.val ?
-						-1 :
-						a.val > b.val ?
-							1 :
-							0;
-				});
+				.sort(groupValComparator);
+
 			for (let i = 0; i < maxGroups; i++) {
 				const v = sortedUniques[i].val;
 				vals[v] = i;
-				groupedIndices.push([]);
+				groupedIndicesVectorArray.push(new Uint32Vector(0));
 				labels.push(indexedVal ? indexedVal[v] : v);
 			}
 
@@ -69,22 +49,22 @@ export function groupedSparkline(indices, groupAttr) {
 				let val = data[idx];
 				let groupIdx = vals[val];
 				if (groupIdx !== undefined) {
-					groupedIndices[groupIdx].push(idx);
+					groupedIndicesVectorArray[groupIdx].push(idx);
 				} else {
 					other.push(idx);
 				}
 			}
 			if (other.length) {
-				groupedIndices.push(other);
+				groupedIndicesVectorArray.push(other);
 				labels.push('(other)');
 			}
 			// convert to typed array for faster lookup later
-			for (let i = 0; i < groupedIndices.length; i++) {
-				let indx = groupedIndices[i];
-				lengths.push(indx.length);
-				groupedIndices[i] = fitToSmallestIndex(indx);
+			for (let i = 0; i < groupedIndicesVectorArray.length; i++) {
+				let indx = groupedIndicesVectorArray[i];
+				lengthsVector.push(indx.length);
+				groupedIndices[i] = indx.toTypedArray();
 			}
-			lengths = fitToSmallestIndex(lengths);
+			lengths = lengthsVector.toTypedArray();
 		}
 	}
 
@@ -130,4 +110,12 @@ export function groupedSparkline(indices, groupAttr) {
 			context.width = width;
 		};
 	};
+}
+
+function groupValComparator(a, b) {
+	return a.val < b.val ?
+		-1 :
+		a.val > b.val ?
+			1 :
+			0;
 }

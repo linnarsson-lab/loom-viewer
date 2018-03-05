@@ -2,7 +2,12 @@ import {
 	textSize,
 	textStyle,
 	drawText,
-} from './canvas';
+} from 'plotters/canvas-util';
+
+import {
+	nullPainter,
+} from 'plotters/nullpainter';
+
 
 import {
 	findMostCommon,
@@ -10,8 +15,8 @@ import {
 	attrIndexedSubset,
 	attrSubset,
 	logProject,
-	nullFunc,
 } from 'js/util';
+
 
 import{
 	attrToColorFactory,
@@ -54,7 +59,7 @@ const icicleMapPainter = {
 
 const textPaint = {
 	directly: textPaintDirectly,
-	grouped: nullFunc,
+	grouped: nullPainter,
 };
 
 
@@ -154,7 +159,7 @@ export function sparkline(attr, indices, mode, settings, label) {
 		return sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label);
 	}
 	// return empty plotter if no attr was provided
-	return nullFunc;
+	return nullPainter;
 }
 
 function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColor, label) {
@@ -162,7 +167,7 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 	// worry about duplicating the logic for vertical sparklines.
 	const _sparkline = (context) => {
 		if (range.visible && context.width && context.height) {
-
+			context.clearRect(0, 0, context.width, context.height);
 			const {
 				unrounded,
 				left,
@@ -249,6 +254,8 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 			}
 		}
 		if (label) { nameLabelPainter(context, mode, label); }
+		// Not animated
+		return false;
 	};
 
 
@@ -274,6 +281,8 @@ function sparklineFactory(attr, plot, range, indices, mode, settings, dataToColo
 			t = context.width;
 			context.width = context.height;
 			context.height = t;
+			// Not animated
+			return false;
 		};
 	}
 }
