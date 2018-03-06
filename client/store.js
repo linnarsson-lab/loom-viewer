@@ -20,9 +20,8 @@ if (process.env.NODE_ENV === 'debug') {
 		loomAppReducer,
 		composeEnhancers(applyMiddleware(thunk))
 	);
-
 	// expose store to console
-	window.store = store;
+	window.store = _store;
 } else {
 	var _store = createStore(
 		loomAppReducer,
