@@ -18,6 +18,7 @@ import {
 	firstMatchingKeyCaseInsensitive,
 	merge,
 	mergeInPlace,
+	reduxAttrToJSON,
 } from 'js/util';
 
 import {
@@ -334,38 +335,11 @@ function prepareViewState(dataset) {
 }
 
 
-function reduxToJSON(attrs) {
-	for (let i = 0; i < attrs.keys.length; i++) {
-		let key = attrs.keys[i],
-			attr = attrs.attrs[key];
-		const {
-			name,
-			arrayType,
-			data,
-			indexedVal,
-			uniques,
-			allUnique,
-			colorIndices,
-			min,
-			max,
-		} = attr;
-
-		const reduxJSON = {
-			name,
-			arrayType,
-			data: Array.from(data.slice(0, Math.min(3, data.length))),
-			data_length: `${data.length} items`,
-			indexedVal,
-			uniques: uniques.slice(0, Math.min(3, uniques.length)),
-			total_uniques: `${uniques.length} items`,
-			allUnique,
-			colorIndices,
-			min,
-			max,
-		};
-		attr.toJSON = () => {
-			return reduxJSON;
-		};
+function reduxToJSON(axisAttrs) {
+	for (let i = 0; i < axisAttrs.keys.length; i++) {
+		let key = axisAttrs.keys[i],
+			attr = axisAttrs.attrs[key];
+		reduxAttrToJSON(attr);
 	}
 }
 

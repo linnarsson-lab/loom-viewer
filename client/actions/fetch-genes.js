@@ -6,11 +6,17 @@ import {
 	RECEIVE_GENE,
 } from './action-types';
 
-import { disjointArrays, convertJSONarray } from 'js/util';
+import {
+	disjointArrays,
+	convertJSONarray,
+} from 'js/util';
 
 import localforage from 'localforage';
 import 'localforage-getitems';
 import 'localforage-setitems';
+import {
+	reduxAttrToJSON,
+} from '../js/util';
 
 // =======================================================
 // Fetch a row of values for a single gene for a dataset
@@ -33,10 +39,11 @@ export function fetchGene(dataset, genes) {
 		fetchingGenes,
 	} = dataset;
 	const {
-		geneToRow, rowToGenes,
+		geneToRow,
+		rowToGenes,
 	} = col;
 	if (geneToRow === undefined || genes === undefined) {
-		return () => { };
+		return () => {};
 	} else {
 		// filter out the genes already in the store;
 		let unfetched = [];
@@ -63,7 +70,7 @@ export function fetchGene(dataset, genes) {
 				.then((retrievedGenes) => {
 					let cachedNames = [],
 						cachedGenes = {},
-						keys = Object.keys(retrievedGenes) ;
+						keys = Object.keys(retrievedGenes);
 					for (let i = 0; i < keys.length; i++) {
 						let gene = retrievedGenes[keys[i]];
 						// each key that is uncached returns as an
@@ -101,14 +108,14 @@ export function fetchGene(dataset, genes) {
 						}
 					}
 					if (fetchRows.length > 0) {
-						_fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
+						fetchUncachedGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes);
 					}
 				});
 		};
 	}
 }
 
-function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes) {
+function fetchUncachedGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, title, rowToGenes) {
 	for (let i = 0; i < fetchGeneNames.length; i += rowsPerFetch) {
 		let i1 = Math.min(i + rowsPerFetch, fetchGeneNames.length);
 		const _fetchGeneNames = fetchGeneNames.slice(i, i1),
@@ -117,7 +124,9 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 		fetch(`/loom/${path}/row/${_fetchRows.join('+')}`)
 			// Third, once the response comes in,
 			// dispatch an action to provide the data
-			.then((response) => { return response.json(); })
+			.then((response) => {
+				return response.json();
+			})
 			.then((data) => {
 				// Genes are appended to the attrs object
 				let attrs = {};
@@ -129,7 +138,7 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 					const geneName = rowToGenes[gene.idx];
 					if (geneName === undefined) {
 						console.log('fetchGene: row index out of bounds error!');
-						console.log({ gene });
+						console.log({gene});
 					} else {
 						const convertedGene = convertJSONarray(gene.data, geneName);
 						attrs[geneName] = convertedGene;
@@ -142,7 +151,11 @@ function _fetchGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, path, ti
 			})
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch((err) => {
-				console.log('Requesting genes failed:', { err }, err);
+				console.log(
+					'Requesting genes failed:', 
+					{err},
+					err
+				);
 				dispatch(requestGenesFailed(_fetchGeneNames, path, title));
 			});
 	}
@@ -159,14 +172,17 @@ function cacheGenes(genes, path) {
 	console.log('caching genes: ', keys);
 	return localforage.setItems(items)
 		.catch((err) => {
-			console.log('caching genes failed:', err, { err });
-		})
-	;
+			console.log(
+				'caching genes failed:',
+				{err}
+				err,
+			);
+		});
 }
 
 function requestGenesFetch(genes, path) {
 	let fetchingGenes = {};
-	for(let i = 0; i < genes.length; i++) {
+	for (let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = true;
 	}
 	return {
@@ -183,7 +199,7 @@ function requestGenesFetch(genes, path) {
 
 function requestGenesFailed(genes, path) {
 	let fetchingGenes = {};
-	for(let i = 0; i < genes.length; i++) {
+	for (let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = false;
 	}
 	return {
@@ -205,6 +221,11 @@ function receiveGenes(attrs, genes, path) {
 	for (let i = 0; i < genes.length; i++) {
 		fetchingGenes[genes[i]] = false;
 		fetchedGenes[genes[i]] = true;
+	}
+	if (process.env.NODE_ENV === 'debug') {
+		for (let i = 0; i < genes.length; i++) {
+			reduxAttrToJSON(attrs[genes[i]]);
+		}
 	}
 	return {
 		type: RECEIVE_GENE,

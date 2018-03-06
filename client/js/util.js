@@ -529,6 +529,31 @@ export function convertJSONarray(arr, name) {
 }
 
 /**
+ * Adds a custom `toJSON()` function so that `attrs`
+ * - shows only the first three elements of `data` and `unique`
+ * - shows Typed Arrays as arrays, instead of key/val objects
+ * @param {*} attr
+ */
+export function reduxAttrToJSON(attr){
+	const reduxJSON = {
+		name,
+		arrayType,
+		data: Array.from(data.slice(0, Math.min(3, data.length))),
+		data_length: `${data.length} items`,
+		indexedVal,
+		uniques: uniques.slice(0, Math.min(3, uniques.length)),
+		total_uniques: `${uniques.length} items`,
+		allUnique,
+		colorIndices,
+		min,
+		max,
+	};
+	attr.toJSON = () => {
+		return reduxJSON;
+	};
+}
+
+/**
  * Returns the first string in `keyList` that is a key
  * in `obj`. Returns empty string if none are found.
  * @param {*} obj
@@ -569,7 +594,6 @@ export function firstMatchingKeyCaseInsensitive(obj, keyList) {
 	}
 	return '';
 }
-
 
 
 export function generateIndices(length) {
