@@ -1,4 +1,5 @@
 import { sortFilterIndices } from './sort-dataset';
+import { radixSortCopy } from '../js/radix-sorts';
 
 export function updateFilteredIndices(data, filter, order, originalIndices) {
 	let indices = Array.from(originalIndices);
@@ -33,8 +34,7 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 	// are present, and iterating by ascending indices
 	// will be more cache friendly in that case.
 	// Hence, we save a separate set of indices.
-	let ascendingIndices = newIndices.slice(0);
-	ascendingIndices.sort(compareIndices);
+	let ascendingIndices = radixSortCopy(newIndices);
 
 	return {
 		indices: sortFilterIndices(data, order, newIndices),

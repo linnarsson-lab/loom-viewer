@@ -4,9 +4,7 @@ import {
 	drawText,
 } from 'plotters/canvas-util';
 
-import {
-	nullPainter,
-} from 'plotters/nullpainter';
+import { nullPainter  } from 'plotters/nullpainter';
 
 
 import {
@@ -17,10 +15,9 @@ import {
 	logProject,
 } from 'js/util';
 
+import { radixSort } from 'js/radix-sorts';
 
-import{
-	attrToColorFactory,
-} from 'js/colors';
+import{ attrToColorFactory  } from 'js/colors';
 
 const categoriesPainter = {
 	directly: categoriesDirectly,
@@ -374,7 +371,7 @@ function stackedCategoriesGrouped(context, attr, data, range, ratio, dataToColor
 	while (data[i]) {
 		let barSlice = data[i++],
 			l = barSlice.length;
-		barSlice.sort();
+		radixSort(barSlice);
 
 		const x = (i * ratio) | 0;
 		const x1 = ((i + 1) * ratio) | 0;
@@ -517,7 +514,7 @@ function barConvertGroupedData(attr, data, min, max, settings) {
 	// returns grouped data, while simultaneously
 	// sorting the data for later.
 	let iStart = data.length;
-	while (data[iStart - 1]) { data[--iStart].sort(); }
+	while (data[iStart - 1]) { radixSort(data[--iStart]); }
 
 	// go through all columns, find average,
 	// and biggest third quartile
@@ -687,7 +684,7 @@ function barGroupedBoxDataPrep(attr, data, min, max, settings) {
 	// empty values. So we find the first
 	// index where data[iStart] returns grouped data
 	let iStart = data.length;
-	while (data[iStart - 1]) { data[--iStart].sort(); }
+	while (data[iStart - 1]) { radixSort(data[--iStart]); }
 
 	// go through all columns, find
 	// average, first quartile and third quartile
@@ -1113,7 +1110,7 @@ function flameMapGrouped(context, attr, data, range, ratio, dataToColor, setting
 }
 
 function drawFlameColumn(context, x, width, height, dataGroup, binSize, dataToColor) {
-	dataGroup.sort();
+	radixSort(dataGroup);
 	const l = dataGroup.length;
 	const spareTile = binSize - l;
 	let j = 0,
@@ -1276,19 +1273,16 @@ function groupAttr(attr, indices, range, mode, groupNum, groupDen) {
 	// optimise for that (emphasis might, this is
 	// untested and probably changes over time
 	// anyway. But type-stable arrays are a good
-	// principle to live by I think.
-	let i = 0;
-	if (left < 0) {
-		i = -left * groupDen / groupNum | 0;
-	}
+	// principle to live by.
+	let i = left < 0 ? -left * groupDen / groupNum | 0 : 0;
 	let data = new Array(i);
 
 	// Copy actual groups
 
 	// If we're using Text mode, the data being grouped cannot be a typed
 	// array. We also have to check if the text is indexed or not.
-	const subset = (mode === 'Text' && attr.indexedVal !== undefined) ? attrIndexedSubset : attrSubset;
-
+	const textMode = mode === 'Text' && attr.indexedVal !== undefined;
+	const subset =  textMode ? attrIndexedSubset : attrSubset;
 	// For some modes, we want to smooth the groups
 	const smoothing = mode === 'Stacked';
 

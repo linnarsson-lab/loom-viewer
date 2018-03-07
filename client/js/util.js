@@ -1,3 +1,7 @@
+import {
+	radixSort,
+	radixSortCopy,
+} from './radix-sorts';
 // You'd be surprised how often I need this.
 // I hope WebPack puts it at top level...
 
@@ -250,8 +254,7 @@ export function countUniques(array, start, end) {
 	end = end < array.length ? end : array.length;
 	// Copy and sort the array. Note that after sorting,
 	// undefined values will be at the end of the array!
-	let sorted = array.slice(start, end);
-	sorted.sort();
+	let sorted = radixSortCopy(array, start, end);
 
 	// skip undefined elements
 	let i = sorted.indexOf(undefined);
@@ -309,7 +312,7 @@ export function findMostCommon(array, start, end) {
 		end = end < array.length ? end : array.length;
 		let i = 0,
 			j = 0,
-			sorted = array.slice(start, end).sort(),
+			sorted = radixSortCopy(array, start, end),
 			val = sorted[i],
 			mc = 1;
 		mv = val;
@@ -535,18 +538,23 @@ export function convertJSONarray(arr, name) {
  * @param {*} attr
  */
 export function reduxAttrToJSON(attr){
+	const  {
+		data,
+		uniques,
+	} = attr;
 	const reduxJSON = {
-		name,
-		arrayType,
+		allUnique: attr.allUnique,
+		arrayType: attr.arrayType,
+		colorIndices: attr.colorIndices,
+		name: attr.name,
 		data: Array.from(data.slice(0, Math.min(3, data.length))),
 		data_length: `${data.length} items`,
-		indexedVal,
-		uniques: uniques.slice(0, Math.min(3, uniques.length)),
+		indexedVal: attr.indexedVal,
+		max: attr.max,
+		min: attr.min,
 		total_uniques: `${uniques.length} items`,
-		allUnique,
-		colorIndices,
-		min,
-		max,
+		uniqueVal: attr.uniqueVal,
+		uniques: uniques.slice(0, Math.min(3, uniques.length)),
 	};
 	attr.toJSON = () => {
 		return reduxJSON;
@@ -593,6 +601,57 @@ export function firstMatchingKeyCaseInsensitive(obj, keyList) {
 		}
 	}
 	return '';
+}
+
+/**
+ * Returns a list of all pairs in `keyList` with
+ * keys in `obj`.
+ *
+ * Returns empty array if no matches are found.
+ * @param {object} obj
+ * @param {string[][]} keyPairList
+ */
+export function allMatchingPairs(obj, keyPairList){
+	let matchingPairs = [];
+	for(let i = 0; i < keyPairList.length; i++){
+		let pair = keyPairList[i];
+		if(obj[pair[0]] !== undefined && obj[pair[1]] !== undefined){
+			matchingPairs.push(pair);
+		}
+	}
+	return matchingPairs;
+}
+
+function toLowerCasePair(pair) {
+	return [pair[0].toLowerCase(), pair[1].toLowerCase()];
+}
+
+/**
+ * Returns a list of all pairs in `keyList` with
+ * keys in `obj`. Case insensitive search, returns
+ * actual object keys.
+ *
+ * Returns empty array if no matches are found.
+ * @param {object} obj
+ * @param {string[][]} keyPairList
+ */
+export function allMatchingPairsCaseInsensitive(obj, keyPairList){
+	const keys = Object.keys(obj);
+
+	const keysLC = keys.map(toLowerCase),
+		keyPairListLC = keyPairList.map(toLowerCasePair);
+
+	let matchingPairs = [];
+
+	for(let i = 0; i < keyPairList.length; i++){
+		let pair = keyPairListLC[i],
+			index0 = keysLC.indexOf(pair[0]),
+			index1 = keysLC.indexOf(pair[1]);
+		if (index0 !== -1 && index1 !== -1){
+			matchingPairs.push([keys[index0], keys[index1]]);
+		}
+	}
+	return matchingPairs;
 }
 
 
@@ -650,12 +709,12 @@ export function generateExcludedIndices(ascendingIndices, totalIndices) {
 /**
  * - `array`: array to be sorted
  * - `compareFunc`: optional comparison callback that will be given
- *	 *indices* i and j. This can be used to create callbacks that
- *	 do more complex comparisons on objects in the array, and
- *	 more importantly *other arrays as well*.
+ *   *indices* i and j. This can be used to create callbacks that
+ *   do more complex comparisons on objects in the array, and
+ *   more importantly *other arrays as well*.
  *
- *	 `compareFunc` should always end with `i - j`
- *	 as the last sort key, as this will ensure a stable sort.
+ *   `compareFunc` should always end with `i - j`
+ *   as the last sort key, as this will ensure a stable sort.
  *
  * Example:
  *
@@ -694,7 +753,7 @@ export function sortedCopy(array, compareFunc) {
 	let indices = findSourceIndices(array, compareFunc);
 	let i = array.length;
 	// make sure we use the same type of array
-	let sortedArray = new Object.getPrototypeOf(array).constructor(i);
+	let sortedArray = new (Object.getPrototypeOf(array)).constructor(i);
 	// unrolled 16-decrement loop was benchmarked
 	// as the fastest way to copy data over.
 	while (i - 16 > 0) {
@@ -1584,12 +1643,7 @@ export function merge(oldObj, newObj) {
 		oldObj.constructor !== Object ||
 		newObj.constructor !== Object
 	) {
-		// For better consistency in hidden classes,
-		// we use sortedDeepCopy to ensure consistent
-		// order in property keys. This also has the
-		// effect of not leaking any references to
-		// any (plain) objects inside newObj.
-		return sortedDeepCopy(newObj);
+		return newObj;
 	}
 
 	const {
@@ -1653,7 +1707,7 @@ export function mergeInPlace(oldObj, newObj) {
  * @param {*} obj
  * @returns {*}
  */
-function sortedDeepCopy(obj) {
+export function sortedDeepCopy(obj) {
 	if (obj && obj.constructor === Object) {
 		const keys = Object.keys(obj).sort();
 		let copy = {};
