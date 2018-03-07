@@ -29,7 +29,7 @@ module.exports = {
 				options: {
 					name: '[name]-[hash].[ext]',
 					outputPath: 'static/images/',
-					publicPath: '/',
+					publicPath: '/static/images/',
 				},
 			},
 			{

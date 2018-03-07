@@ -66,7 +66,7 @@ module.exports = {
 				options: {
 					name: '[name]-[hash].[ext]',
 					outputPath: 'static/images/',
-					publicPath: '/',
+					publicPath: '/static/images/',
 				},
 			},
 			{
@@ -75,7 +75,7 @@ module.exports = {
 				options: {
 					name: '[name]-[hash].[ext]',
 					outputPath: 'static/fonts/',
-					publicPath: '/',
+					publicPath: '/static/fonts/',
 				},
 			},
 			{
