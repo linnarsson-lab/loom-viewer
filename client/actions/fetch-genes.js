@@ -14,9 +14,7 @@ import {
 import localforage from 'localforage';
 import 'localforage-getitems';
 import 'localforage-setitems';
-import {
-	reduxAttrToJSON,
-} from '../js/util';
+import { reduxAttrToJSON } from '../js/util';
 
 // =======================================================
 // Fetch a row of values for a single gene for a dataset
@@ -138,7 +136,7 @@ function fetchUncachedGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, p
 					const geneName = rowToGenes[gene.idx];
 					if (geneName === undefined) {
 						console.log('fetchGene: row index out of bounds error!');
-						console.log({gene});
+						console.log({ gene });
 					} else {
 						const convertedGene = convertJSONarray(gene.data, geneName);
 						attrs[geneName] = convertedGene;
@@ -152,8 +150,8 @@ function fetchUncachedGenes(dispatch, fetchGeneNames, fetchRows, rowsPerFetch, p
 			// Or, if it failed, dispatch an action to set the error flag
 			.catch((err) => {
 				console.log(
-					'Requesting genes failed:', 
-					{err},
+					'Requesting genes failed:',
+					{ err },
 					err
 				);
 				dispatch(requestGenesFailed(_fetchGeneNames, path, title));
@@ -174,8 +172,8 @@ function cacheGenes(genes, path) {
 		.catch((err) => {
 			console.log(
 				'caching genes failed:',
-				{err}
-				err,
+				{ err },
+				err
 			);
 		});
 }

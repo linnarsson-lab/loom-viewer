@@ -21,26 +21,18 @@ import {
 	reduxAttrToJSON,
 } from 'js/util';
 
-import {
-	createViewStateConverter,
-} from 'js/viewstate-encoder';
+import { createViewStateConverter  } from 'js/viewstate-encoder';
 
-import {
-	viewStateInitialiser,
-} from 'js/viewstate-initialiser';
+import { viewStateInitialiser  } from 'js/viewstate-initialiser';
 
 // used for writing view state to the browser URL
-import {
-	browserHistory,
-} from 'react-router';
+import { browserHistory  } from 'react-router';
 import {
 	compressToEncodedURIComponent,
 	decompressFromEncodedURIComponent,
 } from 'js/lz-string';
 
-import {
-	updateAndFetchGenes,
-} from 'actions/update-and-fetch';
+import { updateAndFetchGenes  } from 'actions/update-and-fetch';
 
 import {
 	REQUEST_DATASET,
@@ -51,15 +43,15 @@ import {
 	LOAD_DATASET,
 } from './action-types';
 
-// //////////////////////////////////////////////////////////////////////////////
-//
-// Fetch metadata for a dataSet
-//
-// //////////////////////////////////////////////////////////////////////////////
+// ===============================
+//   Fetch metadata for a dataSet
+// ===============================
 
 
-// Thunk action creator, following http://rackt.org/redux/docs/advanced/AsyncActions.html
-// Though its insides are different, you would use it just like any other action creator:
+// Thunk action creator, following
+// http://rackt.org/redux/docs/advanced/AsyncActions.html
+// Though its insides are different, you would use it
+// just like any other action creator:
 // store.dispatch(requestDataset(...))
 
 export function requestDataset(datasets, path) {
@@ -132,7 +124,7 @@ function fetchDataset(datasets, path, dispatch) {
 					.catch((err) => {
 						console.log(
 							'Caching dataset failed:',
-							err, 
+							err,
 							{ err }
 						);
 						return dataset;
