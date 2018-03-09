@@ -1,7 +1,5 @@
-import {
-	radixSort,
-	radixSortCopy,
-} from './radix-sorts';
+import { radixSortCopy } from './radix-sorts';
+
 // You'd be surprised how often I need this.
 // I hope WebPack puts it at top level...
 
@@ -40,94 +38,118 @@ export function logProject(x) {
 export function logProjectArray(data) {
 	switch (data.constructor) {
 		case Float32Array:
-			return logProjectArrayF32(data);
+			return logProjectF32(data);
 		case Float64Array:
-			return logProjectArrayF64(data);
+			return logProjectF64(data);
 		case Int32Array:
-			return logProjectArrayI32(data);
+			return logProjectI32(data);
 		case Int16Array:
-			return logProjectArrayI16(data);
+			return logProjectI16(data);
 		case Int8Array:
-			return logProjectArrayI8(data);
+			return logProjectI8(data);
 		case Uint32Array:
-			return logProjectArrayU32(data);
+			return logProjectU32(data);
 		case Uint16Array:
-			return logProjectArrayU16(data);
+			return logProjectU16(data);
 		case Uint8Array:
-			return logProjectArrayU8(data);
+			return logProjectU8(data);
 		default:
 	}
 	return logProjectArrayPlain(data);
 }
 
-function logProjectArrayF64(data) {
+/**
+ * @param {Float64Array} data
+ */
+export function logProjectF64(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayF32(data) {
+/**
+ * @param {Float32Array} data
+ */
+export function logProjectF32(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayI32(data) {
+/**
+ * @param {Int32Array} data
+ */
+export function logProjectI32(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayI16(data) {
+/**
+ * @param {Int16Array} data
+ */
+export function logProjectI16(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayI8(data) {
+/**
+ * @param {Int8Array} data
+ */
+export function logProjectI8(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayU32(data) {
+/**
+ * @param {Uint32Array} data
+ */
+export function logProjectU32(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayU16(data) {
+/**
+ * @param {Uint16Array} data
+ */
+export function logProjectU16(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
 
-function logProjectArrayU8(data) {
+/**
+ * @param {Uint8Array} data
+ */
+export function logProjectU8(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
@@ -136,7 +158,7 @@ function logProjectArrayPlain(data) {
 	let _data = data.slice(0);
 	for (let i = 0; i < data.length; i++) {
 		let v = data[i];
-		_data[i] = v > 0 ? log2(1 + v) : -log2(1 - v);
+		_data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 	return _data;
 }
