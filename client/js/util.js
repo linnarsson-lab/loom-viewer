@@ -763,7 +763,8 @@ export function generateExcludedIndices(ascendingIndices, totalIndices) {
  * @param {{(i:number, j:number)=> number}=} compareFunc
  */
 export function sortInPlace(array, compareFunc) {
-	return sortFromIndices(array, findSourceIndices(array, compareFunc));
+	let indices = findSourceIndices(array, compareFunc);
+	return sortFromIndices(array, indices);
 }
 
 /**
@@ -910,7 +911,8 @@ export function findSourceIndices(array, compareFunc) {
 	// after sorting, `indices[i]` gives the index from where
 	// `array[i]` should take the value from, so
 	// `array[i]` should have the value at `array[indices[i]]`
-	return indices.sort(compareFunc);
+	indices.sort(compareFunc);
+	return indices
 }
 
 /**
