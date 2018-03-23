@@ -1,4 +1,7 @@
-import { firstMatchingKey } from './util';
+import {
+	firstMatchingKeyCaseInsensitive,
+	sortedDeepCopy,
+} from './util';
 
 
 function initialiseOrder(attr, keys) {
@@ -32,12 +35,16 @@ export function viewStateInitialiser(dataset) {
 		shape,
 	} = dataset.heatmap;
 
-	return {
+	// Would be nice to come up with a more robust solution than this. And no, I don't want a regex.
+	const colorAttrColumn = firstMatchingKeyCaseInsensitive(colAttrs, ['ClusterNames', '_ClusterNames', 'ClusterName', '_ClusterName', 'Clusters', '_Clusters', 'Cluster', '_Cluster', 'Class', '_Class', 'Classes', '_Classes', 'ClassName', '_ClassName', 'Class_Name', '_Class_Name', 'ClassNames', '_ClassNames', 'Class_Names', '_Class_Names', 'Louvain_Jaccard', '_KMeans_20', '_KMeans20', 'KMeans_20', 'KMeans20', '_KMeans_10', '_KMeans10', 'KMeans_10', 'KMeans10', '(original order)']),
+
+		colorAttrRow = firstMatchingKeyCaseInsensitive(rowAttrs, ['_Selected', 'Selected', 'Excluded', '_Excluded', '(original order)']);
+	const initialState = {
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
-			colAttr: firstMatchingKey(dataset.col.attrs, ['ClusterNames', 'ClusterName', 'Clusters', 'Cluster', 'Class', 'Classes', '_KMeans_10', '(original order)']),
+			colAttr: colorAttrColumn,
 			colMode: 'Stacked',
-			rowAttr: firstMatchingKey(dataset.row.attrs, ['_Selected', '_Excluded', '(original order)']),
+			rowAttr: firstMatchingKeyCaseInsensitive(dataset.row.attrs, ['_Selected', '_Excluded', '(original order)']),
 			rowMode: 'Stacked',
 			zoom: 8,
 			zoomRange,
@@ -47,8 +54,8 @@ export function viewStateInitialiser(dataset) {
 		},
 
 		sparkline: {
-			colAttr: firstMatchingKey(colAttrs, ['ClusterNames', 'ClusterName', 'Clusters', 'Cluster', 'Class', 'Classes', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
-			colMode: 'Stacked',
+			colAttr: colorAttrColumn,
+			colorMode: 'Stacked',
 			geneMode: 'Box',
 			genes: ['Cdk1', 'Top2a', 'Hexb', 'Mrc1', 'Lum', 'Col1a1', 'Cldn5', 'Acta2', 'Tagln', 'Foxj1', 'Ttr', 'Aqp4', 'Meg3', 'Stmn2', 'Gad2', 'Slc32a1', 'Plp1', 'Sox10', 'Mog', 'Mbp', 'Mpz'],
 			showLabels: true,
@@ -70,16 +77,16 @@ export function viewStateInitialiser(dataset) {
 				plotSettings: {
 					0: {
 						x: {
-							attr: firstMatchingKey(colAttrs, ['X', '_X', 'SFDP_X', '_tSNE1', '_PCA1', '(original order)']),
+							attr: firstMatchingKeyCaseInsensitive(colAttrs, ['X', '_X', 'SFDP_X', '_tSNE1', '_tSNE_1', 'tSNE1', 'tSNE_1', '_PCA1', '_PCA_1', 'PCA1', 'PCA_1', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
 						y: {
-							attr: firstMatchingKey(colAttrs, ['Y', '_Y', 'SFDP_Y', '_tSNE2', '_PCA2', '(original order)']),
+							attr: firstMatchingKeyCaseInsensitive(colAttrs, ['Y', '_Y', 'SFDP_Y', '_tSNE2', '_tSNE_2', 'tSNE2', 'tSNE_2', '_PCA2', '_PCA_2', 'PCA2', 'PCA_2', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
-						colorAttr: firstMatchingKey(colAttrs, ['ClusterNames', 'ClusterName', 'Clusters', 'Cluster', 'Class', 'Classes', 'Louvain_Jaccard', '_KMeans_10', '(original order)']),
+						colorAttr: colorAttrColumn,
 						colorMode: 'Stacked',
 						logScale: true,
 						clip: false,
@@ -104,16 +111,16 @@ export function viewStateInitialiser(dataset) {
 				plotSettings: {
 					0: {
 						x: {
-							attr: firstMatchingKey(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_PCA1', '(original order)']),
+							attr: firstMatchingKeyCaseInsensitive(rowAttrs, ['_X', 'X', '_LogMean', '_tSNE1', '_tSNE_1', 'tSNE1', 'tSNE_1', '_PCA1', '_PCA_1', 'PCA1', 'PCA_1', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
 						y: {
-							attr: firstMatchingKey(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_PCA2', '(original order)']),
+							attr: firstMatchingKeyCaseInsensitive(rowAttrs, ['_Y', 'Y', '_LogCV', '_tSNE2', '_tSNE_2', 'tSNE2', 'tSNE_2', '_PCA2', '_PCA_2', 'PCA2', 'PCA_2', '(original order)']),
 							jitter: false,
 							logScale: false,
 						},
-						colorAttr: firstMatchingKey(rowAttrs, ['_Selected', '_Excluded', '(original order)']),
+						colorAttr: colorAttrRow,
 						colorMode: 'Stacked',
 						logScale: true,
 						clip: false,
@@ -126,4 +133,10 @@ export function viewStateInitialiser(dataset) {
 			},
 		},
 	};
+
+	// Make sure the initial classes are sorted, so that the rest
+	// of the JavaScript code will use the sorted hidden class.
+	// Makes initialisation a little bit slower, but prevents
+	// hidden class issues with state loaded from URI.
+	return sortedDeepCopy(initialState);
 }
