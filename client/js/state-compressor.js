@@ -171,13 +171,13 @@ export function constDecoder(val) {
 export function oneOf(valArr) {
 	// make sure valArr isn't accidentally mutated later
 	valArr = valArr.slice();
-	// hashmap lookup is usually faster than indexOf in modern browsers
-	let valToIdx = {};
+	// Map lookup is usually faster than indexOf on an array in modern browsers
+	let valToIdx = new Map();
 	for(let i = 0; i < valArr.length; i++){
-		valToIdx[valArr[i]] = i;
+		valToIdx.set(valArr[i], i);
 	}
 	let retVal = () => { };
-	retVal.encoder = (val) => { return valToIdx[val]; };
+	retVal.encoder = (val) => { return valToIdx.get(val); };
 	retVal.decoder = (idx) => { return valArr[idx]; };
 	return retVal;
 }
@@ -296,15 +296,20 @@ export function decodeVector(patternArr) {
 	};
 }
 
+/**
+ * Creates an encoder that transforms
+ * an object matching the passed schema
+ * into a positional array.
+ */
 export function encodeObj(schema) {
 	let keys = Object.keys(schema);
 	// sort keys to ensure consistent encoding/decoding
 	keys.sort();
 
-	let _encoder = {};
+	let _encoder = new Map();
 	for(let i = 0; i < keys.length; i++) {
 		let k = keys[i];
-		_encoder[k] = createEncoder(schema[k]);
+		_encoder.set(k, createEncoder(schema[k]));
 	}
 
 	let encoder = (obj) => {
@@ -312,7 +317,7 @@ export function encodeObj(schema) {
 			let retArr = new Array(keys.length);
 			for (let i = 0; i < keys.length; i++) {
 				let k = keys[i];
-				retArr[i] = _encoder[k](obj[k]);
+				retArr[i] = (_encoder.get(k))(obj[k]);
 			}
 			return retArr;
 		} else {
@@ -333,10 +338,10 @@ export function decodeObj(schema) {
 	// sort keys to ensure consistent encoding/decoding
 	keys.sort();
 
-	let _decoder = {};
+	let _decoder = new Map();
 	for(let i = 0; i < keys.length; i++) {
 		let k = keys[i];
-		_decoder[k] = createDecoder(schema[k]);
+		_decoder.set(k, createDecoder(schema[k]));
 	}
 
 	let decoder = (arr) => {
@@ -344,7 +349,7 @@ export function decodeObj(schema) {
 			let retObj = {};
 			for(let i = 0; i < keys.length; i++){
 				let k = keys[i],
-					decoded = _decoder[k](arr[i]);
+					decoded = _decoder.get(k)(arr[i]);
 				if (decoded !== undefined) {
 					retObj[k] = decoded;
 				}
@@ -356,7 +361,7 @@ export function decodeObj(schema) {
 
 	for(let i = 0; i < keys.length; i++){
 		let k = keys[i];
-		decoder[k] = _decoder[k];
+		decoder[k] = _decoder.get(k);
 	}
 	return decoder;
 }
