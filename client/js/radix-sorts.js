@@ -11,41 +11,30 @@ than these, due to better memory access and other reductions in overhead.
 
 PS: Skarupke mentions other radixSort sort implementations implementing a
 Uint32 radixSort sort that makes three passes in 10-11-11 bit chunks. I have
-implemented and tested this[1], but it turns out to be even slower than
+implemented and tested this, but it turns out to be even slower than
 the built-in version. Probably due to the large count buffer needed.
 
 [0] https://probablydance.com/2016/12/27/i-wrote-a-faster-sorting-algorithm/
 */
+
 // Needed for radixSortFloat64
 // import {
 // 	isLittleEndian,
 // } from 'js/util';
 
 // 256 buckets, up to 4 bytes each (32 bit values)
-const count32 = new Uint32Array(256 * 4),
-	count16 = new Uint16Array(count32.buffer, 0, 256 * 4),
-	c2 = 256 * 1,
-	c3 = 256 * 2,
-	c4 = 256 * 3;
+const count32_32 = new Uint32Array(256 * 4),
+	count16_32 = new Uint32Array(256 * 2),
+	count8_32 = new Uint32Array(256),
+	count32_16 = new Uint16Array(256 * 4),
+	count16_16 = new Uint16Array(256 * 2),
+	count8_16 = new Uint16Array(256 * 1);
 
 let sortCopyCacheU32 = new Uint32Array(32),
-	sortCopyCacheI32 = new Int32Array(sortCopyCacheU32.buffer),
+	sortCopyCacheI32 = new Int32Array(32),
 	sortCopyCacheU16 = new Uint16Array(32),
-	sortCopyCacheI16 = new Int16Array(sortCopyCacheU16.buffer);
+	sortCopyCacheI16 = new Int16Array(32);
 
-function fitSortCopyCache32(length) {
-	if (length > sortCopyCacheU32.length) {
-		sortCopyCacheU32 = new Uint32Array(length);
-		sortCopyCacheI32 = new Int32Array(sortCopyCacheU32.buffer);
-	}
-}
-
-function fitSortCopyCache16(length) {
-	if (length > sortCopyCacheU16.length) {
-		sortCopyCacheU16 = new Uint16Array(length);
-		sortCopyCacheI16 = new Int16Array(sortCopyCacheU16.buffer);
-	}
-}
 
 /**
  * ================================
@@ -64,32 +53,31 @@ function fitSortCopyCache16(length) {
  * @returns {Uint8Array} input
  */
 export function radixU8(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
+	const s = start | 0;
+	const e = (end | 0) || input.length;
 
-	if (end < (1 << 16)) {
-		return radixU8_16(input, start, end);
+	if ((e-s) < (1 << 16)) {
+		return radixU8_16(input, s, e);
 	} else {
-		return radixU8_32(input, start, end);
+		return radixU8_32(input, s, e);
 	}
 }
 
 function radixU8_16(input, start, end) {
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 256);
+	count8_16.fill(0);
 	for (let i = start; i < end; i++) {
-		count16[input[i] & 0xFF]++;
+		count8_16[input[i] & 0xFF]++;
 	}
 	// Convert count to cumulative sum of counts.
 	// This lets us directly copy values to their
-	// correct position later. Add starting offset first.
-	count16[0] += start;
+	// correct position later.
 	for (let i = 1; i < 256; i++) {
-		count16[i] += count16[i - 1];
+		count8_16[i] += count8_16[i - 1];
 	}
 	// Set range of values to final value
 	for (let i = 0, iStart = start, iEnd = 0; i < 256; i++) {
-		iEnd = count16[i];
+		iEnd = count8_16[i] + start;
 		for (let j = iStart; j < iEnd; j++) {
 			input[j] = i;
 		}
@@ -100,16 +88,16 @@ function radixU8_16(input, start, end) {
 
 function radixU8_32(input, start, end) {
 	// Same as above, but for arrays 65k or longer
-	count32.fill(0, 0, 256);
+	count8_32.fill(0);
 	for (let i = start; i < end; i++) {
-		count32[input[i] & 0xFF]++;
+		count8_32[input[i] & 0xFF]++;
 	}
-	count32[0] += start;
+	count8_32[0] += start;
 	for (let i = 1; i < 256; i++) {
-		count32[i] += count32[i - 1];
+		count8_32[i] += count8_32[i - 1];
 	}
 	for (let i = 0, iStart = start, iEnd = 0; i < 256; i++) {
-		iEnd = count32[i];
+		iEnd = count8_32[i];
 		for (let j = iStart; j < iEnd; j++) {
 			input[j] = i;
 		}
@@ -143,13 +131,13 @@ export function radixU8Copy(input, start, end) {
  * @returns {Int8Array}
  */
 export function radixI8(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
+	const s = start | 0;
+	const e = (end | 0) || input.length;
 
-	if (end < (1 << 16)) {
-		radixI8_16(input, start, end);
+	if (e-s < (1 << 16)) {
+		radixI8_16(input, s, e);
 	} else {
-		radixI8_32(input, start, end);
+		radixI8_32(input, s, e);
 
 	}
 	return input;
@@ -157,20 +145,19 @@ export function radixI8(input, start, end) {
 
 function radixI8_16(input, start, end) {
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 256);
+	count8_16.fill(0);
 	for (let i = start; i < end; i++) {
-		count16[(input[i] + 128) & 0xFF]++;
+		count8_16[(input[i] + 128) & 0xFF]++;
 	}
 	// Convert count to cumulative sum of counts.
 	// This lets us directly copy values to their
-	// correct position later. Add starting offset first.
-	count16[0] += start;
+	// correct position later.
 	for (let i = 1; i < 256; i++) {
-		count16[i] += count16[i - 1];
+		count8_16[i] += count8_16[i - 1];
 	}
 	// Set range of values to final value
 	for (let i = 0, iStart = start, iEnd = 0, iVal = 0; i < 256; i++) {
-		iEnd = count16[i];
+		iEnd = count8_16[i] + start;
 		iVal = i - 128;
 		for (let j = iStart; j < iEnd; j++) {
 			input[j] = iVal;
@@ -182,16 +169,16 @@ function radixI8_16(input, start, end) {
 
 function radixI8_32(input, start, end) {
 	// Same as above, but for arrays 65k or longer
-	count32.fill(0, 0, 256);
+	count8_32.fill(0);
 	for (let i = start; i < end; i++) {
-		count32[(input[i] + 128) & 0xFF]++;
+		count8_32[(input[i] + 128) & 0xFF]++;
 	}
-	count32[0] += start;
+	count8_32[0] += start;
 	for (let i = 1; i < 256; i++) {
-		count32[i] += count32[i - 1];
+		count8_32[i] += count8_32[i - 1];
 	}
 	for (let i = 0, iStart = start, iEnd = 0, iVal = 0; i < 256; i++) {
-		iEnd = count32[i];
+		iEnd = count8_32[i];
 		iVal = i - 128;
 		for (let j = iStart; j < iEnd; j++) {
 			input[j] = iVal;
@@ -231,92 +218,45 @@ export function radixI8Copy(input, start, end) {
  * @returns {Uint16Array} input
  */
 export function radixU16(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
-	const length = end - start;
-	fitSortCopyCache16(length);
+	const s = (start | 0) || 0;
+	const e = (end | 0) || input.length;
+	const length = e - s;
+	if (length > sortCopyCacheU16.length) {
+		sortCopyCacheU16 = new Uint16Array(length);
+	}
 	if (length < (1 << 16)) {
-		return radixU16_16(input, start, end);
+		return radixU16_16(input, s, e);
 	} else {
-		return radixU16_32(input, start, end);
-	}
-}
-
-/**
- * Sub-procedure used by both `radixU16_16` and `radixI16_16`
- *
- * Convert count to cumulative sum of previous counts.
- * This lets us directly copy values to their
- * correct position later.
- */
-function radix16_sum16() {
-	for (let j = 0; j < 2; j++) {
-		const iStart = (j << 8),
-			iEnd = ((j + 1) << 8);
-		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i] = sum;
-			sum += v;
-		}
-	}
-}
-
-/**
- * Sub-procedure used by both `radixU16_32` and `radixI16_32`
- *
- * Convert count to cumulative sum of previous counts.
- * This lets us directly copy values to their
- * correct position later.
- */
-function radix16_sum32() {
-	for (let j = 0; j < 2; j++) {
-		const iStart = (j << 8),
-			iEnd = ((j + 1) << 8);
-		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i] = sum;
-			sum += v;
-		}
+		return radixU16_32(input, s, e);
 	}
 }
 
 function radixU16_16(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 512);
+	count16_16.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		count16[v & 0xFF]++;
-		count16[c2 + (v >>> 8 & 0xFF)]++;
+		count16_16[v & 0xFF]++;
+		count16_16[256 + (v >>> 8 & 0xFF)]++;
 	}
-	radix16_sum16();
-
+	for (let j = 0; j < 2; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count16_16[i];
+			count16_16[i] = sum;
+			sum += v;
+		}
+	}
 	// Set range of values to final value
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		sortCopyCacheU16[count16[v & 0xFF]++] = v;
+		sortCopyCacheU16[count16_16[v & 0xFF]++] = v;
 	}
 	for (let i = 0, v = 0; i < length; i++) {
 		v = sortCopyCacheU16[i];
-		input[start + count16[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count16_16[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	return input;
 }
@@ -324,21 +264,30 @@ function radixU16_16(input, start, end) {
 function radixU16_32(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count32.fill(0, 0, 512);
+	count16_32.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		count32[v & 0xFF]++;
-		count32[c2 + (v >>> 8 & 0xFF)]++;
+		count16_32[v & 0xFF]++;
+		count16_32[256 + (v >>> 8 & 0xFF)]++;
 	}
-	radix16_sum32();
+
+	for (let j = 0; j < 2; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count16_32[i];
+			count16_32[i] = sum;
+			sum += v;
+		}
+	}
 	// Set range of values to final value
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		sortCopyCacheU16[count32[v & 0xFF]++] = v;
+		sortCopyCacheU16[count16_32[v & 0xFF]++] = v;
 	}
 	for (let i = 0, v = 0; i < length; i++) {
 		v = sortCopyCacheU16[i];
-		input[start + count32[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count16_32[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	return input;
 }
@@ -368,36 +317,46 @@ export function radixU16Copy(input, start, end) {
  * @returns {Int16Array} input
  */
 export function radixI16(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
-	const length = end - start;
-	fitSortCopyCache16(length);
+	const s = start | 0;
+	const e = (end | 0) || input.length;
+	const length = e - s;
+	if (length > sortCopyCacheU16.length) {
+		sortCopyCacheI16 = new Int16Array(length);
+	}
 	if (length < (1 << 16)) {
-		return radixI16_16(input, start, end);
+		return radixI16_16(input, s, e);
 	} else {
-		return radixI16_32(input, start, end);
+		return radixI16_32(input, s, e);
 	}
 }
 
 function radixI16_16(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 512);
+	count16_16.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i] + 0x8000;
 		input[i] = v;
-		count16[v & 0xFF]++;
-		count16[c2 + (v >>> 8 & 0xFF)]++;
+		count16_16[v & 0xFF]++;
+		count16_16[256 + (v >>> 8 & 0xFF)]++;
 	}
-	radix16_sum16();
+	for (let j = 0; j < 2; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count16_16[i];
+			count16_16[i] = sum;
+			sum += v;
+		}
+	}
 	// Set range of values to final value
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		sortCopyCacheI16[count16[v & 0xFF]++] = v;
+		sortCopyCacheI16[count16_16[v & 0xFF]++] = v;
 	}
 	for (let i = 0, v = 0; i < length; i++) {
 		v = sortCopyCacheI16[i];
-		input[start + count16[c2 + (v >>> 8 & 0xFF)]++] = v - 0x8000;
+		input[start + count16_16[256 + (v >>> 8 & 0xFF)]++] = v - 0x8000;
 	}
 	return input;
 }
@@ -405,22 +364,31 @@ function radixI16_16(input, start, end) {
 function radixI16_32(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count32.fill(0, 0, 512);
+	count16_32.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i] + 0x8000;
 		input[i] = v;
-		count32[v & 0xFF]++;
-		count32[c2 + (v >>> 8 & 0xFF)]++;
+		count16_32[v & 0xFF]++;
+		count16_32[256 + (v >>> 8 & 0xFF)]++;
 	}
-	radix16_sum32();
+
+	for (let j = 0; j < 2; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count16_32[i];
+			count16_32[i] = sum;
+			sum += v;
+		}
+	}
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheI16[count32[v & 0xFF]++] = v;
+		sortCopyCacheI16[count16_32[v & 0xFF]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheI16[i];
-		input[start + count32[c2 + (v >>> 8 & 0xFF)]++] = v - 0x8000;
+		input[start + count16_32[256 + (v >>> 8 & 0xFF)]++] = v - 0x8000;
 	}
 	return input;
 }
@@ -454,106 +422,57 @@ export function radixI16Copy(input, start, end) {
  * @returns {Uint32Array} input
  */
 export function radixU32(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
-	const length = end - start;
-	fitSortCopyCache32(length);
-	if (length < (1 << 16)) {
-		return radixU32_16(input, start, end);
+	const s = start | 0;
+	const e = (end | 0) || input.length;
+	const length = e - s;
+	if (length > sortCopyCacheU32.length) {
+		sortCopyCacheU32 = new Uint32Array(length);
+	}
+	if (e < (1 << 16)) {
+		return radixU32_16(input, s, e);
 	} else {
-		return radixU32_32(input, start, end);
-	}
-}
-
-/** Sub-procedure used by both `radixU32_16` and `radixI32_16`
- *
- * Convert count to cumulative sum of previous counts.
- * This lets us directly copy values to their
- * correct position later.
- * count sum. This slightly-unrolled loop makes it
- * a linear pass over the array, so more cache-friendly
- */
-function radix32_sum16() {
-	for (let j = 0; j < 4; j++) {
-		const iStart = (j << 8),
-			iEnd = ((j + 1) << 8);
-		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i++] = sum;
-			sum += v;
-			v = count16[i];
-			count16[i] = sum;
-			sum += v;
-		}
-	}
-}
-
-/**
- * Sub-procedure used by both `radixU32_32` and `radixI32_32`
- *
- * Convert count to cumulative sum of previous counts.
- * This lets us directly copy values to their
- * correct position later.
- * count sum. This slightly-unrolled loop makes it
- * a linear pass over the array, so more cache-friendly
- */
-function radix32_sum32() {
-	for (let j = 0; j < 4; j++) {
-		const iStart = (j << 8),
-			iEnd = ((j + 1) << 8);
-		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i++] = sum;
-			sum += v;
-			v = count32[i];
-			count32[i] = sum;
-			sum += v;
-		}
+		return radixU32_32(input, s, e);
 	}
 }
 
 function radixU32_16(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 1024);
+	count32_16.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		count16[v & 0xFF]++;
-		count16[c2 + (v >>> 8 & 0xFF)]++;
-		count16[c3 + (v >>> 16 & 0xFF)]++;
-		count16[c4 + (v >>> 24 & 0xFF)]++;
+		count32_16[v & 0xFF]++;
+		count32_16[256 + (v >>> 8 & 0xFF)]++;
+		count32_16[512 + (v >>> 16 & 0xFF)]++;
+		count32_16[768 + (v >>> 24 & 0xFF)]++;
 	}
 
-	radix32_sum16();
+	for (let j = 0; j < 4; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count32_16[i];
+			count32_16[i] = sum;
+			sum += v;
+		}
+	}
 
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheU32[count16[v & 0xFF]++] = v;
+		sortCopyCacheU32[count32_16[v & 0xFF]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheU32[i];
-		input[start + count16[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count32_16[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheU32[count16[c3 + (v >>> 16 & 0xFF)]++] = v;
+		sortCopyCacheU32[count32_16[512 + (v >>> 16 & 0xFF)]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheU32[i];
-		input[start + count16[c4 + (v >>> 24 & 0xFF)]++] = v;
+		input[start + count32_16[768 + (v >>> 24 & 0xFF)]++] = v;
 	}
 	return input;
 }
@@ -561,13 +480,13 @@ function radixU32_16(input, start, end) {
 function radixU32_32(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count32.fill(0, 0, 1024);
+	count32_32.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i];
-		count32[v & 0xFF]++;
-		count32[c2 + (v >>> 8 & 0xFF)]++;
-		count32[c3 + (v >>> 16 & 0xFF)]++;
-		count32[c4 + (v >>> 24 & 0xFF)]++;
+		count32_32[v & 0xFF]++;
+		count32_32[256 + (v >>> 8 & 0xFF)]++;
+		count32_32[512 + (v >>> 16 & 0xFF)]++;
+		count32_32[768 + (v >>> 24 & 0xFF)]++;
 	}
 
 	radix32_sum32();
@@ -575,19 +494,19 @@ function radixU32_32(input, start, end) {
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheU32[count32[v & 0xFF]++] = v;
+		sortCopyCacheU32[count32_32[v & 0xFF]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheU32[i];
-		input[start + count32[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count32_32[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheU32[count32[c3 + (v >>> 16 & 0xFF)]++] = v;
+		sortCopyCacheU32[count32_32[512 + (v >>> 16 & 0xFF)]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheU32[i];
-		input[start + count32[c4 + (v >>> 24 & 0xFF)]++] = v;
+		input[start + count32_32[768 + (v >>> 24 & 0xFF)]++] = v;
 	}
 	return input;
 }
@@ -617,46 +536,59 @@ export function radixU32Copy(input, start, end) {
  * @returns {Int32Array} input
  */
 export function radixI32(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
-	fitSortCopyCache32(length);
-	const length = end - start;
-	if (length < (1 << 16)) {
-		return radixI32_16(input, start, end);
+
+	const s = start | 0;
+	const e = (end | 0) || input.length;
+	const length = e - s;
+	if (length > sortCopyCacheI32.length) {
+		sortCopyCacheI32 = new Int32Array(length);
+	}
+	if (e < (1 << 16)) {
+		return radixI32_16(input, s, e);
 	} else {
-		return radixI32_32(input, start, end);
+		return radixI32_32(input, s, e);
 	}
 }
 
 function radixI32_16(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count16.fill(0, 0, 1024);
+	count32_16.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i] + 0x80000000;
 		input[i] = v;
-		count16[v & 0xFF]++;
-		count16[c2 + (v >>> 8 & 0xFF)]++;
-		count16[c3 + (v >>> 16 & 0xFF)]++;
-		count16[c4 + (v >>> 24 & 0xFF)]++;
+		count32_16[v & 0xFF]++;
+		count32_16[256 + (v >>> 8 & 0xFF)]++;
+		count32_16[512 + (v >>> 16 & 0xFF)]++;
+		count32_16[768 + (v >>> 24 & 0xFF)]++;
 	}
-	radix32_sum16();
+
+	for (let j = 0; j < 4; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count32_16[i];
+			count32_16[i] = sum;
+			sum += v;
+		}
+	}
+
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheI32[count16[v & 0xFF]++] = v;
+		sortCopyCacheI32[count32_16[v & 0xFF]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheI32[i];
-		input[start + count16[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count32_16[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheI32[count16[c3 + (v >>> 16 & 0xFF)]++] = v;
+		sortCopyCacheI32[count32_16[512 + (v >>> 16 & 0xFF)]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheI32[i];
-		input[start + count16[c4 + (v >>> 24 & 0xFF)]++] = v - 0x80000000;
+		input[start + count32_16[768 + (v >>> 24 & 0xFF)]++] = v - 0x80000000;
 	}
 	return input;
 }
@@ -664,32 +596,42 @@ function radixI32_16(input, start, end) {
 function radixI32_32(input, start, end) {
 	const length = end - start;
 	// Count number of occurrences of each byte value
-	count32.fill(0, 0, 1024);
+	count32_32.fill(0);
 	for (let i = start, v = 0; i < end; i++) {
 		v = input[i] + 0x80000000;
 		input[i] = v;
-		count32[v & 0xFF]++;
-		count32[c2 + (v >>> 8 & 0xFF)]++;
-		count32[c3 + (v >>> 16 & 0xFF)]++;
-		count32[c4 + (v >>> 24 & 0xFF)]++;
+		count32_32[v & 0xFF]++;
+		count32_32[256 + (v >>> 8 & 0xFF)]++;
+		count32_32[512 + (v >>> 16 & 0xFF)]++;
+		count32_32[768 + (v >>> 24 & 0xFF)]++;
 	}
-	radix32_sum32();
+
+	for (let j = 0; j < 4; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count32_32[i];
+			count32_32[i] = sum;
+			sum += v;
+		}
+	}
+
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheI32[count32[v & 0xFF]++] = v;
+		sortCopyCacheI32[count32_32[v & 0xFF]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheI32[i];
-		input[start + count32[c2 + (v >>> 8 & 0xFF)]++] = v;
+		input[start + count32_32[256 + (v >>> 8 & 0xFF)]++] = v;
 	}
 	for (let i = start; i < end; i++) {
 		let v = input[i];
-		sortCopyCacheI32[count32[c3 + (v >>> 16 & 0xFF)]++] = v;
+		sortCopyCacheI32[count32_32[512 + (v >>> 16 & 0xFF)]++] = v;
 	}
 	for (let i = 0; i < length; i++) {
 		let v = sortCopyCacheI32[i];
-		input[start + count32[c4 + (v >>> 24 & 0xFF)]++] = v - 0x80000000;
+		input[start + count32_32[768 + (v >>> 24 & 0xFF)]++] = v - 0x80000000;
 	}
 	return input;
 }
@@ -719,29 +661,29 @@ export function radixI32Copy(input, start, end) {
  * @param {number=} end
  */
 export function radixSort(input, start, end) {
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
+	const s = start | 0,
+		e = (end | 0) || input.length;
 	switch (input.constructor) {
 		case Uint8Array:
-			return radixU8(input, start, end);
+			return radixU8(input, s, e);
 		case Int8Array:
-			return radixI8(input, start, end);
+			return radixI8(input, s, e);
 		case Uint16Array:
-			return radixU16(input, start, end);
+			return radixU16(input, s, e);
 		case Int16Array:
-			return radixI16(input, start, end);
+			return radixI16(input, s, e);
 		case Uint32Array:
-			return radixU32(input, start, end);
+			return radixU32(input, s, e);
 		case Int32Array:
-			return radixI32(input, start, end);
+			return radixI32(input, s, e);
 		default:
-			if (start === 0 && end === input.length) {
+			if (s === 0 && e === input.length) {
 				return input.sort();
 			} else {
-				let subArray = input.slice(start, end);
+				let subArray = input.slice(s, e);
 				subArray.sort();
 				for (let i = 0; i < subArray.length; i++) {
-					input[i + start] = subArray[i];
+					input[i + s] = subArray[i];
 				}
 				return input;
 			}
@@ -757,32 +699,32 @@ export function radixSort(input, start, end) {
  * @param {number=} end
  */
 export function radixSortCopy(input, start, end) {
-	input = input.slice(0);
-	start = (start | 0) || 0;
-	end = (end | 0) || input.length;
-	switch (input.constructor) {
+	const output = input.slice(0),
+		s = start | 0,
+		e = (end | 0) || input.length;
+	switch (output.constructor) {
 		case Uint8Array:
-			return radixU8(input, start, end);
+			return radixU8(output, s, e);
 		case Int8Array:
-			return radixI8(input, start, end);
+			return radixI8(output, s, e);
 		case Uint16Array:
-			return radixU16(input, start, end);
+			return radixU16(output, s, e);
 		case Int16Array:
-			return radixI16(input, start, end);
+			return radixI16(output, s, e);
 		case Uint32Array:
-			return radixU32(input, start, end);
+			return radixU32(output, s, e);
 		case Int32Array:
-			return radixI32(input, start, end);
+			return radixI32(output, s, e);
 		default:
-			if (start === 0 && end === input.length) {
-				return input.sort();
+			if (s === 0 && e === output.length) {
+				return output.sort();
 			} else {
-				let subArray = input.slice(start, end);
+				let subArray = output.slice(s, e);
 				subArray.sort();
 				for (let i = 0; i < subArray.length; i++) {
-					input[i + start] = subArray[i];
+					output[i + s] = subArray[i];
 				}
-				return input;
+				return output;
 			}
 	}
 }
@@ -813,10 +755,3 @@ export function radixSortCopy(input, start, end) {
 // 	}
 // 	return true;
 // }
-
-// let U32 = (new Uint32Array(10000)).map(v => Math.random() * 0x100000000 | 0);
-// let I32 = new Int32Array(U32.buffer);
-// let U16 = new Uint16Array(U32.buffer);
-// let I16 = new Int16Array(U32.buffer);
-// let U8 = new Uint8Array(U32.buffer);
-// let I8 = new Int8Array(U32.buffer);
