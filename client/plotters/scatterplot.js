@@ -7,9 +7,7 @@ import {
 	textStyle,
 } from '../plotters/canvas-util';
 
-import {
-	nullPainter,
-} from '../plotters/nullpainter';
+import { nullPainter } from '../plotters/nullpainter';
 
 import {
 	clipRange,
@@ -32,6 +30,7 @@ const {
 	PI,
 	sin,
 	cos,
+	log2,
 } = Math;
 const TAU = 2 * PI;
 
@@ -60,9 +59,6 @@ const tObject = {};
 const tUint32Array = new Uint32Array(1);
 // const tFloat32Array = new Float32Array(1);
 
-const {
-	log2,
-} = Math;
 
 function DerivedData() {
 	let backingArrays = new BackingArrays(0);
@@ -699,10 +695,10 @@ Coordinates.prototype.resize = function (backingArrays) {
  * @param {Float32Array} backingArray
  */
 function CoordinateAxis(name, backingArray) {
-	this.jitterScale = 1.0;
-	this.name = name;
 	this.categorical = false;
 	this.data = backingArray;
+	this.name = name;
+	this.jitterScale = 1.0;
 }
 
 /**
@@ -720,7 +716,7 @@ CoordinateAxis.prototype.convertAxis = function (argsAxis) {
 	const attr = argsAxis.attr;
 	this.name = attr.name;
 	this.categorical = attr.arrayType = 'string';
-	this.convertAttrData(attr.data);
+	this.convertAttrData(attr);
 	// For small value ranges (happens with PCA a lot),
 	// jittering needs to be scaled down.
 	let delta = attr.max - attr.min;
@@ -756,20 +752,21 @@ CoordinateAxis.prototype.convertAxis = function (argsAxis) {
  * in ascending lexical order.
  *
  * Plain arrays are only used for unindexed string data.
- * @param {*} data
+ * @param {*} attr
  */
-CoordinateAxis.prototype.convertAttrData = function (data) {
-	if (data.constructor !== Array) {
+CoordinateAxis.prototype.convertAttrData = function (attr) {
+	if (attr.data.constructor !== Array) {
 		// We assume that `Float32Array.set`
 		// has an internal type switch to efficiently
 		// convert different Typed Arrays.
 		// (Given that I can beat the internal sorting
 		// algorithm with a JS radix sort, this may be
 		// giving the engines a bit too much credit…)
-		this.data.set(data);
+		this.data.set(attr.data);
 	} else {
-		this.convertAttrStringData(data);
+		this.convertAttrStringData(attr.data);
 	}
+	this.categorical = attr.arrayType === 'string';
 };
 
 /**
@@ -806,7 +803,7 @@ CoordinateAxis.prototype.convertAttrStringData = function (data) {
 Coordinates.prototype.findLabelPositions = function (mode, colorData, indexedVal) {
 
 	this.labels.length = 0;
-	if (mode === 'Categorical') {
+	if (mode === 'Categorical' || mode === 'Stacked') {
 		// xCompare sorts by colorData first, xData second
 		let xData = this.x.data;
 		const xCompare = makeAxisCompareFunc(colorData, xData);
@@ -843,14 +840,14 @@ Coordinates.prototype.findLabelPositions = function (mode, colorData, indexedVal
 	}
 };
 
-Coordinates.prototype.logProjectXlabels = function() {
-	for(let i = 0; i < this.labels.length; i++){
+Coordinates.prototype.logProjectXlabels = function () {
+	for (let i = 0; i < this.labels.length; i++) {
 		this.labels[i].x = logProject(this.labels[i].x);
 	}
 };
 
-Coordinates.prototype.logProjectYlabels = function() {
-	for(let i = 0; i < this.labels.length; i++){
+Coordinates.prototype.logProjectYlabels = function () {
+	for (let i = 0; i < this.labels.length; i++) {
 		this.labels[i].y = logProject(this.labels[i].y);
 	}
 };
@@ -947,7 +944,9 @@ CoordinateAxis.prototype.logProjectAxis = function () {
 		data,
 	} = this;
 	for (let i = 0; i < data.length; i++) {
-		data[i] = logProject(data[i]);
+		let v = data[i];
+		if (v)
+			data[i] = v < 0 ? -log2(1 - v) : log2(1 + v);
 	}
 };
 
@@ -1741,8 +1740,6 @@ BlitSprites.prototype.blit = function (context, width, height, spriteLength, spr
 	} else {
 		this.bigEndian(context, width, height, xySprites, spriteData32);
 	}
-	// put imagedata back on the canvas
-	context.putImageData(this.canvasData, 0, 0);
 };
 
 /**
@@ -1823,6 +1820,8 @@ BlitSprites.prototype.littleEndian = function (context, width, height, xySprites
 			}
 		}
 	}
+	// put imagedata back on the canvas
+	context.putImageData(this.canvasData, 0, 0);
 };
 
 
@@ -1887,6 +1886,8 @@ BlitSprites.prototype.bigEndian = function (context, width, height, xySprites, s
 			}
 		}
 	}
+	// put imagedata back on the canvas
+	context.putImageData(this.canvasData, 0, 0);
 };
 
 /**
