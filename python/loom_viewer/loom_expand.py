@@ -41,7 +41,10 @@ class LoomExpand(object):
 		self._closed = False
 		self.ds = None
 		try:
-			self.ds = loompy.connect(file_path, 'r')
+			# TODO: when loompy library is updated with a default
+			# Unix timestamp for missing time fields, this should
+			# be set back to 'r' for safety reasons
+			self.ds = loompy.connect(file_path, 'r+')
 		except Exception as e:
 			logging.warning("Could not open loom file at %s, closing LoomExpand object", file_path)
 			if self.ds is not None:
