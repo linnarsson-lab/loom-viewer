@@ -124,7 +124,7 @@ export class CollapsibleSettings extends Component {
 
 		let _label = tooltip ?
 			(
-				<div>
+				<React.Fragment>
 					<OverlayTooltip
 						placement={tooltipPlacement || 'top'}
 						tooltip={tooltip}
@@ -132,22 +132,22 @@ export class CollapsibleSettings extends Component {
 					>
 						{_button}
 					</OverlayTooltip> {_popover}
-				</div>
+				</React.Fragment>
 			) :
 			(
-				<div>{_button} {_popover}</div>
+				<React.Fragment>{_button} {_popover}</React.Fragment>
 			);
 
 
 		return (
-			<div>
+			<React.Fragment>
 				{_label}
 				<Collapse
 					in={this.state.open}
 					unmountOnExit={unmountOnExit} >
 					{children}
 				</Collapse>
-			</div >
+			</React.Fragment>
 		);
 	}
 }

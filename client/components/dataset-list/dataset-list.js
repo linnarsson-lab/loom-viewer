@@ -613,11 +613,11 @@ class SearchDataSetViewComponent extends Component {
 				);
 			}
 			datasetList = (
-				<div>
+				<React.Fragment>
 					{fetchProjectsStatus === OFFLINE ?
 						<h2>Currently offline, showing cached datasets</h2> : null}
 					{_datasetList}
-				</div>
+				</React.Fragment>
 			);
 		} else {
 			datasetList = fetchProjectsStatus === UNKNOWN ?

@@ -269,7 +269,7 @@ export class SelectGeneComponent extends Component {
 
 	render() {
 		return (
-			<div>
+			<React.Fragment>
 				<VirtualizedSelect
 					placeholder={'Type to search'}
 					options={this.state.selectOptions}
@@ -287,7 +287,7 @@ export class SelectGeneComponent extends Component {
 					onChange={this.handleTextAreaChange}
 					onKeyDown={this.handleTextAreaChange}
 					value={this.state.selectedGenesText} />
-			</div>
+			</React.Fragment>
 		);
 	}
 }
