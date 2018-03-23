@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 import {
@@ -12,16 +12,19 @@ import {
 	CollapsibleSettings,
 	DropdownMenu,
 	OverlayTooltip,
-} from 'components/settings';
+} from '../settings';
 
 import { popoverTest } from 'components/scatterplot/popover';
 
 import { updateAndFetchGenes } from 'actions/update-and-fetch';
 
-import { nullFunc } from 'js/util';
+import {
+	allMatchingPairsCaseInsensitive,
+	nullFunc,
+} from 'js/util';
 
 // Factory to generate functions used in quick-set buttons
-function quickSettingsFactory(props, settingsList) {
+function quickSettingsFactory(props, pairsList) {
 	const {
 		dispatch,
 		dataset,
@@ -34,54 +37,51 @@ function quickSettingsFactory(props, settingsList) {
 		attrs,
 	} = dataset[axis];
 
+	const matchingPairs = allMatchingPairsCaseInsensitive(attrs, pairsList);
+
 	let quickSettingsList = [];
 
-	for (let i = 0; i < settingsList.length; i++) {
-		const {
-			label,
-			xAttr,
-			yAttr,
-		} = settingsList[i];
-		if (attrs[xAttr] && attrs[yAttr]) {
+	for (let i = 0; i < matchingPairs.length; i++) {
+		const xAttr = matchingPairs[i][0];
+		const yAttr = matchingPairs[i][1];
 
-			let handleClick = nullFunc;
-			if (plotSetting.x.attr !== xAttr || plotSetting.y.attr !== yAttr) {
-				const action = {
-					stateName: axis,
-					path: dataset.path,
-					viewState: {
-						[axis]: {
-							scatterPlots: {
-								plotSettings: {
-									[selectedPlot]:{
-										x: { attr: xAttr },
-										y: { attr: yAttr },
-									},
+		let handleClick = nullFunc;
+		if (plotSetting.x.attr !== xAttr || plotSetting.y.attr !== yAttr) {
+			const action = {
+				stateName: axis,
+				path: dataset.path,
+				viewState: {
+					[axis]: {
+						scatterPlots: {
+							plotSettings: {
+								[selectedPlot]:{
+									x: { attr: xAttr },
+									y: { attr: yAttr },
 								},
 							},
 						},
 					},
-				};
-				handleClick = () => {
-					return dispatch(updateAndFetchGenes(dataset, action));
-				};
-			}
-
-			quickSettingsList.push(
-				<ListGroupItem key={`${selectedPlot + 1}-set-${xAttr}_${yAttr}`}>
-					<OverlayTooltip
-						tooltip={`Set attributes to ${xAttr} and ${yAttr}`}
-						tooltipId={`${selectedPlot + 1}-set-${xAttr}_${yAttr}-tltp`}>
-						<Button
-							bsStyle='link'
-							onClick={handleClick}
-							disabled={handleClick === nullFunc}>
-							{label}
-						</Button>
-					</OverlayTooltip>
-				</ListGroupItem>
-			);
+				},
+			};
+			handleClick = () => {
+				return dispatch(updateAndFetchGenes(dataset, action));
+			};
 		}
+
+		quickSettingsList.push(
+			<ListGroupItem key={`${selectedPlot + 1}-set-${xAttr}_${yAttr}`}>
+				<OverlayTooltip
+					tooltip={`Set attributes to ${xAttr} and ${yAttr}`}
+					tooltipId={`${selectedPlot + 1}-set-${xAttr}_${yAttr}-tltp`}>
+					<Button
+						bsStyle='link'
+						onClick={handleClick}
+						disabled={handleClick === nullFunc}>
+						{xAttr + ' / ' + yAttr}
+					</Button>
+				</OverlayTooltip>
+			</ListGroupItem>
+		);
 	}
 
 	return quickSettingsList.length ?
@@ -110,32 +110,78 @@ quickSettingsFactory.propTypes = {
 	selectedPlot: PropTypes.number.isRequired,
 };
 
-const settingsList = [
-	{
-		label: 'default X / Y',
-		xAttr: '_X',
-		yAttr: '_Y',
-	},
-	{
-		label: 'tSNE1 / tSNE2',
-		xAttr: '_tSNE1',
-		yAttr: '_tSNE2',
-	},
-	{
-		label: 'PCA 1 / PCA 2',
-		xAttr: '_PC1',
-		yAttr: '_PC2',
-	},
-	{
-		label: 'SFDP X / SFDP Y',
-		xAttr: 'SFDP_X',
-		yAttr: 'SFDP_Y',
-	},
-	{
-		label: 'Logmean / LogCV',
-		xAttr: '_LogMean',
-		yAttr: '_LogCV',
-	},
+const pairsList = [
+	['X', 'Y'],
+	['X', 'Z'],
+	['Y', 'Z'],
+	['_X', '_Y'],
+	['_X', '_Z'],
+	['_Y', '_Z'],
+	['SFDP_X', 'SFDP_Y'],
+	['tSNE1', 'tSNE2'],
+	['tSNE1', 'tSNE3'],
+	['tSNE2', 'tSNE3'],
+	['tSNE_1', 'tSNE_2'],
+	['tSNE_1', 'tSNE_3'],
+	['tSNE_2', 'tSNE_3'],
+	['_tSNE1', '_tSNE2'],
+	['_tSNE1', '_tSNE3'],
+	['_tSNE2', '_tSNE3'],
+	['_tSNE_1', '_tSNE_2'],
+	['_tSNE_1', '_tSNE_3'],
+	['_tSNE_2', '_tSNE_3'],
+	['PCA1', 'PCA2'],
+	['PCA1', 'PCA3'],
+	['PCA1', 'PCA4'],
+	['PCA2', 'PCA3'],
+	['PCA2', 'PCA4'],
+	['PCA3', 'PCA4'],
+	['PCA_1', 'PCA_2'],
+	['PCA_1', 'PCA_3'],
+	['PCA_1', 'PCA_4'],
+	['PCA_2', 'PCA_3'],
+	['PCA_2', 'PCA_4'],
+	['PCA_3', 'PCA_4'],
+	['_PCA1', '_PCA2'],
+	['_PCA1', '_PCA3'],
+	['_PCA1', '_PCA4'],
+	['_PCA2', '_PCA3'],
+	['_PCA2', '_PCA4'],
+	['_PCA3', '_PCA4'],
+	['_PCA_1', '_PCA_2'],
+	['_PCA_1', '_PCA_3'],
+	['_PCA_1', '_PCA_4'],
+	['_PCA_2', '_PCA_3'],
+	['_PCA_2', '_PCA_4'],
+	['_PC_3', '_PC_4'],
+	['PC1', 'PC2'],
+	['PC1', 'PC3'],
+	['PC1', 'PC4'],
+	['PC2', 'PC3'],
+	['PC2', 'PC4'],
+	['PC3', 'PC4'],
+	['PC_1', 'PC_2'],
+	['PC_1', 'PC_3'],
+	['PC_1', 'PC_4'],
+	['PC_2', 'PC_3'],
+	['PC_2', 'PC_4'],
+	['PC_3', 'PC_4'],
+	['_PC1', '_PC2'],
+	['_PC1', '_PC3'],
+	['_PC1', '_PC4'],
+	['_PC2', '_PC3'],
+	['_PC2', '_PC4'],
+	['_PC3', '_PC4'],
+	['_PC_1', '_PC_2'],
+	['_PC_1', '_PC_3'],
+	['_PC_1', '_PC_4'],
+	['_PC_2', '_PC_3'],
+	['_PC_2', '_PC_4'],
+	['_PC_3', '_PC_4'],
+	['LogMean', 'LogCV'],
+	['Log_Mean', 'Log_CV'],
+	['_LogMean', '_LogCV'],
+	['_Log_Mean', '_Log_CV'],
 ];
 
 function attrSettingHandleChangeFactory(props, attrAxis, key) {
@@ -210,11 +256,8 @@ function attrSettingsFactory(props, attrAxis) {
 	const attrData = plotSetting[attrAxis];
 
 	const {
-		allKeysNoUniques,
 		dropdownOptions,
 	} = dataset[axis];
-
-	const filterOptions = dropdownOptions.allNoUniques;
 
 	const attrHC = selectAttrFactory(props, attrAxis),
 		logScaleHC = attrSettingHandleChangeFactory(props, attrAxis, 'logScale'),
@@ -276,18 +319,15 @@ attrSettingsFactory.propTypes = {
 };
 
 
-export class CoordinateSettings extends Component {
+export class CoordinateSettings extends PureComponent {
 
 	render() {
 		const { props } = this;
-		const quickSettings = quickSettingsFactory(props, settingsList);
+		const quickSettings = quickSettingsFactory(props, pairsList);
 		const xAttrSettings = attrSettingsFactory(props, 'x');
 		const yAttrSettings = attrSettingsFactory(props, 'y');
 		return (
-			<div>
-				<ListGroupItem>
-					{quickSettings}
-				</ListGroupItem>
+			<React.Fragment>
 				<ListGroupItem>
 					<CollapsibleSettings
 						label={'X/Y attribute'}
@@ -300,10 +340,11 @@ export class CoordinateSettings extends Component {
 						<div>
 							{xAttrSettings}
 							{yAttrSettings}
+							{quickSettings}
 						</div>
 					</CollapsibleSettings>
 				</ListGroupItem>
-			</div>
+			</React.Fragment>
 		);
 	}
 }
