@@ -3,10 +3,13 @@ import PropTypes from 'prop-types';
 
 import { Link } from 'react-router';
 import {
-	Grid,
-	Row, Col,
 	Button,
+	Col,
 	Glyphicon,
+	Grid,
+	ListGroup,
+	ListGroupItem,
+	Row,
 } from 'react-bootstrap';
 
 import { SortableTable } from 'components/sortabletable';
@@ -20,6 +23,7 @@ import { SEARCH_DATASETS, SORT_DATASETS } from 'actions/action-types';
 import {
 	requestProjects,
 	OFFLINE,
+	// ONLINE,
 	UNKNOWN,
 } from 'actions/request-projects';
 
@@ -43,7 +47,6 @@ const lightGlyphStyle = {
 };
 
 const componentStyle = {
-	justifyContent: 'center',
 	overflowX: 'hidden',
 	overflowY: 'scroll',
 };
@@ -177,6 +180,9 @@ class DatasetList extends Component {
 	}
 
 	render() {
+		if (!this.props.filteredList) {
+			return null;
+		}
 
 		const {
 			dispatch,
@@ -189,105 +195,105 @@ class DatasetList extends Component {
 
 		const { columns } = this.state;
 
-		if (filteredList) {
-			let tableData = [];
-			for (let i = 0; i < filteredList.length; i++) {
-				const {
-					path,
-					title,
-					description,
-					lastModified,
-					totalCells,
-					dataset,
-					url,
-					doi,
-				} = filteredList[i];
-				// create new datasets object with proper tags
-				// strip '.loom' ending
-				const titleURL = (
-					<div key={path + '_title'}>
-						<Link
-							to={'dataset/cellmetadata/' + path}
-							title={'Open ' + path}>
-							{title}
-						</Link>
-						<br />
-						<code title={dataset}>{dataset}</code>
+		let tableData = [];
+		for (let i = 0; i < filteredList.length; i++) {
+			const {
+				path,
+				title,
+				description,
+				lastModified,
+				totalCells,
+				dataset,
+				url,
+				doi,
+			} = filteredList[i];
+			// create new datasets object with proper tags
+			// strip '.loom' ending
+			const titleURL = (
+				<div key={path + '_title'}>
+					<Link
+						to={'dataset/cellmetadata/' + path}
+						title={'Open ' + path}>
+						{title}
+					</Link>
+					<br />
+					<code title={dataset}>{dataset}</code>
+				</div>
+
+			);
+			const downloadURL = '/clone/' + path;
+			const downloadButton = (
+				<Button
+					key={path + '_download'}
+					bsSize='xsmall'
+					bsStyle='link'
+					href={downloadURL}
+					title={'Download ' + path}
+					style={buttonStyle}
+				>
+					<Glyphicon
+						glyph='cloud-download'
+						style={glyphStyle} />
+				</Button>
+			);
+			const paperButton = (
+				<Button
+					key={path + '_doi'}
+					bsSize='xsmall'
+					bsStyle='link'
+					href={'http://dx.doi.org/' + doi}
+					title={doi === '' ?
+						'No reference info in metadata' :
+						'Original reference: http://dx.doi.org/' + doi
+					}
+					style={buttonStyle}
+					disabled={doi === ''}>
+					<Glyphicon
+						glyph='file'
+						style={doi === '' ?
+							lightGlyphStyle :
+							glyphStyle
+						} />
+				</Button>
+			);
+			const urlButton = (
+				<Button
+					key={path + '_url'}
+					bsSize='xsmall'
+					bsStyle='link'
+					href={url}
+					title={url === '' ?
+						'No external webpage in metadata' :
+						'External web page: ' + url}
+					style={buttonStyle}
+					disabled={url === ''}
+				>
+					<Glyphicon
+						glyph='globe'
+						style={url === '' ?
+							lightGlyphStyle :
+							glyphStyle
+						} />
+				</Button>
+			);
+
+			tableData.push({
+				rowKey: path,
+				path, project, description, lastModified, totalCells,
+				title: titleURL,
+				buttons: (
+					<div style={centerTextStyle}>
+						{[paperButton, urlButton, downloadButton]}
 					</div>
+				),
+			});
+		}
 
-				);
-				const downloadURL = '/clone/' + path;
-				const downloadButton = (
-					<Button
-						key={path + '_download'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={downloadURL}
-						title={'Download ' + path}
-						style={buttonStyle}
-					>
-						<Glyphicon
-							glyph='cloud-download'
-							style={glyphStyle} />
-					</Button>
-				);
-				const paperButton = (
-					<Button
-						key={path + '_doi'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={'http://dx.doi.org/' + doi}
-						title={doi === '' ?
-							'No reference info in metadata' :
-							'Original reference: http://dx.doi.org/' + doi
-						}
-						style={buttonStyle}
-						disabled={doi === ''}>
-						<Glyphicon
-							glyph='file'
-							style={doi === '' ?
-								lightGlyphStyle :
-								glyphStyle
-							} />
-					</Button>
-				);
-				const urlButton = (
-					<Button
-						key={path + '_url'}
-						bsSize='xsmall'
-						bsStyle='link'
-						href={url}
-						title={url === '' ?
-							'No external webpage in metadata' :
-							'External web page: ' + url}
-						style={buttonStyle}
-						disabled={url === ''}
-					>
-						<Glyphicon
-							glyph='globe'
-							style={url === '' ?
-								lightGlyphStyle :
-								glyphStyle
-							} />
-					</Button>
-				);
-
-				tableData.push({
-					rowKey: path,
-					path, project, description, lastModified, totalCells,
-					title: titleURL,
-					buttons: (
-						<div style={centerTextStyle}>
-							{[paperButton, urlButton, downloadButton]}
-						</div>
-					),
-				});
-			}
-
-			const fullLength = fullDatasetList.length;
-			let projectLabel = `${project} (${filteredList.length}/` +
-				`${fullLength} dataset${fullLength === 1 ? '' : 's'})`;
-			return (
+		const fullLength = fullDatasetList.length;
+		let projectLabel = `${project} (${filteredList.length}/` +
+			`${fullLength} dataset${fullLength === 1 ? '' : 's'})`;
+		return (
+			<ListGroupItem>
 				<CollapsibleSettings
 					key={project}
 					label={projectLabel}
@@ -313,11 +319,8 @@ class DatasetList extends Component {
 						}
 					</div>
 				</CollapsibleSettings>
-			);
-
-		} else {
-			return null;
-		}
+			</ListGroupItem>
+		);
 	}
 }
 
@@ -525,7 +528,7 @@ class SearchDataSetViewComponent extends Component {
 			filtered = list.slice(0);
 		} else {	// search/filter projects
 
-			// give date special (exact stringmatch) treatment
+			// give date special (exact string match) treatment
 			const date = search.lastModified;
 			if (date) {
 				filtered = [];
@@ -550,7 +553,7 @@ class SearchDataSetViewComponent extends Component {
 				if (query) {
 					const fuse = new Fuse(filtered, {
 						keys: [key],
-						threshold: 0.05,
+						threshold: 0.25,
 						shouldSort: true,
 					});
 					filtered = fuse.search(query);
@@ -560,7 +563,7 @@ class SearchDataSetViewComponent extends Component {
 			if (search.all && filtered.length) {
 				const options = {
 					keys,
-					threshold: 0.05,
+					threshold: 0.25,
 					shouldSort: true,
 				};
 				const fuse = new Fuse(filtered, options);
@@ -595,8 +598,12 @@ class SearchDataSetViewComponent extends Component {
 		search = search ?
 			search :
 			{};
-		let datasetList = null;
+		let datasetList = null,
+			datasetListMessage = null;
 		if (projectNames && projectNames.length) {
+			if (fetchProjectsStatus === OFFLINE){
+				datasetListMessage = <div className='view centered'><h2>Currently offline, showing cached datasets</h2></div>;
+			}
 			let _datasetList = new Array(projectNames.length);
 			for(let i = 0; i < projectNames.length; i++) {
 				let project = projectNames[i];
@@ -613,35 +620,24 @@ class SearchDataSetViewComponent extends Component {
 				);
 			}
 			datasetList = (
-				<React.Fragment>
-					{fetchProjectsStatus === OFFLINE ?
-						<h2>Currently offline, showing cached datasets</h2> : null}
+				<ListGroup>
 					{_datasetList}
-				</React.Fragment>
+				</ListGroup>
+			);
+		} else if (fetchProjectsStatus === UNKNOWN) {
+			datasetListMessage = (
+				<div className='view-vertical centred'>
+					<h2>Downloading list of available datasets...</h2>
+				</div>
 			);
 		} else {
-			datasetList = fetchProjectsStatus === UNKNOWN ?
-				(
-					<div className='view-vertical'>
-						<div className='view centred'>
-							<h2>Downloading list of available datasets...</h2>
-						</div>
-						<div className='view centred'>
-							<h3>Note: fetching is currently broken on Safari, use Chrome or Firefox instead</h3>
-						</div>
-					</div>
-				) :
-				(
-					<div className='view-vertical'>
-						<div className='view centred'>
-							<h2>Fetch failed, checking IndexedDB cache</h2>
-						</div>
-						<div className='view centred'>
-							<h3>(If you see this while running the viewer locally, the loom-viewer probably failed to find any loom files in the loom dataset folder)
-							</h3>
-						</div>
-					</div>
-				);
+			datasetListMessage =  (
+				<div className='view-vertical centred'>
+					<h2>Fetch failed, checking IndexedDB cache</h2>
+					<h3>(If you see this while running the viewer locally, the loom-viewer probably failed to find any loom files in the loom datasets folder)
+					</h3>
+				</div>
+			);
 		}
 
 		return (
@@ -709,6 +705,7 @@ class SearchDataSetViewComponent extends Component {
 									</Col>
 								</Row>
 								<h1><i>Results</i></h1>
+								{datasetListMessage}
 								{datasetList}
 							</div>
 						</Col>

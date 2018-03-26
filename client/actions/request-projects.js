@@ -126,8 +126,8 @@ function uncacheDataset(ds){
 /**
  * Modify `ds` in such a way that it removes all previously loaded
  * data from `cachedDS`
- * @param {*} ds 
- * @param {*} cachedDS 
+ * @param {*} ds
+ * @param {*} cachedDS
  */
 function unloadDataset(ds, cachedDS){
 	// To unload previously set fetchedGenes and fetchingGenes,
@@ -143,7 +143,7 @@ function unloadDataset(ds, cachedDS){
 
 /**
  * Returns a copy of `obj` with `false` assigned to each key;
- * @param {{}} obj 
+ * @param {{}} obj
  */
 function copyAndSetFalse(obj){
 	let newObj = {};
