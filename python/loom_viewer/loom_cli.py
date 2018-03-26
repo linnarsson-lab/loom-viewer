@@ -57,17 +57,79 @@ def tile_command(
 	truncate: bool) -> None:
 	# do not expand tiles more than once for any given filename
 	matches = set()  # type: Set[Tuple[str, str, str]]
+	filenamesNone = filenames is None
+	projectsNone = projects is None
+	logging.warn("""
+	%s
+	%s
+""" % (filenamesNone, projectsNone))
+
 	if all_files:
 		matches = datasets.list.all_files()
 	else:
-		for filename in filenames:
-			matches |= datasets.list.matching_filenames(filename)
+		if filenames is not None:
+			for filename in filenames:
+				matches |= datasets.list.matching_filenames(filename)
 
-		for project in projects:
-			matches |= datasets.list.files_in_project(project)
+		if projects is not None:
+			for project in projects:
+				matches |= datasets.list.files_in_project(project)
 
-	for project, filename, file_path in matches:
-		datasets.tile(project, file_path, truncate)
+	if not matches:
+		logging.warn("""
+
+Must explicitly state what to tile! See also:
+
+    loom tile --help
+
+
+To generate tiles for every loom file in the default dataset folder, type:
+
+    loom tile --all
+
+To use a different dataset path, use `--dataset-path DATASET_PATH`. Note that
+this must be put before the tile command:
+
+    loom --dataset-path DATASET_PATH tile [input for tile command]
+
+
+To generate tiles for any loom file in the default dataset folder that matches
+the names of FILE1, FILE2, etc, type:
+
+    loom tile FILE1 FILE2
+
+
+To replace old tiles with new ones, add the -t or --truncate flag
+
+   loom tile FILE -t
+
+
+To generate tiles only for one specific file, even if there are multiple files
+with the same name, use the absolute path:
+
+    loom tile /path/to/FILE1 FILE2
+
+
+To tile all files in one or more project folders, type:
+
+    loom tile --project PROJECT1 PROJECT2
+
+Combining file and project paths is possible:
+
+    loom /path/to/FILE1 FILE2 --project PROJECT
+
+
+Putting it all together: the following points to a non-default dataset path,
+and generates tiles for one specific FILE, as well as all files in PROJECT,
+while discarding any previously generated tiles:
+
+    loom --dataset-path DATASET_PATH tile /path/to/FILE --project PROJECT -t
+
+""")
+	else:
+		for project, filename, file_path in matches:
+			logging.info("Tiling {file_path}")
+			datasets.tile(project, file_path, truncate)
 
 
 def expand_command(
@@ -82,7 +144,74 @@ def expand_command(
 	cols: bool,
 	truncate: bool) -> None:
 	if not (clear or metadata or attributes or rows or cols):
-		logging.info("Must explicitly state what to expand!")
+		logging.warn("""
+
+`loom expand` pre-generates cache for the loom-viewer, for faster serving.
+This is a slow process, so that the command requires that you explicitly state
+which cache to generate ("expand"), and for which loom file(s).
+
+See also:
+
+    loom expand --help
+
+Currently, the following separate types of cache can be expanded with these flags:
+
+    -m, --metadata     general metadata
+    -a, --attributes   row and column attributes
+    -r, --rows         rows (genes)
+    -c, --cols         columns (cells, currently not used)
+
+In the following examples, we will expand metadata, attributes and all rows
+all at once via -mar.
+
+
+To expand all loom files matching the name FILE1, FILE2, etc in the default
+loom datasets folder, type:
+
+    loom expand FILE1 FILE2 -mar
+
+
+To expand a specific file, even if there are multiple files
+with the same name, use the absolute path:
+
+    loom tile /path/to/FILE1 FILE2
+
+
+To use a different dataset path, use `--dataset-path DATASET_PATH`. Note that
+this must be put before the tile command:
+
+    loom --dataset-path DATASET_PATH expand FILE -mar
+
+
+To apply expansion to all loom files, use --all or -A:
+
+    loom expand -marA
+
+
+To apply expansion to all loom files in one or more project folders, type:
+
+    loom expand --project PROJECT1 PROJECT2 -mar
+
+
+By default, previously expanded metadata is left alone. To force replacing this
+expanded data, use --truncate or -t:
+
+    loom expand FILE -marT
+
+
+To remove ALL previously generated cache (except tiles), use --clear or -C
+
+    loom expand FILE -C
+
+
+Putting it all together: the following points to a non-default dataset path,
+finds one specific FILE, as well as all files in PROJECT. For these files,
+any existing expanded metadata is first deleted, then new general metadata and
+attributes are expanded (but not rows)
+while discarding any previously generated tiles:
+
+    loom --dataset-path DATASET_PATH expand /path/to/FILE --project PROJECT -maC
+""")
 		return
 
 	matches = set()  # type: Set[Tuple[str, str, str]]
@@ -310,6 +439,7 @@ def main() -> None:
 		sys.exit(0)
 	else:
 		if args.command == "tile":
+			logging.warn("test")
 			datasets = LoomDatasets(args.dataset_path)
 			tile_command(datasets, args.file, args.project, args.all, args.truncate)
 		elif args.command == "expand":
