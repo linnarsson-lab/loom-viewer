@@ -169,7 +169,7 @@ export class HeatmapSidepanel extends PureComponent {
 					key='heatmap-settings'
 					header='Settings'
 					bsStyle='default'>
-					<ListGroup fill>
+					<ListGroup>
 						<ListGroupItem>
 							<CollapsibleSettings
 								label={'Cell attribute or Gene to show'}>

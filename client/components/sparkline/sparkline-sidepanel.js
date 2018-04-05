@@ -45,7 +45,7 @@ export class SparklineSidepanel extends Component {
 					key='sparkline-settings'
 					header='Settings'
 					bsStyle='default'>
-					<ListGroup fill>
+					<ListGroup>
 						<AttributeSelection
 							dataset={dataset}
 							dispatch={dispatch}
