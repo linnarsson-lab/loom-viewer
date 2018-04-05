@@ -4,7 +4,6 @@ const MinifyPlugin = require('babel-minify-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CssoWebpackPlugin = require('csso-webpack-plugin').default;
-const OfflinePlugin = require('offline-plugin');
 
 const uglifySettings = {
 	mangle: {
