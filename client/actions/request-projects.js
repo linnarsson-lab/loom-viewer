@@ -135,6 +135,7 @@ function unloadDataset(ds, cachedDS){
 	ds.fetchingGenes = copyAndSetFalse(cachedDS.fetchingGenes);
 	ds.col = null;
 	ds.row = null;
+	ds.loaded = false;
 	return ds;
 }
 
