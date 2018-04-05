@@ -12,6 +12,7 @@ import loompy
 from .loom_utils import np_to_list, metadata_array
 from .loom_utils import format_mtime
 from .loom_utils import load_gzipped_json_string
+from .loom_utils import load_gzipped_json
 from .loom_utils import save_gzipped_json
 from .loom_utils import save_gzipped_json_string
 from .loom_tiles import LoomTiles
@@ -128,15 +129,17 @@ class LoomExpand(object):
 				else:
 					md_json = load_gzipped_json_string(md_filename)
 					md_mod = load_gzipped_json_string(md_mod_filename)
-					# check if cached metadata is up to date
-					# if so return cache, otherwise clean it
+					md_parsed = json.loads(md_json)
+					# check if cached metadata is up to date and
+					# points to correct project folder and filename
+					# if so return cache, otherwise clear it
 					logging.debug("      md_mod: %s", md_mod)
 					logging.debug("    last_mod: %s", last_mod)
-					if md_mod == last_mod:
+					if md_mod != last_mod or md_parsed.project != self.project or md_parsed.filename != filename:
+						self.clear_metadata()
+					else:
 						logging.debug("  Cache up to date")
 						return (md_json, last_mod)
-					else:
-						self.clear_metadata()
 
 			ds = self.ds
 			attrs = ds.attrs.keys()
