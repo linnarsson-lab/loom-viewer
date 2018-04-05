@@ -1,6 +1,7 @@
 import 'whatwg-fetch';
 
 import createFilterOptions from 'react-select-fast-filter-options';
+
 // customise search to only care about prefixes, and ignore uppercase
 import {
 	LowerCaseSanitizer,
@@ -34,6 +35,8 @@ import {
 
 import { updateAndFetchGenes  } from 'actions/update-and-fetch';
 
+import { uncacheDataset } from './request-projects';
+
 import {
 	REQUEST_DATASET,
 	// REQUEST_DATASET_FETCH,
@@ -64,25 +67,41 @@ export function requestDataset(datasets, path) {
 		// See if the dataset already exists in the store
 		// If so, we can use cached version so we don't
 		// have to do anything.
-		if (!datasets[path].loaded) {
+		let storedDS = datasets[path];
+		if (!storedDS.loaded) {
 			// try to load dataset from localforage
 			localforage.getItem(path).then((dataset) => {
 				if (dataset) {
 					console.log(`${path} loaded from localforage`);
 					// We only have cached genes if the dataset is cached
-					return localforage.getItem(path + '/genes').then((genes) => {
-						if (genes) {
-							console.log('cached genes loaded from localforage');
-							mergeGenesInPlace(dataset, genes);
-						}
-						// add dataset to redux store
-						dataSetAction(LOAD_DATASET, path, dataset, dispatch);
-					});
-				} else {
-					// dataset does not exist in localforage,
-					// so we try to fetch it.
-					return fetchDataset(datasets, path, dispatch);
+					if (dataset.creationDate === storedDS.creationDate &&
+						dataset.lastModified === storedDS.lastModified){
+						return localforage.getItem(path + '/genes').then((genes) => {
+							if (genes) {
+								console.log('cached genes loaded from localforage');
+								mergeGenesInPlace(dataset, genes);
+							}
+							// add dataset to redux store
+							dataSetAction(LOAD_DATASET, path, dataset, dispatch);
+						});
+					} else {
+						console.log('Dataset was modified:');
+						console.log({
+							newDS: {
+								creationDate: dataset.creationDate,
+								lastModified: dataset.lastModified,
+							},
+							storedDS: {
+								creationDate: storedDS.creationDate,
+								lastModified: storedDS.lastModified,
+							},
+						});
+						uncacheDataset(dataset);
+					}
 				}
+				// dataset does not exist in localforage,
+				// or it is outdated, so we try to fetch it.
+				return fetchDataset(datasets, path, dispatch);
 			});
 		}
 	};
@@ -92,6 +111,7 @@ function mergeGenesInPlace(dataset, genes) {
 	// mark all genes retrieved from cache as fetched
 	let fetchedGenes = {};
 	let keys = Object.keys(genes);
+	keys.sort();
 	for (let i = 0; i < keys.length; i++) {
 		fetchedGenes[keys[i]] = true;
 	}

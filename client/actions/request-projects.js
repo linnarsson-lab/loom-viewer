@@ -65,33 +65,33 @@ function receiveProjects(json, prevList) {
 	// convert json array to dictionary
 	let list = {};
 	for (let i = 0; i < json.length; i++) {
-		let ds = json[i];
-		ds.path = ds.project + '/' + ds.filename;
+		let dataset = json[i];
+		dataset.path = dataset.project + '/' + dataset.filename;
 		// check if dataset changed.
-		const cachedDS = prevList && prevList[ds.path];
-		if (!cachedDS) {
-			ds.fetchedGenes = {};
-			ds.fetchingGenes = {};
-			ds.col = null;
-			ds.row = null;
-			list[ds.path] = ds;
+		const storedDS = prevList && prevList[dataset.path];
+		if (!storedDS) {
+			dataset.fetchedGenes = {};
+			dataset.fetchingGenes = {};
+			dataset.col = null;
+			dataset.row = null;
+			list[dataset.path] = dataset;
 		} else if (
-			ds.creationDate > cachedDS.creationDate ||
-			ds.lastModified > cachedDS.lastModified
+			dataset.creationDate !== storedDS.creationDate ||
+			dataset.lastModified !== storedDS.lastModified
 		) {
 			console.log('Dataset was modified:');
 			console.log({
 				newDS: {
-					creationDate: ds.creationDate,
-					lastModified: ds.lastModified,
+					creationDate: dataset.creationDate,
+					lastModified: dataset.lastModified,
 				},
-				cachedDS: {
-					creationDate: cachedDS.creationDate,
-					lastModified: cachedDS.lastModified,
+				storedDS: {
+					creationDate: storedDS.creationDate,
+					lastModified: storedDS.lastModified,
 				},
 			});
-			uncacheDataset(ds);
-			list[ds.path] = unloadDataset(ds, cachedDS);
+			uncacheDataset(dataset);
+			list[dataset.path] = unloadDataset(dataset, storedDS);
 		}
 	}
 
@@ -104,13 +104,17 @@ function receiveProjects(json, prevList) {
 	};
 }
 
-
-function uncacheDataset(ds) {
+/**
+ * Remove dataset from localforage
+ * @param {*} dataset
+ */
+export function uncacheDataset(dataset) {
 	localforage.keys().then((keys) => {
 		let matchingKeys = [];
 		for (let i = 0; i < keys.length; i++) {
 			let key = keys[i];
-			if (key.startsWith(ds.path)) {
+			// this covers both `${key}` and `${key}/genes` case
+			if (key.startsWith(dataset.path)) {
 				matchingKeys.push(key);
 			}
 		}
@@ -120,22 +124,22 @@ function uncacheDataset(ds) {
 }
 
 /**
- * Modify `ds` in such a way that it removes all previously loaded
- * data from `cachedDS`
- * @param {*} ds
- * @param {*} cachedDS
+ * Modify `dataset` in such a way that it removes all previously loaded
+ * data from `storedDS`
+ * @param {*} dataset
+ * @param {*} storedDS
  */
-function unloadDataset(ds, cachedDS) {
+export function unloadDataset(dataset, storedDS) {
 	// To unload previously set fetchedGenes and fetchingGenes,
 	// we have to manually set all to `false` (since `undefined`
 	// will leave the previous value untouched). Note that we
 	// must copy to respect redux' immutability guarantee.
-	ds.fetchedGenes = copyAndSetFalse(cachedDS.fetchedGenes);
-	ds.fetchingGenes = copyAndSetFalse(cachedDS.fetchingGenes);
-	ds.col = null;
-	ds.row = null;
-	ds.loaded = false;
-	return ds;
+	dataset.fetchedGenes = copyAndSetFalse(storedDS.fetchedGenes);
+	dataset.fetchingGenes = copyAndSetFalse(storedDS.fetchingGenes);
+	dataset.col = null;
+	dataset.row = null;
+	dataset.loaded = false;
+	return dataset;
 }
 
 /**
