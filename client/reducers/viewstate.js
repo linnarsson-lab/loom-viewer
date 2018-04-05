@@ -1,6 +1,4 @@
-import {
-	merge,
-} from 'js/util';
+import { merge } from 'js/util';
 
 import { updateSortOrder } from 'reducers/sort-dataset';
 import { updateFilteredIndices } from 'reducers/filter';
