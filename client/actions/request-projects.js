@@ -76,23 +76,22 @@ function receiveProjects(json, prevList) {
 			ds.row = null;
 			list[ds.path] = ds;
 		} else if (
-				ds.creationDate > cachedDS.creationDate ||
-				ds.lastModified > cachedDS.lastModified
-			){
-				console.log('Dataset was modified:');
-				console.log({
-					newDS: {
-						creationDate: ds.creationDate,
-						lastModified: ds.lastModified,
-					},
-					cachedDS: {
-						creationDate: cachedDS.creationDate,
-						lastModified: cachedDS.lastModified,
-					},
-				});
-				uncacheDataset(ds);
-				list[ds.path] = unloadDataset(ds, cachedDS);
-			}
+			ds.creationDate > cachedDS.creationDate ||
+			ds.lastModified > cachedDS.lastModified
+		) {
+			console.log('Dataset was modified:');
+			console.log({
+				newDS: {
+					creationDate: ds.creationDate,
+					lastModified: ds.lastModified,
+				},
+				cachedDS: {
+					creationDate: cachedDS.creationDate,
+					lastModified: cachedDS.lastModified,
+				},
+			});
+			uncacheDataset(ds);
+			list[ds.path] = unloadDataset(ds, cachedDS);
 		}
 	}
 
@@ -106,12 +105,12 @@ function receiveProjects(json, prevList) {
 }
 
 
-function uncacheDataset(ds){
+function uncacheDataset(ds) {
 	localforage.keys().then((keys) => {
 		let matchingKeys = [];
-		for(let i = 0; i < keys.length; i++){
+		for (let i = 0; i < keys.length; i++) {
 			let key = keys[i];
-			if (key.startsWith(ds.path)){
+			if (key.startsWith(ds.path)) {
 				matchingKeys.push(key);
 			}
 		}
@@ -126,7 +125,7 @@ function uncacheDataset(ds){
  * @param {*} ds
  * @param {*} cachedDS
  */
-function unloadDataset(ds, cachedDS){
+function unloadDataset(ds, cachedDS) {
 	// To unload previously set fetchedGenes and fetchingGenes,
 	// we have to manually set all to `false` (since `undefined`
 	// will leave the previous value untouched). Note that we
@@ -143,11 +142,11 @@ function unloadDataset(ds, cachedDS){
  * Returns a copy of `obj` with `false` assigned to each key;
  * @param {*} obj
  */
-function copyAndSetFalse(obj){
+function copyAndSetFalse(obj) {
 	let newObj = {},
 		keys = Object.keys(obj);
 	keys.sort();
-	for(let i = 0; i < keys.length; i++){
+	for (let i = 0; i < keys.length; i++) {
 		newObj[keys[i]] = false;
 	}
 	return newObj;
@@ -209,7 +208,9 @@ function loadProjects(dispatch) {
 			}
 		})
 		.catch((err) => {
-			console.log('Loading projects failed:', err, { err });
+			console.log('Loading projects failed:', err, {
+				err,
+			});
 			dispatch(requestProjectsFailed());
 		});
 }
