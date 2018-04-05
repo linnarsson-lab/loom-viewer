@@ -326,7 +326,15 @@ function prepareViewState(dataset) {
 	return viewState;
 }
 
-
+/**
+ * Used in debug builds to reduce size of serialised attributes.
+ * Keep in mind that Typed Arrays are serialised as objects by
+ * default (because I don't know), and that these arrays can be
+ * hundreds of thousands of elements. In the browser, this will
+ * freeze the redux dev tools. So instead a custom serialiser
+ * function is added to alleviate this issue.
+ * @param {*} axisAttrs
+ */
 function reduxToJSON(axisAttrs) {
 	for (let i = 0; i < axisAttrs.keys.length; i++) {
 		let key = axisAttrs.keys[i],
