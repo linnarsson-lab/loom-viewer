@@ -35,17 +35,20 @@ export function viewStateInitialiser(dataset) {
 		shape,
 	} = dataset.heatmap;
 
-	// Would be nice to come up with a more robust solution than this. And no, I don't want a regex.
+	// Would be nice to come up with a more robust solution than this.
+	// And no, I don't want a regex.
 	const colorAttrColumn = firstMatchingKeyCaseInsensitive(colAttrs, ['ClusterNames', '_ClusterNames', 'ClusterName', '_ClusterName', 'Clusters', '_Clusters', 'Cluster', '_Cluster', 'Class', '_Class', 'Classes', '_Classes', 'ClassName', '_ClassName', 'Class_Name', '_Class_Name', 'ClassNames', '_ClassNames', 'Class_Names', '_Class_Names', 'Louvain_Jaccard', '_KMeans_20', '_KMeans20', 'KMeans_20', 'KMeans20', '_KMeans_10', '_KMeans10', 'KMeans_10', 'KMeans10', '(original order)']),
 
-		colorAttrRow = firstMatchingKeyCaseInsensitive(rowAttrs, ['_Selected', 'Selected', 'Excluded', '_Excluded', '(original order)']);
+		colorAttrRow = firstMatchingKeyCaseInsensitive(rowAttrs, ['_Selected', 'Selected', 'Excluded', '_Excluded', '(original order)']),
+
+		heatmapRowAttr = firstMatchingKeyCaseInsensitive(dataset.row.attrs, ['Gene', '_Gene', 'Selected', '_Selected', 'Excluded', '_Excluded', '(original order)']);
 	const initialState = {
 		heatmap: {
 			dataBounds: [0, 0, 0, 0], // Data coordinates of the current view
 			colAttr: colorAttrColumn,
 			colMode: 'Stacked',
-			rowAttr: firstMatchingKeyCaseInsensitive(dataset.row.attrs, ['_Selected', '_Excluded', '(original order)']),
-			rowMode: 'Stacked',
+			rowAttr: heatmapRowAttr,
+			rowMode: heatmapRowAttr === 'Gene' || heatmapRowAttr === 'Gene' ? 'Text' : 'Stacked',
 			zoom: 8,
 			zoomRange,
 			fullZoomHeight,
