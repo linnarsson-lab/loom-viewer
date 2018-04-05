@@ -110,27 +110,5 @@ module.exports = {
 			filename: 'index.html',
 			inject: 'body',
 		}),
-		new OfflinePlugin({
-			appShell: '/',
-			caches: 'all',
-			excludes: ['/loom/*', '/clone/*'],
-			ServiceWorker: {
-				events: true,
-			},
-			cacheMaps: [
-				{
-					match: (requestUrl) => {
-						// /loom and /clone are API endpoints.
-						// Everything else should go through to the server
-						return (
-							requestUrl.pathname.startsWith('/loom') ||
-							requestUrl.pathname.startsWith('/clone')
-						) ? requestUrl :
-							new URL('/', location);
-					},
-					requestTypes: ['navigate', 'same-origin'],
-				},
-			],
-		}),
 	],
 };
