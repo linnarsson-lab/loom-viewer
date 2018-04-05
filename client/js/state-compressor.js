@@ -146,19 +146,27 @@ import { isArray } from '../js/util';
 
 // TODO: Semver schema support
 
+/**
+ * A `PreCompressor` contains functions for reversible transformations
+ * @param {function} encodeMethod
+ * @param {function} decodeMethod
+ */
+function PreCompressor(encodeMethod, decodeMethod){
+	this.encoder = encodeMethod;
+	this.decoder = decodeMethod;
+}
+
 // value that can be anything, so passes through unchanged
 // (example: input field, which can have any string value)
-const anyValConverter = (val) => {return val;};
-const _anyVal = () => {};
-_anyVal.encoder = anyValConverter;
-_anyVal.decoder = anyValConverter;
-export const anyVal = _anyVal;
+function anyValConverter(val){
+	return val;
+}
+export const anyVal = new PreCompressor(anyValConverter, anyValConverter);
 
-const intValConverter = (num) => { return num|0;};
-const _intVal = () => {};
-_intVal.encoder = intValConverter;
-_intVal.decoder = intValConverter;
-export const intVal = _intVal;
+function intValConverter(num){
+	return num|0;
+}
+export const intVal = new PreCompressor(intValConverter, intValConverter);
 
 // If a value is constant, we can
 // just store it in the decoder.
@@ -176,10 +184,10 @@ export function oneOf(valArr) {
 	for(let i = 0; i < valArr.length; i++){
 		valToIdx.set(valArr[i], i);
 	}
-	let retVal = () => { };
-	retVal.encoder = (val) => { return valToIdx.get(val); };
-	retVal.decoder = (idx) => { return valArr[idx]; };
-	return retVal;
+	return new PreCompressor(
+		(val) => { return valToIdx.get(val); },
+		(idx) => { return valArr[idx]; }
+	);
 }
 
 // a boolean
@@ -207,32 +215,34 @@ export function keysOf(obj) {
 	keys.sort();
 	return oneOf(keys);
 }
-
-// Arrays in the schema tree will be assumed to represent a
-// fixed size, for variable sizes we use vectorOf()
-// example: an array of variable size, where we know all values
-// will be between 0 and 255:
-//   vectorOf([rangeVal(0, 256)])
+/**
+ * Arrays in the schema tree will be assumed to represent a
+ * fixed size, for variable sizes we use vectorOf()
+ * example: an array of variable size, where we know all values
+ * will be between 0 and 255:
+ *   vectorOf([rangeVal(0, 256)])
+ * @param {any[]} patternArr
+ */
 export function vectorOf(patternArr){
-	let retVal = () => { };
-	retVal.encoder = encodeVector(patternArr);
-	retVal.decoder = decodeVector(patternArr);
-	return retVal;
+	return new PreCompressor(
+		encodeVector(patternArr),
+		decodeVector(patternArr)
+	);
 }
 
 // Arrays in the schema are assumed to be fixed size
 // For variable sized arrays, use vectorOf()
 export function encodeArray(patternArr) {
-	let l = patternArr.length,
-		encoderArr = new Array(l);
+	const l = patternArr.length;
+	let encoderArr = [];
 	for(let i = 0; i < l; i++) {
-		encoderArr[i] = createEncoder(patternArr[i]);
+		encoderArr.push(createEncoder(patternArr[i]));
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let retArr = new Array(l);
+			let retArr = [];
 			for(let i = 0; i < l; i++) {
-				retArr[i] = encoderArr[i](arr[i]);
+				retArr.push(encoderArr[i](arr[i]));
 			}
 			return retArr;
 		} else {
@@ -242,16 +252,16 @@ export function encodeArray(patternArr) {
 }
 
 export function decodeArray(patternArr) {
-	let l = patternArr.length,
-		decoderArr = new Array(l);
+	const l = patternArr.length;
+	let decoderArr = [];
 	for (let i = 0; i < l; i++) {
-		decoderArr[i] = createDecoder(patternArr[i]);
+		decoderArr.push(createDecoder(patternArr[i]));
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let retArr = new Array(l);
+			let retArr = [];
 			for(let i = 0; i < l ; i++) {
-				retArr[i] = decoderArr[i](arr[i]);
+				retArr.push(decoderArr[i](arr[i]));
 			}
 			return retArr;
 		}
@@ -260,16 +270,16 @@ export function decodeArray(patternArr) {
 }
 
 export function encodeVector(patternArr){
-	let l = patternArr.length,
-		encoderArr = new Array(l);
+	const l = patternArr.length;
+	let encoderArr = [];
 	for(let i = 0; i < l; i++) {
-		encoderArr[i] = createEncoder(patternArr[i]);
+		encoderArr.push(createEncoder(patternArr[i]));
 	}
 	return (arr) => {
 		if (arr && arr.length) {
-			let retArr = new Array(arr.length);
+			let retArr = [];
 			for (let i = 0; i < arr.length; i++) {
-				retArr[i] = encoderArr[i % l](arr[i]);
+				retArr.push(encoderArr[i % l](arr[i]));
 			}
 			return retArr;
 		} else {
@@ -279,16 +289,16 @@ export function encodeVector(patternArr){
 }
 
 export function decodeVector(patternArr) {
-	let l = patternArr.length,
-		decoderArr = new Array(l);
+	const l = patternArr.length;
+	let decoderArr = [];
 	for(let i = 0; i < l; i++) {
-		decoderArr[i] = createDecoder(patternArr[i]);
+		decoderArr.push(createDecoder(patternArr[i]));
 	}
 	return (arr) => {
 		if (arr) {
-			let retArr = new Array(arr.length);
+			let retArr = [];
 			for(let i = 0; i < arr.length; i++) {
-				retArr[i] = decoderArr[i % l](arr[i]);
+				retArr.push(decoderArr[i % l](arr[i]));
 			}
 			return retArr;
 		}
@@ -306,18 +316,16 @@ export function encodeObj(schema) {
 	// sort keys to ensure consistent encoding/decoding
 	keys.sort();
 
-	let _encoder = new Map();
+	let subEncoders = [];
 	for(let i = 0; i < keys.length; i++) {
-		let k = keys[i];
-		_encoder.set(k, createEncoder(schema[k]));
+		subEncoders.push(createEncoder(schema[keys[i]]));
 	}
 
 	let encoder = (obj) => {
 		if (obj) {
-			let retArr = new Array(keys.length);
+			let retArr = [];
 			for (let i = 0; i < keys.length; i++) {
-				let k = keys[i];
-				retArr[i] = (_encoder.get(k))(obj[k]);
+				retArr.push(subEncoders[i](obj[keys[i]]));
 			}
 			return retArr;
 		} else {
@@ -325,9 +333,9 @@ export function encodeObj(schema) {
 		}
 	};
 
+	// Add subEncoders as properties
 	for(let i = 0; i < keys.length; i++) {
-		let k = keys[i];
-		encoder[k] = _encoder[k];
+		encoder[keys[i]] = subEncoders[i];
 	}
 	return encoder;
 
@@ -338,20 +346,18 @@ export function decodeObj(schema) {
 	// sort keys to ensure consistent encoding/decoding
 	keys.sort();
 
-	let _decoder = new Map();
+	let subDecoders = [];
 	for(let i = 0; i < keys.length; i++) {
-		let k = keys[i];
-		_decoder.set(k, createDecoder(schema[k]));
+		subDecoders.push(createDecoder(schema[keys[i]]));
 	}
 
 	let decoder = (arr) => {
 		if (arr) {
 			let retObj = {};
 			for(let i = 0; i < keys.length; i++){
-				let k = keys[i],
-					decoded = _decoder.get(k)(arr[i]);
+				let decoded = subDecoders[i](arr[i]);
 				if (decoded !== undefined) {
-					retObj[k] = decoded;
+					retObj[keys[i]] = decoded;
 				}
 			}
 			return retObj;
@@ -359,9 +365,9 @@ export function decodeObj(schema) {
 		return undefined;
 	};
 
+	// Add subDecoders as properties
 	for(let i = 0; i < keys.length; i++){
-		let k = keys[i];
-		decoder[k] = _decoder.get(k);
+		decoder[keys[i]] = subDecoders[i];
 	}
 	return decoder;
 }
@@ -373,6 +379,8 @@ export function createEncoder(schema) {
 			case 'object':
 				if (isArray(schema)) {
 					return encodeArray(schema);
+				} else if (schema.constructor === PreCompressor){
+					return schema.encoder;
 				} else {
 					return encodeObj(schema);
 				}
@@ -395,11 +403,11 @@ export function createEncoder(schema) {
 					message: 'createEncoder: no specific encoder present for schema',
 					schema,
 				});
-				return anyVal().encoder;
+				return anyVal.encoder;
 		}
 	}
 	console.log('WARNING: no schema passed to createEncoder!');
-	return constEncoder;
+	return anyVal.encoder;
 }
 
 export function createDecoder(schema) {
@@ -408,6 +416,8 @@ export function createDecoder(schema) {
 			case 'object':
 				if (isArray(schema)) {
 					return decodeArray(schema);
+				} else if (schema.constructor === PreCompressor){
+					return schema.decoder;
 				} else {
 					return decodeObj(schema);
 				}
@@ -429,11 +439,11 @@ export function createDecoder(schema) {
 					message: 'createDecoder: no specific decoder present for schema',
 					schema,
 				});
-				return anyVal().decoder;
+				return anyVal.decoder;
 		}
 	}
 	console.log('WARNING: no schema passed to createDecoder!');
-	return anyVal().decoder;
+	return anyVal.decoder;
 }
 
 export function makeCompressor(schema){

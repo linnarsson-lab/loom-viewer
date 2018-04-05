@@ -9,10 +9,10 @@ import {
 
 // NOTE: When adding a new mode, append it at the end
 // of the array to maintain backwards compatibility!
-const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Stacked', 'Flame', 'Icicle', 'Box']);
-const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Stacked', 'Flame', 'Icicle', 'Box']);
-const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Flame', 'Icicle', 'Box']);
-const scatterPlotModes = heatmapModes;
+const heatmapModes = oneOf(['Text', 'Bars', 'Categorical', 'Heatmap', 'Stacked', 'Flame', 'Box']);
+const sparklineColorModes = oneOf(['Bars', 'Categorical', 'Heatmap', 'Stacked', 'Flame', 'Box']);
+const sparklineGeneModes = oneOf(['Bars', 'Heatmap', 'Flame', 'Box']);
+const scatterPlotModes = oneOf(['Heatmap', 'Categorical']);
 
 export function createViewStateConverter(dataset) {
 	// to avoid confusion with row and col in schema below
@@ -72,24 +72,15 @@ export function createViewStateConverter(dataset) {
 	};
 
 	const viewStateSchema = {
-		row: {
-			order: vectorOf([{
-				key: oneOfRowAllKeys, asc: boolVal,
-			}]),
-			filter: vectorOf([{
-				attr: oneOfRowAllKeys, val: anyVal,
-			}]),
-			// indices: vectorOf(rangeVal(0, 1<<32))
-			scatterPlots: {
-				selectedPlot: intVal,
-				totalPlots: intVal,
-				plotSettings: {
-					0: rowPlot,
-					1: rowPlot,
-					2: rowPlot,
-					3: rowPlot,
-				},
+		heatmap: {
+			center: {
+				lat: anyVal, lng: anyVal,
 			},
+			colAttr: oneOfColAllKeys,
+			colMode: heatmapModes,
+			rowAttr: oneOfRowAllKeys,
+			rowMode: heatmapModes,
+			zoom: intVal,
 		},
 		col: {
 			order: vectorOf([{
@@ -112,15 +103,24 @@ export function createViewStateConverter(dataset) {
 				},
 			},
 		},
-		heatmap: {
-			center: {
-				lat: anyVal, lng: anyVal,
+		row: {
+			order: vectorOf([{
+				key: oneOfRowAllKeys, asc: boolVal,
+			}]),
+			filter: vectorOf([{
+				attr: oneOfRowAllKeys, val: anyVal,
+			}]),
+			// indices: vectorOf(rangeVal(0, 1<<32))
+			scatterPlots: {
+				selectedPlot: intVal,
+				totalPlots: intVal,
+				plotSettings: {
+					0: rowPlot,
+					1: rowPlot,
+					2: rowPlot,
+					3: rowPlot,
+				},
 			},
-			colAttr: oneOfColAllKeys,
-			colMode: heatmapModes,
-			rowAttr: oneOfRowAllKeys,
-			rowMode: heatmapModes,
-			zoom: intVal,
 		},
 		sparkline: {
 			colAttr: oneOfColKeys,
