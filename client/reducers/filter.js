@@ -28,18 +28,15 @@ export function updateFilteredIndices(data, filter, order, originalIndices) {
 	}
 
 	// Convert to typed array
-	let newIndices = Uint32Array.from(indices);
-
+	let newIndices = sortFilterIndices(data, order, Uint32Array.from(indices));
 	// In some cases, we just want to know which indices
-	// are present, and iterating by ascending indices
+	// are present, and iterating over ascending indices
 	// will be more cache friendly in that case.
-	// Hence, we save a separate set of indices.
+	// So we save a separate set of sorted indices.
 	let ascendingIndices = radixSortCopy(newIndices);
 
 	return {
-		indices: sortFilterIndices(data, order, newIndices),
+		indices: newIndices,
 		ascendingIndices,
 	};
 }
-
-function compareIndices(i, j){ return i - j; }
