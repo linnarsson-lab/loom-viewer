@@ -69,10 +69,15 @@ function receiveProjects(json, prevList) {
 		ds.path = ds.project + '/' + ds.filename;
 		// check if dataset changed.
 		const cachedDS = prevList && prevList[ds.path];
-		if (cachedDS) {
-			if (
-				ds.creationDate < cachedDS.creationDate ||
-				ds.lastModified < cachedDS.lastModified
+		if (!cachedDS) {
+			ds.fetchedGenes = {};
+			ds.fetchingGenes = {};
+			ds.col = null;
+			ds.row = null;
+			list[ds.path] = ds;
+		} else if (
+				ds.creationDate > cachedDS.creationDate ||
+				ds.lastModified > cachedDS.lastModified
 			){
 				console.log('Dataset was modified:');
 				console.log({
@@ -87,15 +92,7 @@ function receiveProjects(json, prevList) {
 				});
 				uncacheDataset(ds);
 				list[ds.path] = unloadDataset(ds, cachedDS);
-			} else {
-				// Do nothing - we do not need to re-add this dataset
 			}
-		} else {
-			ds.fetchedGenes = {};
-			ds.fetchingGenes = {};
-			ds.col = null;
-			ds.row = null;
-			list[ds.path] = ds;
 		}
 	}
 
@@ -143,11 +140,13 @@ function unloadDataset(ds, cachedDS){
 
 /**
  * Returns a copy of `obj` with `false` assigned to each key;
- * @param {{}} obj
+ * @param {*} obj
  */
 function copyAndSetFalse(obj){
-	let newObj = {};
-	for(let i = 0, keys = Object.keys(obj); i < keys.length; i++){
+	let newObj = {},
+		keys = Object.keys(obj);
+	keys.sort();
+	for(let i = 0; i < keys.length; i++){
 		newObj[keys[i]] = false;
 	}
 	return newObj;
@@ -186,7 +185,11 @@ export function requestProjects(list, fetchProjectsStatus) {
 						}
 					})
 			);
-		} else { // we retrieve from store cache
+		} else {
+			// This branch is reached only if we are offline and have
+			// previously loaded the offline data. In that case we can
+			// safely use the in-memory redux store since it's already
+			// synchronised with the offline cache.
 			return null;
 		}
 	};
