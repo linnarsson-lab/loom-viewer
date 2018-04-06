@@ -489,7 +489,15 @@ function radixU32_32(input, start, end) {
 		count32_32[768 + (v >>> 24 & 0xFF)]++;
 	}
 
-	radix32_sum32();
+	for (let j = 0; j < 4; j++) {
+		const iStart = (j << 8),
+			iEnd = ((j + 1) << 8);
+		for (let i = iStart, v = 0, sum = 0; i < iEnd; i++) {
+			v = count32_32[i];
+			count32_32[i] = sum;
+			sum += v;
+		}
+	}
 
 	// Set range of values to final value
 	for (let i = start; i < end; i++) {
