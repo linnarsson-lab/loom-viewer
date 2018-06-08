@@ -1,3 +1,7 @@
+# Needed before other imports of ssl, socket, time etc.:
+import gevent.monkey
+gevent.monkey.patch_all()
+
 from typing import *
 from mypy_extensions import NoReturn
 
@@ -23,7 +27,7 @@ from wsgiref.handlers import format_date_time
 
 import socket
 
-import gevent.monkey
+#import gevent.monkey
 import gevent.socket
 import gevent.wsgi
 
@@ -316,9 +320,9 @@ def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003
 			webbrowser.open(url)
 	try:
 		# self.app.run(threaded=True, debug=debug, host="0.0.0.0", port=port)
-		# Monkey-patch if this has not happened yet
-		if socket.socket is not gevent.socket.socket:
-			gevent.monkey.patch_all()
+		## Monkey-patch if this has not happened yet
+		#if socket.socket is not gevent.socket.socket:
+		#	gevent.monkey.patch_all()
 		http_server = gevent.wsgi.WSGIServer(('', port), loom_server.app)
 
 		http_server.serve_forever()
