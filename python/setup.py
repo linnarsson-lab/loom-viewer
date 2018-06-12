@@ -15,6 +15,7 @@ setup(
         "h5py",
         "pandas",
         "scipy",
+        "pillow",
         "numpy",
         "requests",
         "flask",
