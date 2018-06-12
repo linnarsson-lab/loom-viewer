@@ -29,7 +29,7 @@ import socket
 
 #import gevent.monkey
 import gevent.socket
-import gevent.wsgi
+import gevent.pywsgi
 
 from .loom_datasets import LoomDatasets
 
@@ -323,7 +323,7 @@ def start_server(dataset_path: str=None, show_browser: bool=True, port: int=8003
 		## Monkey-patch if this has not happened yet
 		#if socket.socket is not gevent.socket.socket:
 		#	gevent.monkey.patch_all()
-		http_server = gevent.wsgi.WSGIServer(('', port), loom_server.app)
+		http_server = gevent.pywsgi.WSGIServer(('', port), loom_server.app)
 
 		http_server.serve_forever()
 	except socket.error as serr:
