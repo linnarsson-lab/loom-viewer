@@ -48,7 +48,10 @@ pip install -U loom-viewer
 ```bash
 pip install loompy
 ```
-3. Install [node.js](https://nodejs.org/en/)
+3. Install depedencies:
+  - [node.js](https://nodejs.org/en/)
+  - npm ( ubuntu: ```sudo apt-get install npm```)
+  - webpack ( ubuntu: ```sudo apt-get install webpack```)
 
 4. Clone this repository with git
 
