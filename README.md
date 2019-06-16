@@ -22,7 +22,7 @@ You can choose between installation through PyPi, or build `loom-viewer` from so
 
 2. Open a terminal. 
 
-Windows users: open `Programs > Anaconda 3 > Anaconda Promp`.
+Windows users: open `Programs > Anaconda 3 > Anaconda Prompt`.
 
 3. Install Loom with the following command:
 
@@ -48,7 +48,7 @@ pip install -U loom-viewer
 ```bash
 pip install loompy
 ```
-3. Install depedencies:
+3. Install dependencies:
   - [node.js](https://nodejs.org/en/)
   - npm ( ubuntu: ```sudo apt-get install npm```)
   - webpack ( ubuntu: ```sudo apt-get install webpack```)
@@ -65,7 +65,7 @@ git clone https://github.com/linnarsson-lab/loom-viewer.git
 npm install
 ```
 
-6. Run the build script. On Mac/Linux:
+6. Run the `build script. On Mac/Linux:
 
 ```bash
 ./build
@@ -164,7 +164,7 @@ On the right you can see a cloud icon [that links to the original loom file](htt
    .  └─ Cortex.loom
 ```
 
-Once we start a local loom server (see below) and open `localhost:8003`, the resulting view should be a single project, `Linnarsson Lab`, with a single loom file, `Cortex.loom`. Opening it should give the same results as the on-line versoin.
+Once we start a local loom server (see below) and open `localhost:8003`, the resulting view should be a single project, `Linnarsson Lab`, with a single loom file, `Cortex.loom`. Opening it should give the same results as the on-line version.
 
 ### Generating heatmap tiles with `loom tile`
 
@@ -222,7 +222,7 @@ Because generation can be slow for larger Loom files, the command checks if the 
 
 ### Pre-generating/updating JSON files for metadata, attributes and rows with `loom expand`
 
-Similar to pre-generating image tiles, is possible to pre-generate all metadata, like attributes and gene rows, for a Loom file. This step used to be mandatory, but now the server generates the required JSOn on the fly.
+Similar to pre-generating image tiles, is possible to pre-generate all metadata, like attributes and gene rows, for a Loom file. This step used to be mandatory, but now the server generates the required JSON on the fly.
 
 There are two situations in which this is still relevant.
 
