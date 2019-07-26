@@ -32,7 +32,7 @@ if  [ "${1:-dev}" == "dev" ]; then
   echo "=== Run WebPack with development build"
   echo ""
 
-  webpack --config='webpack.config.dev.js' --progress --profile --colors
+  webpack --config='webpack.config.dev.js' --progress --profile --colors --mode=development
 
   # I haven't figured out how to both generate correct paths in the webpack HTML
   # template, and have the resulting index.html be put in the right folders.
@@ -48,7 +48,7 @@ elif [ "${1:-dev}" == "prod" ]; then
   echo "=== Run WebPack with production build"
   echo ""
 
-  webpack --config='webpack.config.prod.js' --progress --profile --colors
+  webpack --config='webpack.config.prod.js' --progress --profile --colors --mode=production
 
   mv ./python/loom_viewer/index.html ./python/loom_viewer/static/index.html
   cp ./client/images/favicon.ico ./python/loom_viewer/static/favicon.ico

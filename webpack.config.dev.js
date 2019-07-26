@@ -1,7 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssoWebpackPlugin = require('csso-webpack-plugin').default;
 
 module.exports = {
@@ -17,10 +17,9 @@ module.exports = {
 		rules: [
 			{
 				test: /\.css$/,
-				use: ExtractTextPlugin.extract({
-					fallback: 'style-loader',
-					use: 'css-loader',
-				}),
+				use: [
+				   { loader: MiniCssExtractPlugin.loader }, 'css-loader',
+				 ],
 			},
 			{
 				test: /\.(png|jpg|gif)$/,
@@ -53,7 +52,11 @@ module.exports = {
 			'process.env.NODE_ENV': JSON.stringify('debug'),
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
-		new ExtractTextPlugin('/static/styles/[contenthash].css'),
+		new MiniCssExtractPlugin({
+			filename: '/static/styles/[contenthash].css',
+			chunkFilename: '[id].css',
+			ignoreOrder: false,
+		}),
 		new CssoWebpackPlugin({
 			restructure: false,
 		}),

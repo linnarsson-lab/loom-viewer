@@ -2,44 +2,8 @@ const path = require('path');
 const webpack = require('webpack');
 const MinifyPlugin = require('babel-minify-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssoWebpackPlugin = require('csso-webpack-plugin').default;
-
-const uglifySettings = {
-	mangle: {
-		toplevel: true,
-		keep_fnames: false,
-	},
-	compress: {
-		sequences: true,
-		properties: true,
-		dead_code: true,
-		drop_debugger: true,
-		unsafe: true,
-		unsafe_math: true,
-		unsafe_proto: true,
-		conditionals: true,
-		comparisons: true,
-		evaluate: true,
-		booleans: false,
-		loops: true,
-		unused: true,
-		toplevel: true,
-		hoist_funs: true,
-		hoist_vars: true,
-		if_return: true,
-		join_vars: true,
-		cascade: true,
-		collapse_vars: true,
-		reduce_vars: true,
-		warnings: false,
-		pure_getters: true,
-		drop_console: true,
-		keep_fargs: false,
-		keep_fnames: false,
-		passes: 3,
-	},
-};
 
 module.exports = {
 	entry: {
@@ -50,14 +14,16 @@ module.exports = {
 		filename: '[name].[hash].js',
 		sourceMapFilename: '[name].[hash].map',
 	},
+	optimization: {
+		minimize: true
+	},
 	module: {
 		rules: [
 			{
 				test: /\.css$/,
-				use: ExtractTextPlugin.extract({
-					fallback: 'style-loader',
-					use: 'css-loader',
-				}),
+				use: [
+				   { loader: MiniCssExtractPlugin.loader }, 'css-loader',
+				 ],
 			},
 			{
 				test: /\.(png|jpg|gif)$/,
@@ -98,8 +64,11 @@ module.exports = {
 			removeDebugger: true,
 		}),
 		new webpack.optimize.ModuleConcatenationPlugin(),
-		new webpack.optimize.UglifyJsPlugin(uglifySettings),
-		new ExtractTextPlugin('/static/styles/[contenthash].css'),
+		new MiniCssExtractPlugin({
+			filename: '/static/styles/[contenthash].css',
+			chunkFilename: '[id].css',
+			ignoreOrder: false,
+		}),
 		new CssoWebpackPlugin({
 			restructure: true,
 			forceMediaMerge: true,
