@@ -22,7 +22,7 @@ IF /i "%1"=="prod" (
     echo === Run WebPack with production build
     echo.
 
-    webpack --config=webpack.config.prod.js --progress --profile --colors
+    webpack --config=webpack.config.prod.js --progress --profile --colors --mode=production
 
     :: I haven't figured out how to both generate correct paths in the webpack HTML
     :: template, and have the resulting index.html be put in the right folders.
@@ -43,7 +43,7 @@ IF /i "%1"=="prod" (
     echo === Run WebPack with development build
     echo.
 
-    webpack --config=webpack.config.dev.js --progress --profile --colors
+    webpack --config=webpack.config.dev.js --progress --profile --colors --mode=development
 
     echo.
     echo copy .\client\images\favicon.ico .\python\loom_viewer\static\ /Y
