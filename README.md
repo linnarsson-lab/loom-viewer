@@ -1,13 +1,11 @@
 ![Cortex Heatmap](/docs/Cortex-heatmap.png)
 # Loom Viewer
 
-Loom is
+The loom-viewer is a web app to visualize single cell sequencing data from loom files.
 
-* `.loom`, an efficient file format for large omics datasets
-* `loompy`, a Python library for creating and working with data in `.loom` format.
-* `loom-viewer`, a web app for browsing large single-cell RNA-seq datasets
+*** This repository is no longer maintainted by its authors ***
 
-This repository is the loom-viewer part. Read more about .loom and loompy [here](https://github.com/linnarsson-lab/loompy).
+Read more about the .loom file format and the loompy package [here](https://github.com/linnarsson-lab/loompy).
 
 ## Installation
 
@@ -29,12 +27,6 @@ Windows users: open `Programs > Anaconda 3 > Anaconda Promp`.
 ```bash
 pip install loompy
 pip install loom-viewer
-```
-
-Tip: Loom is under development and updated often. To ensure you have the latest version, do this:
-
-```bash
-pip install -U loom-viewer
 ```
 
 ### Installing from source
@@ -279,13 +271,13 @@ loom expans -r --project Published
 ```
 ## FAQ
 
+*** NOTE: This repository is no longer maintainted by its authors ***
+
 ### The website is stuck with the message that fetch is broken on Safari, but I am not using Safari
 
 The loom server cannot find any loom files, but the website mistakenly thinks it failed to fetch the list of loom files (which (for now) is guaranteed to happen on Safari anyway, hence the warning message).
 
 See above for where and how to store your loom files so that the server can find them.
-
-If this did not solve your problem, open an issue.
 
 ### There are no heatmap tiles in the viewer
 
